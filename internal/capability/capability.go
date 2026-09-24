@@ -35,6 +35,11 @@ type Spec struct {
 	// Scoped capabilities take a scope after a colon in the manifest,
 	// e.g. `http.getJSON:api.open-meteo.com`.
 	Scoped bool
+	// Schema is the JSON Schema of the arguments, shown to the explorer.
+	Schema string
+	// Scope names the argument that holds a URL whose host must be in the
+	// manifest scope, for scoped capabilities other than http.getJSON.
+	ScopeArg string
 }
 
 func (s Spec) Writes() bool { return s.Risk != Read }

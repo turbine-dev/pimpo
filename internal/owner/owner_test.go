@@ -2,6 +2,7 @@ package owner
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -109,5 +110,48 @@ func TestNotifyAlwaysLogsAndSendsWhenPaired(t *testing.T) {
 	evs, _ := ev.List(ctx, event.Query{Types: []string{EventNotice}})
 	if len(evs) != 2 {
 		t.Fatalf("notices logged %d", len(evs))
+	}
+}
+
+type voiceBot struct{ fakeBot }
+
+func (b *voiceBot) Download(_ context.Context, id string) ([]byte, error) {
+	return []byte("audio:" + id), nil
+}
+
+func TestVoiceNotesBecomeRequests(t *testing.T) {
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "v.db"))
+	defer ev.Close()
+	bot := &voiceBot{}
+	h := &handler{}
+	c := &Channel{Events: ev, Bot: func(context.Context) Bot { return bot }, Handler: h,
+		Transcribe: func(_ context.Context, audio []byte) (string, error) {
+			if string(audio) != "audio:f1" {
+				return "", errors.New("wrong file")
+			}
+			return "me lembra de pagar a luz", nil
+		}}
+	ctx := context.Background()
+	ev.Put(ctx, chatKey, "42")
+	voice := func(chat int64) telegram.Update {
+		u := msg(chat, "")
+		u.Message.Voice = &struct {
+			FileID   string `json:"file_id"`
+			Duration int    `json:"duration"`
+		}{FileID: "f1", Duration: 3}
+		return u
+	}
+	c.handle(ctx, bot, voice(99))
+	if len(h.requests) != 0 || len(bot.sent) != 0 {
+		t.Fatal("a stranger's voice note was heard")
+	}
+	c.handle(ctx, bot, voice(42))
+	if len(h.requests) != 1 || h.requests[0] != "me lembra de pagar a luz" || !strings.Contains(bot.sent[0], "pagar a luz") {
+		t.Fatalf("requests %v sent %v", h.requests, bot.sent)
+	}
+	c.Transcribe = nil
+	c.handle(ctx, bot, voice(42))
+	if len(h.requests) != 1 || !strings.Contains(bot.sent[len(bot.sent)-1], "Não consegui ouvir") {
+		t.Fatalf("without transcription: %v", bot.sent)
 	}
 }

@@ -48,11 +48,13 @@ func run(args []string) error {
 		return migrateCmd(args, os.Stdout)
 	case "gallery":
 		return galleryCmd(args, os.Stdout)
+	case "connector":
+		return connectorCmd(args, os.Stdout)
 	case "version":
 		fmt.Println(version)
 		return nil
 	}
-	return fmt.Errorf("unknown command %q (try: serve, migrate, gallery, snapshot, snapshots, restore, version)", cmd)
+	return fmt.Errorf("unknown command %q (try: serve, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
 }
 
 func dataDir(flagValue string) string {
@@ -117,6 +119,8 @@ func serve(args []string) error {
 	if err := a.AttachMemory(filepath.Join(home, "memory")); err != nil {
 		return err
 	}
+	a.AttachConnectors(filepath.Join(home, "connectors"))
+	a.VoiceModel = filepath.Join(home, "models", "ggml-base.bin")
 	a.TelegramAPI = os.Getenv("VIGIA_TELEGRAM_API")
 	if *demoMode {
 		a.EnableDemo(ctx, 700*time.Millisecond)

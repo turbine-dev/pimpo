@@ -49,6 +49,9 @@ type Channel struct {
 	People *people.Directory
 	// Mirror also delivers every notice on another channel, such as WhatsApp.
 	Mirror func(ctx context.Context, n explore.Notice)
+	// Transcribe turns a voice note into text; nil means voice notes are
+	// not understood.
+	Transcribe func(ctx context.Context, audio []byte) (string, error)
 
 	mu   sync.Mutex
 	code string
@@ -136,8 +139,20 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 			return
 		}
 		person, ok := c.who(ctx, m.Chat.ID)
-		if !ok || text == "" {
+		if !ok {
 			// Only people of the house can talk to Vigia; others get nothing.
+			return
+		}
+		if text == "" && m.Voice != nil {
+			heard, err := c.listen(ctx, bot, m.Voice.FileID)
+			if err != nil {
+				bot.Send(ctx, m.Chat.ID, "🎙️ Não consegui ouvir: "+err.Error())
+				return
+			}
+			bot.Send(ctx, m.Chat.ID, "🎙️ “"+heard+"”")
+			text = heard
+		}
+		if text == "" {
 			return
 		}
 		reply, err := c.Handler.Request(people.With(ctx, person), text)
@@ -167,6 +182,20 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 			bot.Edit(ctx, cb.Message.Chat.ID, cb.Message.ID, cb.Message.Text+"\n\n→ "+reply)
 		}
 	}
+}
+
+func (c *Channel) listen(ctx context.Context, bot Bot, fileID string) (string, error) {
+	d, ok := bot.(interface {
+		Download(ctx context.Context, fileID string) ([]byte, error)
+	})
+	if c.Transcribe == nil || !ok {
+		return "", errors.New("voice notes are not set up")
+	}
+	audio, err := d.Download(ctx, fileID)
+	if err != nil {
+		return "", err
+	}
+	return c.Transcribe(ctx, audio)
 }
 
 func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code string) {

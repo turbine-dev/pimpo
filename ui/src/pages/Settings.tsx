@@ -45,6 +45,16 @@ export function Settings() {
         <ChevronRight size={17} className="text-ink-3" />
       </Card>
       <PhonePairing />
+      <Card className="flex items-start gap-4 p-5">
+        <div className="flex-1">
+          <div className="text-[15px] font-medium">Pedir por e-mail</div>
+          <p className="text-[13px] text-ink-3">Mande um e-mail para você mesmo com “Vigia:” no assunto e eu trato como um pedido. Só vale o que sai do seu próprio endereço.</p>
+        </div>
+        <button type="button" role="switch" aria-checked={!!s.email_channel} aria-label="Pedir por e-mail" onClick={() => setS({ ...s, email_channel: !s.email_channel })}
+          className={cn('mt-1 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition', s.email_channel ? 'bg-accent' : 'bg-line-strong')}>
+          <span className={cn('size-5 rounded-full bg-white shadow transition', s.email_channel && 'translate-x-5')} />
+        </button>
+      </Card>
       <Card className="p-5">
         <div className="text-[15px] font-medium">Limite de gasto por dia</div>
         <p className="mb-3 text-[13px] text-ink-3">Conferido antes de cada chamada a um modelo. Rotinas compiladas quase não gastam.</p>

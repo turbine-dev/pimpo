@@ -205,6 +205,9 @@ func exportArgs(call goja.FunctionCall) any {
 // For http.getJSON the scope is the URL host.
 func scopeFor(name string, args any, allowed []string) string {
 	url, _ := args.(string)
+	if m, ok := args.(map[string]any); ok {
+		url, _ = m[capability.Catalog[name].ScopeArg].(string)
+	}
 	host := url
 	if i := strings.Index(host, "://"); i >= 0 {
 		host = host[i+3:]
