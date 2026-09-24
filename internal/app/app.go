@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/denerFernandes/vigia/internal/approval"
 	"github.com/denerFernandes/vigia/internal/budget"
 	"github.com/denerFernandes/vigia/internal/compiler"
 	"github.com/denerFernandes/vigia/internal/connector"
@@ -24,12 +25,14 @@ import (
 	"github.com/denerFernandes/vigia/internal/host"
 	"github.com/denerFernandes/vigia/internal/judge"
 	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/vigia/internal/outbox"
 	"github.com/denerFernandes/vigia/internal/owner"
 	"github.com/denerFernandes/vigia/internal/policy"
 	"github.com/denerFernandes/vigia/internal/scheduler"
 	"github.com/denerFernandes/vigia/internal/server"
 	"github.com/denerFernandes/vigia/internal/store"
 	"github.com/denerFernandes/vigia/internal/telegram"
+	"github.com/denerFernandes/vigia/internal/undo"
 	"github.com/denerFernandes/vigia/internal/vault"
 )
 
@@ -57,6 +60,10 @@ type App struct {
 	Scheduler *scheduler.Scheduler
 	Server    *server.Server
 	Policy    policy.Policy
+	Rules     *policy.Engine
+	Approvals *approval.Manager
+	Outbox    *outbox.Outbox
+	Undo      *undo.Undo
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
 	Agent llm.Agent
@@ -75,19 +82,31 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	if err != nil {
 		return nil, err
 	}
-	a := &App{Events: events, Vault: v, Store: st, Policy: policy.Open{}}
+	a := &App{Events: events, Vault: v, Store: st}
+	a.Rules = &policy.Engine{Events: events}
+	a.Policy = a.Rules
 	a.LLM = claude{a}
 	a.Agent = claude{a}
 	set := a.Settings(ctx)
 	zone := loadZone(set.Zone)
 	a.Budget = &budget.Budget{Events: events, Zone: zone}
 	a.Channel = &owner.Channel{Events: events, Bot: a.bot, Handler: handler{a}}
-	env := host.Env{Router: a.router(), Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide)}
+	a.Approvals = &approval.Manager{Events: events, Notify: a.Channel, Describe: describeAction}
+	router := a.router()
+	a.Outbox = &outbox.Outbox{DB: events.DB(), Events: events, Send: func(ctx context.Context, args any) (any, error) { return router.Call(ctx, "gmail.send", "", args) }}
+	if err := a.Outbox.Init(); err != nil {
+		return nil, err
+	}
+	router.Add(a.Outbox)
+	a.Undo = &undo.Undo{Events: events, Outbox: a.Outbox, Mail: a.mailOps}
+	env := host.Env{Router: router, Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide),
+		Approver: approver{a.Approvals}, Remember: a.remember}
 	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone}
 	a.Explore = &explore.Service{Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 2},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
 	a.Server = server.New(events, token)
 	a.routes()
+	a.safetyRoutes()
 	return a, nil
 }
 
@@ -96,6 +115,7 @@ func (a *App) Start(ctx context.Context) error {
 	if err := a.Scheduler.Start(ctx); err != nil {
 		return err
 	}
+	go a.Outbox.Run(ctx, 15*time.Second)
 	a.restartListener(ctx)
 	return nil
 }
@@ -218,7 +238,8 @@ func (m mailConn) Call(ctx context.Context, c, s string, args any) (any, error) 
 	if addr == "" || user == "" {
 		return nil, errors.New("email is not set up; open Connections")
 	}
-	acct := mail.Account{Addr: addr, Username: user, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) { return m.a.secret(ctx, "mail.password") }}
+	smtp, _ := m.a.Events.Get(ctx, "mail.smtp")
+	acct := mail.Account{Addr: addr, Username: user, SMTP: smtp, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) { return m.a.secret(ctx, "mail.password") }}
 	return (&mail.Mail{Account: acct}).Call(ctx, c, s, args)
 }
 
@@ -331,6 +352,12 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 			return "", err
 		}
 		return "Vou refazer com o agente e te mostro.", nil
+	case "approve", "always", "deny":
+		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny}[action]
+		if !h.a.Approvals.Resolve(ctx, id, ans, "human:owner") {
+			return "", fmt.Errorf("este pedido já não está esperando")
+		}
+		return map[string]string{"approve": "Permitido.", "always": "Permitido, e não pergunto mais.", "deny": "Negado."}[action], nil
 	}
 	return "", fmt.Errorf("unknown action %q", action)
 }
@@ -342,3 +369,5 @@ func (a *App) nextText(ctx context.Context, id string) string {
 	}
 	return n.In(loadZone(a.Settings(ctx).Zone)).Format("02/01 15:04")
 }
+
+func budgetCost(usd float64, source string) budget.Cost { return budget.Cost{USD: usd, Source: source} }

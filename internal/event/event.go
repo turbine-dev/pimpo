@@ -203,3 +203,15 @@ func (s *Store) Put(ctx context.Context, key, value string) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, value)
 	return err
 }
+
+// ByID returns one event.
+func (s *Store) ByID(ctx context.Context, id int64) (Event, error) {
+	evs, err := s.List(ctx, Query{After: id - 1, Limit: 1})
+	if err != nil {
+		return Event{}, err
+	}
+	if len(evs) == 0 || evs[0].ID != id {
+		return Event{}, fmt.Errorf("event %d not found", id)
+	}
+	return evs[0], nil
+}

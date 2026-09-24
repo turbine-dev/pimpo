@@ -35,6 +35,8 @@ type Message struct {
 	Labels   []string `json:"labels"`
 	Replied  bool     `json:"replied"`
 	Unread   bool     `json:"unread"`
+	// MessageID survives moves between mailboxes; undo uses it.
+	MessageID string `json:"message_id,omitempty"`
 }
 
 // Account is one IMAP mailbox. Password is resolved from the vault per call.
@@ -42,6 +44,9 @@ type Account struct {
 	Addr     string // host:port, implicit TLS
 	Username string
 	Password func(ctx context.Context) (string, error)
+	// SMTP is where mail is sent, host:port; 465 uses TLS, anything else
+	// STARTTLS. Defaults to smtp.gmail.com:465.
+	SMTP string
 	// Insecure uses plain TCP; only for tests.
 	Insecure bool
 	Now      func() time.Time
@@ -52,7 +57,7 @@ type Mail struct {
 }
 
 func (m *Mail) Capabilities() []string {
-	return []string{"gmail.search", "gmail.archive", "gmail.label"}
+	return []string{"gmail.search", "gmail.archive", "gmail.label", "gmail.trash", "gmail.delete", "gmail.draft", "gmail.send"}
 }
 
 func (m *Mail) Call(ctx context.Context, capability, _ string, args any) (any, error) {
@@ -73,8 +78,31 @@ func (m *Mail) Call(ctx context.Context, capability, _ string, args any) (any, e
 		if err != nil {
 			return nil, err
 		}
-		to, err := m.archive(ctx, id)
-		return map[string]any{"ok": err == nil, "moved_to": to}, err
+		return m.move(ctx, id, archiveBox)
+	case "gmail.trash":
+		id, err := idArg(args)
+		if err != nil {
+			return nil, err
+		}
+		return m.move(ctx, id, trashBox)
+	case "gmail.delete":
+		id, err := idArg(args)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"ok": true}, m.delete(ctx, id)
+	case "gmail.draft", "gmail.send":
+		var o Outgoing
+		if err := connector.Args(args, &o); err != nil {
+			return nil, err
+		}
+		if err := o.validate(); err != nil {
+			return nil, err
+		}
+		if capability == "gmail.draft" {
+			return m.draft(ctx, o)
+		}
+		return m.send(ctx, o)
 	case "gmail.label":
 		var a struct {
 			ID    string `json:"id"`
@@ -86,7 +114,8 @@ func (m *Mail) Call(ctx context.Context, capability, _ string, args any) (any, e
 		if a.Label == "" {
 			return nil, errors.New("label is required")
 		}
-		return map[string]any{"ok": true}, m.label(ctx, a.ID, a.Label)
+		msgID, err := m.label(ctx, a.ID, a.Label)
+		return map[string]any{"ok": err == nil, "label": a.Label, "message_id": msgID}, err
 	}
 	return nil, fmt.Errorf("mail cannot do %s", capability)
 }
@@ -195,6 +224,7 @@ func toMessage(fm *imapclient.FetchMessageBuffer, section *imap.FetchItemBodySec
 	msg := Message{ID: "INBOX/" + strconv.FormatUint(uint64(fm.UID), 10), Labels: []string{"INBOX"}, To: []string{}}
 	if env := fm.Envelope; env != nil {
 		msg.Subject = env.Subject
+		msg.MessageID = env.MessageID
 		if len(env.From) > 0 {
 			msg.From = strings.ToLower(env.From[0].Addr())
 			msg.FromName = env.From[0].Name
@@ -320,38 +350,146 @@ func parseID(id string) (string, imap.UID, error) {
 	return box, imap.UID(u), nil
 }
 
-// archive moves a message out of the inbox: to "[Gmail]/All Mail" on
-// Gmail, to the \Archive mailbox elsewhere. It returns where it went so the
-// move can be undone.
-func (m *Mail) archive(ctx context.Context, id string) (string, error) {
+// move files a message into the mailbox chosen by target: the archive or
+// the trash. The result names the mailbox and the Message-ID so the move
+// can be undone.
+func (m *Mail) move(ctx context.Context, id string, target func(*imapclient.Client) (string, error)) (any, error) {
 	box, uid, err := parseID(id)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	c, err := m.dial(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer c.Close()
-	target, err := archiveBox(c)
+	dest, err := target(c)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if _, err := c.Select(box, nil).Wait(); err != nil {
-		return "", err
+		return nil, err
 	}
-	if _, err := c.Move(imap.UIDSetNum(uid), target).Wait(); err != nil {
-		return "", fmt.Errorf("archive %s: %w", id, err)
+	msgID := messageID(c, uid)
+	if _, err := c.Move(imap.UIDSetNum(uid), dest).Wait(); err != nil {
+		return nil, fmt.Errorf("move %s to %s: %w", id, dest, err)
 	}
-	return target, nil
+	return map[string]any{"ok": true, "moved_to": dest, "message_id": msgID}, nil
 }
 
-func archiveBox(c *imapclient.Client) (string, error) {
+func messageID(c *imapclient.Client, uid imap.UID) string {
+	msgs, err := c.Fetch(imap.UIDSetNum(uid), &imap.FetchOptions{Envelope: true}).Collect()
+	if err != nil || len(msgs) == 0 || msgs[0].Envelope == nil {
+		return ""
+	}
+	return msgs[0].Envelope.MessageID
+}
+
+func specialBox(c *imapclient.Client, attr imap.MailboxAttr, names ...string) (string, error) {
 	boxes, err := c.List("", "*", &imap.ListOptions{ReturnSpecialUse: true}).Collect()
 	if err != nil {
 		return "", err
 	}
-	for _, want := range []imap.MailboxAttr{imap.MailboxAttrArchive, imap.MailboxAttrAll} {
+	for _, b := range boxes {
+		for _, a := range b.Attrs {
+			if a == attr {
+				return b.Mailbox, nil
+			}
+		}
+	}
+	for _, n := range names {
+		for _, b := range boxes {
+			if strings.EqualFold(b.Mailbox, n) {
+				return b.Mailbox, nil
+			}
+		}
+	}
+	if err := c.Create(names[len(names)-1], nil).Wait(); err != nil {
+		return "", err
+	}
+	return names[len(names)-1], nil
+}
+
+func trashBox(c *imapclient.Client) (string, error) {
+	return specialBox(c, imap.MailboxAttrTrash, "[Gmail]/Trash", "[Gmail]/Lixeira", "Trash")
+}
+
+func draftsBox(c *imapclient.Client) (string, error) {
+	return specialBox(c, imap.MailboxAttrDrafts, "[Gmail]/Drafts", "[Gmail]/Rascunhos", "Drafts")
+}
+
+// delete removes a message for good.
+func (m *Mail) delete(ctx context.Context, id string) error {
+	box, uid, err := parseID(id)
+	if err != nil {
+		return err
+	}
+	c, err := m.dial(ctx)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	if _, err := c.Select(box, nil).Wait(); err != nil {
+		return err
+	}
+	if err := c.Store(imap.UIDSetNum(uid), &imap.StoreFlags{Op: imap.StoreFlagsAdd, Silent: true, Flags: []imap.Flag{imap.FlagDeleted}}, nil).Close(); err != nil {
+		return err
+	}
+	return c.UIDExpunge(imap.UIDSetNum(uid)).Close()
+}
+
+// Restore moves a message found by Message-ID from a mailbox back to the
+// inbox. It undoes archive and trash.
+func (m *Mail) Restore(ctx context.Context, from, msgID string) error {
+	return m.withMessage(ctx, from, msgID, func(c *imapclient.Client, uid imap.UID) error {
+		_, err := c.Move(imap.UIDSetNum(uid), "INBOX").Wait()
+		return err
+	})
+}
+
+// Remove deletes the copy of a message in one mailbox, e.g. a label copy
+// or a draft. It undoes label and draft.
+func (m *Mail) Remove(ctx context.Context, from, msgID string) error {
+	return m.withMessage(ctx, from, msgID, func(c *imapclient.Client, uid imap.UID) error {
+		if err := c.Store(imap.UIDSetNum(uid), &imap.StoreFlags{Op: imap.StoreFlagsAdd, Silent: true, Flags: []imap.Flag{imap.FlagDeleted}}, nil).Close(); err != nil {
+			return err
+		}
+		return c.UIDExpunge(imap.UIDSetNum(uid)).Close()
+	})
+}
+
+func (m *Mail) withMessage(ctx context.Context, box, msgID string, fn func(*imapclient.Client, imap.UID) error) error {
+	if msgID == "" {
+		return errors.New("this message has no Message-ID, so it cannot be found again")
+	}
+	c, err := m.dial(ctx)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	if _, err := c.Select(box, nil).Wait(); err != nil {
+		return err
+	}
+	data, err := c.UIDSearch(&imap.SearchCriteria{Header: []imap.SearchCriteriaHeaderField{{Key: "Message-Id", Value: msgID}}}, nil).Wait()
+	if err != nil {
+		return err
+	}
+	uids := data.AllUIDs()
+	if len(uids) == 0 {
+		return fmt.Errorf("the message is no longer in %s", box)
+	}
+	return fn(c, uids[0])
+}
+
+func archiveBox(c *imapclient.Client) (string, error) {
+	if box, err := specialBoxIfExists(c, imap.MailboxAttrArchive); err == nil && box != "" {
+		return box, nil
+	}
+	boxes, err := c.List("", "*", &imap.ListOptions{ReturnSpecialUse: true}).Collect()
+	if err != nil {
+		return "", err
+	}
+	for _, want := range []imap.MailboxAttr{imap.MailboxAttrAll} {
 		for _, b := range boxes {
 			for _, a := range b.Attrs {
 				if a == want {
@@ -371,16 +509,31 @@ func archiveBox(c *imapclient.Client) (string, error) {
 	return "Archive", nil
 }
 
+func specialBoxIfExists(c *imapclient.Client, attr imap.MailboxAttr) (string, error) {
+	boxes, err := c.List("", "*", &imap.ListOptions{ReturnSpecialUse: true}).Collect()
+	if err != nil {
+		return "", err
+	}
+	for _, b := range boxes {
+		for _, a := range b.Attrs {
+			if a == attr {
+				return b.Mailbox, nil
+			}
+		}
+	}
+	return "", nil
+}
+
 // label files a copy under a mailbox named after the label. On Gmail a
 // mailbox is a label, so this applies the label without moving the message.
-func (m *Mail) label(ctx context.Context, id, label string) error {
+func (m *Mail) label(ctx context.Context, id, label string) (string, error) {
 	box, uid, err := parseID(id)
 	if err != nil {
-		return err
+		return "", err
 	}
 	c, err := m.dial(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer c.Close()
 	exists := false
@@ -388,12 +541,13 @@ func (m *Mail) label(ctx context.Context, id, label string) error {
 	exists = len(boxes) > 0
 	if !exists {
 		if err := c.Create(label, nil).Wait(); err != nil {
-			return err
+			return "", err
 		}
 	}
 	if _, err := c.Select(box, nil).Wait(); err != nil {
-		return err
+		return "", err
 	}
+	msgID := messageID(c, uid)
 	_, err = c.Copy(imap.UIDSetNum(uid), label).Wait()
-	return err
+	return msgID, err
 }

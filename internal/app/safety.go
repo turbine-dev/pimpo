@@ -1,0 +1,300 @@
+package app
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/denerFernandes/vigia/internal/approval"
+	"github.com/denerFernandes/vigia/internal/capability"
+	"github.com/denerFernandes/vigia/internal/connector/mail"
+	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/vigia/internal/host"
+	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/vigia/internal/policy"
+	"github.com/denerFernandes/vigia/internal/server"
+	"github.com/denerFernandes/vigia/internal/undo"
+)
+
+// approver adapts the approval manager to the host.
+type approver struct{ m *approval.Manager }
+
+func (a approver) Ask(ctx context.Context, act policy.Action, reason string) (bool, error) {
+	ans, err := a.m.Ask(ctx, act, reason)
+	return ans == approval.Always, err
+}
+
+// remember turns "always" into a lasting permission: a known host for web
+// reads, a specific rule for everything else.
+func (a *App) remember(ctx context.Context, act policy.Action) {
+	if act.Capability == "http.getJSON" && act.Scope != "" {
+		a.Rules.AllowHost(ctx, act.Scope, true, "human:owner")
+		return
+	}
+	rule := policy.AllowAlways(act)
+	rules := a.Rules.Rules(ctx)
+	for _, r := range rules {
+		if r.ID == rule.ID {
+			return
+		}
+	}
+	a.Rules.SaveRules(ctx, append(rules, rule), "human:owner")
+}
+
+// describeAction is the sentence shown in approval requests.
+func describeAction(act policy.Action) string {
+	args, _ := act.Args.(map[string]any)
+	str := func(k string) string { s, _ := args[k].(string); return s }
+	who := strings.TrimPrefix(strings.SplitN(act.Source, "#", 2)[0], "routine:")
+	switch act.Capability {
+	case "gmail.send":
+		return fmt.Sprintf("%s quer enviar um e-mail para %v: “%s”", who, args["to"], str("subject"))
+	case "gmail.delete":
+		return fmt.Sprintf("%s quer apagar para sempre um e-mail (%s)", who, str("id"))
+	case "gmail.trash":
+		return fmt.Sprintf("%s quer mover um e-mail para a lixeira (%s)", who, str("id"))
+	case "gmail.archive":
+		return fmt.Sprintf("%s quer arquivar um e-mail (%s)", who, str("id"))
+	case "http.getJSON":
+		return fmt.Sprintf("%s quer consultar %s pela primeira vez", who, act.Scope)
+	}
+	return fmt.Sprintf("%s quer usar %s", who, act.Capability)
+}
+
+func (a *App) mailOps(ctx context.Context) (undo.Mail, error) {
+	addr, _ := a.Events.Get(ctx, "mail.addr")
+	user, _ := a.Events.Get(ctx, "mail.user")
+	if addr == "" || user == "" {
+		return nil, fmt.Errorf("email is not set up; open Connections")
+	}
+	smtp, _ := a.Events.Get(ctx, "mail.smtp")
+	return &mail.Mail{Account: mail.Account{Addr: addr, Username: user, SMTP: smtp, Insecure: a.MailInsecure,
+		Password: func(ctx context.Context) (string, error) { return a.secret(ctx, "mail.password") }}}, nil
+}
+
+func (a *App) safetyRoutes() {
+	s := a.Server
+	s.Handle("GET /api/receipts", a.receipts)
+	s.Handle("POST /api/actions/{id}/undo", a.undoAction)
+	s.Handle("GET /api/approvals", func(w http.ResponseWriter, r *http.Request) { server.WriteJSON(w, 200, a.Approvals.Open()) })
+	s.Handle("POST /api/approvals/{id}/{answer}", a.answerApproval)
+	s.Handle("GET /api/rules", func(w http.ResponseWriter, r *http.Request) { server.WriteJSON(w, 200, a.Rules.Rules(r.Context())) })
+	s.Handle("PUT /api/rules", a.putRules)
+	s.Handle("POST /api/rules/compile", a.compileRule)
+	s.Handle("POST /api/rules/test", a.testRule)
+	s.Handle("GET /api/cost", a.cost)
+}
+
+type receipt struct {
+	event.Event
+	Action    host.ActionRecord `json:"action"`
+	Undoable  bool              `json:"undoable"`
+	UndoUntil time.Time         `json:"undo_until,omitzero"`
+	Undone    bool              `json:"undone"`
+}
+
+func (a *App) receipts(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	limit := 200
+	if l, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && l > 0 && l <= 1000 {
+		limit = l
+	}
+	evs, err := a.Events.List(ctx, event.Query{Types: []string{host.ActionEvent}, Newest: true, Limit: limit, Search: r.URL.Query().Get("q")})
+	if err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	undone := map[int64]bool{}
+	ups, _ := a.Events.List(ctx, event.Query{Types: []string{undo.EventUndone}})
+	for _, u := range ups {
+		var d struct {
+			Action int64 `json:"action"`
+		}
+		u.Decode(&d)
+		undone[d.Action] = true
+	}
+	out := make([]receipt, 0, len(evs))
+	for _, e := range evs {
+		var rec host.ActionRecord
+		e.Decode(&rec)
+		var result map[string]any
+		json.Unmarshal(rec.Result, &result)
+		ok, until := undo.Plan(rec, result)
+		if !until.IsZero() && time.Now().After(until) {
+			ok = false
+		}
+		out = append(out, receipt{Event: e, Action: rec, Undoable: ok && !undone[e.ID], UndoUntil: until, Undone: undone[e.ID]})
+	}
+	server.WriteJSON(w, 200, out)
+}
+
+func (a *App) undoAction(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "bad id"})
+		return
+	}
+	if err := a.Undo.Undo(r.Context(), id, "human:owner"); err != nil {
+		server.WriteError(w, server.StatusError{Status: 409, Msg: err.Error()})
+		return
+	}
+	server.WriteJSON(w, 200, map[string]string{"state": "undone"})
+}
+
+func (a *App) answerApproval(w http.ResponseWriter, r *http.Request) {
+	ans := approval.Answer(r.PathValue("answer"))
+	if ans != approval.Once && ans != approval.Always && ans != approval.Deny {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "answer must be once, always or deny"})
+		return
+	}
+	if !a.Approvals.Resolve(r.Context(), r.PathValue("id"), ans, "human:owner") {
+		server.WriteError(w, server.StatusError{Status: 410, Msg: "this request is no longer waiting"})
+		return
+	}
+	server.WriteJSON(w, 200, map[string]string{"answer": string(ans)})
+}
+
+func (a *App) putRules(w http.ResponseWriter, r *http.Request) {
+	var rules []policy.Rule
+	if err := server.Decode(r, &rules); err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	if err := a.Rules.SaveRules(r.Context(), rules, "human:owner"); err != nil {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+		return
+	}
+	server.WriteJSON(w, 200, rules)
+}
+
+var ruleSchema = json.RawMessage(`{"type":"object","required":["when","then","summary"],"additionalProperties":false,"properties":{
+ "summary":{"type":"string","description":"one short sentence restating the rule in the owner's language"},
+ "then":{"type":"string","enum":["allow","reversible","ask","block"]},
+ "when":{"type":"object","additionalProperties":false,"properties":{
+  "capabilities":{"type":"array","items":{"type":"string"}},
+  "min_risk":{"type":"string","enum":["","read","notify","reversible","irreversible"]},
+  "source":{"type":"string"},
+  "args_contain":{"type":"array","items":{"type":"string"}},
+  "hosts":{"type":"array","items":{"type":"string"}}}}}}`)
+
+// compileRule turns the owner's sentence into a structured rule. Only the
+// structured rule is ever enforced, and the owner confirms it first.
+func (a *App) compileRule(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	var req struct {
+		Text string `json:"text"`
+	}
+	if err := server.Decode(r, &req); err != nil || strings.TrimSpace(req.Text) == "" {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "write the rule in a sentence"})
+		return
+	}
+	if err := a.Budget.Check(ctx); err != nil {
+		server.WriteError(w, server.StatusError{Status: 402, Msg: err.Error()})
+		return
+	}
+	var caps strings.Builder
+	for _, n := range capability.Names() {
+		fmt.Fprintf(&caps, "- %s (%s): %s\n", n, capability.Catalog[n].Risk, capability.Catalog[n].Signature)
+	}
+	routines, _ := a.Store.Routines(ctx)
+	var names []string
+	for _, rt := range routines {
+		names = append(names, "routine:"+rt.ID+" ("+rt.Body.Name+")")
+	}
+	resp, err := a.LLM.Generate(ctx, llm.Request{
+		System: "You turn an owner's sentence into one rule for Vigia's policy engine. Decisions: allow (just do it), reversible (do it but keep it undoable), ask (ask the owner first), block (never). Match as narrowly as the sentence says; leave fields empty to match everything. source is \"routine:<id>\" or \"exploration\"; risk levels are read < notify < reversible < irreversible.",
+		Prompt: "Capabilities:\n" + caps.String() + "\nRoutines: " + strings.Join(names, ", ") + "\n\nThe owner wrote: " + req.Text,
+		Schema: ruleSchema, Model: a.Settings(ctx).JudgeModel, MaxCostUSD: 0.2,
+	})
+	a.Budget.Record(ctx, budgetCost(resp.CostUSD, "rule"))
+	if err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	var out struct {
+		Summary string         `json:"summary"`
+		Then    policy.Verdict `json:"then"`
+		When    policy.When    `json:"when"`
+	}
+	json.Unmarshal(resp.Structured, &out)
+	rule := policy.Rule{ID: "r-" + strconv.FormatInt(time.Now().UnixNano()%1e10, 36), Text: req.Text, When: out.When, Then: out.Then}
+	if err := rule.Validate(); err != nil {
+		server.WriteError(w, server.StatusError{Status: 422, Msg: "I could not turn that into a rule I can enforce: " + err.Error()})
+		return
+	}
+	server.WriteJSON(w, 200, map[string]any{"rule": rule, "summary": out.Summary})
+}
+
+// testRule shows what a rule would have changed over the last week.
+func (a *App) testRule(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	var rule policy.Rule
+	if err := server.Decode(r, &rule); err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	if err := rule.Validate(); err != nil {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+		return
+	}
+	evs, _ := a.Events.List(ctx, event.Query{Types: []string{host.ActionEvent}, Newest: true, Limit: 1000})
+	since := time.Now().Add(-7 * 24 * time.Hour)
+	test := &policy.Engine{Events: a.Events}
+	var hits []map[string]any
+	for _, e := range evs {
+		if e.Time.Before(since) {
+			continue
+		}
+		var rec host.ActionRecord
+		e.Decode(&rec)
+		act := policy.Action{Capability: rec.Capability, Scope: rec.Scope, Args: rec.Args, Risk: capability.Catalog[rec.Capability].Risk, Source: rec.Source}
+		if test.Matches(rule, act) {
+			hits = append(hits, map[string]any{"event": e.ID, "ts": e.Time, "source": rec.Source, "capability": rec.Capability, "was": rec.Verdict, "would_be": rule.Then})
+		}
+	}
+	if hits == nil {
+		hits = []map[string]any{}
+	}
+	server.WriteJSON(w, 200, map[string]any{"matches": hits})
+}
+
+func (a *App) cost(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	zone := loadZone(a.Settings(ctx).Zone)
+	now := time.Now().In(zone)
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, zone)
+	evs, _ := a.Events.List(ctx, event.Query{Types: []string{"cost.recorded"}})
+	byDay := map[string]float64{}
+	bySource := map[string]float64{}
+	month := 0.0
+	for _, e := range evs {
+		if e.Time.Before(monthStart) {
+			continue
+		}
+		var c struct {
+			USD    float64 `json:"usd"`
+			Source string  `json:"source"`
+			Ref    string  `json:"ref"`
+		}
+		e.Decode(&c)
+		month += c.USD
+		byDay[e.Time.In(zone).Format("2006-01-02")] += c.USD
+		key := c.Source
+		if strings.HasPrefix(c.Ref, "routine:") {
+			key = strings.SplitN(c.Ref, "#", 2)[0]
+		}
+		bySource[key] += c.USD
+	}
+	days := float64(now.Day())
+	daysInMonth := float64(time.Date(now.Year(), now.Month()+1, 0, 0, 0, 0, 0, zone).Day())
+	spent, _ := a.Budget.Today(ctx)
+	server.WriteJSON(w, 200, map[string]any{
+		"today": spent, "limit": a.Budget.Limit(ctx), "month": month,
+		"projected_month": month / days * daysInMonth,
+		"by_day":          byDay, "by_source": bySource,
+	})
+}

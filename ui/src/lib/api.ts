@@ -64,6 +64,11 @@ export type AppState = { budget: { spent: number; limit: number }; healthy: bool
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string }
 export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; explore_model: string; compile_model: string; judge_model: string }
 
+export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: string; approved?: string }; undoable: boolean; undo_until?: string; undone: boolean }
+export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string }
+export type Rule = { id: string; text: string; when: { capabilities?: string[]; min_risk?: string; source?: string; args_contain?: string[]; hosts?: string[] }; then: 'allow' | 'reversible' | 'ask' | 'block'; off?: boolean }
+export type CostView = { today: number; limit: number; month: number; projected_month: number; by_day: Record<string, number>; by_source: Record<string, number> }
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -97,6 +102,15 @@ export const api = {
     if (q.limit) p.set('limit', String(q.limit))
     return request<VEvent[]>('GET', `/api/events?${p}`)
   },
+  receipts: (q?: string) => request<Receipt[]>('GET', `/api/receipts${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  undo: (id: number) => request<void>('POST', `/api/actions/${id}/undo`),
+  approvals: () => request<Approval[]>('GET', '/api/approvals'),
+  answer: (id: string, answer: 'once' | 'always' | 'deny') => request<void>('POST', `/api/approvals/${id}/${answer}`),
+  rules: () => request<Rule[]>('GET', '/api/rules'),
+  saveRules: (rules: Rule[]) => request<Rule[]>('PUT', '/api/rules', rules),
+  compileRule: (text: string) => request<{ rule: Rule; summary: string }>('POST', '/api/rules/compile', { text }),
+  testRule: (rule: Rule) => request<{ matches: { event: number; ts: string; source: string; capability: string; was: string; would_be: string }[] }>('POST', '/api/rules/test', rule),
+  cost: () => request<CostView>('GET', '/api/cost'),
   settings: () => request<Settings>('GET', '/api/settings'),
   saveSettings: (s: Settings) => request<Settings>('PUT', '/api/settings', s),
   setBudget: (daily_usd: number) => request<void>('PUT', '/api/budget', { daily_usd }),

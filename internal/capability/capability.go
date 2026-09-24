@@ -50,6 +50,10 @@ func init() {
 		{Name: "gmail.search", Risk: Read, Signature: "gmail.search({query, days, unread, max})", Returns: "[{id, from, from_name, to, subject, snippet, date, labels: [string], replied: bool}] newest first; query uses Gmail search syntax"},
 		{Name: "gmail.archive", Risk: Reversible, Signature: "gmail.archive({id})", Returns: "{ok}"},
 		{Name: "gmail.label", Risk: Reversible, Signature: "gmail.label({id, label})", Returns: "{ok}"},
+		{Name: "gmail.trash", Risk: Reversible, Signature: "gmail.trash({id})", Returns: "{ok}; moves the message to Trash, where it can be restored"},
+		{Name: "gmail.delete", Risk: Irreversible, Signature: "gmail.delete({id})", Returns: "{ok}; deletes the message permanently"},
+		{Name: "gmail.draft", Risk: Reversible, Signature: "gmail.draft({to, subject, body})", Returns: "{ok}; saves a draft without sending"},
+		{Name: "gmail.send", Risk: Irreversible, Signature: "gmail.send({to, subject, body})", Returns: "{ok}; sends an email to someone else"},
 		{Name: "http.getJSON", Risk: Read, Signature: "http.getJSON(url)", Returns: "the parsed JSON body; only hosts named in the manifest scope are reachable", Scoped: true},
 		{Name: "telegram.send", Risk: Notify, Signature: "telegram.send({text})", Returns: "{ok}; sends a message to the owner only"},
 	} {

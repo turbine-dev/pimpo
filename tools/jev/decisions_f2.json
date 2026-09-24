@@ -1,0 +1,49 @@
+{
+ "model": "jev-1.13.0",
+ "answers": {
+  "approval_wait": {
+   "type": "choice",
+   "choice": "block_wait",
+   "confidence": 0.94,
+   "probabilities": {
+    "queue_all": 0.04,
+    "block_wait": 0.96,
+    "skip_continue": 0.0
+   }
+  },
+  "default_preset": {
+   "type": "choice",
+   "choice": "balanced",
+   "confidence": 0.8,
+   "probabilities": {
+    "liberal": 0.0,
+    "conservative": 0.13,
+    "balanced": 0.87
+   }
+  },
+  "unknown_hosts": {
+   "type": "choice",
+   "choice": "ask",
+   "confidence": 0.67,
+   "probabilities": {
+    "block": 0.21,
+    "allow": 0.01,
+    "ask": 0.78
+   }
+  },
+  "rules_format": {
+   "type": "choice",
+   "choice": "nl_compiled",
+   "confidence": 0.39,
+   "probabilities": {
+    "both": 0.32,
+    "nl_compiled": 0.59,
+    "form": 0.09
+   }
+  }
+ },
+ "usage": {
+  "input_tokens": 1110,
+  "output_tokens": 159
+ }
+}
