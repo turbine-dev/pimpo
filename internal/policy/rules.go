@@ -165,7 +165,10 @@ func Presets() map[string][]Rule {
 }
 
 // alwaysAsk lists capabilities no rule may let through unasked.
-var alwaysAsk = map[string]bool{"whatsapp.send_to": true}
+var alwaysAsk = map[string]string{
+	"whatsapp.send_to": "messages to other people on WhatsApp always wait for approval",
+	"ha.critical":      "locks, alarms, covers and valves always wait for approval",
+}
 
 // strength orders verdicts: when several rules match, the strictest wins.
 var strength = map[Verdict]int{Allow: 0, Reversible: 1, Ask: 2, Block: 3}
@@ -240,8 +243,8 @@ func (e *Engine) hosts(ctx context.Context) map[string]bool {
 // guest's request never changes anything without the responsible person.
 func (e *Engine) Decide(ctx context.Context, a Action) Decision {
 	d := e.decide(ctx, a)
-	if alwaysAsk[a.Capability] && strength[d.Verdict] < strength[Ask] {
-		return Decision{Verdict: Ask, Reason: "messages to other people on WhatsApp always wait for approval"}
+	if why := alwaysAsk[a.Capability]; why != "" && strength[d.Verdict] < strength[Ask] {
+		return Decision{Verdict: Ask, Reason: why}
 	}
 	if role(a) == "guest" && a.Risk >= capability.Reversible && strength[d.Verdict] < strength[Ask] {
 		return Decision{Verdict: Ask, Reason: "guests' requests wait for the person responsible"}
@@ -254,7 +257,7 @@ func (e *Engine) decide(ctx context.Context, a Action) Decision {
 	if a.Risk == capability.Reversible {
 		d = Decision{Verdict: Reversible, Reason: "reversible changes stay undoable"}
 	}
-	if a.Capability == "http.getJSON" && a.Scope != "" {
+	if a.Scope != "" {
 		switch allowed, known := e.hosts(ctx)[strings.ToLower(a.Scope)]; {
 		case known && !allowed:
 			return Decision{Verdict: Block, Reason: "you said no to " + a.Scope}

@@ -1,0 +1,19 @@
+{
+  "name": "tides",
+  "description": "Tábua de marés de um porto (exemplo de conector externo).",
+  "command": "python3",
+  "args": ["server.py"],
+  "env": [],
+  "capabilities": [
+    {
+      "name": "tides.today",
+      "risk": "read",
+      "signature": "tides.today({port})",
+      "returns": "[{port, time, height_m, kind}] today's high and low tides",
+      "schema": {"type": "object", "required": ["port"], "properties": {"port": {"type": "string"}}}
+    }
+  ],
+  "contract": [
+    {"capability": "tides.today", "args": {"port": "Santos"}, "keys": ["port", "time", "height_m", "kind"]}
+  ]
+}

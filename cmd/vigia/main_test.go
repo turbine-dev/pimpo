@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -65,6 +66,16 @@ func TestMigrateDryRunTouchesNothing(t *testing.T) {
 func TestStarterGalleryVerifies(t *testing.T) {
 	var out strings.Builder
 	if err := galleryVerify("../../gallery/index.json", &out); err != nil {
+		t.Fatalf("%v\n%s", err, out.String())
+	}
+}
+
+func TestExampleConnectorPassesItsContract(t *testing.T) {
+	if _, err := exec.LookPath("python3"); err != nil {
+		t.Skip("python3 not installed")
+	}
+	var out strings.Builder
+	if err := connectorCmd([]string{"check", "../../examples/connectors/tides"}, &out); err != nil {
 		t.Fatalf("%v\n%s", err, out.String())
 	}
 }

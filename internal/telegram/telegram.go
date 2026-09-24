@@ -29,6 +29,11 @@ type Button struct {
 type Message struct {
 	ID   int64  `json:"message_id"`
 	Text string `json:"text"`
+	// Voice is set for voice notes.
+	Voice *struct {
+		FileID   string `json:"file_id"`
+		Duration int    `json:"duration"`
+	} `json:"voice,omitempty"`
 	Chat struct {
 		ID int64 `json:"id"`
 	} `json:"chat"`
@@ -127,6 +132,37 @@ func (b Bot) Edit(ctx context.Context, chat, message int64, text string) error {
 
 func (b Bot) Answer(ctx context.Context, callbackID, text string) error {
 	return b.call(ctx, "answerCallbackQuery", map[string]any{"callback_query_id": callbackID, "text": text}, nil)
+}
+
+// Download fetches a file someone sent, such as a voice note, up to 20 MB.
+func (b Bot) Download(ctx context.Context, fileID string) ([]byte, error) {
+	var f struct {
+		Path string `json:"file_path"`
+	}
+	if err := b.call(ctx, "getFile", map[string]any{"file_id": fileID}, &f); err != nil {
+		return nil, err
+	}
+	base := b.BaseURL
+	if base == "" {
+		base = "https://api.telegram.org"
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/file/bot"+b.Token+"/"+f.Path, nil)
+	if err != nil {
+		return nil, err
+	}
+	client := b.HTTP
+	if client == nil {
+		client = &http.Client{Timeout: 70 * time.Second}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, errors.New("telegram file download failed")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("telegram file download: %s", resp.Status)
+	}
+	return io.ReadAll(io.LimitReader(resp.Body, 20<<20))
 }
 
 // Poll long-polls for updates and calls handle for each until ctx ends.

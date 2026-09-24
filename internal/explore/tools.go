@@ -44,6 +44,9 @@ func tools(h *host.Host, mem *memory.Memory) []mcp.Tool {
 		}
 		schema := schemas[name]
 		if schema == "" {
+			schema = spec.Schema
+		}
+		if schema == "" {
 			schema = `{"type":"object"}`
 		}
 		out = append(out, mcp.Tool{Name: toolName(name), Description: desc, InputSchema: json.RawMessage(schema),
@@ -58,6 +61,9 @@ func tools(h *host.Host, mem *memory.Memory) []mcp.Tool {
 				if name == "http.getJSON" {
 					url, _ := args["url"].(string)
 					callArgs = url
+					scope = hostOf(url)
+				} else if spec.ScopeArg != "" {
+					url, _ := args[spec.ScopeArg].(string)
 					scope = hostOf(url)
 				}
 				return h.Call(ctx, name, scope, callArgs)

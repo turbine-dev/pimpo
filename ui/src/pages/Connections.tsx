@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bot, CalendarDays, Check, Cpu, Mail, MessageCircle, Sparkles } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { Button, Card } from '../components/ui'
+import { Catalog } from '../components/Catalog'
 import { api, type Connection } from '../lib/api'
 import { cn } from '../lib/cn'
 
@@ -74,6 +75,7 @@ export function Connections() {
           </div>
         </Card>
       </div>
+      <Catalog />
     </div>
   )
 }

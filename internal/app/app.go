@@ -17,7 +17,9 @@ import (
 	"github.com/denerFernandes/vigia/internal/compiler"
 	"github.com/denerFernandes/vigia/internal/connector"
 	"github.com/denerFernandes/vigia/internal/connector/calendar"
+	"github.com/denerFernandes/vigia/internal/connector/external"
 	"github.com/denerFernandes/vigia/internal/connector/mail"
+	"github.com/denerFernandes/vigia/internal/connector/services"
 	"github.com/denerFernandes/vigia/internal/connector/telegramcap"
 	"github.com/denerFernandes/vigia/internal/connector/web"
 	"github.com/denerFernandes/vigia/internal/event"
@@ -38,6 +40,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/telegram"
 	"github.com/denerFernandes/vigia/internal/undo"
 	"github.com/denerFernandes/vigia/internal/vault"
+	"github.com/denerFernandes/vigia/internal/voice"
 )
 
 type Settings struct {
@@ -52,6 +55,9 @@ type Settings struct {
 	JudgeModel    string `json:"judge_model"`
 	// GalleryURL is the routine gallery index; a local path works too.
 	GalleryURL string `json:"gallery_url"`
+	// EmailChannel lets the owner ask by writing to themselves with
+	// "Vigia:" in the subject.
+	EmailChannel bool `json:"email_channel"`
 }
 
 func defaultSettings() Settings {
@@ -82,6 +88,8 @@ type App struct {
 	TelegramAPI string
 	// WhatsAppAPI replaces the Graph API; tests only.
 	WhatsAppAPI string
+	// VoiceModel is the whisper.cpp model used for voice notes.
+	VoiceModel string
 	// MailInsecure uses plain IMAP; tests only.
 	MailInsecure bool
 	// Router is shared by every run; the demo swaps connectors in it.
@@ -89,8 +97,10 @@ type App struct {
 	// DemoJudge replaces the judgment backends in demo mode.
 	DemoJudge judge.Judge
 
-	mu       sync.Mutex
-	listenFn context.CancelFunc
+	mu           sync.Mutex
+	listenFn     context.CancelFunc
+	external     map[string]*external.Connector
+	externalErrs []string
 }
 
 // New assembles an App on top of an open event store.
@@ -111,6 +121,9 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.People = &people.Directory{Events: events, OwnerChat: a.Channel.Chat, OwnerWhatsApp: a.ownerWhatsApp}
 	a.Channel.People = a.People
 	a.Channel.Mirror = a.mirrorWhatsApp
+	a.Channel.Transcribe = func(ctx context.Context, audio []byte) (string, error) {
+		return voice.Whisper{Model: a.VoiceModel, Language: strings.SplitN(a.Settings(ctx).Locale, "-", 2)[0]}.Transcribe(ctx, audio)
+	}
 	a.Approvals = &approval.Manager{Events: events, Notify: a.Channel, Describe: describeAction, Responsible: func(ctx context.Context, person string) (string, string) {
 		asker, _ := a.People.Get(ctx, person)
 		return a.People.Responsible(ctx, person).ID, asker.Name
@@ -139,6 +152,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.peopleRoutes()
 	a.whatsappRoutes()
 	a.galleryRoutes()
+	a.catalogRoutes()
 	return a, nil
 }
 
@@ -148,6 +162,7 @@ func (a *App) Start(ctx context.Context) error {
 		return err
 	}
 	go a.Outbox.Run(ctx, 15*time.Second)
+	go a.emailChannel(ctx, time.Minute)
 	a.restartListener(ctx)
 	return nil
 }
@@ -240,13 +255,17 @@ func (a *App) router() *connector.Router {
 		}
 		return urls, nil
 	}}
-	return connector.NewRouter(
+	r := connector.NewRouter(
 		zoned{a, cal},
 		mailConn{a},
 		&web.Web{},
 		&telegramcap.Owner{Bot: botSender{a}, Chat: a.personChat},
 		whatsappCap{a},
 	)
+	for _, k := range services.All() {
+		r.Add(k.Connector(a.catalogConfig))
+	}
+	return r
 }
 
 // personChat is the Telegram chat of whoever the run works for.
