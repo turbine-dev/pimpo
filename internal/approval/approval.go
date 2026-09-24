@@ -37,11 +37,13 @@ var ErrDenied = errors.New("the owner said no")
 var ErrExpired = errors.New("no answer in time")
 
 type Request struct {
-	ID      string        `json:"id"`
-	Action  policy.Action `json:"action"`
-	Text    string        `json:"text"`
-	Reason  string        `json:"reason"`
-	Created time.Time     `json:"created"`
+	ID     string        `json:"id"`
+	Action policy.Action `json:"action"`
+	Text   string        `json:"text"`
+	Reason string        `json:"reason"`
+	// Responsible is the person who may answer; empty is the owner.
+	Responsible string    `json:"responsible,omitempty"`
+	Created     time.Time `json:"created"`
 }
 
 type Manager struct {
@@ -51,6 +53,9 @@ type Manager struct {
 	Timeout time.Duration
 	// Describe turns an action into the sentence shown to the owner.
 	Describe func(policy.Action) string
+	// Responsible names who answers for a person's requests; nil means
+	// the owner answers everything.
+	Responsible func(ctx context.Context, person string) (id, name string)
 
 	mu      sync.Mutex
 	pending map[string]chan Answer
@@ -93,6 +98,13 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 		text = m.Describe(a)
 	}
 	req := Request{ID: id, Action: a, Text: text, Reason: reason, Created: time.Now()}
+	asker := ""
+	if m.Responsible != nil && a.Person != "" && a.Person != "owner" {
+		req.Responsible, asker = m.Responsible(ctx, a.Person)
+		if req.Responsible == "owner" {
+			req.Responsible = ""
+		}
+	}
 	ch := make(chan Answer, 1)
 	m.mu.Lock()
 	if m.pending == nil {
@@ -112,6 +124,9 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 		icon = "🔴"
 	}
 	body := fmt.Sprintf("%s Posso fazer isto?\n%s\n\nRegra: %s", icon, text, reason)
+	if asker != "" {
+		body = fmt.Sprintf("%s Pedido de %s. Posso fazer isto?\n%s\n\nRegra: %s", icon, asker, text, reason)
+	}
 	if suggest {
 		body += "\n\nVocê já permitiu isto 3 vezes. Quer que eu não pergunte mais?"
 	}
@@ -119,6 +134,7 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 		Text: body,
 		Actions: []explore.Action{{Label: "Permitir", Data: "approve:" + id}, {Label: "Todos desta vez", Data: "batch:" + id},
 			{Label: "Sempre", Data: "always:" + id}, {Label: "Negar", Data: "deny:" + id}},
+		To: req.Responsible,
 	})
 	timeout := m.Timeout
 	if timeout == 0 {
@@ -166,6 +182,18 @@ func (m *Manager) Resolve(ctx context.Context, id string, ans Answer, actor stri
 	m.Events.Append(ctx, EventResolved, actor, map[string]string{"id": id, "answer": string(ans)})
 	ch <- ans
 	return true
+}
+
+// MayAnswer reports whether a person may answer a waiting request: the
+// owner always, anyone else only for requests they are responsible for.
+func (m *Manager) MayAnswer(id, person string) bool {
+	if person == "" || person == "owner" {
+		return true
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	r, ok := m.open[id]
+	return ok && r.Responsible == person
 }
 
 // Suggest reports whether the owner keeps approving this kind of action.

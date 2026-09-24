@@ -16,6 +16,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/connector"
 	"github.com/denerFernandes/vigia/internal/event"
 	"github.com/denerFernandes/vigia/internal/judge"
+	"github.com/denerFernandes/vigia/internal/people"
 	"github.com/denerFernandes/vigia/internal/policy"
 	"github.com/denerFernandes/vigia/internal/trace"
 )
@@ -37,6 +38,9 @@ type Env struct {
 	Approver Approver
 	// Remember turns an "always" answer into a lasting permission.
 	Remember func(ctx context.Context, a policy.Action)
+	// RoleOf names a person's role in the house; nil treats everyone as
+	// the owner.
+	RoleOf func(ctx context.Context, person string) string
 }
 
 type Approver interface {
@@ -55,6 +59,9 @@ type Host struct {
 	Env
 	// Source identifies the run in events: "routine:brief#12", "exploration:e1".
 	Source string
+	// Person is who the run acts for. Connectors see it in the context and
+	// use that person's accounts; empty means the owner.
+	Person string
 	// DryRun records changes instead of making them. Explorations run this
 	// way: they show what would happen and change nothing but messages to
 	// the owner.
@@ -88,6 +95,7 @@ func (h *Host) Questions() map[string]string {
 // ActionRecord is the data of an ActionEvent.
 type ActionRecord struct {
 	Source     string          `json:"source"`
+	Person     string          `json:"person,omitempty"`
 	Capability string          `json:"capability"`
 	Scope      string          `json:"scope,omitempty"`
 	Risk       string          `json:"risk"`
@@ -109,12 +117,20 @@ var ErrBlocked = errors.New("blocked by a rule")
 
 func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, error) {
 	spec := capability.Catalog[name]
+	person := people.Norm(h.Person)
+	ctx = people.With(ctx, person)
 	rec := ActionRecord{Source: h.Source, Capability: name, Scope: scope, Risk: spec.Risk.String(), Args: args}
+	if person != people.OwnerID {
+		rec.Person = person
+	}
 	pol := h.Policy
 	if pol == nil {
 		pol = policy.Open{}
 	}
-	act := policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source}
+	act := policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source, Person: person, Role: string(people.Owner)}
+	if h.RoleOf != nil {
+		act.Role = h.RoleOf(ctx, person)
+	}
 	d := pol.Decide(ctx, act)
 	rec.Verdict, rec.Reason, rec.Rule = d.Verdict, d.Reason, d.Rule
 	simulated := h.DryRun && spec.Risk >= capability.Reversible

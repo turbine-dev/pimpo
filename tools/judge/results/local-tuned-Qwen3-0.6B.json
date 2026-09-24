@@ -1,0 +1,31 @@
+{
+ "judge": "local-tuned-Qwen3-0.6B",
+ "all": {
+  "n": 422,
+  "accuracy": 0.851,
+  "brier": 0.12,
+  "ece": 0.091,
+  "auc": 0.921
+ },
+ "seen": {
+  "n": 206,
+  "accuracy": 0.85,
+  "brier": 0.12,
+  "ece": 0.107,
+  "auc": 0.935
+ },
+ "unseen": {
+  "n": 216,
+  "accuracy": 0.852,
+  "brier": 0.12,
+  "ece": 0.087,
+  "auc": 0.913
+ },
+ "hard": {
+  "n": 96,
+  "accuracy": 0.667,
+  "brier": 0.283,
+  "ece": 0.272,
+  "auc": 0.727
+ }
+}

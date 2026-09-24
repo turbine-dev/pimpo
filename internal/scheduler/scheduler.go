@@ -179,7 +179,7 @@ func (s *Scheduler) RunNow(ctx context.Context, id, trigger string) (store.Run, 
 	}
 	source := fmt.Sprintf("routine:%s#%d", id, runID)
 	s.Env.Events.Append(ctx, EventRunStarted, source, map[string]any{"routine": id, "run": runID, "version": r.Version, "trigger": trigger})
-	h := &host.Host{Env: s.Env, Source: source}
+	h := &host.Host{Env: s.Env, Source: source, Person: r.Person}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	res, runErr := runtime.Run(ctx, r.Body.Code, r.Body.Manifest, h, runtime.Options{Now: s.now(), Zone: s.zone(), Timeout: 90 * time.Second})

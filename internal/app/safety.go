@@ -214,7 +214,9 @@ var ruleSchema = json.RawMessage(`{"type":"object","required":["when","then","su
   "min_risk":{"type":"string","enum":["","read","notify","reversible","irreversible"]},
   "source":{"type":"string"},
   "args_contain":{"type":"array","items":{"type":"string"}},
-  "hosts":{"type":"array","items":{"type":"string"}}}}}}`)
+  "hosts":{"type":"array","items":{"type":"string"}},
+  "people":{"type":"array","items":{"type":"string"},"description":"ids of the people the rule is about"},
+  "roles":{"type":"array","items":{"type":"string","enum":["owner","member","guest"]}}}}}}`)
 
 // compileRule turns the owner's sentence into a structured rule. Only the
 // structured rule is ever enforced, and the owner confirms it first.
@@ -240,9 +242,14 @@ func (a *App) compileRule(w http.ResponseWriter, r *http.Request) {
 	for _, rt := range routines {
 		names = append(names, "routine:"+rt.ID+" ("+rt.Body.Name+")")
 	}
+	house, _ := a.People.List(ctx)
+	var who []string
+	for _, p := range house {
+		who = append(who, fmt.Sprintf("%s (%s, %s)", p.ID, p.Name, p.Role))
+	}
 	resp, err := a.LLM.Generate(ctx, llm.Request{
-		System: "You turn an owner's sentence into one rule for Vigia's policy engine. Decisions: allow (just do it), reversible (do it but keep it undoable), ask (ask the owner first), block (never). Match as narrowly as the sentence says; leave fields empty to match everything. source is \"routine:<id>\" or \"exploration\"; risk levels are read < notify < reversible < irreversible.",
-		Prompt: "Capabilities:\n" + caps.String() + "\nRoutines: " + strings.Join(names, ", ") + "\n\nThe owner wrote: " + req.Text,
+		System: "You turn an owner's sentence into one rule for Vigia's policy engine. Decisions: allow (just do it), reversible (do it but keep it undoable), ask (ask the owner first), block (never). Match as narrowly as the sentence says; leave fields empty to match everything. source is \"routine:<id>\" or \"exploration\"; risk levels are read < notify < reversible < irreversible. When the sentence is about some people of the house, fill people with their ids, or roles for a whole group.",
+		Prompt: "Capabilities:\n" + caps.String() + "\nRoutines: " + strings.Join(names, ", ") + "\nPeople of the house: " + strings.Join(who, ", ") + "\n\nThe owner wrote: " + req.Text,
 		Schema: ruleSchema, Model: a.Settings(ctx).JudgeModel, MaxCostUSD: 0.2,
 	})
 	a.Budget.Record(ctx, budgetCost(resp.CostUSD, "rule"))
@@ -257,6 +264,12 @@ func (a *App) compileRule(w http.ResponseWriter, r *http.Request) {
 	}
 	json.Unmarshal(resp.Structured, &out)
 	rule := policy.Rule{ID: "r-" + strconv.FormatInt(time.Now().UnixNano()%1e10, 36), Text: req.Text, When: out.When, Then: out.Then}
+	for _, id := range rule.When.People {
+		if _, err := a.People.Get(ctx, id); err != nil {
+			server.WriteError(w, server.StatusError{Status: 422, Msg: "the rule names someone who is not in the house: " + id})
+			return
+		}
+	}
 	if err := rule.Validate(); err != nil {
 		server.WriteError(w, server.StatusError{Status: 422, Msg: "I could not turn that into a rule I can enforce: " + err.Error()})
 		return

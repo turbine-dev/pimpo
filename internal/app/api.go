@@ -283,6 +283,8 @@ type connection struct {
 	Paired     bool   `json:"paired,omitempty"`
 	Code       string `json:"pairing_code,omitempty"`
 	Bot        string `json:"bot,omitempty"`
+	Webhook    string `json:"webhook,omitempty"`
+	Verify     string `json:"verify_token,omitempty"`
 }
 
 func (a *App) connections(w http.ResponseWriter, r *http.Request) {
@@ -320,6 +322,17 @@ func (a *App) connections(w http.ResponseWriter, r *http.Request) {
 		n, calDetail = 1, "Google Agenda"
 	}
 	out = append(out, connection{Kind: "calendar", Configured: n > 0, Detail: calDetail})
+	wa := connection{Kind: "whatsapp", Configured: a.wa(ctx) != nil}
+	if wa.Configured {
+		wa.Paired = a.ownerWhatsApp(ctx) != ""
+		if !wa.Paired {
+			wa.Code = a.Channel.PairingCode()
+		}
+		base, _ := a.Events.Get(ctx, "public_url")
+		verify, _ := a.Vault.Get(ctx, "whatsapp.verify_token")
+		wa.Webhook, wa.Verify = strings.TrimRight(base, "/")+"/webhook/whatsapp", verify
+	}
+	out = append(out, wa)
 	out = append(out, connection{Kind: "jev", Configured: has("typesafe.key")})
 	out = append(out, connection{Kind: "claude", Configured: claudeInstalled(), Detail: "Claude Code"})
 	server.WriteJSON(w, 200, out)
@@ -351,6 +364,12 @@ func (a *App) putConnection(w http.ResponseWriter, r *http.Request) {
 		err = a.Vault.Set(ctx, "telegram.token", tok)
 		if err == nil {
 			a.restartListener(ctx)
+		}
+	case "whatsapp":
+		err = a.putWhatsApp(ctx, req)
+		if se, ok := err.(server.StatusError); ok {
+			server.WriteError(w, se)
+			return
 		}
 	case "mail":
 		if req["user"] == "" || req["password"] == "" {
@@ -395,7 +414,7 @@ func (a *App) putConnection(w http.ResponseWriter, r *http.Request) {
 func (a *App) deleteConnection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	kind := r.PathValue("kind")
-	names := map[string][]string{"telegram": {"telegram.token"}, "mail": {"mail.password"}, "calendar": {"calendar.feeds"}, "jev": {"typesafe.key"}}[kind]
+	names := map[string][]string{"telegram": {"telegram.token"}, "mail": {"mail.password"}, "calendar": {"calendar.feeds"}, "jev": {"typesafe.key"}, "whatsapp": {"whatsapp.token", "whatsapp.app_secret"}}[kind]
 	if names == nil {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "unknown connection"})
 		return
@@ -405,6 +424,9 @@ func (a *App) deleteConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	if kind == "telegram" {
 		a.Events.Put(ctx, "telegram.chat", "")
+	}
+	if kind == "whatsapp" {
+		a.Events.Put(ctx, "whatsapp.owner", "")
 	}
 	a.Events.Append(ctx, "connection.removed", "human:owner", map[string]string{"kind": kind})
 	server.WriteJSON(w, 200, map[string]string{"kind": kind, "state": "removed"})

@@ -67,6 +67,8 @@ CREATE INDEX IF NOT EXISTS runs_routine ON runs (routine, id);`
 // columns added after the first release, applied to older databases.
 var additions = []string{
 	`ALTER TABLE explorations ADD COLUMN candidate TEXT`,
+	`ALTER TABLE explorations ADD COLUMN person TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE routines ADD COLUMN person TEXT NOT NULL DEFAULT ''`,
 }
 
 func Open(db *sql.DB) (*Store, error) {
@@ -98,12 +100,14 @@ const (
 )
 
 type Routine struct {
-	ID        string          `json:"id"`
-	Version   int             `json:"version"`
-	State     string          `json:"state"`
-	Body      routine.Routine `json:"routine"`
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	ID      string          `json:"id"`
+	Version int             `json:"version"`
+	State   string          `json:"state"`
+	Body    routine.Routine `json:"routine"`
+	// Person is who the routine works for; empty is the owner.
+	Person    string    `json:"person,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Version struct {
@@ -167,7 +171,7 @@ func (s *Store) Routines(ctx context.Context) ([]Routine, error) {
 }
 
 func (s *Store) routines(ctx context.Context, where string, args ...any) ([]Routine, error) {
-	q := `SELECT r.id, r.version, r.state, r.created_at, r.updated_at, v.body FROM routines r JOIN routine_versions v ON v.routine = r.id AND v.version = r.version ` + where
+	q := `SELECT r.id, r.version, r.state, r.person, r.created_at, r.updated_at, v.body FROM routines r JOIN routine_versions v ON v.routine = r.id AND v.version = r.version ` + where
 	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
@@ -177,7 +181,7 @@ func (s *Store) routines(ctx context.Context, where string, args ...any) ([]Rout
 	for rows.Next() {
 		var r Routine
 		var created, updated, body string
-		if err := rows.Scan(&r.ID, &r.Version, &r.State, &created, &updated, &body); err != nil {
+		if err := rows.Scan(&r.ID, &r.Version, &r.State, &r.Person, &created, &updated, &body); err != nil {
 			return nil, err
 		}
 		r.CreatedAt, r.UpdatedAt = parse(created), parse(updated)
@@ -209,6 +213,11 @@ func (s *Store) Versions(ctx context.Context, id string) ([]Version, error) {
 	return out, rows.Err()
 }
 
+// SetRoutinePerson records who a routine works for.
+func (s *Store) SetRoutinePerson(ctx context.Context, id, person string) error {
+	return affected(s.db.ExecContext(ctx, `UPDATE routines SET person = ? WHERE id = ?`, person, id))
+}
+
 func (s *Store) SetRoutineState(ctx context.Context, id, state string) error {
 	res, err := s.db.ExecContext(ctx, `UPDATE routines SET state = ?, updated_at = ? WHERE id = ?`, state, ts(time.Now()), id)
 	return affected(res, err)
@@ -231,8 +240,10 @@ type Exploration struct {
 	Trace   *trace.Trace `json:"trace,omitempty"`
 	Summary string       `json:"summary"`
 	Routine string       `json:"routine,omitempty"`
-	CostUSD float64      `json:"cost_usd"`
-	Error   string       `json:"error,omitempty"`
+	// Person asked for it; empty is the owner.
+	Person  string  `json:"person,omitempty"`
+	CostUSD float64 `json:"cost_usd"`
+	Error   string  `json:"error,omitempty"`
 	// Candidate is the last routine the compiler proposed, kept when it
 	// failed its checks so the owner can see why.
 	Candidate *routine.Routine `json:"candidate,omitempty"`
@@ -251,10 +262,10 @@ func (s *Store) SaveExploration(ctx context.Context, e Exploration) error {
 		cand = string(b)
 	}
 	now := ts(time.Now())
-	_, err := s.db.ExecContext(ctx, `INSERT INTO explorations (id, request, state, trace, summary, routine, cost_usd, error, candidate, created_at, updated_at)
-	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO explorations (id, request, state, trace, summary, routine, cost_usd, error, candidate, person, created_at, updated_at)
+	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	  ON CONFLICT(id) DO UPDATE SET state = excluded.state, trace = excluded.trace, summary = excluded.summary, routine = excluded.routine, cost_usd = excluded.cost_usd, error = excluded.error, candidate = excluded.candidate, updated_at = excluded.updated_at`,
-		e.ID, e.Request, e.State, tr, e.Summary, e.Routine, e.CostUSD, e.Error, cand, now, now)
+		e.ID, e.Request, e.State, tr, e.Summary, e.Routine, e.CostUSD, e.Error, cand, e.Person, now, now)
 	return err
 }
 
@@ -290,7 +301,7 @@ func repeat(s string, n int) string {
 }
 
 func (s *Store) explorations(ctx context.Context, where string, args ...any) ([]Exploration, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, request, state, trace, summary, routine, cost_usd, error, candidate, created_at, updated_at FROM explorations `+where, args...)
+	rows, err := s.db.QueryContext(ctx, `SELECT id, request, state, trace, summary, routine, cost_usd, error, candidate, person, created_at, updated_at FROM explorations `+where, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +311,7 @@ func (s *Store) explorations(ctx context.Context, where string, args ...any) ([]
 		var e Exploration
 		var tr, summary, rt, errText, cand sql.NullString
 		var created, updated string
-		if err := rows.Scan(&e.ID, &e.Request, &e.State, &tr, &summary, &rt, &e.CostUSD, &errText, &cand, &created, &updated); err != nil {
+		if err := rows.Scan(&e.ID, &e.Request, &e.State, &tr, &summary, &rt, &e.CostUSD, &errText, &cand, &e.Person, &created, &updated); err != nil {
 			return nil, err
 		}
 		e.Summary, e.Routine, e.Error = summary.String, rt.String, errText.String

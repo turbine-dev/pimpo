@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, CalendarDays, Check, Cpu, Mail, Sparkles } from 'lucide-react'
+import { Bot, CalendarDays, Check, Cpu, Mail, MessageCircle, Sparkles } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { Button, Card } from '../components/ui'
 import { api, type Connection } from '../lib/api'
@@ -38,6 +38,23 @@ export function Connections() {
           c={by('calendar')}
           fields={[{ name: 'feeds', label: 'Links iCal privados (um por linha)', placeholder: 'https://calendar.google.com/calendar/ical/…/basic.ics', multiline: true, secret: true }]}
           help={<>No Google Agenda: Configurações → sua agenda → “Endereço secreto no formato iCal”. Só leitura, sem login.</>}
+        />
+        <Setup
+          kind="whatsapp"
+          icon={<MessageCircle size={18} />}
+          title="WhatsApp (API oficial)"
+          c={by('whatsapp')}
+          fields={[
+            { name: 'token', label: 'Token de acesso permanente', placeholder: 'EAAG…', secret: true },
+            { name: 'phone_id', label: 'ID do número de telefone', placeholder: '1234567890' },
+            { name: 'app_secret', label: 'Chave secreta do app', placeholder: 'confere a assinatura das mensagens', secret: true },
+          ]}
+          help={
+            <>
+              Crie um app em <a className="underline" href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer">developers.facebook.com</a> com o produto WhatsApp e um número próprio. É a via oficial: sem risco de bloqueio do seu número pessoal.
+            </>
+          }
+          extra={<WhatsAppSteps c={by('whatsapp')} />}
         />
         <Setup
           kind="jev"
@@ -98,6 +115,20 @@ function GoogleSignIn({ connected }: { connected: boolean }) {
   )
 }
 
+function WhatsAppSteps({ c }: { c?: Connection }) {
+  if (!c?.configured || c.paired) return null
+  return (
+    <ol className="mt-4 list-decimal space-y-2 border-t border-line pt-4 pl-5 text-[13px] text-ink-2">
+      <li>
+        No app da Meta, em WhatsApp › Configuração, use como webhook
+        {c.webhook?.startsWith('https://') ? <code className="mx-1 break-all rounded bg-sunken px-1.5 py-0.5 font-mono text-[12px]">{c.webhook}</code> : <> o endereço público do Vigia (defina em Ajustes › Abrir no celular) seguido de <code className="font-mono">/webhook/whatsapp</code></>}
+        e o token de verificação <code className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[12px]">{c.verify_token}</code>. Assine o campo <b>messages</b>.
+      </li>
+      <li>Do seu WhatsApp, mande para o número do app: <code className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[12px]">vigia {c.pairing_code}</code></li>
+    </ol>
+  )
+}
+
 function Icon({ ok, children }: { ok: boolean; children: ReactNode }) {
   return <div className={cn('grid size-10 shrink-0 place-items-center rounded-xl', ok ? 'bg-read-soft text-read' : 'bg-sunken text-ink-3')}>{children}</div>
 }
@@ -152,7 +183,7 @@ function Telegram({ c }: { c?: Connection }) {
 
 type Field = { name: string; label: string; placeholder: string; secret?: boolean; multiline?: boolean }
 
-function Setup({ kind, icon, title, c, fields, help }: { kind: string; icon: ReactNode; title: string; c?: Connection; fields: Field[]; help: ReactNode }) {
+function Setup({ kind, icon, title, c, fields, help, extra }: { kind: string; icon: ReactNode; title: string; c?: Connection; fields: Field[]; help: ReactNode; extra?: ReactNode }) {
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
   const [values, setValues] = useState<Record<string, string>>({})
@@ -182,6 +213,7 @@ function Setup({ kind, icon, title, c, fields, help }: { kind: string; icon: Rea
           <Button size="sm" onClick={() => setOpen(!open)}>Conectar</Button>
         )}
       </div>
+      {extra}
       {open && (
         <form className="mt-4 space-y-3 border-t border-line pt-4" onSubmit={(e) => { e.preventDefault(); save.mutate() }}>
           <p className="text-[13px] text-ink-2">{help}</p>

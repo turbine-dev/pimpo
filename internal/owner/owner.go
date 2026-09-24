@@ -1,5 +1,6 @@
-// Package owner is the conversation with the owner over Telegram: pairing,
-// requests that start explorations, and buttons that approve things.
+// Package owner is the conversation with the owner, and the people of the
+// house, over Telegram: pairing, requests that start explorations, and
+// buttons that approve things.
 package owner
 
 import (
@@ -14,6 +15,7 @@ import (
 
 	"github.com/denerFernandes/vigia/internal/event"
 	"github.com/denerFernandes/vigia/internal/explore"
+	"github.com/denerFernandes/vigia/internal/people"
 	"github.com/denerFernandes/vigia/internal/telegram"
 )
 
@@ -31,7 +33,8 @@ type Bot interface {
 	Poll(ctx context.Context, offset int64, handle func(telegram.Update)) error
 }
 
-// Handler reacts to the owner. Button data looks like "compile:<id>".
+// Handler reacts to the owner. Button data looks like "compile:<id>". The
+// context says who is talking (people.From).
 type Handler interface {
 	Request(ctx context.Context, text string) (string, error)
 	Button(ctx context.Context, action, id string) (string, error)
@@ -42,6 +45,10 @@ type Channel struct {
 	// Bot returns the current bot, or nil when Telegram is not set up.
 	Bot     func(ctx context.Context) Bot
 	Handler Handler
+	// People lets household members talk to Vigia; nil means only the owner.
+	People *people.Directory
+	// Mirror also delivers every notice on another channel, such as WhatsApp.
+	Mirror func(ctx context.Context, n explore.Notice)
 
 	mu   sync.Mutex
 	code string
@@ -69,9 +76,20 @@ func (c *Channel) Chat(ctx context.Context) (int64, error) {
 // Notify sends a notice to the owner and keeps it in the event log, where
 // the web inbox shows it even when Telegram is not paired.
 func (c *Channel) Notify(ctx context.Context, n explore.Notice) error {
-	c.Events.Append(ctx, EventNotice, "system", map[string]any{"text": n.Text, "actions": n.Actions})
+	c.Events.Append(ctx, EventNotice, "system", map[string]any{"text": n.Text, "actions": n.Actions, "to": people.Norm(n.To)})
+	if c.Mirror != nil {
+		c.Mirror(ctx, n)
+	}
 	bot := c.Bot(ctx)
 	chat, _ := c.Chat(ctx)
+	if n.To != "" && n.To != people.OwnerID {
+		chat = 0
+		if c.People != nil {
+			if p, err := c.People.Get(ctx, n.To); err == nil {
+				chat = p.Chat
+			}
+		}
+	}
 	if bot == nil || chat == 0 {
 		return nil
 	}
@@ -96,8 +114,20 @@ func (c *Channel) Listen(ctx context.Context) error {
 	return bot.Poll(ctx, 0, func(u telegram.Update) { c.handle(ctx, bot, u) })
 }
 
+// who returns the person a chat belongs to.
+func (c *Channel) who(ctx context.Context, chat int64) (string, bool) {
+	if owner, _ := c.Chat(ctx); owner != 0 && chat == owner {
+		return people.OwnerID, true
+	}
+	if c.People != nil {
+		if p, ok := c.People.ByChat(ctx, chat); ok {
+			return p.ID, true
+		}
+	}
+	return "", false
+}
+
 func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
-	chat, _ := c.Chat(ctx)
 	if u.Message != nil {
 		m := u.Message
 		text := strings.TrimSpace(m.Text)
@@ -105,39 +135,49 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 			c.pair(ctx, bot, m, strings.TrimSpace(strings.TrimPrefix(text, "/start")))
 			return
 		}
-		if chat == 0 || m.Chat.ID != chat {
-			// Only the paired owner can talk to Vigia; others get nothing.
+		person, ok := c.who(ctx, m.Chat.ID)
+		if !ok || text == "" {
+			// Only people of the house can talk to Vigia; others get nothing.
 			return
 		}
-		if text == "" {
-			return
-		}
-		reply, err := c.Handler.Request(ctx, text)
+		reply, err := c.Handler.Request(people.With(ctx, person), text)
 		if err != nil {
 			reply = "Não consegui começar: " + err.Error()
 		}
-		bot.Send(ctx, chat, reply)
+		bot.Send(ctx, m.Chat.ID, reply)
 		return
 	}
 	if cb := u.Callback; cb != nil {
-		if chat == 0 || cb.Message == nil || cb.Message.Chat.ID != chat {
+		if cb.Message == nil {
+			bot.Answer(ctx, cb.ID, "")
+			return
+		}
+		person, ok := c.who(ctx, cb.Message.Chat.ID)
+		if !ok {
 			bot.Answer(ctx, cb.ID, "")
 			return
 		}
 		action, id, _ := strings.Cut(cb.Data, ":")
 		bot.Answer(ctx, cb.ID, "Ok")
-		reply, err := c.Handler.Button(ctx, action, id)
+		reply, err := c.Handler.Button(people.With(ctx, person), action, id)
 		if err != nil {
 			reply = "⚠️ " + err.Error()
 		}
 		if reply != "" {
-			bot.Edit(ctx, chat, cb.Message.ID, cb.Message.Text+"\n\n→ "+reply)
+			bot.Edit(ctx, cb.Message.Chat.ID, cb.Message.ID, cb.Message.Text+"\n\n→ "+reply)
 		}
 	}
 }
 
 func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code string) {
 	chat, _ := c.Chat(ctx)
+	if c.People != nil && code != "" && chat != m.Chat.ID {
+		if p, err := c.People.Pair(ctx, code, m.Chat.ID); err == nil {
+			c.Events.Append(ctx, EventPaired, "human:"+p.ID, map[string]any{"chat": m.Chat.ID, "person": p.ID})
+			bot.Send(ctx, m.Chat.ID, fmt.Sprintf("Oi, %s! Agora você fala com o Vigia da casa. Me peça algo que você faz toda semana.", p.Name))
+			return
+		}
+	}
 	if chat != 0 && chat != m.Chat.ID {
 		return
 	}

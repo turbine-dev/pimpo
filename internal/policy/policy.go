@@ -26,6 +26,9 @@ type Action struct {
 	Risk       capability.Risk `json:"risk"`
 	// Source is "routine:<id>" or "exploration:<id>".
 	Source string `json:"source"`
+	// Person is who the run acts for, and Role their role in the house.
+	Person string `json:"person,omitempty"`
+	Role   string `json:"role,omitempty"`
 }
 
 type Decision struct {

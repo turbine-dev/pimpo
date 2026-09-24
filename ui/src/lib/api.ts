@@ -31,6 +31,9 @@ export type Routine = {
 export type Run = { id: number; version: number; started_at: string; ended_at?: string; outcome: string; error?: string; cost_usd: number; calls: number }
 export type Version = { version: number; routine: Routine; reason: string; approved_by: string; created_at: string }
 
+export type Role = 'owner' | 'member' | 'guest'
+export type Person = { id: string; name: string; role: Role; chat?: number; responsible?: string; invite?: string; created: string; mail: boolean; calendar: boolean }
+
 export type MigrationSource = 'openclaw' | 'hermes'
 export type MigrationPlan = {
   from: MigrationSource
@@ -79,15 +82,15 @@ export type ActionRecord = {
 }
 
 export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; telegram_paired: boolean; log_intact: boolean; claude: boolean }
-export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string }
+export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
 export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string }
 
 export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: string; approved?: string }; undoable: boolean; undo_until?: string; undone: boolean }
 export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string }
-export type Rule = { id: string; text: string; when: { capabilities?: string[]; min_risk?: string; source?: string; args_contain?: string[]; hosts?: string[] }; then: 'allow' | 'reversible' | 'ask' | 'block'; off?: boolean }
+export type Rule = { id: string; text: string; when: { capabilities?: string[]; min_risk?: string; source?: string; args_contain?: string[]; hosts?: string[]; people?: string[]; roles?: string[] }; then: 'allow' | 'reversible' | 'ask' | 'block'; off?: boolean }
 export type CostView = { today: number; limit: number; month: number; projected_month: number; by_day: Record<string, number>; by_source: Record<string, number> }
 
-export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low'; created: string }
+export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low'; person?: string; created: string }
 export type MemoryVersion = { hash: string; message: string; when: string }
 
 export class ApiError extends Error {
@@ -136,7 +139,7 @@ export const api = {
   setupDone: () => request<void>('POST', '/api/setup/done'),
   preset: (preset: 'conservative' | 'balanced' | 'liberal') => request<Rule[]>('PUT', '/api/rules/preset', { preset }),
   memory: () => request<{ facts: Fact[]; history: MemoryVersion[] }>('GET', '/api/memory'),
-  addFact: (text: string, topic: string) => request<Fact>('POST', '/api/memory', { text, topic }),
+  addFact: (text: string, topic: string, person?: string) => request<Fact>('POST', '/api/memory', { text, topic, person: person || undefined }),
   removeFact: (id: string) => request<void>('DELETE', `/api/memory/${id}`),
   confirmFact: (id: string) => request<void>('POST', `/api/memory/${id}/confirm`),
   restoreMemory: (hash: string) => request<void>('POST', `/api/memory-versions/${hash}/restore`),
@@ -148,6 +151,11 @@ export const api = {
   exploreImported: (id: string) => request<{ id: string }>('POST', `/api/explorations/${id}/explore`),
   pairing: () => request<{ base: string; link: string }>('GET', '/api/pairing'),
   setPairing: (base: string) => request<{ base: string; link: string }>('POST', '/api/pairing', { base }),
+  people: () => request<Person[]>('GET', '/api/people'),
+  addPerson: (name: string, role: Role, responsible: string) => request<Person>('POST', '/api/people', { name, role, responsible }),
+  updatePerson: (id: string, role: Role, responsible: string) => request<Person>('PUT', `/api/people/${id}`, { role, responsible }),
+  removePerson: (id: string) => request<void>('DELETE', `/api/people/${id}`),
+  personConnection: (id: string, kind: 'mail' | 'calendar', body: Record<string, string>) => request<void>('PUT', `/api/people/${id}/connections/${kind}`, body),
   connections: () => request<Connection[]>('GET', '/api/connections'),
   googleStart: (client_id: string, client_secret: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/google/start', { client_id, client_secret }),
   connect: (kind: string, body: Record<string, string>) => request<void>('PUT', `/api/connections/${kind}`, body),

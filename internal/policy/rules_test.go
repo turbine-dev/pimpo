@@ -89,3 +89,42 @@ func TestAlwaysOverridesTheGeneralAsk(t *testing.T) {
 		t.Fatalf("block must win: %+v", d)
 	}
 }
+
+func TestRulesPerPersonAndGuests(t *testing.T) {
+	e := engine(t)
+	ctx := context.Background()
+	e.SaveRules(ctx, []Rule{{ID: "kids", Text: "As crianças não podem comprar nada", When: When{People: []string{"leo"}, Capabilities: []string{"gmail.send"}}, Then: Block}}, "human:owner")
+	send := Action{Capability: "gmail.send", Risk: capability.Irreversible, Source: "routine:r"}
+	if d := e.Decide(ctx, send); d.Verdict != Allow {
+		t.Fatalf("owner blocked by a rule for leo: %+v", d)
+	}
+	send.Person = "leo"
+	if d := e.Decide(ctx, send); d.Verdict != Block {
+		t.Fatalf("leo not blocked: %+v", d)
+	}
+	e.SaveRules(ctx, []Rule{AllowAlways(Action{Capability: "gmail.label", Source: "routine:r"})}, "human:owner")
+	label := Action{Capability: "gmail.label", Risk: capability.Reversible, Source: "routine:r", Person: "visita", Role: "guest"}
+	if d := e.Decide(ctx, label); d.Verdict != Ask {
+		t.Fatalf("a guest's change went through: %+v", d)
+	}
+	label.Role = "member"
+	if d := e.Decide(ctx, label); d.Verdict != Reversible {
+		t.Fatalf("member: %+v", d)
+	}
+	if err := (Rule{Then: Ask, When: When{Roles: []string{"kid"}}}).Validate(); err == nil {
+		t.Fatal("accepted an unknown role")
+	}
+}
+
+func TestWhatsAppToOthersAlwaysAsks(t *testing.T) {
+	e := engine(t)
+	ctx := context.Background()
+	e.SaveRules(ctx, []Rule{{ID: "x", Text: "allow all", Then: Allow}, AllowAlways(Action{Capability: "whatsapp.send_to", Source: "routine:r"})}, "human:owner")
+	if d := e.Decide(ctx, Action{Capability: "whatsapp.send_to", Risk: capability.Irreversible, Source: "routine:r"}); d.Verdict != Ask {
+		t.Fatalf("%+v", d)
+	}
+	e.SaveRules(ctx, []Rule{{ID: "b", Text: "never", When: When{Capabilities: []string{"whatsapp.send_to"}}, Then: Block}}, "human:owner")
+	if d := e.Decide(ctx, Action{Capability: "whatsapp.send_to", Risk: capability.Irreversible}); d.Verdict != Block {
+		t.Fatalf("%+v", d)
+	}
+}

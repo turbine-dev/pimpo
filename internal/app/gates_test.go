@@ -38,11 +38,32 @@ func (l lit) Size() int64 { return l.n }
 // mailbox starts an IMAP server holding n messages and points the app at it.
 func mailbox(t *testing.T, ta *testApp, n int) *mail.Mail {
 	t.Helper()
+	raws := make([][]byte, n)
+	for i := range raws {
+		raws[i] = []byte(fmt.Sprintf("From: Colega %d <c%d@trabalho.com>\r\nTo: eu@exemplo.com\r\nSubject: Relatório %d\r\nMessage-ID: <r%d@trabalho.com>\r\nDate: Mon, 01 Jan 2024 10:00:00 +0000\r\n\r\nConteúdo %d\r\n", i, i, i, i, i))
+	}
+	return mailboxWith(t, ta, raws)
+}
+
+// mailboxWith starts an IMAP server holding these raw messages.
+func mailboxWith(t *testing.T, ta *testApp, raws [][]byte) *mail.Mail {
+	t.Helper()
+	addr := imapServer(t, raws)
+	ctx := context.Background()
+	ta.MailInsecure = true
+	ta.Events.Put(ctx, "mail.addr", addr)
+	ta.Events.Put(ctx, "mail.user", "eu@exemplo.com")
+	ta.Vault.Set(ctx, "mail.password", "pw")
+	return &mail.Mail{Account: mail.Account{Addr: addr, Username: "eu@exemplo.com", Insecure: true, Password: func(context.Context) (string, error) { return "pw", nil }}}
+}
+
+// imapServer serves the messages to user eu@exemplo.com, password pw.
+func imapServer(t *testing.T, raws [][]byte) string {
+	t.Helper()
 	mem := imapmemserver.New()
 	user := imapmemserver.NewUser("eu@exemplo.com", "pw")
 	user.Create("INBOX", nil)
-	for i := 0; i < n; i++ {
-		raw := []byte(fmt.Sprintf("From: Colega %d <c%d@trabalho.com>\r\nTo: eu@exemplo.com\r\nSubject: Relatório %d\r\nMessage-ID: <r%d@trabalho.com>\r\nDate: Mon, 01 Jan 2024 10:00:00 +0000\r\n\r\nConteúdo %d\r\n", i, i, i, i, i))
+	for _, raw := range raws {
 		user.Append("INBOX", lit{bytes.NewReader(raw), int64(len(raw))}, &imap.AppendOptions{Time: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)})
 	}
 	mem.AddUser(user)
@@ -53,12 +74,7 @@ func mailbox(t *testing.T, ta *testApp, n int) *mail.Mail {
 	ln, _ := net.Listen("tcp", "127.0.0.1:0")
 	go srv.Serve(ln)
 	t.Cleanup(func() { srv.Close() })
-	ctx := context.Background()
-	ta.MailInsecure = true
-	ta.Events.Put(ctx, "mail.addr", ln.Addr().String())
-	ta.Events.Put(ctx, "mail.user", "eu@exemplo.com")
-	ta.Vault.Set(ctx, "mail.password", "pw")
-	return &mail.Mail{Account: mail.Account{Addr: ln.Addr().String(), Username: "eu@exemplo.com", Insecure: true, Password: func(context.Context) (string, error) { return "pw", nil }}}
+	return ln.Addr().String()
 }
 
 func count(t *testing.T, m *mail.Mail) int {
