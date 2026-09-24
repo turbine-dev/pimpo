@@ -61,3 +61,19 @@ func TestBadInputAndBrokenFeeds(t *testing.T) {
 		t.Fatal("accepted an inverted range")
 	}
 }
+
+func TestParseTimeWithoutOffsetUsesTheZone(t *testing.T) {
+	zone := time.FixedZone("BRT", -3*3600)
+	for _, s := range []string{"2026-09-25T00:00:00", "2026-09-25T00:00", "2026-09-25 00:00", "2026-09-25", " 2026-09-25T00:00:00 "} {
+		got, err := parseTime(s, zone)
+		if err != nil || !got.Equal(time.Date(2026, 9, 25, 0, 0, 0, 0, zone)) {
+			t.Errorf("%q: %v %v", s, got, err)
+		}
+	}
+	if got, _ := parseTime("2026-09-25T00:00:00Z", zone); !got.Equal(time.Date(2026, 9, 25, 0, 0, 0, 0, time.UTC)) {
+		t.Errorf("an explicit offset must win: %v", got)
+	}
+	if _, err := parseTime("amanhã", zone); err == nil {
+		t.Error("accepted words")
+	}
+}

@@ -94,13 +94,18 @@ func (c *Calendar) Call(ctx context.Context, _, _ string, args any) (any, error)
 	return out, nil
 }
 
-// parseTime accepts RFC 3339 or a plain date (midnight in zone).
+// parseTime accepts RFC 3339, a local date and time without an offset
+// (read in zone, as people and models often write it), or a plain date
+// (midnight in zone).
 func parseTime(s string, zone *time.Location) (time.Time, error) {
+	s = strings.TrimSpace(s)
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
 		return t, nil
 	}
-	if t, err := time.ParseInLocation("2006-01-02", s, zone); err == nil {
-		return t, nil
+	for _, layout := range []string{"2006-01-02T15:04:05", "2006-01-02T15:04", "2006-01-02 15:04:05", "2006-01-02 15:04", "2006-01-02"} {
+		if t, err := time.ParseInLocation(layout, s, zone); err == nil {
+			return t, nil
+		}
 	}
 	return time.Time{}, fmt.Errorf("%q is not a date or RFC 3339 time", s)
 }
