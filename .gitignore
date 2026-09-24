@@ -13,6 +13,9 @@ tools/judge/adapters/
 tools/judge/data/
 desktop/node_modules/
 desktop/src-tauri/target/
-desktop/src-tauri/gen/
+desktop/src-tauri/gen/schemas/
+desktop/src-tauri/gen/apple/build/
+desktop/src-tauri/gen/android/app/build/
+desktop/src-tauri/gen/android/.gradle/
 desktop/src-tauri/binaries/
 dist/

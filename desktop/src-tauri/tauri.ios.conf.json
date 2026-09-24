@@ -1,0 +1,5 @@
+{
+  "identifier": "app.vigia.companion",
+  "bundle": { "externalBin": [] },
+  "app": { "windows": [{ "label": "main", "title": "Vigia" }] }
+}

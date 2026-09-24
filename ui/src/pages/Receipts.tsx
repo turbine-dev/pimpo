@@ -95,7 +95,12 @@ function Row({ r }: { r: Receipt }) {
       {undo.error && <p className="mt-1 pl-15 text-[12.5px] text-danger">{undo.error.message}</p>}
       {open && (
         <div className="mt-3 space-y-2 pl-15 text-[12.5px]">
-          {a.reason && <div className="text-ink-2">Regra: “{a.reason}”</div>}
+          {a.reason && (a.rule?.startsWith('protect:') ? (
+            <div className="flex items-center gap-1.5 font-medium text-danger"><ShieldAlert size={13} /> Proteção da comunidade: {a.reason.replace(/^rede de proteção: /, '')}</div>
+          ) : (
+            <div className="text-ink-2">Regra: “{a.reason}”</div>
+          ))}
+          {a.source?.startsWith('guard:') && <div className="text-ink-3">Pedido de {a.source.slice(6).split('#')[0]} pelo Guard</div>}
           {a.done && a.done !== a.capability && <div className="text-ink-2">Pedido: {a.capability} → feito de forma reversível: {a.done}</div>}
           {a.error && <div className="text-danger">{a.error}</div>}
           <pre className="max-h-64 overflow-auto rounded-lg bg-sunken p-3 font-mono text-[11.5px] text-ink-2">{JSON.stringify({ args: a.args, result: a.result }, null, 2)}</pre>

@@ -1,4 +1,4 @@
-import { Bell, Brain, Coins, Moon, Plug, ReceiptText, Repeat, Search, Settings, ShieldCheck, Sun, Users, LibraryBig, Briefcase } from 'lucide-react'
+import { Bell, Brain, Menu, Coins, Moon, Plug, ReceiptText, Repeat, Search, Settings, ShieldCheck, Sun, Users, LibraryBig, Briefcase } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '../lib/cn'
@@ -71,6 +71,7 @@ export function Budget({ spent, limit }: { spent: number; limit: number }) {
 
 export function Shell({ children, items = nav, budget, healthy = true, onSearch }: { children: ReactNode; items?: NavItem[]; budget?: { spent: number; limit: number }; healthy?: boolean; onSearch?: () => void }) {
   const [theme, toggle] = useTheme()
+  const [more, setMore] = useState(false)
   return (
     <div className="flex h-full">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface/60 px-3 py-4 backdrop-blur md:flex">
@@ -120,15 +121,31 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
         <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-6 md:px-8 md:pb-10">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface/95 backdrop-blur md:hidden" aria-label="Principal (celular)">
-        {items.slice(0, 3).map((it) => (
-          <NavLink key={it.to} to={it.to} end={it.to === '/'} className={({ isActive }) => cn('relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px]', isActive ? 'text-ink' : 'text-ink-3')}>
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden" aria-label="Principal (celular)">
+        {['/inbox', '/receipts', '/'].map((to) => items.find((it) => it.to === to)).filter((it): it is NavItem => !!it).map((it) => (
+          <NavLink key={it.to} to={it.to} end={it.to === '/'} onClick={() => setMore(false)} className={({ isActive }) => cn('relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px]', isActive ? 'text-ink' : 'text-ink-3')}>
             {it.icon}
-            {it.label}
+            {it.label === 'Precisa de você' ? 'Aprovar' : it.label}
             {!!it.badge && <span className="absolute right-[30%] top-1.5 size-2 rounded-full bg-danger" />}
           </NavLink>
         ))}
+        <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className={cn('flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px]', more ? 'text-ink' : 'text-ink-3')}>
+          <Menu size={17} />
+          Mais
+        </button>
       </nav>
+      {more && (
+        <div className="fixed inset-x-0 bottom-[calc(57px+env(safe-area-inset-bottom))] z-20 border-t border-line bg-surface p-2 shadow-[var(--shadow-pop)] md:hidden">
+          <div className="grid grid-cols-3 gap-1">
+            {items.filter((it) => !['/inbox', '/receipts', '/'].includes(it.to)).map((it) => (
+              <NavLink key={it.to} to={it.to} onClick={() => setMore(false)} className={({ isActive }) => cn('flex flex-col items-center gap-1 rounded-xl py-3 text-[11.5px]', isActive ? 'bg-sunken text-ink' : 'text-ink-2')}>
+                {it.icon}
+                {it.label}
+              </NavLink>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

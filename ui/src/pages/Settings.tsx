@@ -3,6 +3,7 @@ import { ArrowDownToLine, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BackupCard } from '../components/BackupCard'
+import { ProtectionCard } from '../components/ProtectionCard'
 import { PhonePairing } from '../components/PhonePairing'
 import { Button, Card } from '../components/ui'
 import { api, type Settings as S } from '../lib/api'
@@ -47,6 +48,7 @@ export function Settings() {
       </Card>
       <PhonePairing />
       <BackupCard />
+      <ProtectionCard on={!!s.protection_network} toggle={() => setS({ ...s, protection_network: !s.protection_network })} />
       <Card className="flex items-start gap-4 p-5">
         <div className="flex-1">
           <div className="text-[15px] font-medium">Pedir por e-mail</div>

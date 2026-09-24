@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "updated": "2026-09-24",
+  "entries": [
+    {"id": "domain-webhook-site", "kind": "domain", "value": "webhook.site", "reason": "request collector often used to receive data stolen through prompt injection", "reports": 1, "added": "2026-09-24"},
+    {"id": "domain-pipedream-m", "kind": "domain", "value": "m.pipedream.net", "reason": "request collector often used to receive data stolen through prompt injection", "reports": 1, "added": "2026-09-24"},
+    {"id": "domain-requestbin", "kind": "domain", "value": "requestbin.net", "reason": "request collector often used to receive stolen data", "reports": 1, "added": "2026-09-24"},
+    {"id": "domain-interactsh", "kind": "domain", "value": "oast.fun", "reason": "out-of-band exfiltration service", "reports": 1, "added": "2026-09-24"},
+    {"id": "pattern-seed-phrase", "kind": "pattern", "value": "seed phrase|recovery phrase|frase de recupera[cç][aã]o|palavras de recupera[cç][aã]o|private key", "reason": "sends wallet seeds or private keys, which nobody legitimate asks for", "reports": 1, "added": "2026-09-24"},
+    {"id": "pattern-pipe-shell", "kind": "pattern", "capability": "guard.exec", "value": "(curl|wget)[^|;]*\\|\\s*(ba|z)?sh", "reason": "downloads and runs a script in one step", "reports": 1, "added": "2026-09-24"}
+  ]
+}
