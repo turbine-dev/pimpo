@@ -7,8 +7,10 @@ import { SinceYesterday } from '../components/SinceYesterday'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api, type Exploration } from '../lib/api'
 import { relative } from '../lib/format'
+import { useT } from '../lib/i18n'
 
 export function Routines({ onNew }: { onNew: () => void }) {
+  const t = useT()
   const nav = useNavigate()
   const routines = useQuery({ queryKey: ['routines'], queryFn: api.routines })
   const pending = useQuery({ queryKey: ['explorations', 'pending'], queryFn: () => api.explorations('running,ready,compiling') })
@@ -20,11 +22,11 @@ export function Routines({ onNew }: { onNew: () => void }) {
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-semibold tracking-tight">Rotinas</h1>
-          <p className="mt-1 text-sm text-ink-2">O que eu faço sozinho, sem gastar com modelo a cada vez.</p>
+          <h1 className="text-[22px] font-semibold tracking-tight">{t('routines.title')}</h1>
+          <p className="mt-1 text-sm text-ink-2">{t('routines.subtitle')}</p>
         </div>
         <Button variant="primary" onClick={onNew}>
-          <Plus size={16} /> Nova tarefa
+          <Plus size={16} /> {t('common.newTask')}
         </Button>
       </div>
 
@@ -41,8 +43,8 @@ export function Routines({ onNew }: { onNew: () => void }) {
       {(imported.data?.length ?? 0) > 0 && <ImportedTasks items={imported.data!} />}
 
       {routines.isPending ? null : list.length === 0 ? (
-        <EmptyState icon={<Repeat size={22} />} title="Nenhuma rotina ainda" action={<Button variant="primary" onClick={onNew}>Pedir a primeira tarefa</Button>}>
-          Peça algo que você faz toda semana. Depois que der certo uma vez, eu faço sozinho.
+        <EmptyState icon={<Repeat size={22} />} title={t('routines.emptyTitle')} action={<Button variant="primary" onClick={onNew}>{t('routines.emptyAction')}</Button>}>
+          {t('routines.emptyText')}
         </EmptyState>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -56,6 +58,7 @@ export function Routines({ onNew }: { onNew: () => void }) {
 }
 
 function ExplorationCard({ e, onOpen }: { e: Exploration; onOpen: () => void }) {
+  const t = useT()
   const running = e.state === 'running' || e.state === 'compiling'
   return (
     <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
@@ -63,7 +66,7 @@ function ExplorationCard({ e, onOpen }: { e: Exploration; onOpen: () => void }) 
         <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-explore-soft text-explore">{running ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}</div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-[14px] font-medium">{e.request}</div>
-          <div className="text-[12.5px] text-ink-3">{e.state === 'running' ? 'Fazendo agora…' : e.state === 'compiling' ? 'Virando rotina…' : `Pronto para virar rotina · ${relative(e.updated_at)}`}</div>
+          <div className="text-[12.5px] text-ink-3">{e.state === 'running' ? t('routines.running') : e.state === 'compiling' ? t('routines.compiling') : t('routines.ready', { when: relative(e.updated_at) })}</div>
         </div>
       </Card>
     </motion.div>
@@ -71,13 +74,14 @@ function ExplorationCard({ e, onOpen }: { e: Exploration; onOpen: () => void }) 
 }
 
 function ImportedTasks({ items }: { items: Exploration[] }) {
+  const t = useT()
   const qc = useQueryClient()
   const nav = useNavigate()
   const explore = useMutation({ mutationFn: api.exploreImported, onSuccess: (r) => { qc.invalidateQueries({ queryKey: ['explorations'] }); nav(`/explorations/${r.id}`) } })
   const discard = useMutation({ mutationFn: api.discard, onSuccess: () => qc.invalidateQueries({ queryKey: ['explorations'] }) })
   return (
-    <section className="mb-6" aria-label="Tarefas trazidas de outro agente">
-      <h2 className="mb-2 flex items-center gap-2 text-[13px] font-medium text-ink-2"><ArrowDownToLine size={14} /> Trazidas de outro agente · explore uma vez e vira rotina</h2>
+    <section className="mb-6" aria-label={t('routines.imported')}>
+      <h2 className="mb-2 flex items-center gap-2 text-[13px] font-medium text-ink-2"><ArrowDownToLine size={14} /> {t('routines.importedTitle')}</h2>
       <Card className="divide-y divide-line">
         {items.map((e) => (
           <div key={e.id} className="flex items-center gap-3 p-3.5">
@@ -85,8 +89,8 @@ function ImportedTasks({ items }: { items: Exploration[] }) {
               <div className="truncate text-[14px]">{e.request.split('\n')[0]}</div>
               <div className="truncate text-[12px] text-ink-3">{e.summary}</div>
             </div>
-            <Button size="sm" variant="primary" disabled={explore.isPending} onClick={() => explore.mutate(e.id)}>Explorar</Button>
-            <Button size="sm" variant="ghost" aria-label="Descartar" onClick={() => discard.mutate(e.id)}><X size={15} /></Button>
+            <Button size="sm" variant="primary" disabled={explore.isPending} onClick={() => explore.mutate(e.id)}>{t('routines.explore')}</Button>
+            <Button size="sm" variant="ghost" aria-label={t('routines.discard')} onClick={() => discard.mutate(e.id)}><X size={15} /></Button>
           </div>
         ))}
       </Card>

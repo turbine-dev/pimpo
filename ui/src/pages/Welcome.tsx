@@ -7,14 +7,16 @@ import { Logo } from '../components/Shell'
 import { Button, Card } from '../components/ui'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
+import { useT } from '../lib/i18n'
 
 const presets = [
-  { value: 'conservative', title: 'Conservador', text: 'Pergunto antes de qualquer mudança, até arquivar.' },
-  { value: 'balanced', title: 'Equilibrado', text: 'Leio e te aviso à vontade; mudanças reversíveis eu faço e deixo o desfazer; o irreversível sempre pergunto.', recommended: true },
-  { value: 'liberal', title: 'Liberal', text: 'Só pergunto antes de mandar algo para outras pessoas. Apagar vira lixeira.' },
+  { value: 'conservative', title: 'welcome.conservative', text: 'welcome.conservativeText' },
+  { value: 'balanced', title: 'welcome.balanced', text: 'welcome.balancedText', recommended: true },
+  { value: 'liberal', title: 'welcome.liberal', text: 'welcome.liberalText' },
 ] as const
 
 export function Welcome({ onFirstTask }: { onFirstTask: () => void }) {
+  const t = useT()
   const qc = useQueryClient()
   const nav = useNavigate()
   const setup = useQuery({ queryKey: ['setup'], queryFn: api.setup })
@@ -37,15 +39,15 @@ export function Welcome({ onFirstTask }: { onFirstTask: () => void }) {
   const steps = [
     {
       icon: <Sparkles size={20} />,
-      title: 'Oi, eu sou o Vigia.',
+      title: t('welcome.hello'),
       body: (
         <div className="space-y-4 text-[14.5px] leading-relaxed text-ink-2">
-          <p>Você me pede algo que faz toda semana. Na primeira vez eu faço com um modelo de linguagem, com você olhando.</p>
+          <p>{t('welcome.intro')}</p>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
-              [<Repeat size={16} />, 'Rotinas', 'O que deu certo vira código com testes, que roda sozinho e quase de graça.'],
-              [<ShieldCheck size={16} />, 'Regras', 'Suas regras ficam fora do modelo. Nada irreversível sem você.'],
-              [<Check size={16} />, 'Recibos', 'Tudo o que eu fizer fica registrado, com desfazer.'],
+              [<Repeat size={16} />, t('nav.routines'), t('welcome.routinesText')],
+              [<ShieldCheck size={16} />, t('nav.rules'), t('welcome.rulesText')],
+              [<Check size={16} />, t('nav.receipts'), t('welcome.receiptsText')],
             ].map(([icon, title, text]) => (
               <div key={String(title)} className="rounded-xl border border-line bg-bg p-3.5">
                 <div className="mb-1.5 flex items-center gap-2 text-[13.5px] font-medium text-ink">
@@ -55,61 +57,61 @@ export function Welcome({ onFirstTask }: { onFirstTask: () => void }) {
               </div>
             ))}
           </div>
-          {s?.demo && <p className="rounded-lg bg-explore-soft px-3 py-2 text-[13px] text-explore">Modo demonstração: uma caixa de e-mail e uma agenda de exemplo, sem contas e sem custo.</p>}
+          {s?.demo && <p className="rounded-lg bg-explore-soft px-3 py-2 text-[13px] text-explore">{t('welcome.demo')}</p>}
         </div>
       ),
     },
     {
       icon: <MessageCircle size={20} />,
-      title: 'Onde eu falo com você',
+      title: t('welcome.talk'),
       body: (
         <div className="space-y-3 text-[14.5px] text-ink-2">
-          <p>Pelo Telegram eu mando resultados, peço aprovações e aviso quando algo falha. Leva 1 minuto.</p>
-          <Status ok={!!s?.telegram || !!s?.demo} label={s?.demo ? 'No demo as mensagens aparecem aqui mesmo' : s?.telegram ? 'Telegram conectado' : 'Ainda não conectado'} />
-          {!s?.demo && !s?.telegram && <Button onClick={() => nav('/connections')}>Conectar o Telegram</Button>}
+          <p>{t('welcome.talkText')}</p>
+          <Status ok={!!s?.telegram || !!s?.demo} label={s?.demo ? t('welcome.demoMessages') : s?.telegram ? t('welcome.telegramOn') : t('welcome.notConnected')} />
+          {!s?.demo && !s?.telegram && <Button onClick={() => nav('/connections')}>{t('welcome.connectTelegram')}</Button>}
         </div>
       ),
     },
     {
       icon: <Mail size={20} />,
-      title: 'O que eu posso ler',
+      title: t('welcome.read'),
       body: (
         <div className="space-y-3 text-[14.5px] text-ink-2">
-          <p>Seu e-mail (senha de app, revogável) e sua agenda (link iCal, só leitura). As chaves ficam criptografadas no seu computador.</p>
-          <Status ok={!!s?.mail || !!s?.demo} label={s?.demo ? 'E-mail de exemplo' : s?.mail ? 'E-mail conectado' : 'E-mail ainda não conectado'} />
-          <Status ok={!!s?.calendar || !!s?.demo} label={s?.demo ? 'Agenda de exemplo' : s?.calendar ? 'Agenda conectada' : 'Agenda ainda não conectada'} />
-          {!s?.demo && !(s?.mail && s?.calendar) && <Button onClick={() => nav('/connections')}>Abrir Conexões</Button>}
+          <p>{t('welcome.readText')}</p>
+          <Status ok={!!s?.mail || !!s?.demo} label={s?.demo ? t('welcome.sampleMail') : s?.mail ? t('welcome.mailOn') : t('welcome.mailOff')} />
+          <Status ok={!!s?.calendar || !!s?.demo} label={s?.demo ? t('welcome.sampleCalendar') : s?.calendar ? t('welcome.calendarOn') : t('welcome.calendarOff')} />
+          {!s?.demo && !(s?.mail && s?.calendar) && <Button onClick={() => nav('/connections')}>{t('welcome.openConnections')}</Button>}
         </div>
       ),
     },
     {
       icon: <ShieldCheck size={20} />,
-      title: 'O que eu posso fazer sem te perguntar?',
+      title: t('welcome.autonomy'),
       body: (
         <div className="grid gap-2">
           {presets.map((p) => (
             <button key={p.value} onClick={() => setPreset(p.value)} className={cn('rounded-xl border p-4 text-left transition-colors', preset === p.value ? 'border-accent bg-accent/8' : 'border-line hover:border-line-strong')}>
               <div className="flex items-center gap-2 text-[14.5px] font-medium">
-                {p.title}
-                {'recommended' in p && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] text-accent">recomendado</span>}
+                {t(p.title)}
+                {'recommended' in p && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] text-accent">{t('welcome.recommended')}</span>}
               </div>
-              <div className="mt-1 text-[13px] text-ink-2">{p.text}</div>
+              <div className="mt-1 text-[13px] text-ink-2">{t(p.text)}</div>
             </button>
           ))}
-          <p className="pt-1 text-[12.5px] text-ink-3">Você pode mudar e escrever suas próprias regras depois, em Regras.</p>
+          <p className="pt-1 text-[12.5px] text-ink-3">{t('welcome.later')}</p>
         </div>
       ),
     },
     {
       icon: <Coins size={20} />,
-      title: 'Quanto posso gastar por dia com modelos?',
+      title: t('welcome.budget'),
       body: (
         <div className="space-y-3 text-[14.5px] text-ink-2">
-          <p>Conferido antes de cada chamada. Rotinas compiladas quase não gastam; o custo está em aprender tarefas novas.</p>
+          <p>{t('welcome.budgetText')}</p>
           <div className="flex items-center gap-2">
             <span className="text-ink-3">$</span>
-            <input value={budget} onChange={(e) => setBudget(e.target.value)} type="number" min="0" step="0.5" aria-label="Limite diário em dólares" className="h-11 w-32 rounded-[10px] border border-line bg-bg px-3 text-[15px] outline-none focus:border-accent" />
-            <span className="text-[13px] text-ink-3">por dia</span>
+            <input value={budget} onChange={(e) => setBudget(e.target.value)} type="number" min="0" step="0.5" aria-label={t('settings.budgetLabel')} className="h-11 w-32 rounded-[10px] border border-line bg-bg px-3 text-[15px] outline-none focus:border-accent" />
+            <span className="text-[13px] text-ink-3">{t('welcome.perDay')}</span>
           </div>
         </div>
       ),
@@ -120,7 +122,7 @@ export function Welcome({ onFirstTask }: { onFirstTask: () => void }) {
     <div className="mx-auto flex min-h-[80vh] max-w-2xl flex-col justify-center py-10">
       <div className="mb-8 flex items-center gap-3">
         <Logo size={34} />
-        <div className="flex gap-1.5" role="img" aria-label={`Passo ${step + 1} de ${steps.length}`}>
+        <div className="flex gap-1.5" role="img" aria-label={t('welcome.step', { n: step + 1, total: steps.length })}>
           {steps.map((_, i) => (
             <span key={i} className={cn('h-1.5 w-8 rounded-full transition-colors', i <= step ? 'bg-accent' : 'bg-line')} />
           ))}
@@ -137,15 +139,15 @@ export function Welcome({ onFirstTask }: { onFirstTask: () => void }) {
       </AnimatePresence>
       <div className="mt-5 flex items-center justify-between">
         <Button variant="ghost" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>
-          Voltar
+          {t('common.back')}
         </Button>
         {last ? (
           <Button variant="primary" onClick={() => finish.mutate()} disabled={finish.isPending}>
-            Pedir a primeira tarefa <ArrowRight size={15} />
+            {t('routines.emptyAction')} <ArrowRight size={15} />
           </Button>
         ) : (
           <Button variant="primary" onClick={() => setStep(step + 1)}>
-            Continuar <ArrowRight size={15} />
+            {t('welcome.continue')} <ArrowRight size={15} />
           </Button>
         )}
       </div>

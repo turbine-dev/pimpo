@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
+import { useT } from '../lib/i18n'
 import { nav as pages } from './Shell'
 
 type Item = { id: string; label: string; hint: string; icon: React.ReactNode; run: () => void }
 
 // Palette is ⌘K: jump to any page or routine, or start a task.
 export function Palette({ open, onOpenChange, onNewTask }: { open: boolean; onOpenChange: (o: boolean) => void; onNewTask: () => void }) {
+  const t = useT()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
@@ -21,20 +23,20 @@ export function Palette({ open, onOpenChange, onNewTask }: { open: boolean; onOp
       navigate(to)
     }
     const all: Item[] = [
-      { id: 'new', label: 'Nova tarefa', hint: 'ação', icon: <Plus size={15} />, run: () => { onOpenChange(false); onNewTask() } },
-      ...pages.map((p) => ({ id: p.to, label: p.label, hint: 'página', icon: p.icon, run: go(p.to) })),
-      ...(routines.data ?? []).map((r) => ({ id: r.id, label: r.name, hint: 'rotina', icon: <Repeat size={15} />, run: go(`/routines/${r.id}`) })),
+      { id: 'new', label: t('common.newTask'), hint: t('palette.action'), icon: <Plus size={15} />, run: () => { onOpenChange(false); onNewTask() } },
+      ...pages.map((p) => ({ id: p.to, label: t(p.label), hint: t('palette.page'), icon: p.icon, run: go(p.to) })),
+      ...(routines.data ?? []).map((r) => ({ id: r.id, label: r.name, hint: t('palette.routine'), icon: <Repeat size={15} />, run: go(`/routines/${r.id}`) })),
     ]
     const needle = q.trim().toLowerCase()
     return needle ? all.filter((i) => i.label.toLowerCase().includes(needle)) : all
-  }, [q, routines.data, navigate, onOpenChange, onNewTask])
+  }, [q, routines.data, navigate, onOpenChange, onNewTask, t])
   useEffect(() => setActive(0), [q])
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setQ('') }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" />
         <Dialog.Content className="fixed left-1/2 top-[18vh] z-50 w-[min(560px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-2xl border border-line bg-surface shadow-[var(--shadow-pop)] focus:outline-none" aria-describedby={undefined}>
-          <Dialog.Title className="sr-only">Buscar</Dialog.Title>
+          <Dialog.Title className="sr-only">{t('palette.search')}</Dialog.Title>
           <div className="flex items-center gap-3 border-b border-line px-4">
             <Search size={16} className="text-ink-3" />
             <input
@@ -46,8 +48,8 @@ export function Palette({ open, onOpenChange, onNewTask }: { open: boolean; onOp
                 if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)) }
                 if (e.key === 'Enter') items[active]?.run()
               }}
-              placeholder="Ir para uma rotina, página ou ação…"
-              aria-label="Buscar"
+              placeholder={t('palette.placeholder')}
+              aria-label={t('palette.search')}
               className="h-12 flex-1 bg-transparent text-[14.5px] outline-none placeholder:text-ink-3"
             />
           </div>
@@ -62,7 +64,7 @@ export function Palette({ open, onOpenChange, onNewTask }: { open: boolean; onOp
                 </button>
               </li>
             ))}
-            {items.length === 0 && <li className="px-3 py-6 text-center text-[13px] text-ink-3">Nada encontrado.</li>}
+            {items.length === 0 && <li className="px-3 py-6 text-center text-[13px] text-ink-3">{t('palette.empty')}</li>}
           </ul>
         </Dialog.Content>
       </Dialog.Portal>

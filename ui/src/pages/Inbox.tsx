@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api } from '../lib/api'
 import { relative } from '../lib/format'
+import { useT } from '../lib/i18n'
 
 export function Inbox() {
+  const t = useT()
   const nav = useNavigate()
   const qc = useQueryClient()
   const ready = useQuery({ queryKey: ['explorations', 'ready'], queryFn: () => api.explorations('ready') })
@@ -19,11 +21,11 @@ export function Inbox() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-1 text-[22px] font-semibold tracking-tight">Precisa de você</h1>
-      <p className="mb-6 text-sm text-ink-2">O que está esperando uma decisão sua. O mesmo aparece no Telegram.</p>
+      <h1 className="mb-1 text-[22px] font-semibold tracking-tight">{t('inbox.title')}</h1>
+      <p className="mb-6 text-sm text-ink-2">{t('inbox.subtitle')}</p>
       {items === 0 && (
-        <EmptyState icon={<BellOff size={22} />} title="Nada esperando por você">
-          Quando uma rotina falhar ou uma tarefa nova estiver pronta para virar rotina, ela aparece aqui.
+        <EmptyState icon={<BellOff size={22} />} title={t('inbox.emptyTitle')}>
+          {t('inbox.emptyText')}
         </EmptyState>
       )}
       <div className="space-y-3">
@@ -34,13 +36,13 @@ export function Inbox() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[14px] font-medium">{ap.text}</div>
-              <div className="text-[12.5px] text-ink-3">Regra: {ap.reason} · esperando você</div>
+              <div className="text-[12.5px] text-ink-3">{t('inbox.rule', { reason: ap.reason })}</div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={() => answer.mutate({ id: ap.id, a: 'deny' })}>Negar</Button>
-              <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'run' })} title="Permite o resto desta execução sem perguntar de novo">Todos desta vez</Button>
-              <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'always' })}>Sempre</Button>
-              <Button size="sm" variant="primary" onClick={() => answer.mutate({ id: ap.id, a: 'once' })}>Permitir</Button>
+              <Button size="sm" variant="ghost" onClick={() => answer.mutate({ id: ap.id, a: 'deny' })}>{t('inbox.deny')}</Button>
+              <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'run' })} title={t('inbox.allRunHint')}>{t('inbox.allRun')}</Button>
+              <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'always' })}>{t('inbox.always')}</Button>
+              <Button size="sm" variant="primary" onClick={() => answer.mutate({ id: ap.id, a: 'once' })}>{t('inbox.allow')}</Button>
             </div>
           </Card>
         ))}
@@ -50,12 +52,12 @@ export function Inbox() {
               <AlertTriangle size={18} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-medium">{r.name} não rodou</div>
-              <div className="text-[12.5px] text-ink-3">Pausei a rotina até você decidir.</div>
+              <div className="text-[14px] font-medium">{t('inbox.didntRun', { name: r.name })}</div>
+              <div className="text-[12.5px] text-ink-3">{t('inbox.paused')}</div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => run.mutate(r.id)}>Rodar de novo</Button>
-              <Button size="sm" variant="primary" onClick={() => repair.mutate(r.id)}>Refazer com o agente</Button>
+              <Button size="sm" onClick={() => run.mutate(r.id)}>{t('inbox.runAgain')}</Button>
+              <Button size="sm" variant="primary" onClick={() => repair.mutate(r.id)}>{t('inbox.redo')}</Button>
             </div>
           </Card>
         ))}
@@ -66,9 +68,9 @@ export function Inbox() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[14px] font-medium">{e.request}</div>
-              <div className="text-[12.5px] text-ink-3">Pronto para virar rotina · {relative(e.updated_at)}</div>
+              <div className="text-[12.5px] text-ink-3">{t('routines.ready', { when: relative(e.updated_at) })}</div>
             </div>
-            <Button size="sm" variant="primary" onClick={() => nav(`/explorations/${e.id}`)}>Revisar</Button>
+            <Button size="sm" variant="primary" onClick={() => nav(`/explorations/${e.id}`)}>{t('inbox.review')}</Button>
           </Card>
         ))}
       </div>

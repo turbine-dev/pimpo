@@ -8,8 +8,10 @@ import { describe } from '../lib/actions'
 import { api, type ActionRecord, type VEvent } from '../lib/api'
 import { cn } from '../lib/cn'
 import { usd } from '../lib/format'
+import { useT } from '../lib/i18n'
 
 export function ExplorationPage() {
+  const t = useT()
   const { id = '' } = useParams()
   const qc = useQueryClient()
   const nav = useNavigate()
@@ -25,25 +27,25 @@ export function ExplorationPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <Link to="/" className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink">
-        <ArrowLeft size={14} /> Rotinas
+        <ArrowLeft size={14} /> {t('nav.routines')}
       </Link>
       <div className="mb-6">
         <div className="mb-2 flex items-center gap-2 text-[12px] font-medium">
           {running ? (
             <span className="flex items-center gap-1.5 text-explore">
-              <Loader2 size={13} className="animate-spin" /> Fazendo agora, com você olhando
+              <Loader2 size={13} className="animate-spin" /> {t('exploration.running')}
             </span>
           ) : e.state === 'failed' ? (
-            <span className="text-danger">Não consegui terminar</span>
+            <span className="text-danger">{t('exploration.failed')}</span>
           ) : (
-            <span className="text-read">Feito · {usd(e.cost_usd)} com modelo</span>
+            <span className="text-read">{t('exploration.done', { cost: usd(e.cost_usd) })}</span>
           )}
         </div>
         <h1 className="text-[21px] font-semibold leading-snug tracking-tight">{e.request}</h1>
       </div>
 
       <Card className="mb-6 overflow-hidden">
-        <div className="border-b border-line px-5 py-3 text-[12.5px] font-medium text-ink-3">O que eu fiz · {actions.length} passo{actions.length === 1 ? '' : 's'}</div>
+        <div className="border-b border-line px-5 py-3 text-[12.5px] font-medium text-ink-3">{t('exploration.steps', { count: actions.length })}</div>
         <ol className="divide-y divide-line">
           <AnimatePresence initial={false}>
             {actions.map((ev) => (
@@ -57,18 +59,18 @@ export function ExplorationPage() {
               <li key={name} className="flex items-start gap-3 px-5 py-3.5">
                 <span className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" />
                 <div className="min-w-0 flex-1 text-[13.5px]">
-                  Decidiu “{e.trace?.questions?.[name] ?? name}” · {yes} sim, {no} não
-                  <div className="text-[12px] text-ink-3">A rotina vai repetir essa decisão com um modelo pequeno, item por item.</div>
+                  {t('exploration.decided', { question: e.trace?.questions?.[name] ?? name, yes, no })}
+                  <div className="text-[12px] text-ink-3">{t('exploration.decidedNote')}</div>
                 </div>
               </li>
             )
           })}
           {running && (
             <li className="flex items-center gap-3 px-5 py-3.5 text-[13px] text-ink-3">
-              <span className="size-2 animate-pulse-soft rounded-full bg-explore" /> pensando no próximo passo…
+              <span className="size-2 animate-pulse-soft rounded-full bg-explore" /> {t('exploration.thinking')}
             </li>
           )}
-          {!running && actions.length === 0 && <li className="px-5 py-4 text-[13px] text-ink-3">Nenhuma ação registrada.</li>}
+          {!running && actions.length === 0 && <li className="px-5 py-4 text-[13px] text-ink-3">{t('exploration.none')}</li>}
         </ol>
       </Card>
 
@@ -77,7 +79,7 @@ export function ExplorationPage() {
       {(e.state === 'ready' || e.state === 'compiling' || e.state === 'done') && (
         <>
           <Card className="mb-6 p-5">
-            <div className="mb-2 text-[12.5px] font-medium text-ink-3">Resultado</div>
+            <div className="mb-2 text-[12.5px] font-medium text-ink-3">{t('exploration.result')}</div>
             <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed">{e.summary}</p>
           </Card>
           <CompileMoment
@@ -96,6 +98,7 @@ export function ExplorationPage() {
 }
 
 function Step({ ev }: { ev: VEvent<ActionRecord> }) {
+  const t = useT()
   const a = ev.data
   return (
     <motion.li layout initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="flex items-start gap-3 px-5 py-3.5">
@@ -105,7 +108,7 @@ function Step({ ev }: { ev: VEvent<ActionRecord> }) {
         {a.error && <div className="mt-0.5 text-[12.5px] text-danger">{a.error}</div>}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        {a.dry_run && <span className="rounded-full bg-sunken px-2 py-0.5 text-[11px] text-ink-3">simulado</span>}
+        {a.dry_run && <span className="rounded-full bg-sunken px-2 py-0.5 text-[11px] text-ink-3">{t('receipts.simulated')}</span>}
         {a.risk !== 'read' && <RiskBadge risk={a.risk} />}
       </div>
     </motion.li>
@@ -121,6 +124,7 @@ function CompileMoment({ state, error, exploreCost, routine, routineId, onCompil
   onCompile: () => void
   onDiscard: () => void
 }) {
+  const t = useT()
   const nav = useNavigate()
   return (
     <AnimatePresence mode="wait">
@@ -133,15 +137,15 @@ function CompileMoment({ state, error, exploreCost, routine, routineId, onCompil
                 <Sparkles size={20} />
               </div>
               <div className="flex-1">
-                <h2 className="text-[16px] font-semibold tracking-tight">Quer que eu faça isso sozinho, sem gastar com modelo a cada vez?</h2>
-                <p className="mt-1 text-[13.5px] text-ink-2">Eu transformo o que acabei de fazer numa rotina: código que você pode ler, com testes e com a lista exata do que ela pode tocar.</p>
+                <h2 className="text-[16px] font-semibold tracking-tight">{t('exploration.offer')}</h2>
+                <p className="mt-1 text-[13.5px] text-ink-2">{t('exploration.offerText')}</p>
                 {error && <p className="mt-3 rounded-lg bg-danger-soft px-3 py-2 text-[13px] text-danger">{error}</p>}
                 <div className="mt-5 flex flex-wrap gap-2">
                   <Button variant="primary" onClick={onCompile}>
-                    <Sparkles size={15} /> Transformar em rotina
+                    <Sparkles size={15} /> {t('exploration.compile')}
                   </Button>
                   <Button variant="ghost" onClick={onDiscard}>
-                    <X size={15} /> Descartar
+                    <X size={15} /> {t('routines.discard')}
                   </Button>
                 </div>
               </div>
@@ -153,12 +157,12 @@ function CompileMoment({ state, error, exploreCost, routine, routineId, onCompil
         <motion.div key="compiling" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <Card className="p-6">
             <div className="flex items-center gap-3 text-[14px] font-medium">
-              <Loader2 size={17} className="animate-spin text-accent" /> Escrevendo a rotina e testando…
+              <Loader2 size={17} className="animate-spin text-accent" /> {t('exploration.compiling')}
             </div>
             <div className="mt-4 grid gap-2 text-[13px] text-ink-2 sm:grid-cols-3">
-              <Phase icon={<Code2 size={14} />} label="Escrevendo o código" delay={0} />
-              <Phase icon={<FlaskConical size={14} />} label="Rodando os testes" delay={1.2} />
-              <Phase icon={<ShieldCheck size={14} />} label="Conferindo capacidades" delay={2.4} />
+              <Phase icon={<Code2 size={14} />} label={t('exploration.phaseCode')} delay={0} />
+              <Phase icon={<FlaskConical size={14} />} label={t('exploration.phaseTests')} delay={1.2} />
+              <Phase icon={<ShieldCheck size={14} />} label={t('exploration.phaseCaps')} delay={2.4} />
             </div>
           </Card>
         </motion.div>
@@ -167,21 +171,21 @@ function CompileMoment({ state, error, exploreCost, routine, routineId, onCompil
         <motion.div key="done" initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 24 }}>
           <Card className="p-6">
             <div className="mb-4 flex items-center gap-2 text-[14px] font-semibold text-read">
-              <Check size={17} /> Virou rotina. A partir de agora eu faço sozinho.
+              <Check size={17} /> {t('exploration.compiled')}
             </div>
             <div className="mb-5 grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-line bg-bg p-4">
-                <div className="text-[12px] text-ink-3">Hoje, com modelo</div>
+                <div className="text-[12px] text-ink-3">{t('exploration.todayCost')}</div>
                 <div className="mt-1 text-[22px] font-semibold tabular-nums">{usd(exploreCost)}</div>
               </div>
               <div className="rounded-xl border border-read/30 bg-read-soft p-4">
-                <div className="text-[12px] text-read">Cada execução da rotina</div>
+                <div className="text-[12px] text-read">{t('exploration.runCost')}</div>
                 <div className="mt-1 text-[22px] font-semibold tabular-nums text-read">~{usd(0)}</div>
               </div>
             </div>
             {routine && (
               <>
-                <div className="mb-2 text-[12.5px] font-medium text-ink-3">Ela só pode:</div>
+                <div className="mb-2 text-[12.5px] font-medium text-ink-3">{t('exploration.onlyCan')}</div>
                 <div className="mb-5 flex flex-wrap gap-1.5">
                   {routine.capabilities.map((c) => (
                     <CapabilityChip key={c} entry={c} />
@@ -193,17 +197,17 @@ function CompileMoment({ state, error, exploreCost, routine, routineId, onCompil
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className="flex items-center gap-1.5 text-[13px] text-read">
-                      <FlaskConical size={14} /> Passou nos testes, inclusive refazendo o que acabei de fazer
+                      <FlaskConical size={14} /> {t('exploration.passed')}
                     </span>
                     <Button size="sm" onClick={() => nav(`/routines/${routine.id}?tab=code`)}>
-                      <Code2 size={14} /> Ver o código
+                      <Code2 size={14} /> {t('exploration.viewCode')}
                     </Button>
                   </div>
                 </div>
               </>
             )}
             {!routine && routineId && (
-              <Button onClick={() => nav(`/routines/${routineId}`)}>Ver a rotina</Button>
+              <Button onClick={() => nav(`/routines/${routineId}`)}>{t('exploration.viewRoutine')}</Button>
             )}
           </Card>
         </motion.div>
