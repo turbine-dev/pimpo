@@ -224,6 +224,19 @@ func (a *App) explorationAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		server.WriteJSON(w, 200, a.summary(ctx, rt))
+	case "explore":
+		e, err := a.Store.Exploration(ctx, id)
+		if err != nil || e.State != store.ExplorationImported {
+			server.WriteError(w, server.StatusError{Status: 404, Msg: "no imported task with that id"})
+			return
+		}
+		started, err := a.Explore.Start(context.WithoutCancel(ctx), e.Request, "human:owner")
+		if err != nil {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+			return
+		}
+		a.Explore.Discard(ctx, id, "human:owner")
+		server.WriteJSON(w, 202, map[string]string{"id": started})
 	case "discard":
 		if err := a.Explore.Discard(ctx, id, "human:owner"); err != nil {
 			server.WriteError(w, notFound(err))

@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { Loader2, Plus, Repeat, Sparkles } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowDownToLine, Loader2, Plus, Repeat, Sparkles, X } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
 import { RoutineCard } from '../components/RoutineCard'
@@ -12,6 +12,7 @@ export function Routines({ onNew }: { onNew: () => void }) {
   const nav = useNavigate()
   const routines = useQuery({ queryKey: ['routines'], queryFn: api.routines })
   const pending = useQuery({ queryKey: ['explorations', 'pending'], queryFn: () => api.explorations('running,ready,compiling') })
+  const imported = useQuery({ queryKey: ['explorations', 'imported'], queryFn: () => api.explorations('imported') })
   const list = routines.data ?? []
   const open = pending.data ?? []
 
@@ -36,6 +37,8 @@ export function Routines({ onNew }: { onNew: () => void }) {
           ))}
         </div>
       )}
+
+      {(imported.data?.length ?? 0) > 0 && <ImportedTasks items={imported.data!} />}
 
       {routines.isPending ? null : list.length === 0 ? (
         <EmptyState icon={<Repeat size={22} />} title="Nenhuma rotina ainda" action={<Button variant="primary" onClick={onNew}>Pedir a primeira tarefa</Button>}>
@@ -64,5 +67,29 @@ function ExplorationCard({ e, onOpen }: { e: Exploration; onOpen: () => void }) 
         </div>
       </Card>
     </motion.div>
+  )
+}
+
+function ImportedTasks({ items }: { items: Exploration[] }) {
+  const qc = useQueryClient()
+  const nav = useNavigate()
+  const explore = useMutation({ mutationFn: api.exploreImported, onSuccess: (r) => { qc.invalidateQueries({ queryKey: ['explorations'] }); nav(`/explorations/${r.id}`) } })
+  const discard = useMutation({ mutationFn: api.discard, onSuccess: () => qc.invalidateQueries({ queryKey: ['explorations'] }) })
+  return (
+    <section className="mb-6" aria-label="Tarefas trazidas de outro agente">
+      <h2 className="mb-2 flex items-center gap-2 text-[13px] font-medium text-ink-2"><ArrowDownToLine size={14} /> Trazidas de outro agente · explore uma vez e vira rotina</h2>
+      <Card className="divide-y divide-line">
+        {items.map((e) => (
+          <div key={e.id} className="flex items-center gap-3 p-3.5">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[14px]">{e.request.split('\n')[0]}</div>
+              <div className="truncate text-[12px] text-ink-3">{e.summary}</div>
+            </div>
+            <Button size="sm" variant="primary" disabled={explore.isPending} onClick={() => explore.mutate(e.id)}>Explorar</Button>
+            <Button size="sm" variant="ghost" aria-label="Descartar" onClick={() => discard.mutate(e.id)}><X size={15} /></Button>
+          </div>
+        ))}
+      </Card>
+    </section>
   )
 }

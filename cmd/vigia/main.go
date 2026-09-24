@@ -44,11 +44,13 @@ func run(args []string) error {
 		return serve(args)
 	case "snapshot", "snapshots", "restore":
 		return snapshots(cmd, args)
+	case "migrate":
+		return migrateCmd(args, os.Stdout)
 	case "version":
 		fmt.Println(version)
 		return nil
 	}
-	return fmt.Errorf("unknown command %q (try: serve, snapshot, snapshots, restore, version)", cmd)
+	return fmt.Errorf("unknown command %q (try: serve, migrate, snapshot, snapshots, restore, version)", cmd)
 }
 
 func dataDir(flagValue string) string {
