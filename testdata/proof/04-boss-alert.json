@@ -1,0 +1,52 @@
+{
+  "id": "04-boss-alert",
+  "request": "Fica de olho no meu email: chegou qualquer coisa não lida da Ana (ana@acme.com), minha chefe, me avisa no Telegram na hora com o assunto. De outras pessoas não precisa.",
+  "now": "2026-09-24T10:15:00-03:00",
+  "calls": [
+    {
+      "capability": "gmail.search",
+      "args": {"query": "in:inbox is:unread", "days": 1, "unread": true, "max": 20},
+      "result": [
+        {"id": "a-503", "from": "messages-noreply@linkedin.example", "from_name": "LinkedIn", "to": "eu@exemplo.com", "subject": "Você tem 3 novas mensagens", "snippet": "Veja quem entrou em contato com você.", "date": "2026-09-24T10:02:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_SOCIAL"], "replied": false},
+        {"id": "a-502", "from": "bruno.costa@acme.com", "from_name": "Bruno Costa", "to": "eu@exemplo.com", "subject": "Almoço hoje?", "snippet": "Bora no japonês às 12h30?", "date": "2026-09-24T09:48:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+        {"id": "a-501", "from": "ana@acme.com", "from_name": "Ana Ribeiro", "to": "eu@exemplo.com", "subject": "Deck para o board até sexta", "snippet": "Preciso da versão final do deck com os números de setembro até sexta 18h.", "date": "2026-09-24T09:31:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false}
+      ]
+    },
+    {
+      "capability": "telegram.send",
+      "args": {"text": "📩 Email da Ana Ribeiro: \"Deck para o board até sexta\"\nPreciso da versão final do deck com os números de setembro até sexta 18h."},
+      "result": {"ok": true}
+    }
+  ],
+  "outcome": "Quando há email não lido de ana@acme.com eu recebo um alerta no Telegram com o assunto; emails de outras pessoas são ignorados.",
+  "expect": [
+    {
+      "capability": "telegram.send",
+      "count": 1,
+      "contains": ["Deck para o board até sexta"],
+      "not_contains": ["Almoço hoje?", "novas mensagens"]
+    }
+  ],
+  "holdout": {
+    "now": "2026-10-07T15:40:00-03:00",
+    "responses": [
+      {
+        "capability": "gmail.search",
+        "result": [
+          {"id": "a-556", "from": "ana@acme.com", "from_name": "Ana Ribeiro", "to": "eu@exemplo.com", "subject": "Urgente: cliente Globex cancelou", "snippet": "Me liga assim que puder, precisamos rever a projeção do trimestre.", "date": "2026-10-07T15:32:00-03:00", "labels": ["INBOX", "UNREAD", "IMPORTANT"], "replied": false},
+          {"id": "a-555", "from": "ana.paula@gmail.com", "from_name": "Ana Paula", "to": "eu@exemplo.com", "subject": "Fotos do churrasco", "snippet": "Subi as fotos no drive, olha lá!", "date": "2026-10-07T14:50:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+          {"id": "a-554", "from": "mariana@acme.com", "from_name": "Mariana Teles", "to": "eu@exemplo.com", "subject": "Reembolso de viagem aprovado", "snippet": "Seu reembolso de R$ 640,00 foi aprovado.", "date": "2026-10-07T13:05:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+          {"id": "a-553", "from": "ana@acme.com", "from_name": "Ana Ribeiro", "to": "eu@exemplo.com", "subject": "Re: Planejamento 2027", "snippet": "Gostei da proposta, vamos apresentar na quinta.", "date": "2026-10-07T11:20:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+          {"id": "a-552", "from": "bruno.costa@acme.com", "from_name": "Bruno Costa", "to": "eu@exemplo.com", "subject": "Café às 16h?", "snippet": "Tô descendo, vem?", "date": "2026-10-07T10:00:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false}
+        ]
+      }
+    ],
+    "expect": [
+      {
+        "capability": "telegram.send",
+        "contains": ["Urgente: cliente Globex cancelou", "Planejamento 2027"],
+        "not_contains": ["Fotos do churrasco", "Reembolso de viagem", "Café às 16h", "Deck para o board"]
+      }
+    ]
+  }
+}

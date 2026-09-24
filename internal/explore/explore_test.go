@@ -1,0 +1,201 @@
+package explore
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/denerFernandes/vigia/internal/budget"
+	"github.com/denerFernandes/vigia/internal/compiler"
+	"github.com/denerFernandes/vigia/internal/connector"
+	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/vigia/internal/host"
+	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/vigia/internal/store"
+	"github.com/denerFernandes/vigia/internal/trace"
+)
+
+type inbox struct {
+	mu       sync.Mutex
+	archived []string
+	sent     []string
+}
+
+func (i *inbox) Capabilities() []string {
+	return []string{"gmail.search", "gmail.archive", "telegram.send"}
+}
+func (i *inbox) Call(_ context.Context, name, _ string, args any) (any, error) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	switch name {
+	case "gmail.archive":
+		i.archived = append(i.archived, fmt.Sprint(args))
+		return map[string]bool{"ok": true}, nil
+	case "telegram.send":
+		i.sent = append(i.sent, args.(map[string]any)["text"].(string))
+		return map[string]bool{"ok": true}, nil
+	}
+	return []map[string]any{
+		{"id": "m1", "from_name": "Loja X", "subject": "Ofertas da semana", "labels": []string{"INBOX", "UNREAD"}},
+		{"id": "m2", "from_name": "Ana Souza", "subject": "Contrato Q4", "labels": []string{"INBOX", "UNREAD"}},
+	}, nil
+}
+
+type notes struct {
+	mu   sync.Mutex
+	list []Notice
+}
+
+func (n *notes) Notify(_ context.Context, x Notice) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.list = append(n.list, x)
+	return nil
+}
+
+type changed struct{ ids []string }
+
+func (c *changed) Changed(_ context.Context, id string) { c.ids = append(c.ids, id) }
+
+func rpc(url string, id int, method string, params any) (map[string]any, error) {
+	b, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": id, "method": method, "params": params})
+	resp, err := http.Post(url, "application/json", bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("status %d", resp.StatusCode)
+	}
+	var out map[string]any
+	json.NewDecoder(resp.Body).Decode(&out)
+	return out, nil
+}
+
+// explorer behaves like a model: search, decide, archive the newsletter, report.
+var explorer = llm.FakeAgent{Script: func(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
+	steps := []struct {
+		tool string
+		args any
+	}{
+		{"gmail_search", map[string]any{"query": "is:unread"}},
+		{"decide", map[string]any{"judgment": "newsletter", "question": "Is this a newsletter?", "item": "m1", "yes": true, "confidence": 0.95}},
+		{"decide", map[string]any{"judgment": "newsletter", "question": "Is this a newsletter?", "item": "m2", "yes": false, "confidence": 0.9}},
+		{"gmail_archive", map[string]any{"id": "m1"}},
+		{"telegram_send", map[string]any{"text": "Arquivei 1 newsletter: Ofertas da semana"}},
+	}
+	for i, s := range steps {
+		out, err := rpc(r.MCPURL, i, "tools/call", map[string]any{"name": s.tool, "arguments": s.args})
+		if err != nil {
+			return llm.Response{}, err
+		}
+		if res, _ := out["result"].(map[string]any); res["isError"] == true {
+			return llm.Response{}, fmt.Errorf("%s failed: %v", s.tool, res)
+		}
+	}
+	return llm.Response{Text: "Arquivei a newsletter e te avisei.", CostUSD: 0.2}, nil
+}}
+
+const routineOut = `{"name":"Triagem de newsletters","description":"Arquiva newsletters","manifest":{"schedule":"0 18 * * *","capabilities":["gmail.search","gmail.archive","telegram.send"],"judgments":{"newsletter":"Is this a newsletter?"}},
+"code":"async function run() { let n = []; for (const m of await gmail.search({query: \"is:unread\"})) { if ((await judge.newsletter(m)).p >= 0.5) { await gmail.archive({id: m.id}); n.push(m.subject); } } if (n.length) await telegram.send({text: \"Arquivei \" + n.length + \" newsletter: \" + n.join(\", \")}); }",
+"tests":[]}`
+
+func setup(t *testing.T) (*Service, *inbox, *notes, *changed) {
+	t.Helper()
+	ev, err := event.Open(filepath.Join(t.TempDir(), "v.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { ev.Close() })
+	st, _ := store.Open(ev.DB())
+	mail := &inbox{}
+	n := &notes{}
+	c := &changed{}
+	s := &Service{
+		Env:      host.Env{Router: connector.NewRouter(mail), Events: ev, Budget: &budget.Budget{Events: ev}},
+		Store:    st,
+		Agent:    explorer,
+		Compiler: compiler.Compiler{Model: &llm.Fake{Responses: []llm.Response{{Structured: json.RawMessage(routineOut), CostUSD: 0.05}}}},
+		Notify:   n,
+		Routines: c,
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /mcp/explore/{id}", s.MCP)
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	s.BaseURL = srv.URL
+	return s, mail, n, c
+}
+
+func TestExploreRecordsAndApprovalCompiles(t *testing.T) {
+	s, mail, n, c := setup(t)
+	ctx := context.Background()
+	id, err := s.Start(ctx, "Arquiva as newsletters não lidas e me avisa", "human:owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Wait()
+	e, _ := s.Store.Exploration(ctx, id)
+	if e.State != store.ExplorationReady || e.Error != "" {
+		t.Fatalf("exploration %+v", e)
+	}
+	if len(mail.archived) != 0 {
+		t.Fatal("exploration archived for real")
+	}
+	if len(mail.sent) != 1 {
+		t.Fatalf("the owner should get the exploration's message, got %v", mail.sent)
+	}
+	tr := e.Trace
+	if tr.Judgments["newsletter"]["m1"] != 0.95 || tr.Judgments["newsletter"]["m2"] < 0.09 || tr.Judgments["newsletter"]["m2"] > 0.11 {
+		t.Fatalf("judgments %+v", tr.Judgments)
+	}
+	if tr.Questions["newsletter"] != "Is this a newsletter?" {
+		t.Fatalf("questions %+v", tr.Questions)
+	}
+	if len(n.list) != 1 || !strings.Contains(n.list[0].Text, "simuladas") || n.list[0].Actions[0].Data != "compile:"+id {
+		t.Fatalf("notice %+v", n.list)
+	}
+	if e.CostUSD != 0.2 {
+		t.Fatalf("cost %v", e.CostUSD)
+	}
+
+	r, err := s.Approve(ctx, id, "human:owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.ID != "triagem-de-newsletters" || r.Version != 1 || len(c.ids) != 1 {
+		t.Fatalf("routine %+v changed %v", r, c.ids)
+	}
+	e, _ = s.Store.Exploration(ctx, id)
+	if e.State != store.ExplorationDone || e.Routine != r.ID {
+		t.Fatalf("after approval %+v", e)
+	}
+	if _, err := s.Approve(ctx, id, "human:owner"); err == nil {
+		t.Fatal("approved twice")
+	}
+}
+
+func TestMCPNeedsTheExplorationKey(t *testing.T) {
+	s, _, _, _ := setup(t)
+	if _, err := rpc(s.BaseURL+"/mcp/explore/nope?key=x", 1, "tools/list", nil); err == nil {
+		t.Fatal("unknown exploration served tools")
+	}
+}
+
+func TestDeriveExpectUsesDataValues(t *testing.T) {
+	calls := []trace.Call{
+		{Capability: "calendar.events", Result: json.RawMessage(`[{"id":"e1","title":"Standup","start":"2026-09-24T09:30:00-03:00"},{"title":"Almoço longo com cliente"}]`)},
+		{Capability: "telegram.send", Args: json.RawMessage(`{"text":"Hoje: Standup às 09:30"}`)},
+	}
+	exp := DeriveExpect(calls)
+	if len(exp) != 1 || *exp[0].Count != 1 || strings.Join(exp[0].Contains, ",") != "Standup" {
+		t.Fatalf("expect %+v", exp)
+	}
+}

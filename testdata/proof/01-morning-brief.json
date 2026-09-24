@@ -1,0 +1,85 @@
+{
+  "id": "01-morning-brief",
+  "request": "Todo dia às 7h me manda no Telegram um resumo do dia: minha agenda de hoje, os emails não lidos que forem importantes de verdade e a previsão do tempo pra São Paulo.",
+  "now": "2026-09-24T07:00:00-03:00",
+  "calls": [
+    {
+      "capability": "calendar.events",
+      "args": {"from": "2026-09-24T00:00:00-03:00", "to": "2026-09-24T23:59:59-03:00"},
+      "result": [
+        {"id": "ev-1", "title": "Standup", "start": "2026-09-24T09:30:00-03:00", "end": "2026-09-24T09:45:00-03:00", "location": "Google Meet", "attendees": ["time@acme.com"], "calendar": "Trabalho"},
+        {"id": "ev-2", "title": "Revisão de contrato com Jurídico", "start": "2026-09-24T14:00:00-03:00", "end": "2026-09-24T15:00:00-03:00", "location": "Sala 3", "attendees": ["juridico@acme.com"], "calendar": "Trabalho"},
+        {"id": "ev-3", "title": "Dentista", "start": "2026-09-24T18:30:00-03:00", "end": "2026-09-24T19:15:00-03:00", "location": "Rua Augusta, 1200", "attendees": [], "calendar": "Pessoal"}
+      ]
+    },
+    {
+      "capability": "gmail.search",
+      "args": {"query": "in:inbox is:unread", "days": 1, "unread": true, "max": 20},
+      "result": [
+        {"id": "m-104", "from": "carlos.lima@acme.com", "from_name": "Carlos Lima", "to": "eu@exemplo.com", "subject": "Servidor de produção fora do ar", "snippet": "O checkout está retornando 502 desde as 6h40, preciso de você na call às 8h.", "date": "2026-09-24T06:52:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+        {"id": "m-103", "from": "noreply@bancoalfa.com.br", "from_name": "Banco Alfa", "to": "eu@exemplo.com", "subject": "Seu extrato mensal está disponível", "snippet": "Acesse o app para conferir o extrato de setembro.", "date": "2026-09-24T05:10:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_UPDATES"], "replied": false},
+        {"id": "m-102", "from": "ofertas@lojamaxima.com.br", "from_name": "Loja Máxima", "to": "eu@exemplo.com", "subject": "Ofertas imperdíveis só hoje", "snippet": "Até 70% OFF em eletrônicos. Aproveite!", "date": "2026-09-24T03:00:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_PROMOTIONS"], "replied": false},
+        {"id": "m-101", "from": "ana.souza@acme.com", "from_name": "Ana Souza", "to": "eu@exemplo.com", "subject": "Aprovação do orçamento Q4", "snippet": "Preciso da sua aprovação no orçamento até amanhã meio-dia.", "date": "2026-09-23T22:15:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false}
+      ]
+    },
+    {
+      "capability": "http.getJSON",
+      "args": "https://api.open-meteo.com/v1/forecast?latitude=-23.55&longitude=-46.63&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=1",
+      "result": {"latitude": -23.55, "longitude": -46.63, "timezone": "America/Sao_Paulo", "daily_units": {"time": "iso8601", "temperature_2m_max": "°C", "temperature_2m_min": "°C", "precipitation_probability_max": "%"}, "daily": {"time": ["2026-09-24"], "temperature_2m_max": [27.4], "temperature_2m_min": [16.8], "precipitation_probability_max": [20]}}
+    },
+    {
+      "capability": "telegram.send",
+      "args": {"text": "Bom dia! Resumo de quinta, 24/09\n\nAgenda:\n• 09:30 Standup\n• 14:00 Revisão de contrato com Jurídico\n• 18:30 Dentista\n\nEmails importantes:\n• Carlos Lima: Servidor de produção fora do ar\n• Ana Souza: Aprovação do orçamento Q4\n\nTempo em SP: 16.8°C a 27.4°C, 20% de chance de chuva."},
+      "result": {"ok": true}
+    }
+  ],
+  "judgments": {
+    "important": {"m-101": 0.93, "m-102": 0.02, "m-103": 0.08, "m-104": 0.98}
+  },
+  "outcome": "Uma mensagem no Telegram com os eventos de hoje, só os emails não lidos importantes e a máxima/mínima do dia em São Paulo.",
+  "expect": [
+    {
+      "capability": "telegram.send",
+      "count": 1,
+      "contains": ["Standup", "Revisão de contrato com Jurídico", "Dentista", "Servidor de produção fora do ar", "Aprovação do orçamento Q4", "27"],
+      "not_contains": ["Ofertas imperdíveis", "extrato mensal"]
+    }
+  ],
+  "holdout": {
+    "now": "2026-10-06T07:00:00-03:00",
+    "responses": [
+      {
+        "capability": "calendar.events",
+        "result": [
+          {"id": "ev-41", "title": "1:1 com Marina", "start": "2026-10-06T10:00:00-03:00", "end": "2026-10-06T10:30:00-03:00", "location": "Google Meet", "attendees": ["marina@acme.com"], "calendar": "Trabalho"},
+          {"id": "ev-42", "title": "Almoço com investidores", "start": "2026-10-06T12:30:00-03:00", "end": "2026-10-06T14:00:00-03:00", "location": "Restaurante Figueira", "attendees": ["joao@fundoverde.com"], "calendar": "Trabalho"},
+          {"id": "ev-43", "title": "Aula de inglês", "start": "2026-10-06T20:00:00-03:00", "end": "2026-10-06T21:00:00-03:00", "location": "", "attendees": [], "calendar": "Pessoal"}
+        ]
+      },
+      {
+        "capability": "gmail.search",
+        "result": [
+          {"id": "h-204", "from": "promo@viagensja.com", "from_name": "Viagens Já", "to": "eu@exemplo.com", "subject": "Cupom de 30% OFF pra sua próxima viagem", "snippet": "Use o código VOA30 até domingo.", "date": "2026-10-06T06:00:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_PROMOTIONS"], "replied": false},
+          {"id": "h-203", "from": "marina@acme.com", "from_name": "Marina Duarte", "to": "eu@exemplo.com", "subject": "Diretoria pediu os números até 9h", "snippet": "Consegue me mandar a planilha de churn antes do 1:1?", "date": "2026-10-06T05:48:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+          {"id": "h-202", "from": "noreply@medium.com", "from_name": "Medium Daily Digest", "to": "eu@exemplo.com", "subject": "Resumo diário: 5 histórias para você", "snippet": "Como escalamos nosso time de dados...", "date": "2026-10-06T04:00:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_UPDATES"], "replied": false},
+          {"id": "h-201", "from": "rafael@atlas.io", "from_name": "Rafael Mendes", "to": "eu@exemplo.com", "subject": "Contrato assinado - Projeto Atlas", "snippet": "Segue o contrato assinado. Podemos começar segunda.", "date": "2026-10-05T23:30:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false}
+        ]
+      },
+      {
+        "capability": "http.getJSON",
+        "result": {"latitude": -23.55, "longitude": -46.63, "timezone": "America/Sao_Paulo", "daily_units": {"time": "iso8601", "temperature_2m_max": "°C", "temperature_2m_min": "°C", "precipitation_probability_max": "%"}, "daily": {"time": ["2026-10-06"], "temperature_2m_max": [19.2], "temperature_2m_min": [12.5], "precipitation_probability_max": [85]}}
+      }
+    ],
+    "judgments": {
+      "important": {"h-201": 0.94, "h-202": 0.03, "h-203": 0.96, "h-204": 0.02}
+    },
+    "expect": [
+      {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": ["1:1 com Marina", "Almoço com investidores", "Aula de inglês", "Diretoria pediu os números", "Contrato assinado - Projeto Atlas", "19"],
+        "not_contains": ["Cupom de 30% OFF", "Resumo diário", "Standup", "Dentista"]
+      }
+    ]
+  }
+}

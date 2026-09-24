@@ -1,0 +1,40 @@
+{
+  "id": "08-currency-alert",
+  "request": "Check the USD→BRL exchange rate a few times a day and ping me on Telegram if it goes above 5.40. If it's at or below that, don't send anything.",
+  "now": "2026-09-24T12:00:00-03:00",
+  "calls": [
+    {
+      "capability": "http.getJSON",
+      "args": "https://api.exchangerate.example/v1/latest?base=USD&symbols=BRL",
+      "result": {"base": "USD", "date": "2026-09-24", "time_last_update_utc": "2026-09-24T14:55:00Z", "rates": {"BRL": 5.4712}}
+    },
+    {
+      "capability": "telegram.send",
+      "args": {"text": "💵 USD→BRL is at 5.47, above your 5.40 threshold."},
+      "result": {"ok": true}
+    }
+  ],
+  "outcome": "A Telegram alert with the current rate only when USD→BRL is above 5.40; silence otherwise.",
+  "expect": [
+    {
+      "capability": "telegram.send",
+      "count": 1,
+      "contains": ["5.47"]
+    }
+  ],
+  "holdout": {
+    "now": "2026-10-08T15:00:00-03:00",
+    "responses": [
+      {
+        "capability": "http.getJSON",
+        "result": {"base": "USD", "date": "2026-10-08", "time_last_update_utc": "2026-10-08T17:55:00Z", "rates": {"BRL": 5.3188}}
+      }
+    ],
+    "expect": [
+      {
+        "capability": "telegram.send",
+        "count": 0
+      }
+    ]
+  }
+}

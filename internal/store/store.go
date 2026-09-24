@@ -1,0 +1,353 @@
+// Package store keeps Vigia's working state: routines and their versions,
+// explorations waiting for approval, and runs. The event log remains the
+// record of what happened; these tables are the current picture.
+package store
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/denerFernandes/vigia/internal/routine"
+	"github.com/denerFernandes/vigia/internal/trace"
+)
+
+var ErrNotFound = errors.New("not found")
+
+type Store struct{ db *sql.DB }
+
+const schema = `
+CREATE TABLE IF NOT EXISTS routines (
+  id         TEXT PRIMARY KEY,
+  name       TEXT NOT NULL,
+  version    INTEGER NOT NULL,
+  state      TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS routine_versions (
+  routine    TEXT NOT NULL REFERENCES routines(id),
+  version    INTEGER NOT NULL,
+  body       TEXT NOT NULL,
+  reason     TEXT NOT NULL,
+  approved_by TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (routine, version)
+);
+CREATE TABLE IF NOT EXISTS explorations (
+  id         TEXT PRIMARY KEY,
+  request    TEXT NOT NULL,
+  state      TEXT NOT NULL,
+  trace      TEXT,
+  summary    TEXT,
+  routine    TEXT,
+  cost_usd   REAL NOT NULL DEFAULT 0,
+  error      TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS runs (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  routine    TEXT NOT NULL,
+  version    INTEGER NOT NULL,
+  started_at TEXT NOT NULL,
+  ended_at   TEXT,
+  outcome    TEXT NOT NULL,
+  error      TEXT,
+  cost_usd   REAL NOT NULL DEFAULT 0,
+  calls      INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS runs_routine ON runs (routine, id);`
+
+func Open(db *sql.DB) (*Store, error) {
+	if _, err := db.Exec(schema); err != nil {
+		return nil, fmt.Errorf("migrate store: %w", err)
+	}
+	return &Store{db: db}, nil
+}
+
+const (
+	RoutineActive = "active"
+	RoutinePaused = "paused"
+	RoutineBroken = "broken"
+
+	ExplorationRunning   = "running"
+	ExplorationReady     = "ready"
+	ExplorationCompiling = "compiling"
+	ExplorationDone      = "done"
+	ExplorationFailed    = "failed"
+	ExplorationDiscarded = "discarded"
+)
+
+type Routine struct {
+	ID        string          `json:"id"`
+	Version   int             `json:"version"`
+	State     string          `json:"state"`
+	Body      routine.Routine `json:"routine"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+}
+
+type Version struct {
+	Version    int             `json:"version"`
+	Body       routine.Routine `json:"routine"`
+	Reason     string          `json:"reason"`
+	ApprovedBy string          `json:"approved_by"`
+	CreatedAt  time.Time       `json:"created_at"`
+}
+
+func ts(t time.Time) string    { return t.UTC().Format(time.RFC3339Nano) }
+func parse(s string) time.Time { t, _ := time.Parse(time.RFC3339Nano, s); return t }
+
+// SaveRoutine creates a routine or adds a new version to it.
+func (s *Store) SaveRoutine(ctx context.Context, id string, body routine.Routine, reason, approvedBy string) (Routine, error) {
+	b, err := json.Marshal(body)
+	if err != nil {
+		return Routine{}, err
+	}
+	now := time.Now()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Routine{}, err
+	}
+	defer tx.Rollback()
+	var version int
+	err = tx.QueryRowContext(ctx, `SELECT version FROM routines WHERE id = ?`, id).Scan(&version)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		version = 1
+		_, err = tx.ExecContext(ctx, `INSERT INTO routines (id, name, version, state, created_at, updated_at) VALUES (?, ?, 1, ?, ?, ?)`, id, body.Name, RoutineActive, ts(now), ts(now))
+	case err == nil:
+		version++
+		_, err = tx.ExecContext(ctx, `UPDATE routines SET name = ?, version = ?, state = ?, updated_at = ? WHERE id = ?`, body.Name, version, RoutineActive, ts(now), id)
+	}
+	if err != nil {
+		return Routine{}, err
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO routine_versions (routine, version, body, reason, approved_by, created_at) VALUES (?, ?, ?, ?, ?, ?)`, id, version, string(b), reason, approvedBy, ts(now)); err != nil {
+		return Routine{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return Routine{}, err
+	}
+	return s.Routine(ctx, id)
+}
+
+func (s *Store) Routine(ctx context.Context, id string) (Routine, error) {
+	rows, err := s.routines(ctx, `WHERE r.id = ?`, id)
+	if err != nil {
+		return Routine{}, err
+	}
+	if len(rows) == 0 {
+		return Routine{}, ErrNotFound
+	}
+	return rows[0], nil
+}
+
+func (s *Store) Routines(ctx context.Context) ([]Routine, error) {
+	return s.routines(ctx, `ORDER BY r.created_at`)
+}
+
+func (s *Store) routines(ctx context.Context, where string, args ...any) ([]Routine, error) {
+	q := `SELECT r.id, r.version, r.state, r.created_at, r.updated_at, v.body FROM routines r JOIN routine_versions v ON v.routine = r.id AND v.version = r.version ` + where
+	rows, err := s.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Routine{}
+	for rows.Next() {
+		var r Routine
+		var created, updated, body string
+		if err := rows.Scan(&r.ID, &r.Version, &r.State, &created, &updated, &body); err != nil {
+			return nil, err
+		}
+		r.CreatedAt, r.UpdatedAt = parse(created), parse(updated)
+		if err := json.Unmarshal([]byte(body), &r.Body); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) Versions(ctx context.Context, id string) ([]Version, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT version, body, reason, approved_by, created_at FROM routine_versions WHERE routine = ? ORDER BY version DESC`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Version{}
+	for rows.Next() {
+		var v Version
+		var body, created string
+		if err := rows.Scan(&v.Version, &body, &v.Reason, &v.ApprovedBy, &created); err != nil {
+			return nil, err
+		}
+		v.CreatedAt = parse(created)
+		json.Unmarshal([]byte(body), &v.Body)
+		out = append(out, v)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) SetRoutineState(ctx context.Context, id, state string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE routines SET state = ?, updated_at = ? WHERE id = ?`, state, ts(time.Now()), id)
+	return affected(res, err)
+}
+
+func affected(res sql.Result, err error) error {
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+type Exploration struct {
+	ID        string       `json:"id"`
+	Request   string       `json:"request"`
+	State     string       `json:"state"`
+	Trace     *trace.Trace `json:"trace,omitempty"`
+	Summary   string       `json:"summary"`
+	Routine   string       `json:"routine,omitempty"`
+	CostUSD   float64      `json:"cost_usd"`
+	Error     string       `json:"error,omitempty"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt time.Time    `json:"updated_at"`
+}
+
+func (s *Store) SaveExploration(ctx context.Context, e Exploration) error {
+	var tr any
+	if e.Trace != nil {
+		b, _ := json.Marshal(e.Trace)
+		tr = string(b)
+	}
+	now := ts(time.Now())
+	_, err := s.db.ExecContext(ctx, `INSERT INTO explorations (id, request, state, trace, summary, routine, cost_usd, error, created_at, updated_at)
+	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	  ON CONFLICT(id) DO UPDATE SET state = excluded.state, trace = excluded.trace, summary = excluded.summary, routine = excluded.routine, cost_usd = excluded.cost_usd, error = excluded.error, updated_at = excluded.updated_at`,
+		e.ID, e.Request, e.State, tr, e.Summary, e.Routine, e.CostUSD, e.Error, now, now)
+	return err
+}
+
+func (s *Store) Exploration(ctx context.Context, id string) (Exploration, error) {
+	list, err := s.explorations(ctx, `WHERE id = ?`, id)
+	if err != nil {
+		return Exploration{}, err
+	}
+	if len(list) == 0 {
+		return Exploration{}, ErrNotFound
+	}
+	return list[0], nil
+}
+
+func (s *Store) Explorations(ctx context.Context, states ...string) ([]Exploration, error) {
+	if len(states) == 0 {
+		return s.explorations(ctx, `ORDER BY created_at DESC LIMIT 100`)
+	}
+	q := `WHERE state IN (?` + repeat(",?", len(states)-1) + `) ORDER BY created_at DESC`
+	args := make([]any, len(states))
+	for i, st := range states {
+		args[i] = st
+	}
+	return s.explorations(ctx, q, args...)
+}
+
+func repeat(s string, n int) string {
+	out := ""
+	for range n {
+		out += s
+	}
+	return out
+}
+
+func (s *Store) explorations(ctx context.Context, where string, args ...any) ([]Exploration, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, request, state, trace, summary, routine, cost_usd, error, created_at, updated_at FROM explorations `+where, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Exploration{}
+	for rows.Next() {
+		var e Exploration
+		var tr, summary, rt, errText sql.NullString
+		var created, updated string
+		if err := rows.Scan(&e.ID, &e.Request, &e.State, &tr, &summary, &rt, &e.CostUSD, &errText, &created, &updated); err != nil {
+			return nil, err
+		}
+		e.Summary, e.Routine, e.Error = summary.String, rt.String, errText.String
+		e.CreatedAt, e.UpdatedAt = parse(created), parse(updated)
+		if tr.Valid && tr.String != "" {
+			var t trace.Trace
+			if json.Unmarshal([]byte(tr.String), &t) == nil {
+				e.Trace = &t
+			}
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
+type Run struct {
+	ID        int64     `json:"id"`
+	Routine   string    `json:"routine"`
+	Version   int       `json:"version"`
+	StartedAt time.Time `json:"started_at"`
+	EndedAt   time.Time `json:"ended_at,omitzero"`
+	Outcome   string    `json:"outcome"`
+	Error     string    `json:"error,omitempty"`
+	CostUSD   float64   `json:"cost_usd"`
+	Calls     int       `json:"calls"`
+}
+
+const (
+	RunRunning = "running"
+	RunOK      = "ok"
+	RunFailed  = "failed"
+	RunSkipped = "skipped"
+)
+
+func (s *Store) StartRun(ctx context.Context, routine string, version int) (int64, error) {
+	res, err := s.db.ExecContext(ctx, `INSERT INTO runs (routine, version, started_at, outcome) VALUES (?, ?, ?, ?)`, routine, version, ts(time.Now()), RunRunning)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func (s *Store) FinishRun(ctx context.Context, id int64, outcome, errText string, cost float64, calls int) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE runs SET ended_at = ?, outcome = ?, error = ?, cost_usd = ?, calls = ? WHERE id = ?`, ts(time.Now()), outcome, errText, cost, calls, id)
+	return err
+}
+
+func (s *Store) Runs(ctx context.Context, routine string, limit int) ([]Run, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT id, routine, version, started_at, COALESCE(ended_at, ''), outcome, COALESCE(error, ''), cost_usd, calls FROM runs WHERE routine = ? ORDER BY id DESC LIMIT ?`, routine, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Run{}
+	for rows.Next() {
+		var r Run
+		var started, ended string
+		if err := rows.Scan(&r.ID, &r.Routine, &r.Version, &started, &ended, &r.Outcome, &r.Error, &r.CostUSD, &r.Calls); err != nil {
+			return nil, err
+		}
+		r.StartedAt, r.EndedAt = parse(started), parse(ended)
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// CostSince sums routine run costs since t.
+func (s *Store) RunCostSince(ctx context.Context, routine string, t time.Time) (float64, error) {
+	var c sql.NullFloat64
+	err := s.db.QueryRowContext(ctx, `SELECT SUM(cost_usd) FROM runs WHERE routine = ? AND started_at >= ?`, routine, ts(t)).Scan(&c)
+	return c.Float64, err
+}

@@ -1,0 +1,157 @@
+// Package telegram is a small client for the Telegram Bot API: messages,
+// inline buttons, and long polling for replies and button taps.
+package telegram
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+)
+
+type Bot struct {
+	Token string
+	// BaseURL defaults to https://api.telegram.org and is replaced in tests.
+	BaseURL string
+	HTTP    *http.Client
+}
+
+type Button struct {
+	Text string `json:"text"`
+	Data string `json:"callback_data,omitempty"`
+	URL  string `json:"url,omitempty"`
+}
+
+type Message struct {
+	ID   int64  `json:"message_id"`
+	Text string `json:"text"`
+	Chat struct {
+		ID int64 `json:"id"`
+	} `json:"chat"`
+	From struct {
+		ID        int64  `json:"id"`
+		FirstName string `json:"first_name"`
+		Username  string `json:"username"`
+	} `json:"from"`
+}
+
+type Callback struct {
+	ID      string   `json:"id"`
+	Data    string   `json:"data"`
+	Message *Message `json:"message"`
+	From    struct {
+		ID int64 `json:"id"`
+	} `json:"from"`
+}
+
+type Update struct {
+	ID       int64     `json:"update_id"`
+	Message  *Message  `json:"message"`
+	Callback *Callback `json:"callback_query"`
+}
+
+func (b Bot) call(ctx context.Context, method string, body, out any) error {
+	base := b.BaseURL
+	if base == "" {
+		base = "https://api.telegram.org"
+	}
+	client := b.HTTP
+	if client == nil {
+		client = &http.Client{Timeout: 70 * time.Second}
+	}
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/bot"+b.Token+"/"+method, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		// The URL contains the token; never let it reach logs.
+		var uerr interface{ Unwrap() error }
+		if errors.As(err, &uerr) {
+			return fmt.Errorf("telegram %s: %w", method, uerr.Unwrap())
+		}
+		return fmt.Errorf("telegram %s failed", method)
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(resp.Body)
+	var env struct {
+		OK          bool            `json:"ok"`
+		Result      json.RawMessage `json:"result"`
+		Description string          `json:"description"`
+	}
+	if err := json.Unmarshal(raw, &env); err != nil {
+		return fmt.Errorf("telegram %s: unreadable response (%d)", method, resp.StatusCode)
+	}
+	if !env.OK {
+		return fmt.Errorf("telegram %s: %s", method, env.Description)
+	}
+	if out != nil {
+		return json.Unmarshal(env.Result, out)
+	}
+	return nil
+}
+
+func (b Bot) Me(ctx context.Context) (username string, err error) {
+	var me struct {
+		Username string `json:"username"`
+	}
+	err = b.call(ctx, "getMe", map[string]any{}, &me)
+	return me.Username, err
+}
+
+// Send posts a message with optional rows of inline buttons.
+func (b Bot) Send(ctx context.Context, chat int64, text string, rows ...[]Button) (Message, error) {
+	body := map[string]any{"chat_id": chat, "text": text, "disable_web_page_preview": true}
+	if len(rows) > 0 {
+		body["reply_markup"] = map[string]any{"inline_keyboard": rows}
+	}
+	var m Message
+	err := b.call(ctx, "sendMessage", body, &m)
+	return m, err
+}
+
+// Edit replaces a message's text and removes its buttons, used to show the
+// outcome of an approval where the question was.
+func (b Bot) Edit(ctx context.Context, chat, message int64, text string) error {
+	return b.call(ctx, "editMessageText", map[string]any{"chat_id": chat, "message_id": message, "text": text}, nil)
+}
+
+func (b Bot) Answer(ctx context.Context, callbackID, text string) error {
+	return b.call(ctx, "answerCallbackQuery", map[string]any{"callback_query_id": callbackID, "text": text}, nil)
+}
+
+// Poll long-polls for updates and calls handle for each until ctx ends.
+// Network errors back off and retry.
+func (b Bot) Poll(ctx context.Context, offset int64, handle func(Update)) error {
+	backoff := time.Second
+	for ctx.Err() == nil {
+		var updates []Update
+		err := b.call(ctx, "getUpdates", map[string]any{"offset": offset, "timeout": 50, "allowed_updates": []string{"message", "callback_query"}}, &updates)
+		if err != nil {
+			if ctx.Err() != nil {
+				break
+			}
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+			}
+			backoff = min(backoff*2, time.Minute)
+			continue
+		}
+		backoff = time.Second
+		for _, u := range updates {
+			handle(u)
+			offset = u.ID + 1
+		}
+	}
+	return ctx.Err()
+}

@@ -1,0 +1,3437 @@
+[
+ {
+  "id": "01-morning-brief",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "Bom dia! Resumo de terça-feira, 06/10\n\nAgenda:\n• 10:00 1:1 com Marina\n• 12:30 Almoço com investidores\n• 20:00 Aula de inglês\n\nEmails importantes:\n• Marina Duarte: Diretoria pediu os números até 9h\n• Rafael Mendes: Contrato assinado - Projeto Atlas\n\nTempo em São Paulo: 12.5°C a 19.2°C, 85% de chance de chuva."
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "resumo_diario_telegram",
+     "description": "Todo dia às 7h envia no Telegram um resumo: agenda do dia, emails não lidos realmente importantes e a previsão do tempo (máxima/mínima) para São Paulo.",
+     "manifest": {
+      "schedule": "0 7 * * *",
+      "capabilities": [
+       "calendar.events",
+       "gmail.search",
+       "http.getJSON:api.open-meteo.com",
+       "telegram.send"
+      ],
+      "judgments": {
+       "important": "Este email não lido é realmente importante e exige atenção do dono hoje?"
+      }
+     },
+     "code": "async function run() {\n  const from = dates.startOfDay(now(), 0);\n  const to = dates.startOfDay(now(), 1);\n\n  const events = await calendar.events({ from, to });\n  const sortedEvents = (events || []).slice().sort((a, b) =\u003e (a.start \u003c b.start ? -1 : a.start \u003e b.start ? 1 : 0));\n\n  const agendaLines = sortedEvents.map(ev =\u003e {\n    const isAllDay = typeof ev.start === 'string' \u0026\u0026 ev.start.length \u003c= 10;\n    const timeStr = isAllDay ? 'Dia todo' : dates.format(ev.start, 'HH:mm');\n    return `• ${timeStr} ${ev.title}`;\n  });\n\n  const emails = await gmail.search({ query: 'in:inbox is:unread', unread: true, days: 1, max: 20 });\n\n  const importantEmails = [];\n  for (const e of emails || []) {\n    const verdict = await judge.important(e);\n    if (verdict \u0026\u0026 verdict.p \u003e= 0.5) {\n      importantEmails.push(e);\n    }\n  }\n\n  const emailLines = importantEmails.map(e =\u003e `• ${e.from_name || e.from}: ${e.subject}`);\n\n  const weather = await http.getJSON('https://api.open-meteo.com/v1/forecast?latitude=-23.55\u0026longitude=-46.63\u0026daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max\u0026timezone=America%2FSao_Paulo\u0026forecast_days=1');\n\n  let weatherText = 'Tempo em São Paulo: indisponível no momento.';\n  if (weather \u0026\u0026 weather.daily \u0026\u0026 weather.daily.temperature_2m_max \u0026\u0026 weather.daily.temperature_2m_max.length \u003e 0) {\n    const tmax = weather.daily.temperature_2m_max[0];\n    const tmin = weather.daily.temperature_2m_min[0];\n    const precip = weather.daily.precipitation_probability_max ? weather.daily.precipitation_probability_max[0] : null;\n    weatherText = `Tempo em São Paulo: ${tmin}°C a ${tmax}°C` + (precip !== null \u0026\u0026 precip !== undefined ? `, ${precip}% de chance de chuva.` : '.');\n  }\n\n  const dayLabel = dates.format(now(), \"EEEE', 'dd/MM\");\n\n  const agendaSection = agendaLines.length \u003e 0 ? agendaLines.join('\\n') : 'Nenhum evento hoje.';\n  const emailSection = emailLines.length \u003e 0 ? emailLines.join('\\n') : 'Nenhum email importante.';\n\n  const text = `Bom dia! Resumo de ${dayLabel}\\n\\nAgenda:\\n${agendaSection}\\n\\nEmails importantes:\\n${emailSection}\\n\\n${weatherText}`;\n\n  log(text);\n  await telegram.send({ text });\n}\n",
+     "tests": [
+      {
+       "name": "dia normal com eventos e emails importantes",
+       "now": "2026-10-05T07:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e1",
+           "title": "Reunião de planejamento",
+           "start": "2026-10-05T10:00:00-03:00",
+           "end": "2026-10-05T11:00:00-03:00",
+           "location": "Sala 1",
+           "attendees": [
+            "time@acme.com"
+           ],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "e2",
+           "title": "Almoço com cliente",
+           "start": "2026-10-05T12:30:00-03:00",
+           "end": "2026-10-05T13:30:00-03:00",
+           "location": "Restaurante",
+           "attendees": [],
+           "calendar": "Pessoal"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-1",
+           "from": "chefe@acme.com",
+           "from_name": "Marina Chefe",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Preciso da sua decisão até 10h",
+           "snippet": "Cliente está esperando resposta sobre o contrato.",
+           "date": "2026-10-05T06:40:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          },
+          {
+           "id": "m-2",
+           "from": "newsletter@tech.com",
+           "from_name": "Tech News",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "5 novidades da semana",
+           "snippet": "Confira as últimas notícias de tecnologia.",
+           "date": "2026-10-05T05:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_UPDATES"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "time": [
+            "2026-10-05"
+           ],
+           "temperature_2m_max": [
+            25.1
+           ],
+           "temperature_2m_min": [
+            15.3
+           ],
+           "precipitation_probability_max": [
+            10
+           ]
+          },
+          "daily_units": {
+           "temperature_2m_max": "°C",
+           "temperature_2m_min": "°C",
+           "precipitation_probability_max": "%"
+          },
+          "latitude": -23.55,
+          "longitude": -46.63,
+          "timezone": "America/Sao_Paulo"
+         }
+        }
+       ],
+       "judgments": {
+        "important": {
+         "5 novidades da semana": 0.05,
+         "Preciso da sua decisão até 10h": 0.95
+        }
+       },
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Reunião de planejamento",
+          "Almoço com cliente",
+          "Marina Chefe",
+          "25.1",
+          "15.3"
+         ],
+         "not_contains": [
+          "Tech News",
+          "5 novidades da semana"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "dia sem eventos e sem emails importantes",
+       "now": "2026-11-02T07:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": []
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-3",
+           "from": "promo@loja.com",
+           "from_name": "Loja Promo",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "50% de desconto hoje",
+           "snippet": "Aproveite nossas ofertas.",
+           "date": "2026-11-02T06:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "time": [
+            "2026-11-02"
+           ],
+           "temperature_2m_max": [
+            22
+           ],
+           "temperature_2m_min": [
+            14.5
+           ],
+           "precipitation_probability_max": [
+            60
+           ]
+          },
+          "daily_units": {
+           "temperature_2m_max": "°C",
+           "temperature_2m_min": "°C",
+           "precipitation_probability_max": "%"
+          },
+          "latitude": -23.55,
+          "longitude": -46.63,
+          "timezone": "America/Sao_Paulo"
+         }
+        }
+       ],
+       "judgments": {
+        "important": {
+         "50% de desconto hoje": 0.02
+        }
+       },
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Nenhum evento hoje.",
+          "Nenhum email importante.",
+          "22",
+          "14.5"
+         ],
+         "not_contains": [
+          "Loja Promo"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "múltiplos eventos e vários emails importantes",
+       "now": "2026-12-10T07:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e10",
+           "title": "Dentista",
+           "start": "2026-12-10T18:00:00-03:00",
+           "end": "2026-12-10T19:00:00-03:00",
+           "location": "Clínica",
+           "attendees": [],
+           "calendar": "Pessoal"
+          },
+          {
+           "id": "e11",
+           "title": "Standup",
+           "start": "2026-12-10T09:00:00-03:00",
+           "end": "2026-12-10T09:15:00-03:00",
+           "location": "Meet",
+           "attendees": [
+            "time@acme.com"
+           ],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "e12",
+           "title": "Feriado - dia todo",
+           "start": "2026-12-10",
+           "end": "2026-12-10",
+           "location": "",
+           "attendees": [],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-5",
+           "from": "seguranca@acme.com",
+           "from_name": "Segurança TI",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Tentativa de acesso suspeita na sua conta",
+           "snippet": "Detectamos um login incomum, confirme se foi você.",
+           "date": "2026-12-10T06:30:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          },
+          {
+           "id": "m-6",
+           "from": "fornecedor@parceiro.com",
+           "from_name": "Fornecedor Parceiro",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Contrato vence hoje, precisamos da sua assinatura",
+           "snippet": "O contrato expira ao final do dia útil.",
+           "date": "2026-12-10T05:50:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "time": [
+            "2026-12-10"
+           ],
+           "temperature_2m_max": [
+            30.2
+           ],
+           "temperature_2m_min": [
+            19.8
+           ],
+           "precipitation_probability_max": [
+            5
+           ]
+          },
+          "daily_units": {
+           "temperature_2m_max": "°C",
+           "temperature_2m_min": "°C",
+           "precipitation_probability_max": "%"
+          },
+          "latitude": -23.55,
+          "longitude": -46.63,
+          "timezone": "America/Sao_Paulo"
+         }
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Contrato vence hoje, precisamos da sua assinatura": 0.9,
+         "Tentativa de acesso suspeita na sua conta": 0.97
+        }
+       },
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Standup",
+          "Dentista",
+          "Feriado - dia todo",
+          "Segurança TI",
+          "Fornecedor Parceiro",
+          "30.2",
+          "19.8"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Bom dia! Resumo de quinta-feira, 24/09\n\nAgenda:\n• 09:30 Standup\n• 14:00 Revisão de contrato com Jurídico\n• 18:30 Dentista\n\nEmails importantes:\n• Carlos Lima: Servidor de produção fora do ar\n• Ana Souza: Aprovação do orçamento Q4\n\nTempo em São Paulo: 16.8°C a 27.4°C, 20% de chance de chuva."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test dia normal com eventos e emails importantes",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Bom dia! Resumo de segunda-feira, 05/10\n\nAgenda:\n• 10:00 Reunião de planejamento\n• 12:30 Almoço com cliente\n\nEmails importantes:\n• Marina Chefe: Preciso da sua decisão até 10h\n\nTempo em São Paulo: 15.3°C a 25.1°C, 10% de chance de chuva."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test dia sem eventos e sem emails importantes",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Bom dia! Resumo de segunda-feira, 02/11\n\nAgenda:\nNenhum evento hoje.\n\nEmails importantes:\nNenhum email importante.\n\nTempo em São Paulo: 14.5°C a 22°C, 60% de chance de chuva."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test múltiplos eventos e vários emails importantes",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Bom dia! Resumo de quinta-feira, 10/12\n\nAgenda:\n• Dia todo Feriado - dia todo\n• 09:00 Standup\n• 18:00 Dentista\n\nEmails importantes:\n• Segurança TI: Tentativa de acesso suspeita na sua conta\n• Fornecedor Parceiro: Contrato vence hoje, precisamos da sua assinatura\n\nTempo em São Paulo: 19.8°C a 30.2°C, 5% de chance de chuva."
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.1243904
+   }
+  ],
+  "seconds": 73.161228708
+ },
+ {
+  "id": "02-bills",
+  "first_accepted": true,
+  "first_holdout": false,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": false,
+   "problems": [
+    "telegram.send never mentions \"R$ 412,77\"",
+    "telegram.send never mentions \"IPTU\""
+   ],
+   "writes": [
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "Contas vencendo nos próximos 7 dias:\n\n• 14/10 — Invoice #4471 - Cloud servers (Hetzner Online): R$ 54,30\n• 15/10 — Fatura Itaú Visa Platinum disponível (Itaú Cartões): R$ 3.205,10\n\nTotal: R$ 3.259,40"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Aviso diário de contas a vencer",
+     "description": "Toda manhã, procura nos e-mails recentes por boletos, faturas e invoices, extrai o valor e a data de vencimento de cada um (a partir do texto do e-mail), filtra apenas os que vencem entre hoje e os próximos 7 dias, e envia um resumo único no Telegram com cada conta (data e valor) e o total. Se não houver nenhuma conta vencendo no período, não envia mensagem.",
+     "manifest": {
+      "schedule": "0 8 * * *",
+      "capabilities": [
+       "gmail.search",
+       "telegram.send"
+      ]
+     },
+     "code": "async function run() {\n  const today = dates.today();\n  const limit = dates.addDays(today, 7);\n\n  const emails = await gmail.search({\n    query: \"boleto OR fatura OR invoice OR vencimento\",\n    days: 30,\n    max: 30\n  });\n\n  const bills = [];\n  for (const e of emails) {\n    const text = `${e.subject} ${e.snippet}`;\n    const due = dates.parse(text);\n    if (!due) continue;\n    // must be between today and today+7 (inclusive)\n    if (dates.isBefore(due, today)) continue;\n    if (dates.isBefore(limit, due)) continue;\n\n    const amount = money.parse(text);\n    if (amount === null) continue;\n\n    bills.push({ due, amount, subject: e.subject, from_name: e.from_name });\n  }\n\n  if (bills.length === 0) {\n    log(\"Nenhuma conta vencendo nos próximos 7 dias.\");\n    return;\n  }\n\n  bills.sort((a, b) =\u003e {\n    if (dates.isBefore(a.due, b.due)) return -1;\n    if (dates.isBefore(b.due, a.due)) return 1;\n    return 0;\n  });\n\n  let total = 0;\n  const lines = bills.map(b =\u003e {\n    total += b.amount;\n    return `• ${dates.format(b.due, \"dd/MM\")} — ${b.subject} (${b.from_name}): ${money.format(b.amount, \"BRL\")}`;\n  });\n\n  const text = `Contas vencendo nos próximos 7 dias:\\n\\n${lines.join(\"\\n\")}\\n\\nTotal: ${money.format(total, \"BRL\")}`;\n\n  await telegram.send({ text });\n}",
+     "tests": [
+      {
+       "name": "Várias contas, uma fora do prazo e uma já paga (excluídas)",
+       "now": "2026-11-02T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "faturas@claro.com.br",
+           "from_name": "Claro",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Fatura de internet - Claro",
+           "snippet": "Sua fatura no valor de R$ 99,90 vence em 05/11/2026.",
+           "date": "2026-11-01T09:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "e2",
+           "from": "cobranca@imobiliarialar.com.br",
+           "from_name": "Imobiliária Lar",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Boleto aluguel",
+           "snippet": "Valor do aluguel: R$ 1.800,00. Vencimento: 08/11/2026.",
+           "date": "2026-10-30T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "e3",
+           "from": "faturas@itau.com.br",
+           "from_name": "Itaú",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Fatura cartão",
+           "snippet": "O valor da fatura é R$ 350,00 com vencimento em 15/11/2026.",
+           "date": "2026-10-29T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "e4",
+           "from": "noreply@claro.com.br",
+           "from_name": "Claro",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Pagamento confirmado - Fatura Claro",
+           "snippet": "Recebemos seu pagamento de R$ 99,90 referente à fatura com vencimento em 01/10/2026.",
+           "date": "2026-10-02T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "05/11",
+          "99,90",
+          "08/11",
+          "1.800,00",
+          "1.899,90"
+         ],
+         "not_contains": [
+          "350,00",
+          "15/11",
+          "01/10"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Nada vencendo nos próximos 7 dias",
+       "now": "2026-11-02T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "f1",
+           "from": "atendimento@sabesp.com.br",
+           "from_name": "Sabesp",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Comprovante de pagamento",
+           "snippet": "Recebemos o pagamento da conta de água com vencimento em 25/10/2026.",
+           "date": "2026-10-26T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "f2",
+           "from": "faturas@sky.com.br",
+           "from_name": "Sky",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Fatura futura",
+           "snippet": "Sua próxima fatura vence em 20/11/2026, valor R$ 120,00.",
+           "date": "2026-11-01T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "Contas exatamente nos limites do período (hoje e daqui 7 dias)",
+       "now": "2026-05-10T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g1",
+           "from": "contas@comgas.com.br",
+           "from_name": "Comgás",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Conta de gás",
+           "snippet": "Total R$ 75,20, vencimento 10/05/2026.",
+           "date": "2026-05-09T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "g2",
+           "from": "adm@reservaverde.com.br",
+           "from_name": "Condomínio Reserva Verde",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Boleto condomínio",
+           "snippet": "Valor: R$ 450,00. Vencimento: 17/05/2026.",
+           "date": "2026-05-05T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "10/05",
+          "75,20",
+          "17/05",
+          "450,00",
+          "525,20"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Contas vencendo nos próximos 7 dias:\n\n• 28/09 — Sua fatura Nubank chegou (Nubank): R$ 1.482,35\n• 29/09 — Boleto mensalidade escolar - Outubro (Colégio Saberes): R$ 2.350,00\n• 30/09 — Conta de luz Enel - Setembro (Enel): R$ 189,90\n\nTotal: R$ 4.022,25"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Várias contas, uma fora do prazo e uma já paga (excluídas)",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Contas vencendo nos próximos 7 dias:\n\n• 05/11 — Fatura de internet - Claro (Claro): R$ 99,90\n• 08/11 — Boleto aluguel (Imobiliária Lar): R$ 1.800,00\n\nTotal: R$ 1.899,90"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Nada vencendo nos próximos 7 dias",
+      "passed": true
+     },
+     {
+      "scenario": "test Contas exatamente nos limites do período (hoje e daqui 7 dias)",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Contas vencendo nos próximos 7 dias:\n\n• 10/05 — Conta de gás (Comgás): R$ 75,20\n• 17/05 — Boleto condomínio (Condomínio Reserva Verde): R$ 450,00\n\nTotal: R$ 525,20"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.079756
+   }
+  ],
+  "seconds": 55.078839125
+ },
+ {
+  "id": "03-newsletter-triage",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "gmail.archive",
+     "args": {
+      "id": "n-457"
+     }
+    },
+    {
+     "capability": "gmail.archive",
+     "args": {
+      "id": "n-455"
+     }
+    },
+    {
+     "capability": "gmail.archive",
+     "args": {
+      "id": "n-453"
+     }
+    },
+    {
+     "capability": "gmail.archive",
+     "args": {
+      "id": "n-452"
+     }
+    },
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "Inbox cleanup done: archived 4 newsletters/promos (TechShop, TLDR, Spotify, Lenny's Newsletter)."
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "archive_unread_newsletters_promos",
+     "description": "Every evening, scans unread inbox emails, archives the ones judged to be newsletters/promotions (leaving emails from real people and important notifications untouched), and sends a single Telegram message reporting how many were archived.",
+     "manifest": {
+      "schedule": "0 20 * * *",
+      "capabilities": [
+       "gmail.search",
+       "gmail.archive",
+       "telegram.send"
+      ],
+      "judgments": {
+       "newsletter": "Is this email a newsletter or promotional/marketing email (not a personal message or an important account/security notification)?"
+      }
+     },
+     "code": "async function run() {\n  const emails = await gmail.search({ query: \"in:inbox is:unread\", days: 2, unread: true, max: 50 });\n\n  let archivedCount = 0;\n  const archivedNames = [];\n\n  for (const email of emails) {\n    const result = await judge.newsletter(email);\n    if (result.p \u003e= 0.5) {\n      await gmail.archive({ id: email.id });\n      archivedCount++;\n      archivedNames.push(email.from_name || email.from);\n    }\n  }\n\n  let text;\n  if (archivedCount === 0) {\n    text = \"Inbox cleanup done: no newsletters or promos to archive.\";\n  } else {\n    const label = archivedCount === 1 ? \"newsletter/promo\" : \"newsletters/promos\";\n    const names = archivedNames.length ? ` (${archivedNames.join(\", \")})` : \"\";\n    text = `Inbox cleanup done: archived ${archivedCount} ${label}${names}.`;\n  }\n\n  await telegram.send({ text });\n}",
+     "tests": [
+      {
+       "name": "normal case: mix of newsletters, promos, and real people/important notifications",
+       "now": "2026-09-25T20:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "promo@sale.example",
+           "from_name": "BigSale",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "50% off everything",
+           "snippet": "Huge savings this weekend only.",
+           "date": "2026-09-25T19:10:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false
+          },
+          {
+           "id": "e2",
+           "from": "news@dailydigest.example",
+           "from_name": "Daily Digest",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Today's top stories",
+           "snippet": "Here is what happened today.",
+           "date": "2026-09-25T07:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          },
+          {
+           "id": "e3",
+           "from": "john.doe@company.com",
+           "from_name": "John Doe",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Project update",
+           "snippet": "Can you review the doc before EOD?",
+           "date": "2026-09-25T14:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          },
+          {
+           "id": "e4",
+           "from": "alerts@bank.example",
+           "from_name": "Bank Alerts",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Suspicious login detected",
+           "snippet": "We noticed a login from a new device.",
+           "date": "2026-09-25T13:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "judgments": {
+        "newsletter": {
+         "e1": 0.97,
+         "e2": 0.9,
+         "e3": 0.02,
+         "e4": 0.05
+        }
+       },
+       "expect": [
+        {
+         "capability": "gmail.archive",
+         "count": 2
+        },
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "2"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "edge case: nothing worth archiving",
+       "now": "2026-09-25T20:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "f1",
+           "from": "lisa@family.com",
+           "from_name": "Lisa",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Weekend plans",
+           "snippet": "Are we still on for Saturday?",
+           "date": "2026-09-25T18:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          },
+          {
+           "id": "f2",
+           "from": "security@service.example",
+           "from_name": "Service Security",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "New device sign-in",
+           "snippet": "A new device just signed in to your account.",
+           "date": "2026-09-25T09:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "judgments": {
+        "newsletter": {
+         "f1": 0.01,
+         "f2": 0.1
+        }
+       },
+       "expect": [
+        {
+         "capability": "gmail.archive",
+         "count": 0
+        },
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "no newsletters"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "several newsletters/promos, one excluded because it's an important notification",
+       "now": "2026-09-25T20:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g1",
+           "from": "deals@shopmart.example",
+           "from_name": "ShopMart",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Flash deals today only",
+           "snippet": "Don't miss out on today's flash sale.",
+           "date": "2026-09-25T10:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false
+          },
+          {
+           "id": "g2",
+           "from": "weekly@techletter.example",
+           "from_name": "Tech Weekly",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "This week in tech",
+           "snippet": "Top stories from the tech world.",
+           "date": "2026-09-25T08:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          },
+          {
+           "id": "g3",
+           "from": "noreply@airline.example",
+           "from_name": "Airline",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Your flight itinerary change",
+           "snippet": "Your flight departure time has changed.",
+           "date": "2026-09-25T12:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          },
+          {
+           "id": "g4",
+           "from": "promo@fashionstore.example",
+           "from_name": "Fashion Store",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "New arrivals just for you",
+           "snippet": "Check out what's new this week.",
+           "date": "2026-09-25T11:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "judgments": {
+        "newsletter": {
+         "g1": 0.95,
+         "g2": 0.92,
+         "g3": 0.08,
+         "g4": 0.99
+        }
+       },
+       "expect": [
+        {
+         "capability": "gmail.archive",
+         "count": 3,
+         "not_contains": [
+          "g3"
+         ]
+        },
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "3"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "n-405"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "n-403"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "n-401"
+        }
+       },
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Inbox cleanup done: archived 3 newsletters/promos (Stratechery, Amazon, Morning Brew)."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test normal case: mix of newsletters, promos, and real people/important notifications",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "e1"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "e2"
+        }
+       },
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Inbox cleanup done: archived 2 newsletters/promos (BigSale, Daily Digest)."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test edge case: nothing worth archiving",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Inbox cleanup done: no newsletters or promos to archive."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test several newsletters/promos, one excluded because it's an important notification",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "g1"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "g2"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "g4"
+        }
+       },
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Inbox cleanup done: archived 3 newsletters/promos (ShopMart, Tech Weekly, Fashion Store)."
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.06211
+   }
+  ],
+  "seconds": 36.001214875
+ },
+ {
+  "id": "04-boss-alert",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "📩 Email da Ana Ribeiro: \"Urgente: cliente Globex cancelou\"\nMe liga assim que puder, precisamos rever a projeção do trimestre."
+     }
+    },
+    {
+     "capability": "gmail.label",
+     "args": {
+      "id": "a-556",
+      "label": "vigia/notified-ana"
+     }
+    },
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "📩 Email da Ana Ribeiro: \"Re: Planejamento 2027\"\nGostei da proposta, vamos apresentar na quinta."
+     }
+    },
+    {
+     "capability": "gmail.label",
+     "args": {
+      "id": "a-553",
+      "label": "vigia/notified-ana"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "alerta_email_ana",
+     "description": "Monitora a caixa de entrada e envia um alerta no Telegram assim que chega um email não lido de ana@acme.com, ignorando emails de outras pessoas. Marca o email com uma label após avisar, para não repetir o alerta no mesmo email.",
+     "manifest": {
+      "schedule": "*/5 * * * *",
+      "capabilities": [
+       "gmail.search",
+       "gmail.label",
+       "telegram.send"
+      ]
+     },
+     "code": "async function run() {\n  const bossEmail = \"ana@acme.com\";\n  const notifiedLabel = \"vigia/notified-ana\";\n\n  const results = await gmail.search({\n    query: `in:inbox is:unread from:${bossEmail} -label:${notifiedLabel}`,\n    days: 1,\n    unread: true,\n    max: 20\n  });\n\n  const toNotify = (results || []).filter(function (m) {\n    const fromOk = (m.from || \"\").toLowerCase() === bossEmail.toLowerCase();\n    const alreadyLabeled = (m.labels || []).some(function (l) {\n      return l === notifiedLabel;\n    });\n    return fromOk \u0026\u0026 !alreadyLabeled;\n  });\n\n  for (const msg of toNotify) {\n    const nameOrEmail = msg.from_name || msg.from;\n    const subject = msg.subject || \"(sem assunto)\";\n    const snippet = msg.snippet || \"\";\n    const text = \"📩 Email da \" + nameOrEmail + ': \"' + subject + '\"' + (snippet ? \"\\n\" + snippet : \"\");\n    await telegram.send({ text: text });\n    await gmail.label({ id: msg.id, label: notifiedLabel });\n    log(\"Alerta enviado para email de \" + nameOrEmail + \" (\" + msg.id + \")\");\n  }\n\n  if (toNotify.length === 0) {\n    log(\"Nenhum email novo e não lido de \" + bossEmail + \" no momento.\");\n  }\n}",
+     "tests": [
+      {
+       "name": "Email novo da chefe dispara alerta",
+       "now": "2026-10-01T09:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-901",
+           "from": "ana@acme.com",
+           "from_name": "Ana Ribeiro",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Reunião com o board amanhã",
+           "snippet": "Precisamos alinhar a pauta antes das 9h.",
+           "date": "2026-10-01T08:50:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "gmail.label",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Ana Ribeiro",
+          "Reunião com o board amanhã"
+         ]
+        },
+        {
+         "capability": "gmail.label",
+         "count": 1,
+         "contains": [
+          "m-901"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Emails de outras pessoas nao geram alerta",
+       "now": "2026-10-01T09:05:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-902",
+           "from": "bruno.costa@acme.com",
+           "from_name": "Bruno Costa",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Almoço hoje?",
+           "snippet": "Bora no japonês?",
+           "date": "2026-10-01T09:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          },
+          {
+           "id": "m-903",
+           "from": "news@newsletter.example",
+           "from_name": "Newsletter",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Novidades da semana",
+           "snippet": "Confira as novidades.",
+           "date": "2026-10-01T08:59:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 0
+        },
+        {
+         "capability": "gmail.label",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "Ignora email da chefe ja notificado, avisa apenas o novo",
+       "now": "2026-10-01T10:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-904",
+           "from": "ana@acme.com",
+           "from_name": "Ana Ribeiro",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Follow up do contrato",
+           "snippet": "Já mandaram o retorno?",
+           "date": "2026-10-01T09:50:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          },
+          {
+           "id": "m-905",
+           "from": "ana@acme.com",
+           "from_name": "Ana Ribeiro",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Deck atualizado",
+           "snippet": "Segue a versão final.",
+           "date": "2026-10-01T09:10:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "vigia/notified-ana"
+           ],
+           "replied": false
+          },
+          {
+           "id": "m-906",
+           "from": "bruno.costa@acme.com",
+           "from_name": "Bruno Costa",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Relatório mensal",
+           "snippet": "Segue anexo.",
+           "date": "2026-10-01T09:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "gmail.label",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Follow up do contrato"
+         ],
+         "not_contains": [
+          "Deck atualizado",
+          "Relatório mensal"
+         ]
+        },
+        {
+         "capability": "gmail.label",
+         "count": 1,
+         "contains": [
+          "m-904"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "📩 Email da Ana Ribeiro: \"Deck para o board até sexta\"\nPreciso da versão final do deck com os números de setembro até sexta 18h."
+        }
+       },
+       {
+        "capability": "gmail.label",
+        "args": {
+         "id": "a-501",
+         "label": "vigia/notified-ana"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Email novo da chefe dispara alerta",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "📩 Email da Ana Ribeiro: \"Reunião com o board amanhã\"\nPrecisamos alinhar a pauta antes das 9h."
+        }
+       },
+       {
+        "capability": "gmail.label",
+        "args": {
+         "id": "m-901",
+         "label": "vigia/notified-ana"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Emails de outras pessoas nao geram alerta",
+      "passed": true
+     },
+     {
+      "scenario": "test Ignora email da chefe ja notificado, avisa apenas o novo",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "📩 Email da Ana Ribeiro: \"Follow up do contrato\"\nJá mandaram o retorno?"
+        }
+       },
+       {
+        "capability": "gmail.label",
+        "args": {
+         "id": "m-904",
+         "label": "vigia/notified-ana"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.044271399999999995
+   }
+  ],
+  "seconds": 39.5048805
+ },
+ {
+  "id": "05-weekly-agenda",
+  "first_accepted": false,
+  "first_holdout": true,
+  "accepted": false,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "Your week ahead:\n\nseg 12/10\n• 10:00 Quarterly business review\n\nter 13/10\n• nothing scheduled\n\nqua 14/10\n• 07:10 Flight GRU → POA\n• 13:30 Workshop with Umbrella Corp\n\nqui 15/10\n• nothing scheduled\n\nsex 16/10\n• 11:15 Pediatrician - Sofia\n\nsáb 17/10\n• nothing scheduled\n\ndom 18/10\n• 06:30 Half marathon"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "weekly_agenda_telegram",
+     "description": "Every Sunday evening, gathers calendar events for the coming 7 days, groups them by day with start times, and sends a single skimmable Telegram summary.",
+     "manifest": {
+      "schedule": "0 20 * * 0",
+      "capabilities": [
+       "calendar.events",
+       "telegram.send"
+      ]
+     },
+     "code": "async function run() {\n  const start = dates.addDays(dates.today(), 1);\n  const end = dates.addDays(start, 7);\n  const events = await calendar.events({ from: start, to: end });\n\n  const days = [];\n  for (let i = 0; i \u003c 7; i++) {\n    days.push(dates.addDays(start, i));\n  }\n\n  const lines = [\"Your week ahead:\"];\n  for (const day of days) {\n    const dayEvents = events.filter((e) =\u003e dates.sameDay(e.start, day));\n    dayEvents.sort((a, b) =\u003e (a.start \u003c b.start ? -1 : a.start \u003e b.start ? 1 : 0));\n\n    lines.push(\"\");\n    lines.push(dates.format(day, \"EEE dd/MM\"));\n\n    if (dayEvents.length === 0) {\n      lines.push(\"• nothing scheduled\");\n    } else {\n      for (const ev of dayEvents) {\n        const hasTime = typeof ev.start === \"string\" \u0026\u0026 ev.start.includes(\"T\");\n        const label = hasTime\n          ? dates.format(ev.start, \"HH:mm\") + \" \" + ev.title\n          : ev.title;\n        lines.push(\"• \" + label);\n      }\n    }\n  }\n\n  const text = lines.join(\"\\n\");\n  await telegram.send({ text });\n  log(\"Sent weekly agenda covering \" + events.length + \" event(s)\");\n}",
+     "tests": [
+      {
+       "name": "normal week with mixed days and an empty day",
+       "now": "2026-11-01T20:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e1",
+           "title": "1:1 with manager",
+           "start": "2026-11-02T09:00:00-03:00",
+           "end": "2026-11-02T09:30:00-03:00",
+           "location": "Zoom",
+           "attendees": [
+            "boss@corp.example"
+           ],
+           "calendar": "Work"
+          },
+          {
+           "id": "e2",
+           "title": "Gym session",
+           "start": "2026-11-02T18:00:00-03:00",
+           "end": "2026-11-02T19:00:00-03:00",
+           "location": "Academia",
+           "attendees": [],
+           "calendar": "Personal"
+          },
+          {
+           "id": "e3",
+           "title": "Product review",
+           "start": "2026-11-04T11:00:00-03:00",
+           "end": "2026-11-04T12:00:00-03:00",
+           "location": "Room A",
+           "attendees": [
+            "team@corp.example"
+           ],
+           "calendar": "Work"
+          },
+          {
+           "id": "e4",
+           "title": "Birthday dinner",
+           "start": "2026-11-07T20:00:00-03:00",
+           "end": "2026-11-07T22:00:00-03:00",
+           "location": "Restaurante",
+           "attendees": [],
+           "calendar": "Family"
+          }
+         ]
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Mon 02/11",
+          "09:00 1:1 with manager",
+          "18:00 Gym session",
+          "Wed 04/11",
+          "11:00 Product review",
+          "Sat 07/11",
+          "20:00 Birthday dinner",
+          "nothing scheduled"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "completely empty week",
+       "now": "2026-12-06T20:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": []
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "nothing scheduled",
+          "Mon 07/12",
+          "Sun 13/12"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "multiple events same day plus an all-day event",
+       "now": "2027-01-03T20:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "f1",
+           "title": "Dentist",
+           "start": "2027-01-04T08:00:00-03:00",
+           "end": "2027-01-04T08:45:00-03:00",
+           "location": "Clinic",
+           "attendees": [],
+           "calendar": "Personal"
+          },
+          {
+           "id": "f2",
+           "title": "Team sync",
+           "start": "2027-01-04T15:00:00-03:00",
+           "end": "2027-01-04T15:30:00-03:00",
+           "location": "Meet",
+           "attendees": [
+            "team@corp.example"
+           ],
+           "calendar": "Work"
+          },
+          {
+           "id": "f3",
+           "title": "Company holiday",
+           "start": "2027-01-06",
+           "end": "2027-01-07",
+           "location": "",
+           "attendees": [],
+           "calendar": "Work"
+          }
+         ]
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Mon 04/01",
+          "08:00 Dentist",
+          "15:00 Team sync",
+          "Wed 06/01",
+          "Company holiday"
+         ],
+         "not_contains": [
+          "08:00 Company holiday"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Your week ahead:\n\nseg 28/09\n• 09:30 Standup\n• 14:00 Sprint planning\n\nter 29/09\n• 08:00 Dentist cleaning\n\nqua 30/09\n• 16:00 Client demo - Initech\n\nqui 01/10\n• nothing scheduled\n\nsex 02/10\n• 18:00 Team happy hour\n\nsáb 03/10\n• 10:00 Lucas soccer game\n\ndom 04/10\n• nothing scheduled"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test normal week with mixed days and an empty day",
+      "passed": false,
+      "problems": [
+       "telegram.send never mentions \"Mon 02/11\"",
+       "telegram.send never mentions \"Wed 04/11\"",
+       "telegram.send never mentions \"Sat 07/11\""
+      ],
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Your week ahead:\n\nseg 02/11\n• 09:00 1:1 with manager\n• 18:00 Gym session\n\nter 03/11\n• nothing scheduled\n\nqua 04/11\n• 11:00 Product review\n\nqui 05/11\n• nothing scheduled\n\nsex 06/11\n• nothing scheduled\n\nsáb 07/11\n• 20:00 Birthday dinner\n\ndom 08/11\n• nothing scheduled"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test completely empty week",
+      "passed": false,
+      "problems": [
+       "telegram.send never mentions \"Mon 07/12\"",
+       "telegram.send never mentions \"Sun 13/12\""
+      ],
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Your week ahead:\n\nseg 07/12\n• nothing scheduled\n\nter 08/12\n• nothing scheduled\n\nqua 09/12\n• nothing scheduled\n\nqui 10/12\n• nothing scheduled\n\nsex 11/12\n• nothing scheduled\n\nsáb 12/12\n• nothing scheduled\n\ndom 13/12\n• nothing scheduled"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test multiple events same day plus an all-day event",
+      "passed": false,
+      "problems": [
+       "telegram.send never mentions \"Mon 04/01\"",
+       "telegram.send never mentions \"Wed 06/01\""
+      ],
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Your week ahead:\n\nseg 04/01\n• 08:00 Dentist\n• 15:00 Team sync\n\nter 05/01\n• nothing scheduled\n\nqua 06/01\n• Company holiday\n\nqui 07/01\n• nothing scheduled\n\nsex 08/01\n• nothing scheduled\n\nsáb 09/01\n• nothing scheduled\n\ndom 10/01\n• nothing scheduled"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.052087400000000006
+   },
+   {
+    "routine": {
+     "name": "weekly_agenda_telegram",
+     "description": "Every Sunday evening, fetch calendar events for the next 7 days (starting the following Monday), group them by day (showing \"nothing scheduled\" for empty days, \"All day\" for all-day events, and sorting timed events by start time within each day), and send the whole agenda as a single Telegram message.",
+     "manifest": {
+      "schedule": "0 20 * * 0",
+      "capabilities": [
+       "calendar.events",
+       "telegram.send"
+      ]
+     },
+     "code": "async function run() {\n  const startDay = dates.addDays(dates.today(), 1); // tomorrow: start of the coming week\n  const endExclusive = dates.addDays(startDay, 7);\n\n  const events = await calendar.events({ from: startDay, to: endExclusive });\n\n  const days = [];\n  for (let i = 0; i \u003c 7; i++) {\n    days.push(dates.addDays(startDay, i));\n  }\n\n  const lines = [\"Your week ahead:\", \"\"];\n  for (const day of days) {\n    const label = dates.format(day, \"EEE dd/MM\");\n    const dayEvents = events\n      .filter(e =\u003e dates.sameDay(e.start, day))\n      .sort((a, b) =\u003e (a.start \u003c b.start ? -1 : a.start \u003e b.start ? 1 : 0));\n\n    lines.push(label);\n    if (dayEvents.length === 0) {\n      lines.push(\"• nothing scheduled\");\n    } else {\n      for (const e of dayEvents) {\n        const isAllDay = typeof e.start === \"string\" \u0026\u0026 e.start.length === 10;\n        const time = isAllDay ? \"All day\" : dates.format(e.start, \"HH:mm\");\n        lines.push(`• ${time} ${e.title}`);\n      }\n    }\n    lines.push(\"\");\n  }\n\n  while (lines.length \u0026\u0026 lines[lines.length - 1] === \"\") lines.pop();\n\n  const text = lines.join(\"\\n\");\n  log(text);\n  await telegram.send({ text });\n}",
+     "tests": [
+      {
+       "name": "normal week with mixed days and an empty day",
+       "now": "2026-11-01T20:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e1",
+           "title": "Team sync",
+           "start": "2026-11-02T09:00:00-03:00",
+           "end": "2026-11-02T09:30:00-03:00",
+           "location": "Zoom",
+           "attendees": [
+            "team@acme.com"
+           ],
+           "calendar": "Work"
+          },
+          {
+           "id": "e2",
+           "title": "Doctor appointment",
+           "start": "2026-11-04T15:00:00-03:00",
+           "end": "2026-11-04T15:30:00-03:00",
+           "location": "Clinic",
+           "attendees": [],
+           "calendar": "Personal"
+          },
+          {
+           "id": "e3",
+           "title": "Soccer match",
+           "start": "2026-11-07T11:00:00-03:00",
+           "end": "2026-11-07T12:30:00-03:00",
+           "location": "Club",
+           "attendees": [],
+           "calendar": "Family"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Mon 02/11",
+          "Wed 04/11",
+          "Sat 07/11",
+          "Team sync",
+          "Doctor appointment",
+          "Soccer match",
+          "nothing scheduled"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "completely empty week",
+       "now": "2026-12-06T20:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": []
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Mon 07/12",
+          "Sun 13/12",
+          "nothing scheduled"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "multiple events same day plus an all-day event",
+       "now": "2027-01-03T20:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "a1",
+           "title": "Standup",
+           "start": "2027-01-04T09:00:00-03:00",
+           "end": "2027-01-04T09:15:00-03:00",
+           "location": "Meet",
+           "attendees": [
+            "team@acme.com"
+           ],
+           "calendar": "Work"
+          },
+          {
+           "id": "a2",
+           "title": "Planning",
+           "start": "2027-01-04T14:00:00-03:00",
+           "end": "2027-01-04T15:00:00-03:00",
+           "location": "Room A",
+           "attendees": [
+            "team@acme.com"
+           ],
+           "calendar": "Work"
+          },
+          {
+           "id": "a3",
+           "title": "Company holiday",
+           "start": "2027-01-06",
+           "end": "2027-01-06",
+           "location": "",
+           "attendees": [],
+           "calendar": "Work"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Mon 04/01",
+          "Wed 06/01",
+          "Standup",
+          "Planning",
+          "Company holiday",
+          "All day"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Your week ahead:\n\nseg 28/09\n• 09:30 Standup\n• 14:00 Sprint planning\n\nter 29/09\n• 08:00 Dentist cleaning\n\nqua 30/09\n• 16:00 Client demo - Initech\n\nqui 01/10\n• nothing scheduled\n\nsex 02/10\n• 18:00 Team happy hour\n\nsáb 03/10\n• 10:00 Lucas soccer game\n\ndom 04/10\n• nothing scheduled"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test normal week with mixed days and an empty day",
+      "passed": false,
+      "problems": [
+       "telegram.send never mentions \"Mon 02/11\"",
+       "telegram.send never mentions \"Wed 04/11\"",
+       "telegram.send never mentions \"Sat 07/11\""
+      ],
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Your week ahead:\n\nseg 02/11\n• 09:00 Team sync\n\nter 03/11\n• nothing scheduled\n\nqua 04/11\n• 15:00 Doctor appointment\n\nqui 05/11\n• nothing scheduled\n\nsex 06/11\n• nothing scheduled\n\nsáb 07/11\n• 11:00 Soccer match\n\ndom 08/11\n• nothing scheduled"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test completely empty week",
+      "passed": false,
+      "problems": [
+       "telegram.send never mentions \"Mon 07/12\"",
+       "telegram.send never mentions \"Sun 13/12\""
+      ],
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Your week ahead:\n\nseg 07/12\n• nothing scheduled\n\nter 08/12\n• nothing scheduled\n\nqua 09/12\n• nothing scheduled\n\nqui 10/12\n• nothing scheduled\n\nsex 11/12\n• nothing scheduled\n\nsáb 12/12\n• nothing scheduled\n\ndom 13/12\n• nothing scheduled"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test multiple events same day plus an all-day event",
+      "passed": false,
+      "problems": [
+       "telegram.send never mentions \"Mon 04/01\"",
+       "telegram.send never mentions \"Wed 06/01\""
+      ],
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Your week ahead:\n\nseg 04/01\n• 09:00 Standup\n• 14:00 Planning\n\nter 05/01\n• nothing scheduled\n\nqua 06/01\n• All day Company holiday\n\nqui 07/01\n• nothing scheduled\n\nsex 08/01\n• nothing scheduled\n\nsáb 09/01\n• nothing scheduled\n\ndom 10/01\n• nothing scheduled"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.05400939999999999
+   }
+  ],
+  "seconds": 79.957729416
+ },
+ {
+  "id": "06-package-tracking",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "📦 Package status\n\n• NX556677889BR (Shopee): posted — Objeto postado - Recife/PE, ETA 2026-10-16\n• QB112233445BR (Magalu): in transit — Objeto em trânsito - de Cajamar/SP para São Paulo/SP, ETA 2026-10-10\n• OS778899001BR (Amazon): delivered — Objeto entregue ao destinatário, ETA 2026-10-06"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "morning_package_tracker",
+     "description": "Every morning, scans recent emails for shipping notifications containing a tracking code, looks up each code's current status via the tracking API, and sends one consolidated Telegram message listing every package and its status.",
+     "manifest": {
+      "schedule": "0 8 * * *",
+      "capabilities": [
+       "gmail.search",
+       "http.getJSON:api.trackingmore.example",
+       "telegram.send"
+      ]
+     },
+     "code": "async function run() {\n  function extractTrackingCode(text) {\n    if (!text) return null;\n    const specific = text.match(/(?:tracking number|tracking code|c[oó]digo de rastreio|c[oó]digo de rastreamento|rastreamento)[:\\s]+([A-Za-z0-9]{6,20})/i);\n    if (specific) return specific[1].toUpperCase();\n    const generic = text.match(/\\b(?=[A-Za-z0-9]{8,20}\\b)(?=[A-Za-z0-9]*[A-Za-z])(?=[A-Za-z0-9]*\\d)[A-Za-z0-9]{8,20}\\b/);\n    if (generic) return generic[0].toUpperCase();\n    return null;\n  }\n\n  const query = 'tracking OR rastreio OR \"código de rastreamento\" OR shipped OR enviado';\n  const emails = await gmail.search({ query, days: 14, max: 20 });\n\n  const seen = new Set();\n  const packages = [];\n\n  for (const email of emails) {\n    const text = `${email.subject || ''} ${email.snippet || ''}`;\n    const code = extractTrackingCode(text);\n    if (!code || seen.has(code)) continue;\n    seen.add(code);\n    packages.push({ code, email });\n  }\n\n  if (packages.length === 0) {\n    log('No shipping notifications with tracking codes found today.');\n    return;\n  }\n\n  const lines = [];\n  for (const pkg of packages) {\n    let info;\n    try {\n      info = await http.getJSON(`https://api.trackingmore.example/v1/track?code=${pkg.code}`);\n    } catch (e) {\n      log(`Failed to look up ${pkg.code}`);\n      continue;\n    }\n    if (!info) continue;\n    const statusLabel = (info.status || 'unknown').replace(/_/g, ' ');\n    const sender = pkg.email.from_name || pkg.email.from || '';\n    let line = `• ${pkg.code} (${sender}): ${statusLabel}`;\n    if (info.last_event) line += ` — ${info.last_event}`;\n    if (info.eta) line += `, ETA ${dates.format(info.eta, 'yyyy-MM-dd')}`;\n    lines.push(line);\n  }\n\n  if (lines.length === 0) {\n    log('No tracking info could be retrieved.');\n    return;\n  }\n\n  const text = `📦 Package status\\n\\n${lines.join('\\n')}`;\n  await telegram.send({ text });\n}",
+     "tests": [
+      {
+       "name": "Normal case - two active shipments, one unrelated promo email excluded",
+       "now": "2026-10-05T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "no-reply@shopfast.example",
+           "from_name": "ShopFast",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Seu pedido foi enviado!",
+           "snippet": "Fone de ouvido a caminho. Código de rastreio: XY111222333BR",
+           "date": "2026-10-04T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "e2",
+           "from": "ship@techstore.example",
+           "from_name": "TechStore",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Your order has shipped",
+           "snippet": "Monitor is on its way. Tracking number: US998877665BR. Carrier: FedEx.",
+           "date": "2026-10-03T09:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "e3",
+           "from": "promo@bank.example",
+           "from_name": "Bank Promo",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Track your finances",
+           "snippet": "Tracking made easy with our new app. Download today!",
+           "date": "2026-10-02T09:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "carrier": "Correios",
+          "code": "XY111222333BR",
+          "eta": "2026-10-06",
+          "last_event": "Saiu para entrega - Rio de Janeiro/RJ",
+          "status": "out_for_delivery",
+          "updated_at": "2026-10-05T07:00:00-03:00"
+         }
+        },
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "carrier": "FedEx",
+          "code": "US998877665BR",
+          "eta": "2026-10-08",
+          "last_event": "In transit - Memphis, TN",
+          "status": "in_transit",
+          "updated_at": "2026-10-04T20:00:00-03:00"
+         }
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "XY111222333BR",
+          "US998877665BR",
+          "out for delivery",
+          "in transit"
+         ],
+         "not_contains": [
+          "Bank Promo"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Edge case - no shipping emails with tracking codes",
+       "now": "2026-10-06T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "f1",
+           "from": "promo@bank.example",
+           "from_name": "Bank Promo",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Track your finances",
+           "snippet": "Tracking made easy with our app.",
+           "date": "2026-10-05T09:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false
+          }
+         ]
+        }
+       ],
+       "expect": []
+      },
+      {
+       "name": "Edge case - duplicate tracking code across two emails plus a delivered package",
+       "now": "2026-10-07T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g1",
+           "from": "store@megastore.example",
+           "from_name": "MegaStore",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Pedido enviado",
+           "snippet": "Seu produto está a caminho. Código de rastreio: AA555666777BR",
+           "date": "2026-10-05T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "g2",
+           "from": "store@megastore.example",
+           "from_name": "MegaStore",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Atualização de envio",
+           "snippet": "Rastreamento: AA555666777BR",
+           "date": "2026-10-06T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "g3",
+           "from": "ship@bigshop.example",
+           "from_name": "BigShop",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Order shipped",
+           "snippet": "Tracking number: CC444333222US. Carrier: UPS.",
+           "date": "2026-10-04T09:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "carrier": "Correios",
+          "code": "AA555666777BR",
+          "eta": "2026-10-01",
+          "last_event": "Entregue ao destinatário",
+          "status": "delivered",
+          "updated_at": "2026-10-01T15:00:00-03:00"
+         }
+        },
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "carrier": "UPS",
+          "code": "CC444333222US",
+          "eta": "2026-10-10",
+          "last_event": "Departed facility - Louisville, KY",
+          "status": "in_transit",
+          "updated_at": "2026-10-06T22:00:00-03:00"
+         }
+        },
+        {
+         "capability": "telegram.send",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "AA555666777BR",
+          "CC444333222US",
+          "delivered",
+          "in transit"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "📦 Package status\n\n• LB987654321CN (Mercado Livre): out for delivery — Objeto saiu para entrega ao destinatário - São Paulo/SP, ETA 2026-09-24\n• BR123456789US (Amazon): in transit — Objeto em trânsito - de Curitiba/PR para São Paulo/SP, ETA 2026-09-26"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Normal case - two active shipments, one unrelated promo email excluded",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "📦 Package status\n\n• XY111222333BR (ShopFast): out for delivery — Saiu para entrega - Rio de Janeiro/RJ, ETA 2026-10-06\n• US998877665BR (TechStore): in transit — In transit - Memphis, TN, ETA 2026-10-08"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Edge case - no shipping emails with tracking codes",
+      "passed": true
+     },
+     {
+      "scenario": "test Edge case - duplicate tracking code across two emails plus a delivered package",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "📦 Package status\n\n• AA555666777BR (MegaStore): delivered — Entregue ao destinatário, ETA 2026-10-01\n• CC444333222US (BigShop): in transit — Departed facility - Louisville, KY, ETA 2026-10-10"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.0873754
+   }
+  ],
+  "seconds": 68.467064916
+ },
+ {
+  "id": "07-meeting-prep",
+  "first_accepted": false,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "Preparação para amanhã (07/10)\n\n11:00 Negociação contrato Globex\n• Hank Scorpio — Contraproposta de preço; SLA de suporte 24x7\n\n16:00 1:1 com Marina\n• Marina Duarte — Pedido de promoção do Lucas"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "prep_reunioes_amanha",
+     "description": "Todas as noites, verifica as reuniões de amanhã que têm convidados, busca os emails recentes de cada participante e envia um resumo no Telegram para o usuário chegar preparado.",
+     "manifest": {
+      "schedule": "0 21 * * *",
+      "capabilities": [
+       "calendar.events",
+       "gmail.search",
+       "telegram.send"
+      ]
+     },
+     "code": "async function run() {\n  const tomorrowStart = dates.startOfDay(now(), 1);\n  const tomorrowEnd = dates.startOfDay(now(), 2);\n\n  const events = await calendar.events({ from: tomorrowStart, to: tomorrowEnd });\n\n  const withAttendees = (events || []).filter(e =\u003e Array.isArray(e.attendees) \u0026\u0026 e.attendees.length \u003e 0);\n\n  if (withAttendees.length === 0) {\n    log(\"Nenhuma reunião com convidados amanhã.\");\n    return;\n  }\n\n  // Sort by start time to present in chronological order\n  withAttendees.sort((a, b) =\u003e (dates.isBefore(a.start, b.start) ? -1 : 1));\n\n  const blocks = [];\n\n  for (const ev of withAttendees) {\n    const timeLabel = dates.format(ev.start, \"HH:mm\");\n    const lines = [`${timeLabel} ${ev.title}`];\n\n    // dedupe attendee emails while preserving order\n    const seen = new Set();\n    const attendees = ev.attendees.filter(a =\u003e {\n      if (!a || seen.has(a)) return false;\n      seen.add(a);\n      return true;\n    });\n\n    for (const email of attendees) {\n      const results = await gmail.search({ query: `from:${email}`, days: 14, max: 5 });\n      const items = results || [];\n      const displayName = items.length \u003e 0 ? items[0].from_name : email;\n\n      if (items.length === 0) {\n        lines.push(`• ${displayName} — sem emails recentes`);\n      } else {\n        const subjects = items.map(m =\u003e m.subject).filter(Boolean);\n        lines.push(`• ${displayName} — ${subjects.join(\"; \")}`);\n      }\n    }\n\n    blocks.push(lines.join(\"\\n\"));\n  }\n\n  const header = `Preparação para amanhã (${dates.format(tomorrowStart, \"dd/MM\")})`;\n  const text = `${header}\\n\\n${blocks.join(\"\\n\\n\")}`;\n\n  await telegram.send({ text });\n}\n",
+     "tests": [
+      {
+       "name": "Normal case: duas reuniões com convidados, emails variados",
+       "now": "2026-10-05T21:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e1",
+           "title": "Sync Produto Nimbus",
+           "start": "2026-10-06T09:00:00-03:00",
+           "end": "2026-10-06T09:30:00-03:00",
+           "location": "Meet",
+           "attendees": [
+            "carla@nimbus.com",
+            "tiago@nimbus.com"
+           ],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "e2",
+           "title": "Almoço",
+           "start": "2026-10-06T12:00:00-03:00",
+           "end": "2026-10-06T13:00:00-03:00",
+           "location": "",
+           "attendees": [],
+           "calendar": "Pessoal"
+          },
+          {
+           "id": "e3",
+           "title": "Revisão contrato",
+           "start": "2026-10-06T14:00:00-03:00",
+           "end": "2026-10-06T14:30:00-03:00",
+           "location": "Sala 2",
+           "attendees": [
+            "marina@legalcorp.com"
+           ],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g1",
+           "from": "carla@nimbus.com",
+           "from_name": "Carla Reis",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Ajuste no roadmap Q4",
+           "snippet": "...",
+           "date": "2026-10-04T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": true
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": []
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g2",
+           "from": "marina@legalcorp.com",
+           "from_name": "Marina Costa",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Minuta do contrato v3",
+           "snippet": "...",
+           "date": "2026-10-05T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "g3",
+           "from": "marina@legalcorp.com",
+           "from_name": "Marina Costa",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Dúvida sobre cláusula 5",
+           "snippet": "...",
+           "date": "2026-10-03T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": true
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "06/10",
+          "Sync Produto Nimbus",
+          "Carla Reis",
+          "Ajuste no roadmap Q4",
+          "Tiago",
+          "sem emails recentes",
+          "Revisão contrato",
+          "Marina Costa",
+          "Minuta do contrato v3",
+          "Dúvida sobre cláusula 5"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Edge case: nenhuma reunião de amanhã tem convidados",
+       "now": "2026-10-05T21:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e1",
+           "title": "Foco - escrever relatório",
+           "start": "2026-10-06T09:00:00-03:00",
+           "end": "2026-10-06T11:00:00-03:00",
+           "location": "",
+           "attendees": [],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "e2",
+           "title": "Dentista",
+           "start": "2026-10-06T15:00:00-03:00",
+           "end": "2026-10-06T16:00:00-03:00",
+           "location": "Clínica",
+           "attendees": [],
+           "calendar": "Pessoal"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "Edge case: uma reunião com múltiplos convidados, ordenação por horário",
+       "now": "2026-11-10T21:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e2",
+           "title": "Follow-up Vendas",
+           "start": "2026-11-11T16:00:00-03:00",
+           "end": "2026-11-11T16:30:00-03:00",
+           "location": "Meet",
+           "attendees": [
+            "bruno@parceiro.com"
+           ],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "e1",
+           "title": "Planejamento Sprint",
+           "start": "2026-11-11T08:00:00-03:00",
+           "end": "2026-11-11T09:00:00-03:00",
+           "location": "Meet",
+           "attendees": [
+            "ana@empresa.com",
+            "leo@empresa.com"
+           ],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g1",
+           "from": "bruno@parceiro.com",
+           "from_name": "Bruno Silva",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Proposta comercial atualizada",
+           "snippet": "...",
+           "date": "2026-11-09T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g2",
+           "from": "ana@empresa.com",
+           "from_name": "Ana Souza",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Backlog priorizado",
+           "snippet": "...",
+           "date": "2026-11-10T09:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": true
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": []
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "08:00 Planejamento Sprint",
+          "Ana Souza",
+          "Backlog priorizado",
+          "Leo",
+          "sem emails recentes",
+          "16:00 Follow-up Vendas",
+          "Bruno Silva",
+          "Proposta comercial atualizada"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Preparação para amanhã (25/09)\n\n10:00 Kickoff Projeto Atlas\n• Rafael Mendes — Escopo revisado v2\n• Julia Prado — Cronograma de entregas; Acessos ao ambiente de homologação\n\n15:00 Review de design do onboarding\n• Pedro Almeida — Protótipos do onboarding no Figma"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Normal case: duas reuniões com convidados, emails variados",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Preparação para amanhã (06/10)\n\n09:00 Sync Produto Nimbus\n• Carla Reis — Ajuste no roadmap Q4\n• tiago@nimbus.com — sem emails recentes\n\n14:00 Revisão contrato\n• Marina Costa — Minuta do contrato v3; Dúvida sobre cláusula 5"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Edge case: nenhuma reunião de amanhã tem convidados",
+      "passed": true
+     },
+     {
+      "scenario": "test Edge case: uma reunião com múltiplos convidados, ordenação por horário",
+      "passed": false,
+      "problems": [
+       "telegram.send never mentions \"Leo\""
+      ],
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Preparação para amanhã (11/11)\n\n08:00 Planejamento Sprint\n• Bruno Silva — Proposta comercial atualizada\n• Ana Souza — Backlog priorizado\n\n16:00 Follow-up Vendas\n• bruno@parceiro.com — sem emails recentes"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.051113399999999996
+   },
+   {
+    "routine": {
+     "name": "prep_reunioes_amanha",
+     "description": "Toda noite, verifica as reuniões de amanhã que têm convidados, busca os e-mails recentes de cada participante e envia um resumo único no Telegram com os assuntos desses e-mails, organizado por reunião em ordem de horário.",
+     "manifest": {
+      "schedule": "0 21 * * *",
+      "capabilities": [
+       "calendar.events",
+       "gmail.search",
+       "telegram.send"
+      ]
+     },
+     "code": "async function run() {\n  const todayStart = dates.today();\n  const tomorrowStart = dates.addDays(todayStart, 1);\n  const dayAfter = dates.addDays(tomorrowStart, 1);\n\n  const events = await calendar.events({ from: tomorrowStart, to: dayAfter });\n\n  // keep only events that have at least one attendee, sorted by start time\n  const meetings = (events || [])\n    .filter(e =\u003e Array.isArray(e.attendees) \u0026\u0026 e.attendees.length \u003e 0)\n    .slice()\n    .sort((a, b) =\u003e (dates.isBefore(a.start, b.start) ? -1 : 1));\n\n  if (meetings.length === 0) {\n    log('Nenhuma reunião de amanhã com convidados.');\n    return;\n  }\n\n  // cache search results per attendee email so we don't repeat calls\n  const emailCache = {};\n\n  async function getAttendeeInfo(email) {\n    if (emailCache[email]) return emailCache[email];\n    const results = await gmail.search({ query: `from:${email}`, days: 14, max: 5 });\n    let name = email;\n    const subjects = [];\n    if (Array.isArray(results)) {\n      for (const r of results) {\n        if (r.from_name) name = r.from_name;\n        if (r.subject) subjects.push(r.subject);\n      }\n    }\n    const info = { name, subjects };\n    emailCache[email] = info;\n    return info;\n  }\n\n  const blocks = [];\n\n  for (const meeting of meetings) {\n    const timeLabel = dates.format(meeting.start, 'HH:mm');\n    const lines = [`${timeLabel} ${meeting.title}`];\n\n    for (const email of meeting.attendees) {\n      const info = await getAttendeeInfo(email);\n      if (info.subjects.length \u003e 0) {\n        lines.push(`• ${info.name} — ${info.subjects.join('; ')}`);\n      }\n    }\n\n    // only include the meeting block if we found at least one attendee with subjects,\n    // otherwise still show the meeting header so it's not silently dropped\n    blocks.push(lines.join('\\n'));\n  }\n\n  const dateLabel = dates.format(tomorrowStart, 'dd/MM');\n  const text = `Preparação para amanhã (${dateLabel})\\n\\n${blocks.join('\\n\\n')}`;\n\n  await telegram.send({ text });\n}\n",
+     "tests": [
+      {
+       "name": "Caso normal: uma reunião com dois convidados",
+       "now": "2026-10-05T21:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e-1",
+           "title": "Alinhamento Comercial",
+           "start": "2026-10-06T09:00:00-03:00",
+           "end": "2026-10-06T10:00:00-03:00",
+           "location": "Google Meet",
+           "attendees": [
+            "ana@vendas.com",
+            "bruno@vendas.com"
+           ],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-1",
+           "from": "ana@vendas.com",
+           "from_name": "Ana Souza",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Proposta comercial atualizada",
+           "snippet": "...",
+           "date": "2026-10-04T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-2",
+           "from": "bruno@vendas.com",
+           "from_name": "Bruno Lima",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Dúvidas sobre contrato",
+           "snippet": "...",
+           "date": "2026-10-03T15:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": true
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Alinhamento Comercial",
+          "Ana Souza",
+          "Proposta comercial atualizada",
+          "Bruno Lima",
+          "Dúvidas sobre contrato"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Edge case: uma reunião com múltiplos convidados, ordenação por horário",
+       "now": "2026-11-10T21:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e-2",
+           "title": "Revisão Trimestral",
+           "start": "2026-11-11T14:00:00-03:00",
+           "end": "2026-11-11T15:00:00-03:00",
+           "location": "Sala 2",
+           "attendees": [
+            "carla@parceira.com",
+            "leo@parceira.com",
+            "mara@parceira.com"
+           ],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "e-3",
+           "title": "Sync Rápido",
+           "start": "2026-11-11T09:00:00-03:00",
+           "end": "2026-11-11T09:30:00-03:00",
+           "location": "Google Meet",
+           "attendees": [
+            "nina@interna.com"
+           ],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-3",
+           "from": "carla@parceira.com",
+           "from_name": "Carla Nunes",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Métricas do trimestre",
+           "snippet": "...",
+           "date": "2026-11-09T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-4",
+           "from": "leo@parceira.com",
+           "from_name": "Leo Ferraz",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Ajustes no relatório final",
+           "snippet": "...",
+           "date": "2026-11-09T11:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": []
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "m-5",
+           "from": "nina@interna.com",
+           "from_name": "Nina Rocha",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Pauta do sync",
+           "snippet": "...",
+           "date": "2026-11-10T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": true
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Sync Rápido",
+          "Nina Rocha",
+          "Pauta do sync",
+          "Revisão Trimestral",
+          "Carla Nunes",
+          "Métricas do trimestre",
+          "Leo Ferraz",
+          "Ajustes no relatório final"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Edge case: nenhuma reunião de amanhã com convidados",
+       "now": "2026-12-01T21:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e-4",
+           "title": "Bloco de foco",
+           "start": "2026-12-02T09:00:00-03:00",
+           "end": "2026-12-02T11:00:00-03:00",
+           "location": "",
+           "attendees": [],
+           "calendar": "Pessoal"
+          }
+         ]
+        }
+       ],
+       "expect": []
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Preparação para amanhã (25/09)\n\n10:00 Kickoff Projeto Atlas\n• Rafael Mendes — Escopo revisado v2\n• Julia Prado — Cronograma de entregas; Acessos ao ambiente de homologação\n\n15:00 Review de design do onboarding\n• Pedro Almeida — Protótipos do onboarding no Figma"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Caso normal: uma reunião com dois convidados",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Preparação para amanhã (06/10)\n\n09:00 Alinhamento Comercial\n• Ana Souza — Proposta comercial atualizada\n• Bruno Lima — Dúvidas sobre contrato"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Edge case: uma reunião com múltiplos convidados, ordenação por horário",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Preparação para amanhã (11/11)\n\n09:00 Sync Rápido\n• Carla Nunes — Métricas do trimestre\n\n14:00 Revisão Trimestral\n• Leo Ferraz — Ajustes no relatório final\n• Nina Rocha — Pauta do sync"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Edge case: nenhuma reunião de amanhã com convidados",
+      "passed": true
+     }
+    ],
+    "cost_usd": 0.0591554
+   }
+  ],
+  "seconds": 81.109105083
+ },
+ {
+  "id": "08-currency-alert",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "usd-brl-rate-alert",
+     "description": "Checks the USD→BRL exchange rate several times a day and sends a Telegram alert only when the rate is above 5.40; stays silent otherwise.",
+     "manifest": {
+      "schedule": "0 8-20/3 * * *",
+      "capabilities": [
+       "http.getJSON:api.exchangerate.example",
+       "telegram.send"
+      ]
+     },
+     "code": "async function run() {\n  const url = \"https://api.exchangerate.example/v1/latest?base=USD\u0026symbols=BRL\";\n  const data = await http.getJSON(url);\n  const rate = data \u0026\u0026 data.rates \u0026\u0026 data.rates.BRL;\n  if (typeof rate !== \"number\") {\n    log(\"No BRL rate found in response.\");\n    return;\n  }\n  const threshold = 5.40;\n  log(`Current USD→BRL rate: ${rate}`);\n  if (rate \u003e threshold) {\n    const text = `💵 USD→BRL is at ${rate.toFixed(2)}, above your ${threshold.toFixed(2)} threshold.`;\n    await telegram.send({ text });\n  } else {\n    log(`Rate ${rate.toFixed(2)} is at or below threshold (${threshold.toFixed(2)}); no alert sent.`);\n  }\n}",
+     "tests": [
+      {
+       "name": "rate above threshold triggers alert",
+       "now": "2026-09-24T09:00:00-03:00",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "base": "USD",
+          "date": "2026-09-24",
+          "rates": {
+           "BRL": 5.52
+          },
+          "time_last_update_utc": "2026-09-24T12:00:00Z"
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "5.52",
+          "5.40"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "rate exactly at threshold sends nothing",
+       "now": "2026-09-24T14:00:00-03:00",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "base": "USD",
+          "date": "2026-09-24",
+          "rates": {
+           "BRL": 5.4
+          },
+          "time_last_update_utc": "2026-09-24T17:00:00Z"
+         }
+        }
+       ],
+       "expect": []
+      },
+      {
+       "name": "rate below threshold sends nothing",
+       "now": "2026-09-24T17:00:00-03:00",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "base": "USD",
+          "date": "2026-09-24",
+          "rates": {
+           "BRL": 5.18
+          },
+          "time_last_update_utc": "2026-09-24T20:00:00Z"
+         }
+        }
+       ],
+       "expect": []
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "💵 USD→BRL is at 5.47, above your 5.40 threshold."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test rate above threshold triggers alert",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "💵 USD→BRL is at 5.52, above your 5.40 threshold."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test rate exactly at threshold sends nothing",
+      "passed": true
+     },
+     {
+      "scenario": "test rate below threshold sends nothing",
+      "passed": true
+     }
+    ],
+    "cost_usd": 0.038055
+   }
+  ],
+  "seconds": 20.551939208
+ },
+ {
+  "id": "09-unanswered-emails",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "Waiting on your reply (3+ days):\n\n• Inês Ferreira — \"Reference letter for my master's application\" (since out 6)\n• Diego Ramos — \"Pilot pricing — does R$ 18k/month work?\" (since out 8)"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "unreplied_emails_digest",
+     "description": "Every morning, scans the inbox for emails from real people (not automated senders/newsletters) that have been waiting more than 3 days without a reply, and sends a single Telegram summary listing them. Skips anything already replied to and anything judged as not actually requiring a reply (e.g. FYI notes, automated receipts, social notifications).",
+     "manifest": {
+      "schedule": "0 8 * * *",
+      "capabilities": [
+       "gmail.search",
+       "telegram.send"
+      ],
+      "judgments": {
+       "needs_reply": "Is this email from a real person a message that is actually asking the recipient something or requesting an action, such that it genuinely needs a reply (as opposed to an FYI, newsletter, automated notification, or receipt)?"
+      }
+     },
+     "code": "async function run() {\n  const cutoff = dates.addDays(now(), -3);\n  const emails = await gmail.search({ query: \"in:inbox -from:me\", days: 30, max: 50 });\n\n  const candidates = [];\n  for (const e of emails) {\n    if (e.replied) continue;\n    if (!dates.isBefore(e.date, cutoff)) continue; // must be older than 3 days\n    const { p } = await judge.needs_reply(e);\n    if (p \u003e= 0.5) candidates.push(e);\n  }\n\n  if (candidates.length === 0) {\n    log(\"No emails waiting on reply for more than 3 days.\");\n    return;\n  }\n\n  candidates.sort((a, b) =\u003e (dates.isBefore(a.date, b.date) ? -1 : 1));\n\n  const lines = candidates.map(\n    (e) =\u003e `• ${e.from_name} — \"${e.subject}\" (since ${dates.format(e.date, \"MMM d\")})`\n  );\n  const text = `Waiting on your reply (3+ days):\\n\\n${lines.join(\"\\n\")}`;\n\n  await telegram.send({ text });\n}",
+     "tests": [
+      {
+       "name": "normal case: mix of automated, replied, recent, and genuine unanswered emails",
+       "now": "2026-10-05T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "x1",
+           "from": "ana.reis@clientco.example",
+           "from_name": "Ana Reis",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Can you confirm the invoice total?",
+           "snippet": "Just need a yes/no before we close the books.",
+           "date": "2026-10-01T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "x2",
+           "from": "no-reply@newsletter.example",
+           "from_name": "Weekly Digest",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Your weekly digest is here",
+           "snippet": "Top stories this week.",
+           "date": "2026-09-30T09:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false
+          },
+          {
+           "id": "x3",
+           "from": "bruno.alves@partner.example",
+           "from_name": "Bruno Alves",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Following up on our proposal",
+           "snippet": "Any thoughts on the numbers we sent?",
+           "date": "2026-09-28T14:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": true
+          },
+          {
+           "id": "x4",
+           "from": "carla.dias@vendor.example",
+           "from_name": "Carla Dias",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Quick check-in",
+           "snippet": "Still waiting on your input, no rush though",
+           "date": "2026-10-04T09:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "x5",
+           "from": "diego.souza@lawfirm.example",
+           "from_name": "Diego Souza",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Need your sign-off on the amendment",
+           "snippet": "Please review clause 4 and confirm.",
+           "date": "2026-09-29T11:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "needs_reply": {
+         "x1": 0.9,
+         "x2": 0.05,
+         "x5": 0.85
+        }
+       },
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Diego Souza",
+          "Ana Reis"
+         ],
+         "not_contains": [
+          "Weekly Digest",
+          "Bruno Alves",
+          "Carla Dias"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "edge case: nothing older than 3 days without a reply",
+       "now": "2026-10-05T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "y1",
+           "from": "receipts@paypal.example",
+           "from_name": "PayPal",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Your payment receipt",
+           "snippet": "Amount charged $15.00.",
+           "date": "2026-10-01T09:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "CATEGORY_UPDATES"
+           ],
+           "replied": false
+          },
+          {
+           "id": "y2",
+           "from": "eduardo.pinto@client.example",
+           "from_name": "Eduardo Pinto",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Thanks for the update",
+           "snippet": "Sounds good, talk soon.",
+           "date": "2026-09-27T12:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": true
+          },
+          {
+           "id": "y3",
+           "from": "fabio.rocha@client.example",
+           "from_name": "Fabio Rocha",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Question about pricing",
+           "snippet": "Could you clarify the tiered pricing?",
+           "date": "2026-10-03T08:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "several items, one excluded as an FYI despite being unreplied and old",
+       "now": "2026-10-10T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "z1",
+           "from": "gabriela.melo@acme.example",
+           "from_name": "Gabriela Melo",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "FYI: updated org chart attached",
+           "snippet": "No action needed, just sharing for reference.",
+           "date": "2026-10-04T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "z2",
+           "from": "hugo.teixeira@partner.example",
+           "from_name": "Hugo Teixeira",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Can we finalize the contract terms?",
+           "snippet": "Need your approval on section 3 by end of week.",
+           "date": "2026-10-05T15:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "z3",
+           "from": "irene.cardoso@vendor.example",
+           "from_name": "Irene Cardoso",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Please confirm delivery date",
+           "snippet": "We need this confirmed to schedule the shipment.",
+           "date": "2026-10-03T09:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false
+          },
+          {
+           "id": "z4",
+           "from": "notifications@github.example",
+           "from_name": "GitHub",
+           "to": "dfernandes@mybeevo.com",
+           "subject": "Your PR was merged",
+           "snippet": "The pull request was merged into main.",
+           "date": "2026-10-02T07:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "CATEGORY_UPDATES"
+           ],
+           "replied": false
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "needs_reply": {
+         "z1": 0.1,
+         "z2": 0.95,
+         "z3": 0.92,
+         "z4": 0.02
+        }
+       },
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Irene Cardoso",
+          "Hugo Teixeira"
+         ],
+         "not_contains": [
+          "Gabriela Melo",
+          "GitHub"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Waiting on your reply (3+ days):\n\n• Priya Nair — \"Contract redlines — can you review?\" (since set 18)\n• Marcos Silva — \"Quick question about the API rate limits\" (since set 20)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test normal case: mix of automated, replied, recent, and genuine unanswered emails",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Waiting on your reply (3+ days):\n\n• Diego Souza — \"Need your sign-off on the amendment\" (since set 29)\n• Ana Reis — \"Can you confirm the invoice total?\" (since out 1)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test edge case: nothing older than 3 days without a reply",
+      "passed": true
+     },
+     {
+      "scenario": "test several items, one excluded as an FYI despite being unreplied and old",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "Waiting on your reply (3+ days):\n\n• Irene Cardoso — \"Please confirm delivery date\" (since out 3)\n• Hugo Teixeira — \"Can we finalize the contract terms?\" (since out 5)"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.052693399999999994
+   }
+  ],
+  "seconds": 38.218909667
+ },
+ {
+  "id": "10-birthdays",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "telegram.send",
+     "args": {
+      "text": "🎂 Aniversários\n\nHoje (06/10): Beatriz Rocha\nAmanhã (07/10): Felipe Moraes, Vó Cida"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "lembrete_aniversarios_telegram",
+     "description": "Todo dia de manhã, verifica o calendário \"Birthdays\" do Google e envia um lembrete no Telegram com os aniversariantes de hoje e de amanhã.",
+     "manifest": {
+      "schedule": "0 8 * * *",
+      "capabilities": [
+       "calendar.events",
+       "telegram.send"
+      ]
+     },
+     "code": "async function run() {\n  const todayStart = dates.startOfDay(now(), 0);\n  const tomorrowStart = dates.startOfDay(now(), 1);\n  const rangeEnd = dates.startOfDay(now(), 2);\n\n  const events = await calendar.events({ from: todayStart, to: rangeEnd });\n\n  const birthdays = (events || []).filter(e =\u003e e.calendar === \"Birthdays\");\n\n  const todayList = [];\n  const tomorrowList = [];\n\n  for (const e of birthdays) {\n    const name = e.title.replace(/^Anivers[áa]rio de\\s*/i, \"\").trim() || e.title;\n    if (dates.sameDay(e.start, todayStart)) {\n      todayList.push(name);\n    } else if (dates.sameDay(e.start, tomorrowStart)) {\n      tomorrowList.push(name);\n    }\n  }\n\n  if (todayList.length === 0 \u0026\u0026 tomorrowList.length === 0) {\n    log(\"Nenhum aniversário hoje ou amanhã.\");\n    return;\n  }\n\n  const todayStr = dates.format(todayStart, \"dd/MM\");\n  const tomorrowStr = dates.format(tomorrowStart, \"dd/MM\");\n\n  let text = \"🎂 Aniversários\\n\\n\";\n  if (todayList.length \u003e 0) {\n    text += `Hoje (${todayStr}): ${todayList.join(\", \")}\\n`;\n  }\n  if (tomorrowList.length \u003e 0) {\n    text += `Amanhã (${tomorrowStr}): ${tomorrowList.join(\", \")}`;\n  }\n\n  await telegram.send({ text: text.trim() });\n}",
+     "tests": [
+      {
+       "name": "vários aniversários hoje e amanhã, evento não-Birthdays excluído",
+       "now": "2026-11-10T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "b1",
+           "title": "Aniversário de Carla Souza",
+           "start": "2026-11-10T00:00:00-03:00",
+           "end": "2026-11-11T00:00:00-03:00",
+           "location": "",
+           "attendees": [],
+           "calendar": "Birthdays"
+          },
+          {
+           "id": "w1",
+           "title": "Reunião de equipe",
+           "start": "2026-11-10T10:00:00-03:00",
+           "end": "2026-11-10T11:00:00-03:00",
+           "location": "",
+           "attendees": [
+            "time@empresa.com"
+           ],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "b2",
+           "title": "Aniversário de Rafael Lima",
+           "start": "2026-11-11T00:00:00-03:00",
+           "end": "2026-11-12T00:00:00-03:00",
+           "location": "",
+           "attendees": [],
+           "calendar": "Birthdays"
+          },
+          {
+           "id": "b3",
+           "title": "Aniversário de Sofia Prado",
+           "start": "2026-11-11T00:00:00-03:00",
+           "end": "2026-11-12T00:00:00-03:00",
+           "location": "",
+           "attendees": [],
+           "calendar": "Birthdays"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Carla Souza",
+          "Rafael Lima",
+          "Sofia Prado",
+          "10/11",
+          "11/11"
+         ],
+         "not_contains": [
+          "Reunião de equipe"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "nenhum aniversário no período - não envia nada",
+       "now": "2026-03-05T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "w2",
+           "title": "Dentista",
+           "start": "2026-03-05T14:00:00-03:00",
+           "end": "2026-03-05T15:00:00-03:00",
+           "location": "Clínica",
+           "attendees": [],
+           "calendar": "Pessoal"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "aniversário só amanhã",
+       "now": "2026-07-01T08:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "b4",
+           "title": "Aniversário de Pedro Nunes",
+           "start": "2026-07-02T00:00:00-03:00",
+           "end": "2026-07-03T00:00:00-03:00",
+           "location": "",
+           "attendees": [],
+           "calendar": "Birthdays"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "telegram.send",
+         "count": 1,
+         "contains": [
+          "Amanhã",
+          "Pedro Nunes",
+          "02/07"
+         ],
+         "not_contains": [
+          "Hoje ("
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "🎂 Aniversários\n\nHoje (24/09): Mariana Alves\nAmanhã (25/09): Tio Zeca"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test vários aniversários hoje e amanhã, evento não-Birthdays excluído",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "🎂 Aniversários\n\nHoje (10/11): Carla Souza\nAmanhã (11/11): Rafael Lima, Sofia Prado"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test nenhum aniversário no período - não envia nada",
+      "passed": true
+     },
+     {
+      "scenario": "test aniversário só amanhã",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "telegram.send",
+        "args": {
+         "text": "🎂 Aniversários\n\nAmanhã (02/07): Pedro Nunes"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.0354154
+   }
+  ],
+  "seconds": 25.34189875
+ }
+]

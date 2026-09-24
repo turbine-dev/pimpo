@@ -1,0 +1,510 @@
+{
+ "document": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "mvp_small_enough": {
+    "type": "noul",
+    "noul": 0.52
+   },
+   "phase_order_sound": {
+    "type": "noul",
+    "noul": 0.88
+   },
+   "ui_supports_wow": {
+    "type": "noul",
+    "noul": 0.89
+   },
+   "better_than_competitors": {
+    "type": "score",
+    "score": 2.75,
+    "confidence": 0.75,
+    "legend": {
+     "0": "Not better: at best parity",
+     "1": "Somewhat better in a few areas",
+     "2": "Clearly better on the pains that make users quit",
+     "3": "Decisively better: a reason to switch for most of them"
+    },
+    "probabilities": {
+     "0": 0.02,
+     "1": 0.01,
+     "2": 0.19,
+     "3": 0.78
+    }
+   },
+   "biggest_risk": {
+    "type": "choice",
+    "choice": "compiler_hard",
+    "confidence": 1.0,
+    "probabilities": {
+     "compiler_hard": 1.0,
+     "solo_scope": 0.0,
+     "google_oauth": 0.0,
+     "adoption": 0.0,
+     "few_repeat_tasks": 0.0,
+     "approval_fatigue": 0.0
+    }
+   },
+   "missing_piece": {
+    "type": "choice",
+    "choice": "user_research",
+    "confidence": 0.77,
+    "probabilities": {
+     "distribution": 0.18,
+     "nothing_major": 0.0,
+     "user_research": 0.8200000000000001,
+     "data_privacy": 0.0,
+     "ops_support": 0.0,
+     "compiler_spec": 0.0
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 13414,
+   "output_tokens": 219
+  }
+ },
+ "sections": {
+  "0. Resumo em uma página": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 1.94,
+     "confidence": 0.55,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.25,
+      "2": 0.55,
+      "3": 0.2
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.68
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.91
+    }
+   },
+   "usage": {
+    "input_tokens": 1271,
+    "output_tokens": 56
+   }
+  },
+  "1. O problema, com evidência": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 1.47,
+     "confidence": 0.51,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.59,
+      "2": 0.33,
+      "3": 0.07
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.56
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.82
+    }
+   },
+   "usage": {
+    "input_tokens": 1336,
+    "output_tokens": 56
+   }
+  },
+  "2. Para quem": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 1.43,
+     "confidence": 0.57,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.61,
+      "2": 0.35,
+      "3": 0.04
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.56
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.79
+    }
+   },
+   "usage": {
+    "input_tokens": 1092,
+    "output_tokens": 56
+   }
+  },
+  "3. Princípios de produto": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 1.37,
+     "confidence": 0.59,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.63,
+      "2": 0.31,
+      "3": 0.04
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.66
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.88
+    }
+   },
+   "usage": {
+    "input_tokens": 1063,
+    "output_tokens": 56
+   }
+  },
+  "4. Funcionalidades priorizadas (avaliadas com o Jev)": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 1.98,
+     "confidence": 0.63,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.2,
+      "2": 0.63,
+      "3": 0.17
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.58
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.8
+    }
+   },
+   "usage": {
+    "input_tokens": 2340,
+    "output_tokens": 56
+   }
+  },
+  "5. UX e UI": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.74,
+     "confidence": 0.74,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.26,
+      "3": 0.74
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.65
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.68
+    }
+   },
+   "usage": {
+    "input_tokens": 3592,
+    "output_tokens": 56
+   }
+  },
+  "6. Arquitetura técnica": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.84,
+     "confidence": 0.84,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.16,
+      "3": 0.84
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.69
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.71
+    }
+   },
+   "usage": {
+    "input_tokens": 3719,
+    "output_tokens": 56
+   }
+  },
+  "7. Engenharia e qualidade": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.83,
+     "confidence": 0.83,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.03,
+      "2": 0.11,
+      "3": 0.86
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.66
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.72
+    }
+   },
+   "usage": {
+    "input_tokens": 1077,
+    "output_tokens": 56
+   }
+  },
+  "8. Fases": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.97,
+     "confidence": 0.97,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.03,
+      "3": 0.97
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.69
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.76
+    }
+   },
+   "usage": {
+    "input_tokens": 2808,
+    "output_tokens": 56
+   }
+  },
+  "9. Métricas": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 1.89,
+     "confidence": 0.47,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.31,
+      "2": 0.48,
+      "3": 0.21
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.64
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.77
+    }
+   },
+   "usage": {
+    "input_tokens": 1015,
+    "output_tokens": 56
+   }
+  },
+  "10. Riscos e respostas": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 1.93,
+     "confidence": 0.36,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.35,
+      "2": 0.37,
+      "3": 0.28
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.63
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.81
+    }
+   },
+   "usage": {
+    "input_tokens": 1206,
+    "output_tokens": 56
+   }
+  },
+  "11. Decisões pendentes (do Dener)": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 1.83,
+     "confidence": 0.66,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.26,
+      "2": 0.65,
+      "3": 0.09
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.52
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.7
+    }
+   },
+   "usage": {
+    "input_tokens": 1180,
+    "output_tokens": 56
+   }
+  },
+  "Apêndice A — Como o Jev foi usado": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 1.33,
+     "confidence": 0.46,
+     "legend": {
+      "0": "Vague: vision or slogans only",
+      "1": "Sketched: clear idea, missing behavior and data details",
+      "2": "Concrete: behavior, data and interfaces defined",
+      "3": "Ready to build: includes edge cases and acceptance criteria"
+     },
+     "probabilities": {
+      "0": 0.11,
+      "1": 0.53,
+      "2": 0.28,
+      "3": 0.08
+     }
+    },
+    "open_decision": {
+     "type": "noul",
+     "noul": 0.54
+    },
+    "fits_mvp": {
+     "type": "noul",
+     "noul": 0.77
+    }
+   },
+   "usage": {
+    "input_tokens": 1086,
+    "output_tokens": 56
+   }
+  }
+ }
+}

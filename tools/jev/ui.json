@@ -1,0 +1,48 @@
+{
+ "model": "jev-1.13.0",
+ "answers": {
+  "primary_surface": {
+   "type": "choice",
+   "choice": "chat_plus_web",
+   "confidence": 1.0,
+   "probabilities": {
+    "chat_plus_web": 1.0,
+    "mobile_app": 0.0,
+    "desktop_app": 0.0,
+    "chat_only": 0.0
+   }
+  },
+  "hero_screen": {
+   "type": "choice",
+   "choice": "routines",
+   "confidence": 0.42,
+   "probabilities": {
+    "receipts": 0.14,
+    "cost": 0.01,
+    "routines": 0.53,
+    "rules": 0.26,
+    "explore_live": 0.06
+   }
+  },
+  "wow_factor": {
+   "type": "choice",
+   "choice": "compile_moment",
+   "confidence": 0.48,
+   "probabilities": {
+    "rule_test": 0.01,
+    "compile_moment": 0.59,
+    "cost_projection": 0.0,
+    "blocked_moment": 0.4,
+    "migration_report": 0.0
+   }
+  },
+  "desktop_needed_mvp": {
+   "type": "noul",
+   "noul": 0.16
+  }
+ },
+ "usage": {
+  "input_tokens": 1506,
+  "output_tokens": 189
+ }
+}
