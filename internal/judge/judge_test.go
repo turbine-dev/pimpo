@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -85,5 +86,36 @@ func TestLocalJudgeServer(t *testing.T) {
 	}
 	if _, err := (Local{URL: "http://127.0.0.1:1"}).Ask(context.Background(), "?", nil); err == nil {
 		t.Fatal("unreachable server accepted")
+	}
+}
+
+type fixed struct {
+	p     float64
+	err   error
+	asked *int
+}
+
+func (f fixed) Ask(context.Context, string, any) (Answer, error) {
+	if f.asked != nil {
+		*f.asked++
+	}
+	return Answer{P: f.p, Backend: fmt.Sprint(f.p), CostUSD: 0.01}, f.err
+}
+
+func TestCascadeEscalatesOnlyWhenUnsure(t *testing.T) {
+	ctx := context.Background()
+	n := 0
+	strong := fixed{p: 0.99, asked: &n}
+	if a, _ := (Cascade{First: fixed{p: 0.95}, Then: strong, Band: 0.4}).Ask(ctx, "q", nil); a.P != 0.95 || n != 0 {
+		t.Fatalf("sure answer escalated: %+v %d", a, n)
+	}
+	if a, _ := (Cascade{First: fixed{p: 0.3}, Then: strong, Band: 0.4}).Ask(ctx, "q", nil); a.P != 0.99 || n != 1 || a.CostUSD != 0.02 {
+		t.Fatalf("unsure answer kept: %+v", a)
+	}
+	if a, err := (Cascade{First: fixed{p: 0.6}, Then: fixed{err: errors.New("down")}, Band: 0.4}).Ask(ctx, "q", nil); err != nil || a.P != 0.6 {
+		t.Fatalf("strong judge down should keep the cheap answer: %+v %v", a, err)
+	}
+	if a, err := (Cascade{First: fixed{err: errors.New("no local")}, Then: strong, Band: 0.4}).Ask(ctx, "q", nil); err != nil || a.P != 0.99 {
+		t.Fatalf("cheap judge down: %+v %v", a, err)
 	}
 }

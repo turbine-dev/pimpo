@@ -314,20 +314,26 @@ func (a *App) judge(ctx context.Context, question string, item any) (judge.Answe
 		"jev":   judge.Jev{Key: func(ctx context.Context) (string, error) { return a.secret(ctx, "typesafe.key") }},
 		"llm":   judge.LLM{Model: a.LLM, Name: set.JudgeModel},
 	}
-	order := []string{set.JudgeBackend}
-	for _, n := range []string{"jev", "local", "llm"} {
-		if n != set.JudgeBackend {
-			order = append(order, n)
-		}
-	}
-	var chain judge.Chain
-	for _, n := range order {
-		if n == "jev" {
-			if _, err := a.Vault.Get(ctx, "typesafe.key"); err != nil {
-				continue
+	_, noJev := a.Vault.Get(ctx, "typesafe.key")
+	usable := func(n string) bool { return n != "jev" || noJev == nil }
+	if set.JudgeBackend == "local" {
+		// The small local model answers most questions for free; the ones
+		// it is unsure about go to a stronger judge.
+		var strong judge.Chain
+		for _, n := range []string{"jev", "llm"} {
+			if usable(n) {
+				strong = append(strong, backends[n])
 			}
 		}
-		chain = append(chain, backends[n])
+		return judge.Cascade{First: backends["local"], Then: strong, Band: 0.4}.Ask(ctx, question, item)
+	}
+	var chain judge.Chain
+	seen := map[string]bool{}
+	for _, n := range []string{set.JudgeBackend, "jev", "llm", "local"} {
+		if backends[n] != nil && usable(n) && !seen[n] {
+			seen[n] = true
+			chain = append(chain, backends[n])
+		}
 	}
 	return chain.Ask(ctx, question, item)
 }
