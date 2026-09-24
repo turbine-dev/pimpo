@@ -4,6 +4,7 @@ import { type ReactNode } from 'react'
 import type { RoutineSummary } from '../lib/api'
 import { cn } from '../lib/cn'
 import { cronText, usd, when } from '../lib/format'
+import { hasKey, tr, useT } from '../lib/i18n'
 import { Card, RunDots } from './ui'
 
 const capIcon: Record<string, ReactNode> = {
@@ -20,22 +21,6 @@ const capIcon: Record<string, ReactNode> = {
   'gmail.unsubscribe': <BellOff size={13} />,
   'whatsapp.send': <MessageCircle size={13} />,
   'whatsapp.send_to': <MessageCircle size={13} />,
-}
-
-const capLabel: Record<string, string> = {
-  'calendar.events': 'Lê a agenda',
-  'gmail.search': 'Lê e-mails',
-  'gmail.archive': 'Arquiva e-mails',
-  'gmail.label': 'Marca e-mails',
-  'http.getJSON': 'Consulta',
-  'telegram.send': 'Avisa você',
-  'gmail.trash': 'Manda e-mails para a lixeira',
-  'gmail.delete': 'Apaga e-mails',
-  'gmail.draft': 'Escreve rascunhos',
-  'gmail.send': 'Envia e-mails',
-  'gmail.unsubscribe': 'Cancela inscrições',
-  'whatsapp.send': 'Avisa você no WhatsApp',
-  'whatsapp.send_to': 'Manda WhatsApp para outras pessoas',
 }
 
 export const capRisk: Record<string, 'read' | 'notify' | 'reversible' | 'irreversible'> = {
@@ -56,7 +41,8 @@ export const capRisk: Record<string, 'read' | 'notify' | 'reversible' | 'irrever
 
 export function capabilityLabel(entry: string) {
   const [name, scope] = entry.split(':')
-  const base = capLabel[name] ?? name
+  const key = `cap.${name}`
+  const base = hasKey(key) ? tr(key) : name
   return scope ? `${base} ${scope}` : base
 }
 
@@ -72,12 +58,13 @@ export function CapabilityChip({ entry }: { entry: string }) {
 }
 
 const stateStyle = {
-  active: { label: 'Ativa', cls: 'text-read' },
-  paused: { label: 'Pausada', cls: 'text-ink-3' },
-  broken: { label: 'Precisa de atenção', cls: 'text-danger' },
-}
+  active: { label: 'routine.state.active', cls: 'text-read' },
+  paused: { label: 'routine.state.paused', cls: 'text-ink-3' },
+  broken: { label: 'routine.state.broken', cls: 'text-danger' },
+} as const
 
 export function RoutineCard({ r, onOpen }: { r: RoutineSummary; onOpen?: () => void }) {
+  const t = useT()
   const st = stateStyle[r.state] ?? stateStyle.active
   const runs = r.runs.slice(-14).map((o) => (o === 'ok' ? 'ok' : o === 'failed' ? 'failed' : 'skipped')) as ('ok' | 'failed' | 'skipped')[]
   return (
@@ -88,7 +75,7 @@ export function RoutineCard({ r, onOpen }: { r: RoutineSummary; onOpen?: () => v
         onClick={onOpen}
         onKeyDown={(e) => e.key === 'Enter' && onOpen?.()}
         className={cn('group flex h-full cursor-pointer flex-col gap-4 p-5 transition-[border,transform] hover:-translate-y-0.5 hover:border-line-strong', r.state === 'broken' && 'border-danger/40')}
-        aria-label={`Rotina ${r.name}`}
+        aria-label={t('routine.aria', { name: r.name })}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -97,7 +84,7 @@ export function RoutineCard({ r, onOpen }: { r: RoutineSummary; onOpen?: () => v
           </div>
           <span className={cn('flex shrink-0 items-center gap-1.5 text-[12px] font-medium', st.cls)}>
             <span className={cn('size-1.5 rounded-full bg-current', r.state === 'broken' && 'animate-pulse-soft')} />
-            {st.label}
+            {t(st.label)}
           </span>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -114,7 +101,7 @@ export function RoutineCard({ r, onOpen }: { r: RoutineSummary; onOpen?: () => v
           </div>
           <div className="text-right">
             <div className="text-[15px] font-semibold tabular-nums">{usd(r.cost_month_usd)}</div>
-            <div className="text-[11px] text-ink-3">este mês</div>
+            <div className="text-[11px] text-ink-3">{t('routine.thisMonth')}</div>
           </div>
         </div>
       </Card>

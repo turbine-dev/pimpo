@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import { LocaleProvider } from './lib/i18n'
 import './index.css'
 
 const queries = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true, staleTime: 5_000 } } })
@@ -10,9 +11,11 @@ const queries = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFo
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queries}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <LocaleProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </LocaleProvider>
     </QueryClientProvider>
   </StrictMode>,
 )

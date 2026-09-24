@@ -2,6 +2,7 @@ import { Repeat } from 'lucide-react'
 import { RoutineCard } from '../components/RoutineCard'
 import type { RoutineSummary } from '../lib/api'
 import { Button, Card, EmptyState, RiskBadge } from '../components/ui'
+import { useT } from '../lib/i18n'
 
 // The component catalog: every building block with realistic data, used to
 // review the design and as a visual regression target.
@@ -13,10 +14,11 @@ export const sampleRoutines: RoutineSummary[] = [
 ]
 
 export function Design() {
+  const t = useT()
   return (
     <div className="mx-auto max-w-6xl space-y-10">
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-ink-3">Cartões de rotina</h2>
+        <h2 className="mb-3 text-sm font-semibold text-ink-3">{t('design.cards')}</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {sampleRoutines.map((r) => (
             <RoutineCard key={r.id} r={r} />
@@ -25,23 +27,23 @@ export function Design() {
       </section>
       <section className="grid gap-4 md:grid-cols-2">
         <Card className="space-y-3 p-5">
-          <h2 className="text-sm font-semibold text-ink-3">Risco</h2>
+          <h2 className="text-sm font-semibold text-ink-3">{t('design.risk')}</h2>
           <div className="flex flex-wrap gap-2">
             <RiskBadge risk="read" />
             <RiskBadge risk="notify" />
             <RiskBadge risk="reversible" />
             <RiskBadge risk="irreversible" />
           </div>
-          <h2 className="pt-2 text-sm font-semibold text-ink-3">Botões</h2>
+          <h2 className="pt-2 text-sm font-semibold text-ink-3">{t('design.buttons')}</h2>
           <div className="flex flex-wrap gap-2">
-            <Button variant="primary">Ativar rotina</Button>
-            <Button>Ver código</Button>
-            <Button variant="ghost">Ajustar</Button>
-            <Button variant="danger">Negar</Button>
+            <Button variant="primary">{t('design.activate')}</Button>
+            <Button>{t('design.code')}</Button>
+            <Button variant="ghost">{t('design.adjust')}</Button>
+            <Button variant="danger">{t('inbox.deny')}</Button>
           </div>
         </Card>
-        <EmptyState icon={<Repeat size={22} />} title="Nenhuma rotina ainda" action={<Button variant="primary">Nova tarefa</Button>}>
-          Peça algo que você faz toda semana. Depois que der certo uma vez, eu faço sozinho.
+        <EmptyState icon={<Repeat size={22} />} title={t('routines.emptyTitle')} action={<Button variant="primary">{t('common.newTask')}</Button>}>
+          {t('routines.emptyText')}
         </EmptyState>
       </section>
     </div>

@@ -2,22 +2,23 @@ import { Bell, Brain, Menu, Coins, Moon, Plug, ReceiptText, Repeat, Search, Sett
 import { type ReactNode, useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '../lib/cn'
+import { useT, type TKey } from '../lib/i18n'
 import { Kbd } from './ui'
 
-export type NavItem = { to: string; label: string; icon: ReactNode; badge?: number }
+export type NavItem = { to: string; label: TKey; icon: ReactNode; badge?: number }
 
 export const nav: NavItem[] = [
-  { to: '/', label: 'Rotinas', icon: <Repeat size={17} /> },
-  { to: '/inbox', label: 'Precisa de você', icon: <Bell size={17} /> },
-  { to: '/gallery', label: 'Galeria', icon: <LibraryBig size={17} /> },
-  { to: '/receipts', label: 'Recibos', icon: <ReceiptText size={17} /> },
-  { to: '/rules', label: 'Regras', icon: <ShieldCheck size={17} /> },
-  { to: '/business', label: 'Negócio', icon: <Briefcase size={17} /> },
-  { to: '/cost', label: 'Custo', icon: <Coins size={17} /> },
-  { to: '/memory', label: 'Memória', icon: <Brain size={17} /> },
-  { to: '/connections', label: 'Conexões', icon: <Plug size={17} /> },
-  { to: '/people', label: 'Pessoas', icon: <Users size={17} /> },
-  { to: '/settings', label: 'Ajustes', icon: <Settings size={17} /> },
+  { to: '/', label: 'nav.routines', icon: <Repeat size={17} /> },
+  { to: '/inbox', label: 'nav.inbox', icon: <Bell size={17} /> },
+  { to: '/gallery', label: 'nav.gallery', icon: <LibraryBig size={17} /> },
+  { to: '/receipts', label: 'nav.receipts', icon: <ReceiptText size={17} /> },
+  { to: '/rules', label: 'nav.rules', icon: <ShieldCheck size={17} /> },
+  { to: '/business', label: 'nav.business', icon: <Briefcase size={17} /> },
+  { to: '/cost', label: 'nav.cost', icon: <Coins size={17} /> },
+  { to: '/memory', label: 'nav.memory', icon: <Brain size={17} /> },
+  { to: '/connections', label: 'nav.connections', icon: <Plug size={17} /> },
+  { to: '/people', label: 'nav.people', icon: <Users size={17} /> },
+  { to: '/settings', label: 'nav.settings', icon: <Settings size={17} /> },
 ]
 
 export function Logo({ size = 28 }: { size?: number }) {
@@ -56,20 +57,22 @@ function useTheme() {
 }
 
 export function Budget({ spent, limit }: { spent: number; limit: number }) {
+  const t = useT()
   const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0
   const tone = pct > 90 ? 'bg-danger' : pct > 70 ? 'bg-change' : 'bg-read'
   return (
-    <div className="hidden items-center gap-2.5 rounded-full border border-line bg-surface px-3 py-1.5 text-[12.5px] sm:flex" title="Gasto de hoje com modelos">
+    <div className="hidden items-center gap-2.5 rounded-full border border-line bg-surface px-3 py-1.5 text-[12.5px] sm:flex" title={t('shell.budget')}>
       <span className="tabular-nums text-ink">${spent.toFixed(2)}</span>
       <span className="h-1.5 w-16 overflow-hidden rounded-full bg-sunken">
         <span className={cn('block h-full rounded-full transition-all', tone)} style={{ width: `${pct}%` }} />
       </span>
-      <span className="tabular-nums text-ink-3">de ${limit.toFixed(2)}</span>
+      <span className="tabular-nums text-ink-3">{t('shell.budgetOf', { limit: `$${limit.toFixed(2)}` })}</span>
     </div>
   )
 }
 
 export function Shell({ children, items = nav, budget, healthy = true, onSearch }: { children: ReactNode; items?: NavItem[]; budget?: { spent: number; limit: number }; healthy?: boolean; onSearch?: () => void }) {
+  const t = useT()
   const [theme, toggle] = useTheme()
   const [more, setMore] = useState(false)
   return (
@@ -79,7 +82,7 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
           <Logo />
           <span className="text-[15px] font-semibold tracking-tight">Vigia</span>
         </div>
-        <nav className="flex flex-col gap-0.5" aria-label="Principal">
+        <nav className="flex flex-col gap-0.5" aria-label={t('shell.main')}>
           {items.map((it) => (
             <NavLink
               key={it.to}
@@ -90,14 +93,14 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
               }
             >
               <span className="text-ink-3 group-[.active]:text-ink">{it.icon}</span>
-              <span className="flex-1">{it.label}</span>
+              <span className="flex-1">{t(it.label)}</span>
               {!!it.badge && <span className="rounded-full bg-danger px-1.5 text-[11px] font-semibold text-white tabular-nums">{it.badge}</span>}
             </NavLink>
           ))}
         </nav>
         <div className="mt-auto flex items-center gap-2 px-2 text-[12px] text-ink-3">
           <span className={cn('size-2 rounded-full', healthy ? 'bg-read' : 'animate-pulse-soft bg-danger')} />
-          {healthy ? 'Tudo funcionando' : 'Algo precisa de atenção'}
+          {healthy ? t('shell.healthy') : t('shell.unhealthy')}
         </div>
       </aside>
 
@@ -108,12 +111,12 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
           </div>
           <button onClick={onSearch} className="flex h-9 max-w-md flex-1 items-center gap-2 rounded-[10px] border border-line bg-surface px-3 text-left text-[13px] text-ink-3 hover:border-line-strong">
             <Search size={15} />
-            <span className="flex-1">Buscar rotinas, recibos, regras…</span>
+            <span className="flex-1">{t('shell.search')}</span>
             <Kbd>⌘K</Kbd>
           </button>
           <div className="ml-auto flex items-center gap-2">
             {budget && <Budget {...budget} />}
-            <button onClick={toggle} className="grid size-9 place-items-center rounded-[10px] text-ink-2 hover:bg-sunken" aria-label={theme === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}>
+            <button onClick={toggle} className="grid size-9 place-items-center rounded-[10px] text-ink-2 hover:bg-sunken" aria-label={theme === 'dark' ? t('shell.light') : t('shell.dark')}>
               {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
             </button>
           </div>
@@ -121,17 +124,17 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
         <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-6 md:px-8 md:pb-10">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden" aria-label="Principal (celular)">
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden" aria-label={t('shell.mainMobile')}>
         {['/inbox', '/receipts', '/'].map((to) => items.find((it) => it.to === to)).filter((it): it is NavItem => !!it).map((it) => (
           <NavLink key={it.to} to={it.to} end={it.to === '/'} onClick={() => setMore(false)} className={({ isActive }) => cn('relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px]', isActive ? 'text-ink' : 'text-ink-3')}>
             {it.icon}
-            {it.label === 'Precisa de você' ? 'Aprovar' : it.label}
+            {it.to === '/inbox' ? t('nav.approve') : t(it.label)}
             {!!it.badge && <span className="absolute right-[30%] top-1.5 size-2 rounded-full bg-danger" />}
           </NavLink>
         ))}
         <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className={cn('flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px]', more ? 'text-ink' : 'text-ink-3')}>
           <Menu size={17} />
-          Mais
+          {t('nav.more')}
         </button>
       </nav>
       {more && (
@@ -140,7 +143,7 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
             {items.filter((it) => !['/inbox', '/receipts', '/'].includes(it.to)).map((it) => (
               <NavLink key={it.to} to={it.to} onClick={() => setMore(false)} className={({ isActive }) => cn('flex flex-col items-center gap-1 rounded-xl py-3 text-[11.5px]', isActive ? 'bg-sunken text-ink' : 'text-ink-2')}>
                 {it.icon}
-                {it.label}
+                {t(it.label)}
               </NavLink>
             ))}
           </div>
