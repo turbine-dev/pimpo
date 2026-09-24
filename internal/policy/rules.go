@@ -9,6 +9,7 @@ import (
 
 	"github.com/denerFernandes/vigia/internal/capability"
 	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/vigia/internal/protect"
 )
 
 // Rule is one decision the owner made, in a form the engine can check
@@ -178,6 +179,9 @@ var strength = map[Verdict]int{Allow: 0, Reversible: 1, Ask: 2, Block: 3}
 // change is logged and survives restarts.
 type Engine struct {
 	Events *event.Store
+	// Protect is the shared protection list; its entries block, unless the
+	// owner chose to ignore one.
+	Protect *protect.Guard
 
 	mu    sync.Mutex
 	cache []Rule
@@ -220,6 +224,27 @@ func (e *Engine) SaveRules(ctx context.Context, rules []Rule, actor string) erro
 	return err
 }
 
+const ignoredKey = "protect.ignored"
+
+func (e *Engine) ignored(ctx context.Context, id string) bool {
+	raw, _ := e.Events.Get(ctx, ignoredKey)
+	return strings.Contains(","+raw+",", ","+id+",")
+}
+
+// IgnoreProtection stops one protection entry from blocking here, for a
+// false positive the owner contests.
+func (e *Engine) IgnoreProtection(ctx context.Context, id, actor string) error {
+	raw, _ := e.Events.Get(ctx, ignoredKey)
+	if !e.ignored(ctx, id) {
+		raw = strings.Trim(raw+","+id, ",")
+	}
+	if err := e.Events.Put(ctx, ignoredKey, raw); err != nil {
+		return err
+	}
+	_, err := e.Events.Append(ctx, "protect.ignored", actor, map[string]string{"id": id})
+	return err
+}
+
 // AllowHost remembers the owner's answer about a web host.
 func (e *Engine) AllowHost(ctx context.Context, host string, allowed bool, actor string) error {
 	hosts := e.hosts(ctx)
@@ -243,6 +268,11 @@ func (e *Engine) hosts(ctx context.Context) map[string]bool {
 // changes are allowed but made undoable, everything else is allowed. A
 // guest's request never changes anything without the responsible person.
 func (e *Engine) Decide(ctx context.Context, a Action) Decision {
+	if e.Protect != nil {
+		if hit, ok := e.Protect.Check(a.Capability, a.Scope, a.Args); ok && !e.ignored(ctx, hit.ID) {
+			return Decision{Verdict: Block, Reason: fmt.Sprintf("rede de proteção: %s (marcado por %d pessoas)", hit.Reason, hit.Reports), Rule: "protect:" + hit.ID}
+		}
+	}
 	d := e.decide(ctx, a)
 	if why := alwaysAsk[a.Capability]; why != "" && strength[d.Verdict] < strength[Ask] {
 		return Decision{Verdict: Ask, Reason: why}

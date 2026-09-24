@@ -1,0 +1,460 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		295BDA7E1BC724A10CBE9101 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 82302A0BF2D4B7C50B4C7F12 /* CoreGraphics.framework */; };
+		2F85350646E1F619B463E309 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = C0A8424F7A2C46E21CD99411 /* assets */; };
+		40FC8C051FB20205AE5976A0 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270C668D18DDE036271AC39C /* MetalKit.framework */; };
+		43DC6902B9BA262FA25E1E11 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = E9F299C2DCBB43CAD81C34AA /* main.mm */; };
+		64C73E079C54FD69F6E44E00 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 68D289D58D66083C019AEE74 /* UIKit.framework */; };
+		813FD2A7404973349B9B2444 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D48F11B3FD1098F637414BA0 /* QuartzCore.framework */; };
+		A56CDB62CBE96EB16A57B89D /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F56859BBB0C7B8E7ACD6C2F4 /* Metal.framework */; };
+		B05A6681A1EDBB6052C26518 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C039DF18E4503843DFC7C9F0 /* LaunchScreen.storyboard */; };
+		BF78BB835CB7FA5101A9A295 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 94A094474E2D00CA519B3D01 /* WebKit.framework */; };
+		CD0F322B6A7678C77BDC8C52 /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D982651E6AD620869A54FC77 /* libapp.a */; };
+		E14F4B8EC1132206C29C6ED4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C994D01E0F667544842A5302 /* Assets.xcassets */; };
+		F360A2C7E37E0D995202F070 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C30289C88C2EF1FD3E868402 /* Security.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		270C668D18DDE036271AC39C /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		2BCF2950BB4C5693E02A98B0 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		36885F368CBA7C157BBA9CF8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4DED1EE3503A20D5C70C9DE2 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		68D289D58D66083C019AEE74 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		82302A0BF2D4B7C50B4C7F12 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		93C8965B97A810BE52E44448 /* vigia-desktop_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "vigia-desktop_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		94A094474E2D00CA519B3D01 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		9790408F4F6E2D43E907ED7C /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		C039DF18E4503843DFC7C9F0 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		C0A8424F7A2C46E21CD99411 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		C30289C88C2EF1FD3E868402 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		C79B7C11029CA765AD94DD3E /* vigia-desktop_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "vigia-desktop_iOS.entitlements"; sourceTree = "<group>"; };
+		C994D01E0F667544842A5302 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D48F11B3FD1098F637414BA0 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		D982651E6AD620869A54FC77 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		E9F299C2DCBB43CAD81C34AA /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		F56859BBB0C7B8E7ACD6C2F4 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		584E39E865A67CCD24672894 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CD0F322B6A7678C77BDC8C52 /* libapp.a in Frameworks */,
+				295BDA7E1BC724A10CBE9101 /* CoreGraphics.framework in Frameworks */,
+				A56CDB62CBE96EB16A57B89D /* Metal.framework in Frameworks */,
+				40FC8C051FB20205AE5976A0 /* MetalKit.framework in Frameworks */,
+				813FD2A7404973349B9B2444 /* QuartzCore.framework in Frameworks */,
+				F360A2C7E37E0D995202F070 /* Security.framework in Frameworks */,
+				64C73E079C54FD69F6E44E00 /* UIKit.framework in Frameworks */,
+				BF78BB835CB7FA5101A9A295 /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		15DFB83D29570872A5D28EC4 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				4DED1EE3503A20D5C70C9DE2 /* lib.rs */,
+				2BCF2950BB4C5693E02A98B0 /* main.rs */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		3871C57259879A3CE6625AEE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				82302A0BF2D4B7C50B4C7F12 /* CoreGraphics.framework */,
+				D982651E6AD620869A54FC77 /* libapp.a */,
+				F56859BBB0C7B8E7ACD6C2F4 /* Metal.framework */,
+				270C668D18DDE036271AC39C /* MetalKit.framework */,
+				D48F11B3FD1098F637414BA0 /* QuartzCore.framework */,
+				C30289C88C2EF1FD3E868402 /* Security.framework */,
+				68D289D58D66083C019AEE74 /* UIKit.framework */,
+				94A094474E2D00CA519B3D01 /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		562C86DBE64056A9921113A0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				93C8965B97A810BE52E44448 /* vigia-desktop_iOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		56EB7C30A732C0CB4D4470FC /* Externals */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Externals;
+			sourceTree = "<group>";
+		};
+		5EC2479054644F3682F77460 /* bindings */ = {
+			isa = PBXGroup;
+			children = (
+				9790408F4F6E2D43E907ED7C /* bindings.h */,
+			);
+			path = bindings;
+			sourceTree = "<group>";
+		};
+		6607F2D961A0DE65D6C905B4 /* vigia-desktop */ = {
+			isa = PBXGroup;
+			children = (
+				E9F299C2DCBB43CAD81C34AA /* main.mm */,
+				5EC2479054644F3682F77460 /* bindings */,
+			);
+			path = "vigia-desktop";
+			sourceTree = "<group>";
+		};
+		86A37AF969133B03818414CD = {
+			isa = PBXGroup;
+			children = (
+				C0A8424F7A2C46E21CD99411 /* assets */,
+				C994D01E0F667544842A5302 /* Assets.xcassets */,
+				C039DF18E4503843DFC7C9F0 /* LaunchScreen.storyboard */,
+				56EB7C30A732C0CB4D4470FC /* Externals */,
+				9A0EEE2DD63AB470F0C4B27D /* Sources */,
+				15DFB83D29570872A5D28EC4 /* src */,
+				935EF2E67C008ADA41DD0A8B /* vigia-desktop_iOS */,
+				3871C57259879A3CE6625AEE /* Frameworks */,
+				562C86DBE64056A9921113A0 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		935EF2E67C008ADA41DD0A8B /* vigia-desktop_iOS */ = {
+			isa = PBXGroup;
+			children = (
+				36885F368CBA7C157BBA9CF8 /* Info.plist */,
+				C79B7C11029CA765AD94DD3E /* vigia-desktop_iOS.entitlements */,
+			);
+			path = "vigia-desktop_iOS";
+			sourceTree = "<group>";
+		};
+		9A0EEE2DD63AB470F0C4B27D /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				6607F2D961A0DE65D6C905B4 /* vigia-desktop */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F460A782AAA229826058FFCC /* vigia-desktop_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 251C30F23BAAA1C565E8B988 /* Build configuration list for PBXNativeTarget "vigia-desktop_iOS" */;
+			buildPhases = (
+				D359D7463FA16D0209670F50 /* Build Rust Code */,
+				C475CA90315B5E6E04B944A9 /* Sources */,
+				CB07CAD6EEB6BF28BCC840DA /* Resources */,
+				584E39E865A67CCD24672894 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "vigia-desktop_iOS";
+			packageProductDependencies = (
+			);
+			productName = "vigia-desktop_iOS";
+			productReference = 93C8965B97A810BE52E44448 /* vigia-desktop_iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		685C9477B993E969BEE48BC9 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 0284F99EEAA44D59C253580B /* Build configuration list for PBXProject "vigia-desktop" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 86A37AF969133B03818414CD;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 562C86DBE64056A9921113A0 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F460A782AAA229826058FFCC /* vigia-desktop_iOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CB07CAD6EEB6BF28BCC840DA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E14F4B8EC1132206C29C6ED4 /* Assets.xcassets in Resources */,
+				B05A6681A1EDBB6052C26518 /* LaunchScreen.storyboard in Resources */,
+				2F85350646E1F619B463E309 /* assets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D359D7463FA16D0209670F50 /* Build Rust Code */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Code";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a",
+				"$(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "npm run -- tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C475CA90315B5E6E04B944A9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				43DC6902B9BA262FA25E1E11 /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1AE402D9B61C130C780554D3 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+		21C64BDFA4703F03B239816C /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+		A5E9C2EA8735D0FF301B0DF7 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "vigia-desktop_iOS/vigia-desktop_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "vigia-desktop_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = app.vigia.companion;
+				PRODUCT_NAME = "Vigia";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = debug;
+		};
+		ECBACBB699BB2A878968FEC4 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "vigia-desktop_iOS/vigia-desktop_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "vigia-desktop_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = app.vigia.companion;
+				PRODUCT_NAME = "Vigia";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0284F99EEAA44D59C253580B /* Build configuration list for PBXProject "vigia-desktop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1AE402D9B61C130C780554D3 /* debug */,
+				21C64BDFA4703F03B239816C /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		251C30F23BAAA1C565E8B988 /* Build configuration list for PBXNativeTarget "vigia-desktop_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5E9C2EA8735D0FF301B0DF7 /* debug */,
+				ECBACBB699BB2A878968FEC4 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 685C9477B993E969BEE48BC9 /* Project object */;
+}

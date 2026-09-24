@@ -37,6 +37,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/owner"
 	"github.com/denerFernandes/vigia/internal/people"
 	"github.com/denerFernandes/vigia/internal/policy"
+	"github.com/denerFernandes/vigia/internal/protect"
 	"github.com/denerFernandes/vigia/internal/scheduler"
 	"github.com/denerFernandes/vigia/internal/server"
 	"github.com/denerFernandes/vigia/internal/store"
@@ -61,10 +62,13 @@ type Settings struct {
 	// EmailChannel lets the owner ask by writing to themselves with
 	// "Vigia:" in the subject.
 	EmailChannel bool `json:"email_channel"`
+	// ProtectionNetwork downloads the shared protection list daily.
+	ProtectionNetwork bool   `json:"protection_network"`
+	ProtectionURL     string `json:"protection_url"`
 }
 
 func defaultSettings() Settings {
-	return Settings{Zone: time.Local.String(), Locale: "pt-BR", JudgeBackend: "local", OllamaModel: "qwen3:1.7b", LocalJudgeURL: "http://127.0.0.1:11500", ExploreModel: "sonnet", CompileModel: "sonnet", JudgeModel: "haiku", GalleryURL: gallery.DefaultIndex}
+	return Settings{Zone: time.Local.String(), Locale: "pt-BR", JudgeBackend: "local", OllamaModel: "qwen3:1.7b", LocalJudgeURL: "http://127.0.0.1:11500", ExploreModel: "sonnet", CompileModel: "sonnet", JudgeModel: "haiku", GalleryURL: gallery.DefaultIndex, ProtectionNetwork: true, ProtectionURL: protect.DefaultURL}
 }
 
 type App struct {
@@ -84,6 +88,7 @@ type App struct {
 	Memory    *memory.Memory
 	People    *people.Directory
 	Business  *business.Book
+	Protect   *protect.Guard
 	Google    *oauth.Google
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
@@ -127,6 +132,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	}
 	a := &App{Events: events, Vault: v, Store: st, Business: book}
 	a.Rules = &policy.Engine{Events: events}
+	a.initProtection(ctx)
 	a.Policy = a.Rules
 	a.LLM = claude{a}
 	a.Agent = claude{a}
@@ -178,6 +184,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.catalogRoutes()
 	a.businessRoutes()
 	a.backupRoutes()
+	a.guardRoutes()
 	return a, nil
 }
 
@@ -188,6 +195,7 @@ func (a *App) Start(ctx context.Context) error {
 	}
 	go a.Outbox.Run(ctx, 15*time.Second)
 	go a.emailChannel(ctx, time.Minute)
+	go a.refreshProtection(ctx)
 	a.restartListener(ctx)
 	return nil
 }

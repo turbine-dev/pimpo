@@ -50,6 +50,8 @@ func run(args []string) error {
 		return galleryCmd(args, os.Stdout)
 	case "connector":
 		return connectorCmd(args, os.Stdout)
+	case "protect":
+		return protectCmd(args, os.Stdout)
 	case "export":
 		return exportCmd(args, os.Stdout)
 	case "import":
@@ -58,7 +60,7 @@ func run(args []string) error {
 		fmt.Println(version)
 		return nil
 	}
-	return fmt.Errorf("unknown command %q (try: serve, export, import, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
+	return fmt.Errorf("unknown command %q (try: serve, export, import, protect, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
 }
 
 func dataDir(flagValue string) string {

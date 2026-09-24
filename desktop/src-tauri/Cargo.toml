@@ -21,7 +21,4 @@ getrandom = "0.3"
 tauri-plugin-single-instance = "2"
 tauri-plugin-autostart = "2"
 
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true
+# No LTO or stripping: with them the iOS release build shows a blank page.
