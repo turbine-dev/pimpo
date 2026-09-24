@@ -20,6 +20,7 @@ import (
 	"github.com/emersion/go-message"
 	_ "github.com/emersion/go-message/charset"
 	gomail "github.com/emersion/go-message/mail"
+	"github.com/emersion/go-sasl"
 
 	"github.com/denerFernandes/vigia/internal/connector"
 )
@@ -48,6 +49,8 @@ type Account struct {
 	Addr     string // host:port, implicit TLS
 	Username string
 	Password func(ctx context.Context) (string, error)
+	// Token, when set, signs in with OAuth instead of a password.
+	Token func(ctx context.Context) (string, error)
 	// SMTP is where mail is sent, host:port; 465 uses TLS, anything else
 	// STARTTLS. Defaults to smtp.gmail.com:465.
 	SMTP string
@@ -144,7 +147,13 @@ func idArg(args any) (string, error) {
 }
 
 func (m *Mail) dial(ctx context.Context) (*imapclient.Client, error) {
-	pw, err := m.Account.Password(ctx)
+	var pw, token string
+	var err error
+	if m.Account.Token != nil {
+		token, err = m.Account.Token(ctx)
+	} else {
+		pw, err = m.Account.Password(ctx)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -161,6 +170,13 @@ func (m *Mail) dial(ctx context.Context) (*imapclient.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cannot reach %s: %w", m.Account.Addr, err)
 		}
+	}
+	if token != "" {
+		if err := c.Authenticate(sasl.NewOAuthBearerClient(&sasl.OAuthBearerOptions{Username: m.Account.Username, Token: token})); err != nil {
+			c.Close()
+			return nil, fmt.Errorf("mail sign-in with Google refused; sign in again from Connections")
+		}
+		return c, nil
 	}
 	if err := c.Login(m.Account.Username, pw).Wait(); err != nil {
 		c.Close()

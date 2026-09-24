@@ -117,7 +117,13 @@ func (m *Mail) draft(ctx context.Context, o Outgoing) (any, error) {
 // send delivers a message over SMTP with the same app password.
 func (m *Mail) send(ctx context.Context, o Outgoing) (any, error) {
 	raw, id := m.compose(o)
-	pw, err := m.Account.Password(ctx)
+	var pw, token string
+	var err error
+	if m.Account.Token != nil {
+		token, err = m.Account.Token(ctx)
+	} else {
+		pw, err = m.Account.Password(ctx)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +157,12 @@ func (m *Mail) send(ctx context.Context, o Outgoing) (any, error) {
 		}
 	}
 	if !m.Account.Insecure {
-		if err := c.Auth(smtp.PlainAuth("", m.Account.Username, pw, host)); err != nil {
-			return nil, errors.New("mail server refused the app password for sending")
+		var auth smtp.Auth = smtp.PlainAuth("", m.Account.Username, pw, host)
+		if token != "" {
+			auth = xoauth2{user: m.Account.Username, token: token}
+		}
+		if err := c.Auth(auth); err != nil {
+			return nil, errors.New("mail server refused the sign-in for sending")
 		}
 	}
 	if err := c.Mail(m.Account.Username); err != nil {
@@ -179,3 +189,18 @@ func (m *Mail) send(ctx context.Context, o Outgoing) (any, error) {
 }
 
 func jsonUnmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }
+
+// xoauth2 is Gmail's SMTP OAuth mechanism.
+type xoauth2 struct{ user, token string }
+
+func (a xoauth2) Start(*smtp.ServerInfo) (string, []byte, error) {
+	return "XOAUTH2", []byte("user=" + a.user + "\x01auth=Bearer " + a.token + "\x01\x01"), nil
+}
+
+func (a xoauth2) Next(_ []byte, more bool) ([]byte, error) {
+	if more {
+		// The server sent an error challenge; an empty reply ends the exchange.
+		return []byte{}, nil
+	}
+	return nil, nil
+}

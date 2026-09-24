@@ -189,6 +189,42 @@ func (o Ollama) Ask(ctx context.Context, question string, item any) (Answer, err
 	return Answer{P: 0.2, Backend: "local"}, nil
 }
 
+// Local asks Vigia's own small judgment model (tools/judge/serve.py), which
+// reads the model's probability of "yes" directly.
+type Local struct {
+	URL  string
+	HTTP *http.Client
+}
+
+func (l Local) Ask(ctx context.Context, question string, item any) (Answer, error) {
+	url := l.URL
+	if url == "" {
+		url = "http://127.0.0.1:11500"
+	}
+	body, _ := json.Marshal(map[string]any{"question": question, "item": item})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(url, "/")+"/judge", bytes.NewReader(body))
+	if err != nil {
+		return Answer{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := l.HTTP
+	if client == nil {
+		client = &http.Client{Timeout: 30 * time.Second}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return Answer{}, errors.New("local judgment model unreachable")
+	}
+	defer resp.Body.Close()
+	var out struct {
+		P float64 `json:"p"`
+	}
+	if resp.StatusCode != 200 || json.NewDecoder(resp.Body).Decode(&out) != nil {
+		return Answer{}, errors.New("local judgment model returned an unreadable answer")
+	}
+	return Answer{P: clamp(out.P), Backend: "local"}, nil
+}
+
 // Chain tries backends in order until one answers.
 type Chain []Judge
 
