@@ -10,15 +10,10 @@ import { Publish } from '../components/Publish'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
 import { cronText, relative, usd, when } from '../lib/format'
-
-const riskText: Record<string, string> = {
-  read: 'Só lê. Não muda nada.',
-  notify: 'Manda mensagem só para você.',
-  reversible: 'Muda algo que dá para desfazer.',
-  irreversible: 'Não dá para desfazer; sempre pede sua aprovação.',
-}
+import { fill, useT } from '../lib/i18n'
 
 export function RoutinePage() {
+  const t = useT()
   const { id = '' } = useParams()
   const [params] = useSearchParams()
   const qc = useQueryClient()
@@ -39,7 +34,7 @@ export function RoutinePage() {
   return (
     <div className="mx-auto max-w-5xl">
       <Link to="/" className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink">
-        <ArrowLeft size={14} /> Rotinas
+        <ArrowLeft size={14} /> {t('nav.routines')}
       </Link>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -47,22 +42,22 @@ export function RoutinePage() {
           <p className="mt-1 text-sm text-ink-2">{r.description}</p>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-[12.5px] text-ink-3">
             <span>{cronText(s.schedule)}</span>
-            {s.state === 'active' && s.next_run && <span>· próxima {when(s.next_run)}</span>}
-            <span>· versão {s.version}</span>
-            <span>· {usd(s.cost_month_usd)} este mês</span>
+            {s.state === 'active' && s.next_run && <span>· {t('routine.next', { when: when(s.next_run) })}</span>}
+            <span>· {t('routine.version', { n: s.version })}</span>
+            <span>· {usd(s.cost_month_usd)} {t('routine.thisMonth')}</span>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => act.mutate('run')} disabled={act.isPending}>
-            <Play size={15} /> Rodar agora
+            <Play size={15} /> {t('routine.runNow')}
           </Button>
           {s.state === 'active' ? (
             <Button variant="ghost" onClick={() => act.mutate('pause')}>
-              <Pause size={15} /> Pausar
+              <Pause size={15} /> {t('routine.pause')}
             </Button>
           ) : (
             <Button variant="ghost" onClick={() => act.mutate('resume')}>
-              <RotateCcw size={15} /> Reativar
+              <RotateCcw size={15} /> {t('routine.resume')}
             </Button>
           )}
           <Publish id={s.id} name={s.name} />
@@ -72,24 +67,24 @@ export function RoutinePage() {
       {s.state === 'broken' && (
         <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 border-danger/40 bg-danger-soft/50 p-4">
           <div className="min-w-0">
-            <div className="text-[14px] font-medium text-danger">A última execução falhou e a rotina está pausada.</div>
+            <div className="text-[14px] font-medium text-danger">{t('routine.failed')}</div>
             {lastError && <div className="mt-1 truncate text-[12.5px] text-ink-2">{lastError}</div>}
           </div>
           <Button variant="primary" onClick={() => act.mutate('repair')}>
-            <Wrench size={15} /> Refazer com o agente
+            <Wrench size={15} /> {t('inbox.redo')}
           </Button>
         </Card>
       )}
       {act.data?.error && <p className="mb-4 text-sm text-danger">{act.data.error}</p>}
 
       <Tabs.Root defaultValue={params.get('tab') ?? 'overview'}>
-        <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label="Detalhes da rotina">
+        <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('routine.details')}>
           {[
-            ['overview', 'Execuções'],
-            ['code', 'Código'],
-            ['tests', `Testes (${r.tests.length})`],
-            ['caps', 'O que ela pode fazer'],
-            ['history', `Histórico (${versions.length})`],
+            ['overview', t('routine.tab.runs')],
+            ['code', t('routine.tab.code')],
+            ['tests', t('routine.tab.tests', { n: r.tests.length })],
+            ['caps', t('routine.tab.caps')],
+            ['history', t('routine.tab.history', { n: versions.length })],
           ].map(([v, l]) => (
             <Tabs.Trigger key={v} value={v} className="-mb-px border-b-2 border-transparent px-3 py-2.5 text-[13.5px] text-ink-3 hover:text-ink data-[state=active]:border-ink data-[state=active]:font-medium data-[state=active]:text-ink">
               {l}
@@ -101,16 +96,16 @@ export function RoutinePage() {
           <Card className="mb-4 flex items-center justify-between p-5">
             <RunDots runs={s.runs.map((o) => (o === 'ok' ? 'ok' : 'failed')) as ('ok' | 'failed')[]} />
             <span className="text-[13px] text-ink-3">
-              {s.runs.filter((o) => o === 'ok').length} de {s.runs.length} recentes deram certo
+              {t('routine.recentOk', { ok: s.runs.filter((o) => o === 'ok').length, total: s.runs.length })}
             </span>
           </Card>
           <Card className="divide-y divide-line">
-            {runs.length === 0 && <div className="px-5 py-6 text-sm text-ink-3">Ainda não rodou. {s.next_run ? `Primeira execução ${when(s.next_run)}.` : ''}</div>}
+            {runs.length === 0 && <div className="px-5 py-6 text-sm text-ink-3">{t('routine.notYet')} {s.next_run ? t('routine.firstRun', { when: when(s.next_run) }) : ''}</div>}
             {runs.map((run) => (
               <div key={run.id} className="flex items-center gap-3 px-5 py-3">
                 <span className={cn('size-2 rounded-full', run.outcome === 'ok' ? 'bg-read' : run.outcome === 'failed' ? 'bg-danger' : 'animate-pulse-soft bg-explore')} />
                 <span className="w-40 shrink-0 text-[13px]">{when(run.started_at)}</span>
-                <span className="min-w-0 flex-1 truncate text-[13px] text-ink-2">{run.error || `${run.calls} ações`}</span>
+                <span className="min-w-0 flex-1 truncate text-[13px] text-ink-2">{run.error || t('routine.calls', { count: run.calls })}</span>
                 <span className="text-[12px] tabular-nums text-ink-3">{usd(run.cost_usd)}</span>
               </div>
             ))}
@@ -119,23 +114,23 @@ export function RoutinePage() {
 
         <Tabs.Content value="code">
           <p className="mb-3 text-[13px] text-ink-2">
-            Este é o código que roda no horário, sem modelo de linguagem. As partes destacadas são as <span className="rounded bg-change-soft px-1 text-change">capacidades</span>: o único jeito de a rotina tocar o mundo.
+            {fill(t('routine.codeText'), { caps: <span className="rounded bg-change-soft px-1 text-change">{t('routine.capabilities')}</span> })}
           </p>
           <Code code={r.code} />
         </Tabs.Content>
 
         <Tabs.Content value="tests" className="space-y-3">
-          {r.tests.length === 0 && <p className="text-sm text-ink-3">Sem testes próprios; a rotina foi conferida contra a gravação da exploração.</p>}
-          {r.tests.map((t) => (
-            <Card key={t.name} className="p-4">
-              <div className="mb-2 text-[14px] font-medium">{t.name}</div>
+          {r.tests.length === 0 && <p className="text-sm text-ink-3">{t('routine.noTests')}</p>}
+          {r.tests.map((test) => (
+            <Card key={test.name} className="p-4">
+              <div className="mb-2 text-[14px] font-medium">{test.name}</div>
               <ul className="space-y-1 text-[13px] text-ink-2">
-                {t.expect.map((e, i) => (
+                {test.expect.map((e, i) => (
                   <li key={i}>
                     {capabilityLabel(e.capability)}
                     {e.count !== undefined && ` · ${e.count}×`}
-                    {e.contains?.length ? ` · menciona ${e.contains.map((c) => `“${c}”`).join(', ')}` : ''}
-                    {e.not_contains?.length ? ` · nunca ${e.not_contains.map((c) => `“${c}”`).join(', ')}` : ''}
+                    {e.contains?.length ? ` · ${t('routine.mentions', { list: e.contains.map((c) => `“${c}”`).join(', ') })}` : ''}
+                    {e.not_contains?.length ? ` · ${t('routine.never', { list: e.not_contains.map((c) => `“${c}”`).join(', ') })}` : ''}
                   </li>
                 ))}
               </ul>
@@ -150,7 +145,7 @@ export function RoutinePage() {
               <Card key={c} className="flex items-center justify-between gap-4 p-4">
                 <div>
                   <div className="text-[14px] font-medium">{capabilityLabel(c)}</div>
-                  <div className="text-[12.5px] text-ink-3">{riskText[risk]}</div>
+                  <div className="text-[12.5px] text-ink-3">{t(`routine.risk.${risk}`)}</div>
                 </div>
                 <RiskBadge risk={risk} />
               </Card>
@@ -158,11 +153,11 @@ export function RoutinePage() {
           })}
           {Object.entries(r.manifest.judgments ?? {}).map(([name, q]) => (
             <Card key={name} className="p-4">
-              <div className="text-[14px] font-medium">Julgamento: {name}</div>
-              <div className="text-[12.5px] text-ink-3">“{q}” — respondido por um modelo pequeno, com probabilidade.</div>
+              <div className="text-[14px] font-medium">{t('routine.judgment', { name })}</div>
+              <div className="text-[12.5px] text-ink-3">{t('routine.judgmentText', { question: q })}</div>
             </Card>
           ))}
-          <p className="pt-2 text-[12.5px] text-ink-3">Qualquer coisa fora desta lista é impossível para a rotina: não existe no ambiente em que ela roda.</p>
+          <p className="pt-2 text-[12.5px] text-ink-3">{t('routine.capsNote')}</p>
         </Tabs.Content>
 
         <Tabs.Content value="history" className="space-y-3">
@@ -170,14 +165,14 @@ export function RoutinePage() {
             <Card key={v.version} className="p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <div className="text-[14px] font-medium">Versão {v.version}</div>
+                  <div className="text-[14px] font-medium">{t('routine.versionTitle', { n: v.version })}</div>
                   <div className="text-[12.5px] text-ink-3">{v.reason}</div>
                 </div>
                 <span className="text-[12px] text-ink-3">{relative(v.created_at)}</span>
               </div>
               {versions[i + 1] && versions[i + 1].routine.code !== v.routine.code && (
                 <details className="mt-3">
-                  <summary className="cursor-pointer text-[12.5px] text-ink-2">O que mudou em relação à versão {versions[i + 1].version}</summary>
+                  <summary className="cursor-pointer text-[12.5px] text-ink-2">{t('routine.changed', { n: versions[i + 1].version })}</summary>
                   <div className="mt-2">
                     <Diff before={versions[i + 1].routine.code} after={v.routine.code} />
                   </div>
