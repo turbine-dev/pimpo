@@ -86,6 +86,9 @@ func serve(args []string) error {
 	defer store.Close()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if os.Getenv("VIGIA_EXIT_WITH_PARENT") != "" {
+		go exitWithParent(ctx, stop)
+	}
 	if err := guardVersion(ctx, store, home); err != nil {
 		return err
 	}
@@ -133,6 +136,25 @@ func serve(args []string) error {
 		return err
 	}
 	return nil
+}
+
+// exitWithParent stops the server when the desktop app that started it
+// dies, however it dies: the process is then adopted by another parent.
+func exitWithParent(ctx context.Context, stop func()) {
+	parent := os.Getppid()
+	t := time.NewTicker(time.Second)
+	defer t.Stop()
+	for {
+		select {
+		case <-t.C:
+			if os.Getppid() != parent {
+				stop()
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // guardVersion snapshots the data before a new version touches it.

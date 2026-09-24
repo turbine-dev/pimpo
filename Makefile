@@ -1,7 +1,7 @@
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build ui test test-go test-ui lint proof check e2e
+.PHONY: build ui test test-go test-ui lint proof check e2e desktop release-snapshot
 
 build: ui
 	go build -ldflags "$(LDFLAGS)" -o bin/vigia ./cmd/vigia
@@ -35,3 +35,12 @@ check:
 # e2e runs the browser flows and accessibility checks against the demo.
 e2e: build
 	cd ui && npx playwright test
+
+# desktop builds the Tauri app with this machine's server binary inside.
+desktop: ui
+	mkdir -p desktop/src-tauri/binaries
+	go build -ldflags "$(LDFLAGS)" -o desktop/src-tauri/binaries/vigia-$$(rustc -vV | sed -n 's/host: //p') ./cmd/vigia
+	cd desktop && npm ci --no-audit --no-fund && npx tauri build
+
+release-snapshot:
+	goreleaser release --snapshot --clean --skip=publish

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownToLine, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { PhonePairing } from '../components/PhonePairing'
 import { Button, Card } from '../components/ui'
 import { api, type Settings as S } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -43,6 +44,7 @@ export function Settings() {
         </div>
         <ChevronRight size={17} className="text-ink-3" />
       </Card>
+      <PhonePairing />
       <Card className="p-5">
         <div className="text-[15px] font-medium">Limite de gasto por dia</div>
         <p className="mb-3 text-[13px] text-ink-3">Conferido antes de cada chamada a um modelo. Rotinas compiladas quase não gastam.</p>

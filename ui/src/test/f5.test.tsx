@@ -34,3 +34,16 @@ describe('Import', () => {
     expect(await screen.findByText('Pronto')).toBeInTheDocument()
   })
 })
+
+describe('PhonePairing', () => {
+  it('keeps the pairing code hidden until asked', async () => {
+    const { PhonePairing } = await import('../components/PhonePairing')
+    const calls = mockFetch({ '/api/pairing': { base: 'https://v.ts.net', link: 'https://v.ts.net/auth?token=t' } })
+    wrap(<PhonePairing />)
+    expect(await screen.findByDisplayValue('https://v.ts.net')).toBeInTheDocument()
+    expect(screen.queryByAltText(/Código QR/)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Gerar código' }))
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url === '/api/pairing')).toBe(true))
+    expect(await screen.findByAltText(/Código QR/)).toBeInTheDocument()
+  })
+})
