@@ -1,5 +1,6 @@
 import { type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from 'react'
 import { cn } from '../lib/cn'
+import { useT } from '../lib/i18n'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -26,19 +27,20 @@ export function Card({ className, ...p }: HTMLAttributes<HTMLDivElement>) {
 
 export type Risk = 'read' | 'notify' | 'reversible' | 'irreversible'
 
-const riskStyle: Record<Risk, { label: string; cls: string; dot: string }> = {
-  read: { label: 'Lê', cls: 'bg-read-soft text-read', dot: 'bg-read' },
-  notify: { label: 'Avisa você', cls: 'bg-read-soft text-read', dot: 'bg-read' },
-  reversible: { label: 'Reversível', cls: 'bg-change-soft text-change', dot: 'bg-change' },
-  irreversible: { label: 'Irreversível', cls: 'bg-danger-soft text-danger', dot: 'bg-danger' },
+const riskStyle: Record<Risk, { cls: string; dot: string }> = {
+  read: { cls: 'bg-read-soft text-read', dot: 'bg-read' },
+  notify: { cls: 'bg-read-soft text-read', dot: 'bg-read' },
+  reversible: { cls: 'bg-change-soft text-change', dot: 'bg-change' },
+  irreversible: { cls: 'bg-danger-soft text-danger', dot: 'bg-danger' },
 }
 
 export function RiskBadge({ risk, children }: { risk: Risk; children?: ReactNode }) {
+  const t = useT()
   const s = riskStyle[risk]
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11.5px] font-medium', s.cls)}>
       <span className={cn('size-1.5 rounded-full', s.dot)} aria-hidden />
-      {children ?? s.label}
+      {children ?? t(`risk.${risk}`)}
     </span>
   )
 }
@@ -60,8 +62,9 @@ export function EmptyState({ icon, title, children, action }: { icon: ReactNode;
 
 /** The last runs of a routine as dots: green ran fine, red failed, grey did not run. */
 export function RunDots({ runs }: { runs: ('ok' | 'failed' | 'skipped')[] }) {
+  const t = useT()
   return (
-    <div className="flex items-center gap-[3px]" role="img" aria-label={`${runs.filter((r) => r === 'ok').length} de ${runs.length} execuções bem-sucedidas`}>
+    <div className="flex items-center gap-[3px]" role="img" aria-label={t('ui.runs', { ok: runs.filter((r) => r === 'ok').length, total: runs.length })}>
       {runs.map((r, i) => (
         <span key={i} className={cn('h-3.5 w-1.5 rounded-full', r === 'ok' && 'bg-read', r === 'failed' && 'bg-danger', r === 'skipped' && 'bg-line-strong')} />
       ))}
@@ -75,8 +78,9 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 export function PageSkeleton() {
+  const t = useT()
   return (
-    <div className="mx-auto max-w-5xl space-y-4" aria-busy="true" aria-label="Carregando">
+    <div className="mx-auto max-w-5xl space-y-4" aria-busy="true" aria-label={t('ui.loading')}>
       <Skeleton className="h-7 w-64" />
       <Skeleton className="h-4 w-96 max-w-full" />
       <div className="grid gap-4 pt-4 sm:grid-cols-2 xl:grid-cols-3">
