@@ -29,6 +29,12 @@ type Button struct {
 type Message struct {
 	ID   int64  `json:"message_id"`
 	Text string `json:"text"`
+	// Photo holds the sizes of a photo, smallest first.
+	Photo []struct {
+		FileID string `json:"file_id"`
+		Width  int    `json:"width"`
+	} `json:"photo,omitempty"`
+	Caption string `json:"caption,omitempty"`
 	// Voice is set for voice notes.
 	Voice *struct {
 		FileID   string `json:"file_id"`

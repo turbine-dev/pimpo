@@ -1,4 +1,4 @@
-import { Bell, Brain, Coins, Moon, Plug, ReceiptText, Repeat, Search, Settings, ShieldCheck, Sun, Users, LibraryBig } from 'lucide-react'
+import { Bell, Brain, Coins, Moon, Plug, ReceiptText, Repeat, Search, Settings, ShieldCheck, Sun, Users, LibraryBig, Briefcase } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '../lib/cn'
@@ -12,6 +12,7 @@ export const nav: NavItem[] = [
   { to: '/gallery', label: 'Galeria', icon: <LibraryBig size={17} /> },
   { to: '/receipts', label: 'Recibos', icon: <ReceiptText size={17} /> },
   { to: '/rules', label: 'Regras', icon: <ShieldCheck size={17} /> },
+  { to: '/business', label: 'Negócio', icon: <Briefcase size={17} /> },
   { to: '/cost', label: 'Custo', icon: <Coins size={17} /> },
   { to: '/memory', label: 'Memória', icon: <Brain size={17} /> },
   { to: '/connections', label: 'Conexões', icon: <Plug size={17} /> },
