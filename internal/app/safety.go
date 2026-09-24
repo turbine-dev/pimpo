@@ -59,6 +59,8 @@ func describeAction(act policy.Action) string {
 		return fmt.Sprintf("%s quer mover um e-mail para a lixeira (%s)", who, str("id"))
 	case "gmail.archive":
 		return fmt.Sprintf("%s quer arquivar um e-mail (%s)", who, str("id"))
+	case "gmail.unsubscribe":
+		return fmt.Sprintf("%s quer cancelar a inscrição de uma lista de e-mails (%s)", who, str("id"))
 	case "http.getJSON":
 		return fmt.Sprintf("%s quer consultar %s pela primeira vez", who, act.Scope)
 	}

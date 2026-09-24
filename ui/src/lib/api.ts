@@ -71,6 +71,9 @@ export type Approval = { id: string; action: { capability: string; scope?: strin
 export type Rule = { id: string; text: string; when: { capabilities?: string[]; min_risk?: string; source?: string; args_contain?: string[]; hosts?: string[] }; then: 'allow' | 'reversible' | 'ask' | 'block'; off?: boolean }
 export type CostView = { today: number; limit: number; month: number; projected_month: number; by_day: Record<string, number>; by_source: Record<string, number> }
 
+export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low'; created: string }
+export type MemoryVersion = { hash: string; message: string; when: string }
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -116,6 +119,11 @@ export const api = {
   setup: () => request<{ done: boolean; demo: boolean; telegram: boolean; mail: boolean; calendar: boolean; preset: string; claude: boolean }>('GET', '/api/setup'),
   setupDone: () => request<void>('POST', '/api/setup/done'),
   preset: (preset: 'conservative' | 'balanced' | 'liberal') => request<Rule[]>('PUT', '/api/rules/preset', { preset }),
+  memory: () => request<{ facts: Fact[]; history: MemoryVersion[] }>('GET', '/api/memory'),
+  addFact: (text: string, topic: string) => request<Fact>('POST', '/api/memory', { text, topic }),
+  removeFact: (id: string) => request<void>('DELETE', `/api/memory/${id}`),
+  confirmFact: (id: string) => request<void>('POST', `/api/memory/${id}/confirm`),
+  restoreMemory: (hash: string) => request<void>('POST', `/api/memory-versions/${hash}/restore`),
   settings: () => request<Settings>('GET', '/api/settings'),
   saveSettings: (s: Settings) => request<Settings>('PUT', '/api/settings', s),
   setBudget: (daily_usd: number) => request<void>('PUT', '/api/budget', { daily_usd }),

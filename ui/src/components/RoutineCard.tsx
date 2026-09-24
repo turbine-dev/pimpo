@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, Clock, Globe, Mail, Send, Tag } from 'lucide-react'
+import { Archive, BellOff, CalendarDays, Clock, FilePen, Globe, Mail, MailPlus, Send, Tag, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { type ReactNode } from 'react'
 import type { RoutineSummary } from '../lib/api'
@@ -13,6 +13,11 @@ const capIcon: Record<string, ReactNode> = {
   'gmail.label': <Tag size={13} />,
   'http.getJSON': <Globe size={13} />,
   'telegram.send': <Send size={13} />,
+  'gmail.trash': <Trash2 size={13} />,
+  'gmail.delete': <Trash2 size={13} />,
+  'gmail.draft': <FilePen size={13} />,
+  'gmail.send': <MailPlus size={13} />,
+  'gmail.unsubscribe': <BellOff size={13} />,
 }
 
 const capLabel: Record<string, string> = {
@@ -22,6 +27,11 @@ const capLabel: Record<string, string> = {
   'gmail.label': 'Marca e-mails',
   'http.getJSON': 'Consulta',
   'telegram.send': 'Avisa você',
+  'gmail.trash': 'Manda e-mails para a lixeira',
+  'gmail.delete': 'Apaga e-mails',
+  'gmail.draft': 'Escreve rascunhos',
+  'gmail.send': 'Envia e-mails',
+  'gmail.unsubscribe': 'Cancela inscrições',
 }
 
 export const capRisk: Record<string, 'read' | 'notify' | 'reversible' | 'irreversible'> = {
@@ -31,6 +41,11 @@ export const capRisk: Record<string, 'read' | 'notify' | 'reversible' | 'irrever
   'telegram.send': 'notify',
   'gmail.archive': 'reversible',
   'gmail.label': 'reversible',
+  'gmail.trash': 'reversible',
+  'gmail.draft': 'reversible',
+  'gmail.delete': 'irreversible',
+  'gmail.send': 'irreversible',
+  'gmail.unsubscribe': 'irreversible',
 }
 
 export function capabilityLabel(entry: string) {

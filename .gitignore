@@ -7,3 +7,4 @@ ui/playwright-report/
 tools/jev/__pycache__/
 ui/test-results/
 ui/playwright-report/
+.venv/

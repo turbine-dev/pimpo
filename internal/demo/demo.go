@@ -31,16 +31,16 @@ func NewMailbox(now func() time.Time) *Mailbox {
 	at := func(h float64) string { return t.Add(-time.Duration(h * float64(time.Hour))).Format(time.RFC3339) }
 	return &Mailbox{Now: now, emails: []map[string]any{
 		{"id": "INBOX/41", "from": "ana@acme.com", "from_name": "Ana Souza", "subject": "Contrato Q4 precisa da sua assinatura hoje", "snippet": "O jurídico precisa da assinatura até as 17h. Segue o link do DocuSign.", "date": at(1), "labels": []any{"INBOX", "UNREAD"}, "unread": true, "replied": false},
-		{"id": "INBOX/40", "from": "news@techweekly.com", "from_name": "Tech Weekly", "subject": "As 10 notícias de IA da semana", "snippet": "Nesta edição: modelos menores, agentes e mais.", "date": at(3), "labels": []any{"INBOX", "UNREAD"}, "unread": true, "replied": false},
+		{"id": "INBOX/40", "from": "news@techweekly.com", "from_name": "Tech Weekly", "subject": "As 10 notícias de IA da semana", "snippet": "Nesta edição: modelos menores, agentes e mais.", "date": at(3), "labels": []any{"INBOX", "UNREAD"}, "unread": true, "replied": false, "can_unsubscribe": true},
 		{"id": "INBOX/39", "from": "cobranca@enel.com.br", "from_name": "Enel", "subject": "Sua conta de luz de setembro", "snippet": "Total a pagar R$ 189,90 — vence em " + t.AddDate(0, 0, 3).Format("02/01/2006") + ".", "date": at(5), "labels": []any{"INBOX", "UNREAD"}, "unread": true, "replied": false},
 		{"id": "INBOX/38", "from": "promo@megaloja.com", "from_name": "Mega Loja", "subject": "Só hoje: 70% OFF em tudo", "snippet": "Aproveite as ofertas imperdíveis.", "date": at(6), "labels": []any{"INBOX", "UNREAD"}, "unread": true, "replied": false},
 		{"id": "INBOX/37", "from": "bruno@acme.com", "from_name": "Bruno Lima", "subject": "Revisão do deck para sexta", "snippet": "Consegue olhar os números do slide 7 até amanhã?", "date": at(20), "labels": []any{"INBOX", "UNREAD"}, "unread": true, "replied": false},
-		{"id": "INBOX/36", "from": "digest@medium.com", "from_name": "Medium Daily Digest", "subject": "Histórias escolhidas para você", "snippet": "5 leituras de 4 minutos.", "date": at(26), "labels": []any{"INBOX", "UNREAD"}, "unread": true, "replied": false},
+		{"id": "INBOX/36", "from": "digest@medium.com", "from_name": "Medium Daily Digest", "subject": "Histórias escolhidas para você", "snippet": "5 leituras de 4 minutos.", "date": at(26), "labels": []any{"INBOX", "UNREAD"}, "unread": true, "replied": false, "can_unsubscribe": true},
 	}}
 }
 
 func (m *Mailbox) Capabilities() []string {
-	return []string{"gmail.search", "gmail.archive", "gmail.label", "gmail.trash", "gmail.delete", "gmail.draft", "gmail.send"}
+	return []string{"gmail.search", "gmail.archive", "gmail.label", "gmail.trash", "gmail.delete", "gmail.draft", "gmail.send", "gmail.unsubscribe"}
 }
 
 func (m *Mailbox) Call(_ context.Context, name, _ string, args any) (any, error) {
@@ -71,6 +71,8 @@ func (m *Mailbox) Call(_ context.Context, name, _ string, args any) (any, error)
 		return map[string]any{"ok": true, "label": a["label"], "message_id": "<" + id + "@demo>"}, nil
 	case "gmail.draft":
 		return map[string]any{"ok": true, "saved_in": "Drafts", "message_id": "<draft@demo>"}, nil
+	case "gmail.unsubscribe":
+		return map[string]any{"ok": true, "method": "one-click"}, nil
 	case "gmail.send":
 		m.Sent = append(m.Sent, a)
 		return map[string]any{"ok": true, "message_id": "<sent@demo>"}, nil
