@@ -26,6 +26,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/judge"
 	"github.com/denerFernandes/vigia/internal/llm"
 	"github.com/denerFernandes/vigia/internal/memory"
+	"github.com/denerFernandes/vigia/internal/oauth"
 	"github.com/denerFernandes/vigia/internal/outbox"
 	"github.com/denerFernandes/vigia/internal/owner"
 	"github.com/denerFernandes/vigia/internal/policy"
@@ -42,13 +43,15 @@ type Settings struct {
 	Locale       string `json:"locale"`
 	JudgeBackend string `json:"judge_backend"` // local, jev, llm
 	OllamaModel  string `json:"ollama_model"`
-	ExploreModel string `json:"explore_model"`
-	CompileModel string `json:"compile_model"`
-	JudgeModel   string `json:"judge_model"`
+	// LocalJudgeURL is Vigia's own small judgment model (tools/judge/serve.py).
+	LocalJudgeURL string `json:"local_judge_url"`
+	ExploreModel  string `json:"explore_model"`
+	CompileModel  string `json:"compile_model"`
+	JudgeModel    string `json:"judge_model"`
 }
 
 func defaultSettings() Settings {
-	return Settings{Zone: time.Local.String(), Locale: "pt-BR", JudgeBackend: "local", OllamaModel: "qwen3:1.7b", ExploreModel: "sonnet", CompileModel: "sonnet", JudgeModel: "haiku"}
+	return Settings{Zone: time.Local.String(), Locale: "pt-BR", JudgeBackend: "local", OllamaModel: "qwen3:1.7b", LocalJudgeURL: "http://127.0.0.1:11500", ExploreModel: "sonnet", CompileModel: "sonnet", JudgeModel: "haiku"}
 }
 
 type App struct {
@@ -66,6 +69,7 @@ type App struct {
 	Outbox    *outbox.Outbox
 	Undo      *undo.Undo
 	Memory    *memory.Memory
+	Google    *oauth.Google
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
 	Agent llm.Agent
@@ -112,6 +116,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Explore = &explore.Service{Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 2},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
 	a.Server = server.New(events, token)
+	a.googleRoutes()
 	a.routes()
 	a.safetyRoutes()
 	a.memoryRoutes()
@@ -232,7 +237,11 @@ type zoned struct {
 
 func (z zoned) Capabilities() []string { return z.cal.Capabilities() }
 func (z zoned) Call(ctx context.Context, c, s string, args any) (any, error) {
-	z.cal.Zone = loadZone(z.a.Settings(ctx).Zone)
+	zone := loadZone(z.a.Settings(ctx).Zone)
+	if src, _ := z.a.Events.Get(ctx, "calendar.source"); src == "google" && z.a.Google != nil {
+		return (&calendar.Google{Token: z.a.Google.Token, Zone: zone}).Call(ctx, c, s, args)
+	}
+	z.cal.Zone = zone
 	return z.cal.Call(ctx, c, s, args)
 }
 
@@ -248,6 +257,9 @@ func (m mailConn) Call(ctx context.Context, c, s string, args any) (any, error) 
 	}
 	smtp, _ := m.a.Events.Get(ctx, "mail.smtp")
 	acct := mail.Account{Addr: addr, Username: user, SMTP: smtp, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) { return m.a.secret(ctx, "mail.password") }}
+	if auth, _ := m.a.Events.Get(ctx, "mail.auth"); auth == "oauth" && m.a.Google != nil {
+		acct.Token = m.a.Google.Token
+	}
 	return (&mail.Mail{Account: acct}).Call(ctx, c, s, args)
 }
 
@@ -257,7 +269,7 @@ func (a *App) judge(ctx context.Context, question string, item any) (judge.Answe
 	}
 	set := a.Settings(ctx)
 	backends := map[string]judge.Judge{
-		"local": judge.Ollama{Model: set.OllamaModel},
+		"local": judge.Chain{judge.Local{URL: set.LocalJudgeURL}, judge.Ollama{Model: set.OllamaModel}},
 		"jev":   judge.Jev{Key: func(ctx context.Context) (string, error) { return a.secret(ctx, "typesafe.key") }},
 		"llm":   judge.LLM{Model: a.LLM, Name: set.JudgeModel},
 	}

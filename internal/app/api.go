@@ -289,7 +289,12 @@ func (a *App) connections(w http.ResponseWriter, r *http.Request) {
 	}
 	out = append(out, tg)
 	user, _ := a.Events.Get(ctx, "mail.user")
-	out = append(out, connection{Kind: "mail", Configured: user != "" && has("mail.password"), Detail: user})
+	auth, _ := a.Events.Get(ctx, "mail.auth")
+	mailDetail := user
+	if auth == "oauth" {
+		mailDetail = user + " (Google)"
+	}
+	out = append(out, connection{Kind: "mail", Configured: user != "" && (has("mail.password") || (auth == "oauth" && has("google.refresh"))), Detail: mailDetail})
 	feeds, _ := a.Vault.Get(ctx, "calendar.feeds")
 	n := 0
 	for _, l := range strings.Split(feeds, "\n") {
@@ -297,7 +302,11 @@ func (a *App) connections(w http.ResponseWriter, r *http.Request) {
 			n++
 		}
 	}
-	out = append(out, connection{Kind: "calendar", Configured: n > 0, Detail: plural(n, "agenda", "agendas")})
+	calDetail := plural(n, "agenda", "agendas")
+	if src, _ := a.Events.Get(ctx, "calendar.source"); src == "google" && has("google.refresh") {
+		n, calDetail = 1, "Google Agenda"
+	}
+	out = append(out, connection{Kind: "calendar", Configured: n > 0, Detail: calDetail})
 	out = append(out, connection{Kind: "jev", Configured: has("typesafe.key")})
 	out = append(out, connection{Kind: "claude", Configured: claudeInstalled(), Detail: "Claude Code"})
 	server.WriteJSON(w, 200, out)

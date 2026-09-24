@@ -14,6 +14,7 @@ export function Connections() {
       <p className="mb-6 text-sm text-ink-2">As chaves ficam criptografadas no seu computador. O agente nunca as vê.</p>
       <div className="space-y-4">
         <Telegram c={by('telegram')} />
+        <GoogleSignIn connected={!!by('mail')?.detail?.includes('(Google)')} />
         <Setup
           kind="mail"
           icon={<Mail size={18} />}
@@ -57,6 +58,43 @@ export function Connections() {
         </Card>
       </div>
     </div>
+  )
+}
+
+function GoogleSignIn({ connected }: { connected: boolean }) {
+  const [open, setOpen] = useState(false)
+  const [id, setId] = useState('')
+  const [secret, setSecret] = useState('')
+  const params = new URLSearchParams(location.search)
+  const result = params.get('google')
+  const start = useMutation({ mutationFn: () => api.googleStart(id.trim(), secret.trim()), onSuccess: (r) => { location.href = r.url } })
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-4">
+        <Icon ok={connected}>
+          <Mail size={18} />
+        </Icon>
+        <div className="flex-1">
+          <div className="text-[15px] font-medium">Entrar com Google</div>
+          <div className="text-[13px] text-ink-3">E-mail e agenda de uma vez, sem senha de app. Usa o seu próprio cliente OAuth: nada passa por servidores do Vigia.</div>
+        </div>
+        {connected ? <span className="flex items-center gap-1 text-[12px] font-medium text-read"><Check size={13} /> Conectado</span> : <Button size="sm" onClick={() => setOpen(!open)}>Configurar</Button>}
+      </div>
+      {result && result !== 'ok' && <p className="mt-3 text-[13px] text-danger">O Google recusou: {result}</p>}
+      {open && !connected && (
+        <form className="mt-4 space-y-3 border-t border-line pt-4" onSubmit={(e) => { e.preventDefault(); start.mutate() }}>
+          <ol className="list-decimal space-y-1 pl-5 text-[13px] text-ink-2">
+            <li>No <a className="underline" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer">Google Cloud Console</a>, crie um projeto e ative as APIs Gmail e Google Calendar.</li>
+            <li>Crie uma credencial <b>ID do cliente OAuth</b> do tipo <b>App para computador</b>.</li>
+            <li>Cole o ID e a chave secreta aqui e entre com a sua conta.</li>
+          </ol>
+          <input value={id} onChange={(e) => setId(e.target.value)} placeholder="ID do cliente (…apps.googleusercontent.com)" aria-label="ID do cliente Google" className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+          <input value={secret} onChange={(e) => setSecret(e.target.value)} type="password" placeholder="Chave secreta do cliente" aria-label="Chave secreta do cliente Google" className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+          {start.error && <p className="text-[13px] text-danger">{start.error.message}</p>}
+          <Button variant="primary" type="submit" disabled={!id || !secret || start.isPending}>Entrar com Google</Button>
+        </form>
+      )}
+    </Card>
   )
 }
 

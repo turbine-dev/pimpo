@@ -71,3 +71,19 @@ func TestChainFallsBack(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+func TestLocalJudgeServer(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&got)
+		w.Write([]byte(`{"p":0.83}`))
+	}))
+	defer srv.Close()
+	a, err := Local{URL: srv.URL}.Ask(context.Background(), "Is it important?", map[string]string{"subject": "Contrato"})
+	if err != nil || a.P != 0.83 || a.Backend != "local" || got["question"] != "Is it important?" {
+		t.Fatalf("%+v %v %v", a, err, got)
+	}
+	if _, err := (Local{URL: "http://127.0.0.1:1"}).Ask(context.Background(), "?", nil); err == nil {
+		t.Fatal("unreachable server accepted")
+	}
+}

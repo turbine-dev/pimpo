@@ -8,3 +8,6 @@ tools/jev/__pycache__/
 ui/test-results/
 ui/playwright-report/
 .venv/
+tools/judge/mlx/
+tools/judge/adapters/
+tools/judge/data/

@@ -241,3 +241,15 @@ func TestMemoryAPI(t *testing.T) {
 		t.Fatalf("after restore %v", m["facts"])
 	}
 }
+
+func TestGoogleSignInStartsWithTheOwnersClient(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	code, out := ta.do(t, "POST", "/api/oauth/google/start", map[string]string{"client_id": "cid.apps.googleusercontent.com", "client_secret": "s"})
+	if code != 200 || !strings.Contains(out["url"].(string), "client_id=cid.apps.googleusercontent.com") || !strings.HasSuffix(out["redirect"].(string), "/oauth/google") {
+		t.Fatalf("start %d %v", code, out)
+	}
+	resp, _ := http.Get(ta.srv.URL + "/oauth/google?state=forged&code=x")
+	if resp.Request.URL.Query().Get("google") == "ok" {
+		t.Fatal("a forged callback signed in")
+	}
+}

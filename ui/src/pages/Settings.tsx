@@ -5,7 +5,7 @@ import { api, type Settings as S } from '../lib/api'
 import { cn } from '../lib/cn'
 
 const judges: { value: S['judge_backend']; title: string; text: string }[] = [
-  { value: 'local', title: 'Modelo local', text: 'Grátis e offline, via Ollama. Menos preciso.' },
+  { value: 'local', title: 'Modelo local', text: 'Grátis e offline: o modelo pequeno do Vigia ou o Ollama.' },
   { value: 'jev', title: 'Jev', text: 'Probabilidades calibradas. Precisa da chave da TypeSafe.' },
   { value: 'llm', title: 'Seu modelo', text: 'Usa o mesmo modelo da exploração, em versão barata.' },
 ]
@@ -51,6 +51,13 @@ export function Settings() {
             </button>
           ))}
         </div>
+        {s.judge_backend === 'local' && (
+          <label className="mt-4 block">
+            <span className="mb-1 block text-[12.5px] font-medium text-ink-2">Endereço do modelo local</span>
+            <input value={s.local_judge_url} onChange={(e) => setS({ ...s, local_judge_url: e.target.value })} className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 font-mono text-[13px] outline-none focus:border-accent" />
+            <span className="mt-1 block text-[12px] text-ink-3">Inicie com <code className="rounded bg-sunken px-1">tools/judge/serve.py</code>. Se não responder, uso o Ollama e depois o seu modelo.</span>
+          </label>
+        )}
       </Card>
       <Card className="grid gap-4 p-5 sm:grid-cols-2">
         <label>
