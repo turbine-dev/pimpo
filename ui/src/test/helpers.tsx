@@ -21,7 +21,7 @@ export function mockFetch(routes: Record<string, unknown | ((body: unknown) => u
     const method = init?.method ?? 'GET'
     const body = init?.body ? JSON.parse(String(init.body)) : undefined
     calls.push({ url, method, body })
-    let out = routes[`${method} ${url}`] ?? routes[url] ?? null
+    let out: unknown = routes[`${method} ${url}`] ?? routes[url] ?? null
     if (typeof out === 'function') out = (out as (b: unknown) => unknown)(body)
     return new Response(JSON.stringify(out), { status: 200, headers: { 'Content-Type': 'application/json' } })
   }))
