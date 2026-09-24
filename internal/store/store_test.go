@@ -78,3 +78,19 @@ func TestExplorationsAndRuns(t *testing.T) {
 		t.Fatalf("cost %v", c)
 	}
 }
+
+func TestOldDatabasesGainNewColumns(t *testing.T) {
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "old.db"))
+	defer ev.Close()
+	ev.DB().Exec(`CREATE TABLE explorations (id TEXT PRIMARY KEY, request TEXT NOT NULL, state TEXT NOT NULL, trace TEXT, summary TEXT, routine TEXT, cost_usd REAL NOT NULL DEFAULT 0, error TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`)
+	s, err := Open(ev.DB())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SaveExploration(context.Background(), Exploration{ID: "e", Request: "r", State: ExplorationReady, Candidate: &routine.Routine{Code: "x"}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Open(ev.DB()); err != nil {
+		t.Fatalf("reopening an up-to-date database: %v", err)
+	}
+}

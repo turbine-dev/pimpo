@@ -1,0 +1,44 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import type { VEvent } from './api'
+
+// Every event from the server refreshes the data it may have changed.
+// The socket reconnects on its own after sleep or a restart.
+export function useLiveEvents(onEvent?: (e: VEvent) => void) {
+  const qc = useQueryClient()
+  const [connected, setConnected] = useState(false)
+  useEffect(() => {
+    let ws: WebSocket | undefined
+    let retry: ReturnType<typeof setTimeout>
+    let closed = false
+    const connect = () => {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+      ws = new WebSocket(`${proto}://${location.host}/api/ws`)
+      ws.onopen = () => setConnected(true)
+      ws.onclose = () => {
+        setConnected(false)
+        if (!closed) retry = setTimeout(connect, 2000)
+      }
+      ws.onmessage = (m) => {
+        const e = JSON.parse(m.data) as VEvent
+        onEvent?.(e)
+        qc.invalidateQueries({ queryKey: ['state'] })
+        if (e.type.startsWith('routine') || e.type.startsWith('exploration') || e.type === 'action.done') {
+          qc.invalidateQueries({ queryKey: ['routines'] })
+          qc.invalidateQueries({ queryKey: ['explorations'] })
+          qc.invalidateQueries({ queryKey: ['exploration'] })
+          qc.invalidateQueries({ queryKey: ['routine'] })
+        }
+        if (e.type.startsWith('connection') || e.type === 'telegram.paired') qc.invalidateQueries({ queryKey: ['connections'] })
+        qc.invalidateQueries({ queryKey: ['events'] })
+      }
+    }
+    connect()
+    return () => {
+      closed = true
+      clearTimeout(retry)
+      ws?.close()
+    }
+  }, [qc, onEvent])
+  return connected
+}

@@ -54,6 +54,10 @@ func New(events *event.Store, token string) *Server {
 	return s
 }
 
+// HandlePublic registers a route that carries its own credential, such as
+// the per-exploration MCP endpoint.
+func (s *Server) HandlePublic(pattern string, h http.HandlerFunc) { s.mux.HandleFunc(pattern, h) }
+
 // Handle registers an authenticated API route.
 func (s *Server) Handle(pattern string, h http.HandlerFunc) {
 	s.mux.Handle(pattern, s.auth(h))

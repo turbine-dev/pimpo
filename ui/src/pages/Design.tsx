@@ -1,14 +1,15 @@
 import { Repeat } from 'lucide-react'
-import { RoutineCard, type RoutineSummary } from '../components/RoutineCard'
+import { RoutineCard } from '../components/RoutineCard'
+import type { RoutineSummary } from '../lib/api'
 import { Button, Card, EmptyState, RiskBadge } from '../components/ui'
 
 // The component catalog: every building block with realistic data, used to
 // review the design and as a visual regression target.
 export const sampleRoutines: RoutineSummary[] = [
-  { id: 'brief', name: 'Resumo matinal', description: 'Agenda de hoje, e-mails importantes e o tempo, todo dia às 7h.', state: 'active', next_run: 'amanhã 07:00', runs: ['ok', 'ok', 'ok', 'ok', 'failed', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok'], cost_month_usd: 0.031, capabilities: ['calendar.events', 'gmail.search', 'http.getJSON:api.open-meteo.com', 'telegram.send'] },
-  { id: 'triage', name: 'Triagem de newsletters', description: 'Arquiva promoções e newsletters não lidas e conta quantas foram.', state: 'active', next_run: 'hoje 18:00', runs: ['ok', 'ok', 'ok', 'ok', 'ok', 'ok'], cost_month_usd: 0.012, capabilities: ['gmail.search', 'gmail.archive', 'telegram.send'] },
-  { id: 'bills', name: 'Contas a vencer', description: 'Boletos e faturas que vencem nos próximos 7 dias.', state: 'broken', next_run: 'pausada', runs: ['ok', 'ok', 'ok', 'failed', 'failed'], cost_month_usd: 0.004, capabilities: ['gmail.search', 'telegram.send'] },
-  { id: 'new', name: 'Alerta do dólar', description: 'Avisa quando o dólar passar de R$ 5,40.', state: 'exploring', runs: [], cost_month_usd: 0.21, capabilities: ['http.getJSON:api.exchangerate.example', 'telegram.send'], uses_llm: true },
+  { id: 'brief', name: 'Resumo matinal', description: 'Agenda de hoje, e-mails importantes e o tempo, todo dia às 7h.', state: 'active', version: 3, schedule: '0 7 * * *', next_run: new Date(Date.now() + 36e6).toISOString(), runs: ['ok', 'ok', 'ok', 'ok', 'failed', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok'], cost_month_usd: 0.031, capabilities: ['calendar.events', 'gmail.search', 'http.getJSON:api.open-meteo.com', 'telegram.send'] },
+  { id: 'triage', name: 'Triagem de newsletters', description: 'Arquiva promoções e newsletters não lidas e conta quantas foram.', state: 'active', version: 1, schedule: '0 18 * * *', next_run: new Date(Date.now() + 9e6).toISOString(), runs: ['ok', 'ok', 'ok', 'ok', 'ok', 'ok'], cost_month_usd: 0.012, capabilities: ['gmail.search', 'gmail.archive', 'telegram.send'] },
+  { id: 'bills', name: 'Contas a vencer', description: 'Boletos e faturas que vencem nos próximos 7 dias.', state: 'broken', version: 2, schedule: '0 8 * * *', runs: ['ok', 'ok', 'ok', 'failed', 'failed'], cost_month_usd: 0.004, capabilities: ['gmail.search', 'telegram.send'] },
+  { id: 'usd', name: 'Alerta do dólar', description: 'Avisa quando o dólar passar de R$ 5,40.', state: 'paused', version: 1, schedule: '*/30 * * * *', runs: [], cost_month_usd: 0, capabilities: ['http.getJSON:api.exchangerate.example', 'telegram.send'] },
 ]
 
 export function Design() {

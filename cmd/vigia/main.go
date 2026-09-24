@@ -17,8 +17,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/denerFernandes/vigia/internal/app"
 	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/server"
+	"github.com/denerFernandes/vigia/internal/vault"
 )
 
 var version = "dev"
@@ -79,11 +80,23 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
-	srv := server.New(store, token)
+	v, err := vault.Open(store.DB(), vault.OSKey(home))
+	if err != nil {
+		return err
+	}
 	ln, err := net.Listen("tcp", *addr)
 	if err != nil {
 		return err
 	}
+	a, err := app.New(ctx, store, v, token, "http://"+ln.Addr().String())
+	if err != nil {
+		return err
+	}
+	a.TelegramAPI = os.Getenv("VIGIA_TELEGRAM_API")
+	if err := a.Start(ctx); err != nil {
+		return err
+	}
+	srv := a.Server
 	fmt.Printf("Vigia %s is running.\n\n  Open: http://%s/auth?token=%s\n\nData: %s\n", version, ln.Addr(), token, home)
 	httpSrv := &http.Server{Handler: srv, ReadHeaderTimeout: 10 * time.Second}
 	go func() {

@@ -189,22 +189,35 @@ func normalize(v any) any {
 	return out
 }
 
-// Judge answers from the scenario's labels: the first label key found in
-// the item decides. Unlabeled items get a clear "no".
+// Judge answers from the scenario's labels. A label key identifies an item
+// by its id or a piece of its text, sometimes both ("INBOX/1 - Contrato");
+// the key whose parts match the most text wins. Unlabeled items get a clear
+// "no".
 func (h *scenarioHost) Judge(_ context.Context, name, _ string, item any) (float64, error) {
 	text := flatten(item)
-	labels := h.judgments[name]
-	keys := make([]string, 0, len(labels))
-	for k := range labels {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool { return len(keys[i]) > len(keys[j]) })
-	for _, k := range keys {
-		if strings.Contains(text, k) {
-			return labels[k], nil
+	best, bestScore := 0.05, 0
+	for key, p := range h.judgments[name] {
+		if score := matchScore(key, text); score > bestScore {
+			best, bestScore = p, score
 		}
 	}
-	return 0.05, nil
+	return best, nil
+}
+
+var keyParts = regexp.MustCompile(`\s+[-–—|:]\s+`)
+
+func matchScore(key, text string) int {
+	if strings.Contains(text, key) {
+		return len(key) * 2
+	}
+	score := 0
+	for _, part := range keyParts.Split(key, -1) {
+		part = strings.TrimSpace(part)
+		if len(part) >= 3 && strings.Contains(text, part) {
+			score += len(part)
+		}
+	}
+	return score
 }
 
 var quoted = regexp.MustCompile("\"([^\"\\\\]|\\\\.){10,}\"|'([^'\\\\]|\\\\.){10,}'|`[^`]{10,}`")

@@ -82,6 +82,32 @@ func newID() string {
 
 // Start begins an exploration in the background and returns its id.
 func (s *Service) Start(ctx context.Context, request, actor string) (string, error) {
+	return s.start(ctx, request, actor, "")
+}
+
+// Repair re-explores a broken routine's task; approving it saves a new
+// version of the same routine.
+func (s *Service) Repair(ctx context.Context, routineID, problem, actor string) (string, error) {
+	r, err := s.Store.Routine(ctx, routineID)
+	if err != nil {
+		return "", err
+	}
+	request := r.Body.Description
+	if exps, err := s.Store.Explorations(ctx, store.ExplorationDone); err == nil {
+		for _, e := range exps {
+			if e.Routine == routineID {
+				request = e.Request
+				break
+			}
+		}
+	}
+	if problem != "" {
+		request += "\n\n(Last time the automatic routine failed with: " + problem + ")"
+	}
+	return s.start(ctx, request, actor, routineID)
+}
+
+func (s *Service) start(ctx context.Context, request, actor, target string) (string, error) {
 	request = strings.TrimSpace(request)
 	if request == "" {
 		return "", errors.New("tell me what you want done")
@@ -92,7 +118,7 @@ func (s *Service) Start(ctx context.Context, request, actor string) (string, err
 		}
 	}
 	id := newID()
-	e := store.Exploration{ID: id, Request: request, State: store.ExplorationRunning}
+	e := store.Exploration{ID: id, Request: request, State: store.ExplorationRunning, Routine: target}
 	if err := s.Store.SaveExploration(ctx, e); err != nil {
 		return "", err
 	}
@@ -222,18 +248,24 @@ func (s *Service) Approve(ctx context.Context, id, actor string) (store.Routine,
 			err = fmt.Errorf("the routine did not pass its checks: %s", strings.Join(last.Problems(), "; "))
 		}
 		e.Error = err.Error()
+		if last.Routine.Code != "" {
+			e.Candidate = &last.Routine
+		}
 		s.Store.SaveExploration(ctx, e)
 		return store.Routine{}, err
 	}
-	rid := slug(last.Routine.Name)
-	if _, err := s.Store.Routine(ctx, rid); err == nil {
-		rid += "-" + id[:4]
+	rid, reason := e.Routine, "repaired from exploration "+id
+	if rid == "" {
+		rid, reason = slug(last.Routine.Name), "compiled from exploration "+id
+		if _, err := s.Store.Routine(ctx, rid); err == nil {
+			rid += "-" + id[:4]
+		}
 	}
-	r, err := s.Store.SaveRoutine(ctx, rid, last.Routine, "compiled from exploration "+id, actor)
+	r, err := s.Store.SaveRoutine(ctx, rid, last.Routine, reason, actor)
 	if err != nil {
 		return store.Routine{}, err
 	}
-	e.State, e.Routine, e.Error = store.ExplorationDone, rid, ""
+	e.State, e.Routine, e.Error, e.Candidate = store.ExplorationDone, rid, "", nil
 	s.Store.SaveExploration(ctx, e)
 	s.Env.Events.Append(ctx, EventCompiled, actor, map[string]any{"routine": rid, "exploration": id, "attempts": len(attempts), "cost_usd": cost, "capabilities": last.Routine.Manifest.Capabilities})
 	if s.Routines != nil {
@@ -290,8 +322,8 @@ func DeriveExpect(calls []trace.Call) []trace.Expect {
 			}
 		}
 		sort.Slice(contains, func(i, j int) bool { return len(contains[i]) > len(contains[j]) })
-		if len(contains) > 6 {
-			contains = contains[:6]
+		if len(contains) > 4 {
+			contains = contains[:4]
 		}
 		exp := trace.Expect{Capability: capName, Contains: contains}
 		if capName != "telegram.send" {
@@ -305,20 +337,24 @@ func DeriveExpect(calls []trace.Call) []trace.Expect {
 	return out
 }
 
+// factKeys are the fields whose values a correct routine must carry into
+// its messages. Names, addresses, calendars and dates can be formatted or
+// left out in many valid ways, so they are not required.
+var factKeys = map[string]bool{"title": true, "subject": true, "summary": true, "name": true, "status": true}
+
 func values(raw []byte) []string {
 	var out []string
 	var walk func(any)
 	walk = func(v any) {
 		switch x := v.(type) {
-		case string:
-			out = append(out, x)
 		case []any:
 			for _, e := range x {
 				walk(e)
 			}
 		case map[string]any:
 			for k, e := range x {
-				if k == "id" || k == "snippet" {
+				if s, ok := e.(string); ok && factKeys[k] {
+					out = append(out, s)
 					continue
 				}
 				walk(e)
@@ -361,7 +397,7 @@ Do the owner's request once, right now, using ONLY the vigia tools. This run is 
 - Read what you need (calendar_events, gmail_search, http_getJSON). Prefer precise queries.
 - Changes (archive, label) are simulated while exploring: call them exactly as you would for real.
 - telegram_send really sends to the owner: send the final result there, exactly as the owner should receive it every time.
-- For every subjective decision about an item (is this email important? a newsletter? does it need a reply?), call decide for that item BEFORE acting, with yes or no. Objective checks (dates, amounts, senders the owner named) need no decide.
+- Every subjective decision MUST be recorded with decide, one call per item, yes or no, BEFORE you act on it: is this email important? is it a promotion or newsletter? does it need a reply? Record the items you leave out too (yes=false). The automatic routine can only repeat decisions you recorded; unrecorded ones are lost. Objective checks (dates, amounts, senders the owner named) need no decide.
 - If something cannot be done with these tools, say so plainly.
 Finish with a short summary in the owner's language of what you did and what the routine will do each time.`, now.Format("Monday, 2006-01-02 15:04 MST"))
 }

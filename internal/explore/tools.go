@@ -58,11 +58,11 @@ func tools(h *host.Host) []mcp.Tool {
 	}
 	out = append(out, mcp.Tool{
 		Name:        "decide",
-		Description: "Record a subjective decision you made about one item (is this email important? is this a newsletter?). Call it for EVERY item you judged, yes or no, before acting on it.",
+		Description: "REQUIRED for every subjective decision: record your yes/no about ONE item (is this email important? is this a promotion?). Call it for EVERY item you judged, including the ones you leave out (yes=false), before acting. Without it the automatic routine cannot repeat your judgment.",
 		InputSchema: json.RawMessage(`{"type":"object","required":["judgment","question","item","yes"],"properties":{
 		  "judgment":{"type":"string","description":"short identifier, e.g. important, newsletter, needs_reply; reuse the same one for the same kind of decision"},
 		  "question":{"type":"string","description":"the yes/no question, about one item"},
-		  "item":{"type":"string","description":"the item's id, or a short unique piece of its text"},
+		  "item":{"type":"string","description":"the item's id exactly as the tool returned it (e.g. INBOX/12); if it has no id, a short unique piece of its text"},
 		  "yes":{"type":"boolean"},
 		  "confidence":{"type":"number","minimum":0.5,"maximum":1}}}`),
 		Handle: func(_ context.Context, raw json.RawMessage) (any, error) {

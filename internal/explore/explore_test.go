@@ -191,8 +191,8 @@ func TestMCPNeedsTheExplorationKey(t *testing.T) {
 
 func TestDeriveExpectUsesDataValues(t *testing.T) {
 	calls := []trace.Call{
-		{Capability: "calendar.events", Result: json.RawMessage(`[{"id":"e1","title":"Standup","start":"2026-09-24T09:30:00-03:00"},{"title":"Almoço longo com cliente"}]`)},
-		{Capability: "telegram.send", Args: json.RawMessage(`{"text":"Hoje: Standup às 09:30"}`)},
+		{Capability: "calendar.events", Result: json.RawMessage(`[{"id":"e1","title":"Standup","calendar":"Trabalho","start":"2026-09-24T09:30:00-03:00"},{"title":"Almoço longo com cliente"}]`)},
+		{Capability: "telegram.send", Args: json.RawMessage(`{"text":"Hoje (Trabalho): Standup às 09:30"}`)},
 	}
 	exp := DeriveExpect(calls)
 	if len(exp) != 1 || *exp[0].Count != 1 || strings.Join(exp[0].Contains, ",") != "Standup" {

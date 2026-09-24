@@ -77,6 +77,13 @@ func TestLongestLabelWins(t *testing.T) {
 	if p, _ := h.Judge(context.Background(), "x", "", map[string]any{"id": "zzz"}); p != 0.05 {
 		t.Fatalf("unlabeled got %v", p)
 	}
+	h = newScenarioHost(trace.Scenario{Judgments: map[string]map[string]float64{"important": {"INBOX/1 - Contrato Q4 hoje": 0.95, "INBOX/2 - Só hoje: 70% OFF": 0.02}}})
+	if p, _ := h.Judge(context.Background(), "important", "", map[string]any{"id": "INBOX/1", "subject": "Contrato Q4 hoje"}); p != 0.95 {
+		t.Fatalf("composite key got %v", p)
+	}
+	if p, _ := h.Judge(context.Background(), "important", "", map[string]any{"id": "INBOX/2", "subject": "Só hoje: 70% OFF"}); p != 0.02 {
+		t.Fatalf("composite key got %v", p)
+	}
 }
 
 func TestReadsReplayInOrderThenRepeat(t *testing.T) {
