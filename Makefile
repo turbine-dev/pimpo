@@ -1,7 +1,7 @@
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build ui test test-go test-ui lint proof
+.PHONY: build ui test test-go test-ui lint proof check
 
 build: ui
 	go build -ldflags "$(LDFLAGS)" -o bin/vigia ./cmd/vigia
@@ -24,3 +24,10 @@ lint:
 
 proof:
 	go run ./cmd/proof -workers 4
+
+# check stops at the first failure: run it before every commit.
+check:
+	test -z "$$(gofmt -l .)" || (gofmt -l . && exit 1)
+	go vet ./...
+	cd ui && npx tsc -b && npx vitest run && npx vite build
+	go test -race ./...
