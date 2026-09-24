@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 
 // A tiny highlighter: capability calls stand out, since they are the only
 // way a routine reaches the world.
-const token = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(async|await|function|const|let|var|if|else|for|of|in|return|new|throw|try|catch|continue|break|true|false|null)\b|\b((?:calendar|gmail|http|telegram|judge)\.[A-Za-z]+)\b|\b((?:dates|money)\.[A-Za-z]+|now|log)\b/gm
+const token = /(\/\/.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(async|await|function|const|let|var|if|else|for|of|in|return|new|throw|try|catch|continue|break|true|false|null)\b|\b((?:calendar|gmail|http|telegram|whatsapp|judge)\.[A-Za-z]+)\b|\b((?:dates|money)\.[A-Za-z]+|now|log)\b/gm
 
 export function Code({ code }: { code: string }) {
   const lines = code.replace(/\t/g, '  ').split('\n')

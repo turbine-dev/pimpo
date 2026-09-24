@@ -34,6 +34,17 @@ export type Version = { version: number; routine: Routine; reason: string; appro
 export type Role = 'owner' | 'member' | 'guest'
 export type Person = { id: string; name: string; role: Role; chat?: number; responsible?: string; invite?: string; created: string; mail: boolean; calendar: boolean }
 
+export type GalleryItem = {
+  id: string
+  author: string
+  author_name: string
+  routine: Routine
+  hash: string
+  published: string
+  installed: boolean
+  report: { verified: boolean; problems?: string[]; uses: string[]; sends: boolean; risk: 'read' | 'notify' | 'reversible' | 'irreversible' }
+}
+
 export type MigrationSource = 'openclaw' | 'hermes'
 export type MigrationPlan = {
   from: MigrationSource
@@ -156,6 +167,9 @@ export const api = {
   updatePerson: (id: string, role: Role, responsible: string) => request<Person>('PUT', `/api/people/${id}`, { role, responsible }),
   removePerson: (id: string) => request<void>('DELETE', `/api/people/${id}`),
   personConnection: (id: string, kind: 'mail' | 'calendar', body: Record<string, string>) => request<void>('PUT', `/api/people/${id}/connections/${kind}`, body),
+  gallery: (fresh = false) => request<GalleryItem[]>('GET', `/api/gallery${fresh ? '?fresh=1' : ''}`),
+  installFromGallery: (id: string) => request<RoutineSummary>('POST', `/api/gallery/${id}/install`),
+  publishRoutine: (id: string, author: string) => request<{ entry: unknown; author: { name: string; key: string } }>('POST', `/api/routines/${id}/publish`, { author }),
   connections: () => request<Connection[]>('GET', '/api/connections'),
   googleStart: (client_id: string, client_secret: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/google/start', { client_id, client_secret }),
   connect: (kind: string, body: Record<string, string>) => request<void>('PUT', `/api/connections/${kind}`, body),

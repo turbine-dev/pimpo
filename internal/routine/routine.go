@@ -293,3 +293,65 @@ func collectStrings(raw json.RawMessage, out *[]string) {
 	}
 	walk(v)
 }
+
+// auditHost records every capability a routine calls.
+type auditHost struct {
+	*scenarioHost
+	used map[string]bool
+}
+
+func (h *auditHost) Call(ctx context.Context, name, scope string, args any) (any, error) {
+	h.used[name] = true
+	return h.scenarioHost.Call(ctx, name, scope, args)
+}
+
+// Audit runs the routine's own tests with every capability reachable and
+// reports what it really calls. A routine that calls anything its manifest
+// does not declare, or reaches a host outside its scope, is lying about
+// what it touches.
+func Audit(ctx context.Context, r Routine) (used []string, problems []string) {
+	declared := map[string]bool{}
+	for _, entry := range r.Manifest.Capabilities {
+		if spec, _, err := capability.Parse(entry); err == nil {
+			declared[spec.Name] = true
+		} else {
+			problems = append(problems, err.Error())
+		}
+	}
+	wide := r.Manifest
+	wide.Capabilities = append([]string{}, r.Manifest.Capabilities...)
+	for _, name := range capability.Names() {
+		if declared[name] {
+			continue
+		}
+		if capability.Catalog[name].Scoped {
+			wide.Capabilities = append(wide.Capabilities, name+":undeclared.invalid")
+		} else {
+			wide.Capabilities = append(wide.Capabilities, name)
+		}
+	}
+	seen := map[string]bool{}
+	if len(r.Tests) == 0 {
+		problems = append(problems, "the routine has no tests to audit")
+	}
+	for _, t := range r.Tests {
+		now, err := time.Parse(time.RFC3339, t.Now)
+		if err != nil {
+			now = time.Date(2026, 9, 24, 7, 0, 0, 0, time.UTC)
+		}
+		h := &auditHost{scenarioHost: newScenarioHost(t.Scenario), used: seen}
+		h.now = now
+		if _, err := runtime.Run(ctx, r.Code, wide, h, runtime.Options{Now: now, Timeout: 5 * time.Second}); err != nil && strings.Contains(err.Error(), "outside the manifest scope") {
+			problems = append(problems, t.Name+": "+err.Error())
+		}
+	}
+	for name := range seen {
+		used = append(used, name)
+		if !declared[name] {
+			problems = append(problems, "calls "+name+" without declaring it")
+		}
+	}
+	sort.Strings(used)
+	sort.Strings(problems)
+	return used, problems
+}

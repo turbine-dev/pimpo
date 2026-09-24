@@ -1,0 +1,12 @@
+name: Report a routine
+description: A routine does something it should not, or hides what it does.
+labels: [report]
+body:
+  - type: input
+    id: routine
+    attributes: { label: Routine id, placeholder: arquivar-promocoes }
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: What did it do, and what did you expect? }
+    validations: { required: true }

@@ -1,0 +1,97 @@
+{
+ "name": "Promoções antigas para a lixeira",
+ "description": "Uma vez por semana, move para a lixeira as promoções com mais de 30 dias. Ficam 30 dias lá antes de sumir.",
+ "manifest": {
+  "schedule": "0 21 * * 0",
+  "capabilities": [
+   "gmail.search",
+   "gmail.trash",
+   "telegram.send"
+  ],
+  "locale": "pt-BR"
+ },
+ "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:30d\", max: 50});\n  for (const m of mails) await gmail.trash({id: m.id});\n  await telegram.send({text: mails.length ? \"🗑️ \" + mails.length + \" promoções antigas foram para a lixeira.\" : \"🗑️ Nenhuma promoção antiga esta semana.\"});\n}",
+ "tests": [
+  {
+   "name": "duas antigas",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "a",
+       "from": "x@promo.com",
+       "from_name": "x",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Velha 1",
+       "snippet": "",
+       "date": "2026-09-23T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      },
+      {
+       "id": "b",
+       "from": "y@promo.com",
+       "from_name": "y",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Velha 2",
+       "snippet": "",
+       "date": "2026-09-23T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "gmail.trash",
+     "count": 2
+    },
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "2 promoções"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nenhuma",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "gmail.trash",
+     "count": 0
+    },
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "Nenhuma"
+     ]
+    }
+   ]
+  }
+ ]
+}

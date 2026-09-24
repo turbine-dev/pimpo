@@ -6,6 +6,7 @@ import { Code } from '../components/Code'
 import { capRisk, capabilityLabel } from '../components/RoutineCard'
 import { Button, Card, PageSkeleton, RiskBadge, RunDots } from '../components/ui'
 import { Diff } from '../components/Diff'
+import { Publish } from '../components/Publish'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
 import { cronText, relative, usd, when } from '../lib/format'
@@ -64,6 +65,7 @@ export function RoutinePage() {
               <RotateCcw size={15} /> Reativar
             </Button>
           )}
+          <Publish id={s.id} name={s.name} />
         </div>
       </div>
 

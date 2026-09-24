@@ -1,0 +1,111 @@
+{
+ "name": "Arquivar promoções",
+ "description": "Todo dia, tira da caixa de entrada as promoções com mais de uma semana. Dá para desfazer.",
+ "manifest": {
+  "schedule": "0 22 * * *",
+  "capabilities": [
+   "gmail.search",
+   "gmail.archive",
+   "telegram.send"
+  ],
+  "locale": "pt-BR"
+ },
+ "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:7d in:inbox\", max: 50});\n  for (const m of mails) await gmail.archive({id: m.id});\n  if (mails.length) await telegram.send({text: \"🧹 Arquivei \" + mails.length + (mails.length === 1 ? \" promoção antiga.\" : \" promoções antigas.\")});\n}",
+ "tests": [
+  {
+   "name": "três promoções",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "p1",
+       "from": "loja@promo.com",
+       "from_name": "loja",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "50% off",
+       "snippet": "",
+       "date": "2026-09-23T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      },
+      {
+       "id": "p2",
+       "from": "ofertas@promo.com",
+       "from_name": "ofertas",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Só hoje",
+       "snippet": "",
+       "date": "2026-09-23T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      },
+      {
+       "id": "p3",
+       "from": "news@promo.com",
+       "from_name": "news",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Novidades",
+       "snippet": "",
+       "date": "2026-09-23T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "gmail.archive",
+     "count": 3
+    },
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "Arquivei 3 promoções"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nada",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "gmail.archive",
+     "count": 0
+    },
+    {
+     "capability": "telegram.send",
+     "count": 0
+    }
+   ]
+  }
+ ]
+}

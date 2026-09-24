@@ -1,4 +1,4 @@
-import { Archive, BellOff, CalendarDays, Clock, FilePen, Globe, Mail, MailPlus, Send, Tag, Trash2 } from 'lucide-react'
+import { Archive, BellOff, CalendarDays, Clock, FilePen, Globe, Mail, MailPlus, MessageCircle, Send, Tag, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { type ReactNode } from 'react'
 import type { RoutineSummary } from '../lib/api'
@@ -18,6 +18,8 @@ const capIcon: Record<string, ReactNode> = {
   'gmail.draft': <FilePen size={13} />,
   'gmail.send': <MailPlus size={13} />,
   'gmail.unsubscribe': <BellOff size={13} />,
+  'whatsapp.send': <MessageCircle size={13} />,
+  'whatsapp.send_to': <MessageCircle size={13} />,
 }
 
 const capLabel: Record<string, string> = {
@@ -32,6 +34,8 @@ const capLabel: Record<string, string> = {
   'gmail.draft': 'Escreve rascunhos',
   'gmail.send': 'Envia e-mails',
   'gmail.unsubscribe': 'Cancela inscrições',
+  'whatsapp.send': 'Avisa você no WhatsApp',
+  'whatsapp.send_to': 'Manda WhatsApp para outras pessoas',
 }
 
 export const capRisk: Record<string, 'read' | 'notify' | 'reversible' | 'irreversible'> = {
@@ -46,6 +50,8 @@ export const capRisk: Record<string, 'read' | 'notify' | 'reversible' | 'irrever
   'gmail.delete': 'irreversible',
   'gmail.send': 'irreversible',
   'gmail.unsubscribe': 'irreversible',
+  'whatsapp.send': 'notify',
+  'whatsapp.send_to': 'irreversible',
 }
 
 export function capabilityLabel(entry: string) {

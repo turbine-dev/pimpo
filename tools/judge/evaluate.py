@@ -67,6 +67,7 @@ def main():
            "hard": metrics([(p, int(r["label"])) for p, r in zip(ps, test) if r.get("hard")])}
     Path("results").mkdir(exist_ok=True)
     json.dump(res, open(f"results/{name}.json", "w"), indent=1)
+    json.dump(ps, open(f"results/{name}.preds.json", "w"))
     print(json.dumps(res))
 
 if __name__ == "__main__":
