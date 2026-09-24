@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/denerFernandes/vigia/internal/memory"
+	"github.com/denerFernandes/vigia/internal/people"
 	"github.com/denerFernandes/vigia/internal/server"
 )
 
@@ -55,12 +56,20 @@ func (a *App) addFact(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Text  string `json:"text"`
 		Topic string `json:"topic"`
+		// Person keeps the fact for someone in the house, or "casa" for all.
+		Person string `json:"person"`
 	}
 	if err := server.Decode(r, &req); err != nil {
 		server.WriteError(w, err)
 		return
 	}
-	f, err := a.Memory.Add(req.Text, req.Topic, "owner", memory.High)
+	if req.Person != "" && req.Person != people.OwnerID && req.Person != people.Household {
+		if _, err := a.People.Get(r.Context(), req.Person); err != nil {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: "no such person"})
+			return
+		}
+	}
+	f, err := a.Memory.AddFor(req.Text, req.Topic, "owner", memory.High, req.Person)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return

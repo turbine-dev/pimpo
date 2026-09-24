@@ -21,6 +21,8 @@ export function describeRule(r: Rule) {
   if (r.when.min_risk) parts.push(`${riskText[r.when.min_risk] ?? r.when.min_risk} ou mais`)
   if (r.when.source) parts.push(`em ${r.when.source.replace('routine:', 'rotina ')}`)
   if (r.when.hosts?.length) parts.push(`sites ${r.when.hosts.join(', ')}`)
+  if (r.when.people?.length) parts.push(`pedidos de ${r.when.people.join(', ')}`)
+  if (r.when.roles?.length) parts.push(`pedidos de ${r.when.roles.map((x) => ({ owner: 'você', member: 'membros', guest: 'convidados' })[x] ?? x).join(' e ')}`)
   if (r.when.args_contain?.length) parts.push(`quando menciona ${r.when.args_contain.map((s) => `“${s}”`).join(' ou ')}`)
   return parts.length ? parts.join(' · ') : 'qualquer ação'
 }

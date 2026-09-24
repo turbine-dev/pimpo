@@ -106,7 +106,7 @@ func tools(h *host.Host, mem *memory.Memory) []mcp.Tool {
 					Query string `json:"query"`
 				}
 				json.Unmarshal(raw, &a)
-				facts, err := mem.Search(a.Query)
+				facts, err := mem.SearchFor(a.Query, h.Person)
 				var out []map[string]any
 				for _, f := range facts {
 					out = append(out, map[string]any{"fact": f.Text, "topic": f.Topic, "confirmed_by_owner": f.Trust == memory.High})
@@ -128,7 +128,7 @@ func tools(h *host.Host, mem *memory.Memory) []mcp.Tool {
 				json.Unmarshal(raw, &a)
 				// Whatever the agent claims, a note it writes is low trust:
 				// it may have read the "fact" in a hostile email.
-				f, err := mem.Add(a.Fact, a.Topic, h.Source, memory.Low)
+				f, err := mem.AddFor(a.Fact, a.Topic, h.Source, memory.Low, h.Person)
 				if err != nil {
 					return nil, err
 				}

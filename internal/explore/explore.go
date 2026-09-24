@@ -21,6 +21,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/llm"
 	"github.com/denerFernandes/vigia/internal/mcp"
 	"github.com/denerFernandes/vigia/internal/memory"
+	"github.com/denerFernandes/vigia/internal/people"
 	"github.com/denerFernandes/vigia/internal/routine"
 	"github.com/denerFernandes/vigia/internal/store"
 	"github.com/denerFernandes/vigia/internal/trace"
@@ -30,6 +31,8 @@ import (
 type Notice struct {
 	Text    string
 	Actions []Action
+	// To is the person who should get it; empty is the owner.
+	To string
 }
 
 type Action struct {
@@ -77,6 +80,15 @@ const (
 	EventCompiled = "routine.created"
 )
 
+// owner stores the owner as the empty person, as rows from before people
+// existed do.
+func owner(person string) string {
+	if person == people.OwnerID {
+		return ""
+	}
+	return person
+}
+
 func newID() string {
 	b := make([]byte, 6)
 	rand.Read(b)
@@ -107,7 +119,7 @@ func (s *Service) Repair(ctx context.Context, routineID, problem, actor string) 
 	if problem != "" {
 		request += "\n\n(Last time the automatic routine failed with: " + problem + ")"
 	}
-	return s.start(ctx, request, actor, routineID)
+	return s.start(people.With(ctx, r.Person), request, actor, routineID)
 }
 
 func (s *Service) start(ctx context.Context, request, actor, target string) (string, error) {
@@ -121,7 +133,7 @@ func (s *Service) start(ctx context.Context, request, actor, target string) (str
 		}
 	}
 	id := newID()
-	e := store.Exploration{ID: id, Request: request, State: store.ExplorationRunning, Routine: target}
+	e := store.Exploration{ID: id, Request: request, State: store.ExplorationRunning, Routine: target, Person: owner(people.From(ctx))}
 	if err := s.Store.SaveExploration(ctx, e); err != nil {
 		return "", err
 	}
@@ -140,7 +152,7 @@ func (s *Service) Wait() { s.wg.Wait() }
 func (s *Service) run(ctx context.Context, e store.Exploration) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
-	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: true}
+	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: true, Person: e.Person}
 	key := newID() + newID()
 	s.mu.Lock()
 	if s.sessions == nil {
@@ -156,7 +168,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 
 	now := time.Now().In(s.zone())
 	resp, err := s.Agent.Run(ctx, llm.AgentRequest{
-		System:     explorerPrompt(now) + s.knownFacts(),
+		System:     explorerPrompt(now) + s.knownFacts(e.Person),
 		Prompt:     e.Request,
 		MCPURL:     fmt.Sprintf("%s/mcp/explore/%s?key=%s", s.BaseURL, e.ID, key),
 		Model:      s.Model,
@@ -169,7 +181,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 		e.State, e.Error = store.ExplorationFailed, err.Error()
 		s.Store.SaveExploration(ctx, e)
 		s.Env.Events.Append(ctx, EventFailed, "system", map[string]string{"exploration": e.ID, "error": err.Error()})
-		s.Notify.Notify(ctx, Notice{Text: "⚠️ Não consegui terminar: " + e.Request + "\n" + err.Error()})
+		s.Notify.Notify(ctx, Notice{Text: "⚠️ Não consegui terminar: " + e.Request + "\n" + err.Error(), To: e.Person})
 		return
 	}
 	t := &trace.Trace{ID: e.ID, Request: e.Request, Now: now.Format(time.RFC3339), Calls: h.Calls(), Judgments: h.Judgments(), Questions: h.Questions(), Outcome: strings.TrimSpace(resp.Text)}
@@ -182,16 +194,16 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 		text += fmt.Sprintf("\n\n(%d ações foram só simuladas; nada foi alterado.)", n)
 	}
 	text += "\n\nQuer que eu faça isso sozinho, sem gastar com modelo a cada vez?"
-	s.Notify.Notify(ctx, Notice{Text: text, Actions: []Action{{"Transformar em rotina", "compile:" + e.ID}, {"Descartar", "discard:" + e.ID}}})
+	s.Notify.Notify(ctx, Notice{Text: text, Actions: []Action{{"Transformar em rotina", "compile:" + e.ID}, {"Descartar", "discard:" + e.ID}}, To: e.Person})
 }
 
 // knownFacts lists what the owner confirmed, for the explorer's prompt.
 // Unconfirmed facts stay out: they may come from hostile content.
-func (s *Service) knownFacts() string {
+func (s *Service) knownFacts(person string) string {
 	if s.Memory == nil {
 		return ""
 	}
-	facts, _ := s.Memory.Instructions()
+	facts, _ := s.Memory.InstructionsFor(person)
 	if len(facts) == 0 {
 		return ""
 	}
@@ -301,6 +313,10 @@ func (s *Service) Approve(ctx context.Context, id, actor string) (store.Routine,
 		}
 	}
 	r, err := s.Store.SaveRoutine(ctx, rid, last.Routine, reason, actor)
+	if err == nil && e.Person != "" && e.Routine == "" {
+		err = s.Store.SetRoutinePerson(ctx, rid, e.Person)
+		r.Person = e.Person
+	}
 	if err != nil {
 		return store.Routine{}, err
 	}

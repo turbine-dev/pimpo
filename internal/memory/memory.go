@@ -32,11 +32,14 @@ const (
 )
 
 type Fact struct {
-	ID      string    `json:"id"`
-	Text    string    `json:"text"`
-	Topic   string    `json:"topic"`
-	Source  string    `json:"source"`
-	Trust   Trust     `json:"trust"`
+	ID     string `json:"id"`
+	Text   string `json:"text"`
+	Topic  string `json:"topic"`
+	Source string `json:"source"`
+	Trust  Trust  `json:"trust"`
+	// Person the fact is about and who may read it; empty is the owner,
+	// "casa" is everyone in the house.
+	Person  string    `json:"person,omitempty"`
 	Created time.Time `json:"created"`
 }
 
@@ -103,7 +106,8 @@ func (m *Memory) save(facts []Fact, message string) error {
 	}
 	for topic, fs := range byTopic {
 		var md strings.Builder
-		fmt.Fprintf(&md, "# %s\n\n", strings.ToUpper(topic[:1])+topic[1:])
+		r := []rune(topic)
+		fmt.Fprintf(&md, "# %s\n\n", strings.ToUpper(string(r[:1]))+string(r[1:]))
 		for _, f := range fs {
 			mark := ""
 			if f.Trust == Low {
@@ -167,11 +171,19 @@ func (m *Memory) List() ([]Fact, error) {
 // Add records a fact. Repeating an existing fact only refreshes it, and a
 // low-trust copy never downgrades what the owner confirmed.
 func (m *Memory) Add(text, topic, source string, trust Trust) (Fact, error) {
-	text = strings.TrimSpace(text)
+	return m.AddFor(text, topic, source, trust, "")
+}
+
+// AddFor records a fact kept for one person.
+func (m *Memory) AddFor(text, topic, source string, trust Trust, person string) (Fact, error) {
+	person = owned(person)
+	// A fact is one line: a newline in it could forge entries in the
+	// Markdown files people read.
+	text = strings.Join(strings.Fields(text), " ")
 	if text == "" {
 		return Fact{}, errors.New("empty fact")
 	}
-	if topic = strings.TrimSpace(topic); topic == "" {
+	if topic = strings.Join(strings.Fields(topic), " "); topic == "" {
 		topic = "geral"
 	}
 	if trust != High {
@@ -184,7 +196,7 @@ func (m *Memory) Add(text, topic, source string, trust Trust) (Fact, error) {
 		return Fact{}, err
 	}
 	for i, f := range facts {
-		if strings.EqualFold(f.Text, text) {
+		if f.Person == person && strings.EqualFold(f.Text, text) {
 			if trust == High && f.Trust == Low {
 				facts[i].Trust, facts[i].Source = High, source
 				return facts[i], m.save(facts, "confirm: "+text)
@@ -192,7 +204,7 @@ func (m *Memory) Add(text, topic, source string, trust Trust) (Fact, error) {
 			return f, nil
 		}
 	}
-	f := Fact{ID: newID(), Text: text, Topic: topic, Source: source, Trust: trust, Created: time.Now()}
+	f := Fact{ID: newID(), Text: text, Topic: topic, Source: source, Trust: trust, Person: person, Created: time.Now()}
 	facts = append(facts, f)
 	return f, m.save(facts, "add: "+text)
 }
@@ -230,24 +242,46 @@ func (m *Memory) Confirm(id string) error {
 	return fmt.Errorf("fact %s not found", id)
 }
 
+// owned stores the owner's facts with an empty person, as before people
+// existed.
+func owned(person string) string {
+	if person == "owner" {
+		return ""
+	}
+	return person
+}
+
+func visible(f Fact, reader string) bool {
+	return f.Person == owned(reader) || f.Person == "casa"
+}
+
 // Instructions are the facts an agent may treat as the owner's word.
-func (m *Memory) Instructions() ([]Fact, error) {
+func (m *Memory) Instructions() ([]Fact, error) { return m.InstructionsFor("") }
+
+// InstructionsFor are the confirmed facts a run for this person may follow.
+func (m *Memory) InstructionsFor(person string) ([]Fact, error) {
 	facts, err := m.List()
 	var out []Fact
 	for _, f := range facts {
-		if f.Trust == High {
+		if f.Trust == High && visible(f, person) {
 			out = append(out, f)
 		}
 	}
 	return out, err
 }
 
-// Search returns facts containing every word of the query.
-func (m *Memory) Search(query string) ([]Fact, error) {
+// Search returns the owner's facts containing every word of the query.
+func (m *Memory) Search(query string) ([]Fact, error) { return m.SearchFor(query, "") }
+
+// SearchFor searches only what this person may read.
+func (m *Memory) SearchFor(query, person string) ([]Fact, error) {
 	facts, err := m.List()
 	words := strings.Fields(strings.ToLower(query))
 	var out []Fact
 	for _, f := range facts {
+		if !visible(f, person) {
+			continue
+		}
 		text := strings.ToLower(f.Text + " " + f.Topic)
 		all := true
 		for _, w := range words {

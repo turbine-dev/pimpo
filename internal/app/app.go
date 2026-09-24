@@ -29,6 +29,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/oauth"
 	"github.com/denerFernandes/vigia/internal/outbox"
 	"github.com/denerFernandes/vigia/internal/owner"
+	"github.com/denerFernandes/vigia/internal/people"
 	"github.com/denerFernandes/vigia/internal/policy"
 	"github.com/denerFernandes/vigia/internal/scheduler"
 	"github.com/denerFernandes/vigia/internal/server"
@@ -69,12 +70,15 @@ type App struct {
 	Outbox    *outbox.Outbox
 	Undo      *undo.Undo
 	Memory    *memory.Memory
+	People    *people.Directory
 	Google    *oauth.Google
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
 	Agent llm.Agent
 	// TelegramAPI points at a self-hosted Bot API server; empty means Telegram's.
 	TelegramAPI string
+	// WhatsAppAPI replaces the Graph API; tests only.
+	WhatsAppAPI string
 	// MailInsecure uses plain IMAP; tests only.
 	MailInsecure bool
 	// Router is shared by every run; the demo swaps connectors in it.
@@ -101,7 +105,13 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	zone := loadZone(set.Zone)
 	a.Budget = &budget.Budget{Events: events, Zone: zone}
 	a.Channel = &owner.Channel{Events: events, Bot: a.bot, Handler: handler{a}}
-	a.Approvals = &approval.Manager{Events: events, Notify: a.Channel, Describe: describeAction}
+	a.People = &people.Directory{Events: events, OwnerChat: a.Channel.Chat, OwnerWhatsApp: a.ownerWhatsApp}
+	a.Channel.People = a.People
+	a.Channel.Mirror = a.mirrorWhatsApp
+	a.Approvals = &approval.Manager{Events: events, Notify: a.Channel, Describe: describeAction, Responsible: func(ctx context.Context, person string) (string, string) {
+		asker, _ := a.People.Get(ctx, person)
+		return a.People.Responsible(ctx, person).ID, asker.Name
+	}}
 	router := a.router()
 	a.Router = router
 	a.Outbox = &outbox.Outbox{DB: events.DB(), Events: events, Send: func(ctx context.Context, args any) (any, error) { return router.Call(ctx, "gmail.send", "", args) }}
@@ -111,7 +121,8 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	router.Add(a.Outbox)
 	a.Undo = &undo.Undo{Events: events, Outbox: a.Outbox, Mail: a.mailOps}
 	env := host.Env{Router: router, Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide),
-		Approver: approver{a.Approvals}, Remember: a.remember}
+		Approver: approver{a.Approvals}, Remember: a.remember,
+		RoleOf: func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) }}
 	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone}
 	a.Explore = &explore.Service{Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 2},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
@@ -122,6 +133,8 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.memoryRoutes()
 	a.migrateRoutes()
 	a.pairingRoutes()
+	a.peopleRoutes()
+	a.whatsappRoutes()
 	return a, nil
 }
 
@@ -211,7 +224,7 @@ func (b botSender) Send(ctx context.Context, chat int64, text string, rows ...[]
 
 func (a *App) router() *connector.Router {
 	cal := &calendar.Calendar{TTL: time.Minute, Feeds: func(ctx context.Context) ([]string, error) {
-		raw, err := a.secret(ctx, "calendar.feeds")
+		raw, err := a.secret(ctx, personal(ctx, "calendar.feeds"))
 		if err != nil {
 			return nil, err
 		}
@@ -227,8 +240,27 @@ func (a *App) router() *connector.Router {
 		zoned{a, cal},
 		mailConn{a},
 		&web.Web{},
-		&telegramcap.Owner{Bot: botSender{a}, Chat: a.Channel.Chat},
+		&telegramcap.Owner{Bot: botSender{a}, Chat: a.personChat},
+		whatsappCap{a},
 	)
+}
+
+// personChat is the Telegram chat of whoever the run works for.
+func (a *App) personChat(ctx context.Context) (int64, error) {
+	p, err := a.People.Get(ctx, people.From(ctx))
+	if err != nil {
+		return 0, err
+	}
+	return p.Chat, nil
+}
+
+// personal names a setting or secret of whoever ctx acts for. The owner's
+// keep the names they had before people existed.
+func personal(ctx context.Context, name string) string {
+	if p := people.From(ctx); p != people.OwnerID {
+		return "person." + p + "." + name
+	}
+	return name
 }
 
 // zoned gives the calendar the owner's current zone on every call.
@@ -240,7 +272,7 @@ type zoned struct {
 func (z zoned) Capabilities() []string { return z.cal.Capabilities() }
 func (z zoned) Call(ctx context.Context, c, s string, args any) (any, error) {
 	zone := loadZone(z.a.Settings(ctx).Zone)
-	if src, _ := z.a.Events.Get(ctx, "calendar.source"); src == "google" && z.a.Google != nil {
+	if src, _ := z.a.Events.Get(ctx, "calendar.source"); src == "google" && z.a.Google != nil && people.From(ctx) == people.OwnerID {
 		return (&calendar.Google{Token: z.a.Google.Token, Zone: zone}).Call(ctx, c, s, args)
 	}
 	z.cal.Zone = zone
@@ -252,14 +284,17 @@ type mailConn struct{ a *App }
 
 func (m mailConn) Capabilities() []string { return (&mail.Mail{}).Capabilities() }
 func (m mailConn) Call(ctx context.Context, c, s string, args any) (any, error) {
-	addr, _ := m.a.Events.Get(ctx, "mail.addr")
-	user, _ := m.a.Events.Get(ctx, "mail.user")
+	// Each person reads only their own mailbox; a member without one set
+	// up gets an error, never the owner's.
+	addr, _ := m.a.Events.Get(ctx, personal(ctx, "mail.addr"))
+	user, _ := m.a.Events.Get(ctx, personal(ctx, "mail.user"))
 	if addr == "" || user == "" {
 		return nil, errors.New("email is not set up; open Connections")
 	}
-	smtp, _ := m.a.Events.Get(ctx, "mail.smtp")
-	acct := mail.Account{Addr: addr, Username: user, SMTP: smtp, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) { return m.a.secret(ctx, "mail.password") }}
-	if auth, _ := m.a.Events.Get(ctx, "mail.auth"); auth == "oauth" && m.a.Google != nil {
+	smtp, _ := m.a.Events.Get(ctx, personal(ctx, "mail.smtp"))
+	pw := personal(ctx, "mail.password")
+	acct := mail.Account{Addr: addr, Username: user, SMTP: smtp, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) { return m.a.secret(ctx, pw) }}
+	if auth, _ := m.a.Events.Get(ctx, personal(ctx, "mail.auth")); auth == "oauth" && m.a.Google != nil && people.From(ctx) == people.OwnerID {
 		acct.Token = m.a.Google.Token
 	}
 	return (&mail.Mail{Account: acct}).Call(ctx, c, s, args)
@@ -348,23 +383,29 @@ func (f agentFunc) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, e
 // handler answers the owner on Telegram.
 type handler struct{ a *App }
 
+func actor(ctx context.Context) string { return "human:" + people.From(ctx) }
+
 func (h handler) Request(ctx context.Context, text string) (string, error) {
-	if _, err := h.a.Explore.Start(ctx, text, "human:owner"); err != nil {
+	if _, err := h.a.Explore.Start(ctx, text, actor(ctx)); err != nil {
 		return "", err
 	}
 	return "Entendi. Vou fazer agora e te mostro o resultado. 🔎", nil
 }
 
 func (h handler) Button(ctx context.Context, action, id string) (string, error) {
+	if err := h.allowed(ctx, action, id); err != nil {
+		return "", err
+	}
+	who := actor(ctx)
 	switch action {
 	case "compile":
-		r, err := h.a.Explore.Approve(ctx, id, "human:owner")
+		r, err := h.a.Explore.Approve(ctx, id, who)
 		if err != nil {
 			return "", err
 		}
 		return fmt.Sprintf("Rotina \"%s\" criada. Próxima execução: %s.", r.Body.Name, h.a.nextText(ctx, r.ID)), nil
 	case "discard":
-		return "Descartado.", h.a.Explore.Discard(ctx, id, "human:owner")
+		return "Descartado.", h.a.Explore.Discard(ctx, id, who)
 	case "run":
 		h.a.Store.SetRoutineState(ctx, id, store.RoutineActive)
 		h.a.Scheduler.Changed(ctx, id)
@@ -379,12 +420,36 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 		return "Vou refazer com o agente e te mostro.", nil
 	case "approve", "always", "deny", "batch":
 		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run}[action]
-		if !h.a.Approvals.Resolve(ctx, id, ans, "human:owner") {
+		if ans == approval.Always && people.From(ctx) != people.OwnerID {
+			// Only the owner makes lasting rules.
+			ans, action = approval.Once, "approve"
+		}
+		if !h.a.Approvals.Resolve(ctx, id, ans, who) {
 			return "", fmt.Errorf("este pedido já não está esperando")
 		}
 		return map[string]string{"approve": "Permitido.", "batch": "Permitido para o resto desta execução.", "always": "Permitido, e não pergunto mais.", "deny": "Negado."}[action], nil
 	}
 	return "", fmt.Errorf("unknown action %q", action)
+}
+
+// allowed keeps members to their own explorations and to the approvals
+// they answer for; routines and everything else stay with the owner.
+func (h handler) allowed(ctx context.Context, action, id string) error {
+	person := people.From(ctx)
+	if person == people.OwnerID {
+		return nil
+	}
+	switch action {
+	case "approve", "always", "deny", "batch":
+		if h.a.Approvals.MayAnswer(id, person) {
+			return nil
+		}
+	case "compile", "discard":
+		if e, err := h.a.Store.Exploration(ctx, id); err == nil && e.Person == person {
+			return nil
+		}
+	}
+	return errors.New("só o dono da casa pode fazer isso")
 }
 
 func (a *App) nextText(ctx context.Context, id string) string {

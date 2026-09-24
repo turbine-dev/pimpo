@@ -33,6 +33,9 @@ type When struct {
 	ArgsContain []string `json:"args_contain,omitempty"`
 	// Hosts matches http calls to these hosts.
 	Hosts []string `json:"hosts,omitempty"`
+	// People and Roles match who the run acts for ("ana"; "member", "guest").
+	People []string `json:"people,omitempty"`
+	Roles  []string `json:"roles,omitempty"`
 }
 
 func (w When) matches(a Action) bool {
@@ -55,6 +58,12 @@ func (w When) matches(a Action) bool {
 			return false
 		}
 	}
+	if len(w.People) > 0 && !contains(w.People, person(a)) {
+		return false
+	}
+	if len(w.Roles) > 0 && !contains(w.Roles, role(a)) {
+		return false
+	}
 	if len(w.Hosts) > 0 && !contains(w.Hosts, strings.ToLower(a.Scope)) {
 		return false
 	}
@@ -70,6 +79,20 @@ func (w When) matches(a Action) bool {
 		}
 	}
 	return true
+}
+
+func person(a Action) string {
+	if a.Person == "" {
+		return "owner"
+	}
+	return a.Person
+}
+
+func role(a Action) string {
+	if a.Role == "" {
+		return "owner"
+	}
+	return a.Role
 }
 
 func contains(list []string, s string) bool {
@@ -110,6 +133,11 @@ func (r Rule) Validate() error {
 	default:
 		return fmt.Errorf("unknown risk %q", r.When.MinRisk)
 	}
+	for _, role := range r.When.Roles {
+		if role != "owner" && role != "member" && role != "guest" {
+			return fmt.Errorf("unknown role %q", role)
+		}
+	}
 	return nil
 }
 
@@ -135,6 +163,9 @@ func Presets() map[string][]Rule {
 		},
 	}
 }
+
+// alwaysAsk lists capabilities no rule may let through unasked.
+var alwaysAsk = map[string]bool{"whatsapp.send_to": true}
 
 // strength orders verdicts: when several rules match, the strictest wins.
 var strength = map[Verdict]int{Allow: 0, Reversible: 1, Ask: 2, Block: 3}
@@ -205,8 +236,20 @@ func (e *Engine) hosts(ctx context.Context) map[string]bool {
 }
 
 // Decide checks the rules; with no match, the risk decides: reversible
-// changes are allowed but made undoable, everything else is allowed.
+// changes are allowed but made undoable, everything else is allowed. A
+// guest's request never changes anything without the responsible person.
 func (e *Engine) Decide(ctx context.Context, a Action) Decision {
+	d := e.decide(ctx, a)
+	if alwaysAsk[a.Capability] && strength[d.Verdict] < strength[Ask] {
+		return Decision{Verdict: Ask, Reason: "messages to other people on WhatsApp always wait for approval"}
+	}
+	if role(a) == "guest" && a.Risk >= capability.Reversible && strength[d.Verdict] < strength[Ask] {
+		return Decision{Verdict: Ask, Reason: "guests' requests wait for the person responsible"}
+	}
+	return d
+}
+
+func (e *Engine) decide(ctx context.Context, a Action) Decision {
 	d := Decision{Verdict: Allow}
 	if a.Risk == capability.Reversible {
 		d = Decision{Verdict: Reversible, Reason: "reversible changes stay undoable"}

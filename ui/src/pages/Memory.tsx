@@ -10,6 +10,7 @@ function sourceText(f: Fact) {
   if (f.source === 'owner') return 'você disse'
   if (f.source.startsWith('exploration:')) return 'anotado pelo agente numa tarefa'
   if (f.source.startsWith('email:')) return 'lido num e-mail'
+  if (f.source.startsWith('import:')) return `trazido do ${f.source.slice(7)}`
   return f.source
 }
 
@@ -18,17 +19,25 @@ export function Memory() {
   const q = useQuery({ queryKey: ['memory'], queryFn: api.memory })
   const [text, setText] = useState('')
   const [topic, setTopic] = useState('')
+  const people = useQuery({ queryKey: ['people'], queryFn: api.people })
+  const house = people.data ?? []
+  const [whose, setWhose] = useState('')
+  const [filter, setFilter] = useState('all')
+  const nameOf = (id?: string) => (!id ? '' : id === 'casa' ? 'Casa' : house.find((p) => p.id === id)?.name ?? id)
   const [showHistory, setShowHistory] = useState(false)
   const done = () => qc.invalidateQueries({ queryKey: ['memory'] })
-  const add = useMutation({ mutationFn: () => api.addFact(text, topic), onSuccess: () => { setText(''); done() } })
+  const add = useMutation({ mutationFn: () => api.addFact(text, topic, whose), onSuccess: () => { setText(''); done() } })
   const remove = useMutation({ mutationFn: api.removeFact, onSuccess: done })
   const confirm = useMutation({ mutationFn: api.confirmFact, onSuccess: done })
   const restore = useMutation({ mutationFn: api.restoreMemory, onSuccess: done })
   const groups = useMemo(() => {
     const m = new Map<string, Fact[]>()
-    for (const f of q.data?.facts ?? []) m.set(f.topic, [...(m.get(f.topic) ?? []), f])
+    for (const f of q.data?.facts ?? []) {
+      if (filter !== 'all' && (f.person ?? '') !== filter) continue
+      m.set(f.topic, [...(m.get(f.topic) ?? []), f])
+    }
     return [...m.entries()]
-  }, [q.data])
+  }, [q.data, filter])
   const unconfirmed = (q.data?.facts ?? []).filter((f) => f.trust === 'low').length
 
   return (
@@ -47,11 +56,29 @@ export function Memory() {
         <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); if (text.trim()) add.mutate() }}>
           <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Ex.: Minha chefe é a Ana (ana@acme.com)" aria-label="Novo fato" className="h-10 min-w-0 flex-1 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
           <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Tema" aria-label="Tema" className="h-10 w-32 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+          {house.length > 1 && (
+            <select value={whose} onChange={(e) => setWhose(e.target.value)} aria-label="De quem é" className="h-10 rounded-[10px] border border-line bg-bg px-2 text-sm">
+              <option value="">Só meu</option>
+              <option value="casa">Da casa toda</option>
+              {house.filter((p) => p.role !== 'owner').map((p) => <option key={p.id} value={p.id}>De {p.name}</option>)}
+            </select>
+          )}
           <Button variant="primary" type="submit" disabled={!text.trim()}>
             <Plus size={15} /> Lembrar
           </Button>
         </form>
       </Card>
+
+      {house.length > 1 && (
+        <div role="tablist" aria-label="De quem" className="mb-4 flex flex-wrap gap-1.5">
+          {[{ id: 'all', name: 'Todos' }, { id: '', name: 'Você' }, { id: 'casa', name: 'Casa' }, ...house.filter((p) => p.role !== 'owner')].map((p) => (
+            <button key={p.id} role="tab" aria-selected={filter === p.id} onClick={() => setFilter(p.id)}
+              className={cn('rounded-full border px-3 py-1 text-[12.5px] transition', filter === p.id ? 'border-ink bg-ink text-bg' : 'border-line text-ink-2 hover:border-line-strong')}>
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {unconfirmed > 0 && (
         <p className="mb-4 rounded-xl border border-change/30 bg-change-soft px-4 py-2.5 text-[13px] text-change">
@@ -90,6 +117,7 @@ export function Memory() {
                   <div className="min-w-0 flex-1">
                     <div className="text-[14px]">{f.text}</div>
                     <div className="mt-0.5 text-[12px] text-ink-3">
+                      {f.person && <span className="mr-1.5 rounded-full bg-explore-soft px-1.5 py-px text-[11px] font-medium text-explore">{nameOf(f.person)}</span>}
                       {sourceText(f)} · {relative(f.created)}
                       {f.trust === 'low' && <span className="ml-1.5 font-medium text-change">não confirmado</span>}
                     </div>

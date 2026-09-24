@@ -19,6 +19,7 @@ import { Memory } from './pages/Memory'
 import { RoutinePage } from './pages/RoutinePage'
 import { Routines } from './pages/Routines'
 import { Import } from './pages/Import'
+import { People } from './pages/People'
 import { Settings } from './pages/Settings'
 
 const ready = new Set(['/', '/inbox', '/receipts', '/rules', '/cost', '/memory', '/connections', '/settings'])
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="/connections" element={<Connections />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/import" element={<Import />} />
+        <Route path="/people" element={<People />} />
         <Route path="/design" element={<Design />} />
       </Routes>
       </ErrorBoundary>
