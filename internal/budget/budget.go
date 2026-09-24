@@ -91,7 +91,11 @@ func (b *Budget) Spent(ctx context.Context, since time.Time) (float64, error) {
 func (b *Budget) Today(ctx context.Context) (float64, error) { return b.Spent(ctx, b.startOfDay()) }
 
 // Check refuses a paid call when today's spending has reached the limit.
-func (b *Budget) Check(ctx context.Context) error {
+func (b *Budget) Check(ctx context.Context) error { return b.CheckFor(ctx, 0) }
+
+// CheckFor refuses a call that could push spending past the limit, given
+// the most it may cost.
+func (b *Budget) CheckFor(ctx context.Context, estimate float64) error {
 	limit := b.Limit(ctx)
 	if limit <= 0 {
 		return nil
@@ -100,7 +104,7 @@ func (b *Budget) Check(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if spent >= limit {
+	if spent >= limit || spent+estimate > limit+1e-9 {
 		return fmt.Errorf("%w ($%.2f of $%.2f); raise it in Custo or wait until tomorrow", ErrOverBudget, spent, limit)
 	}
 	return nil

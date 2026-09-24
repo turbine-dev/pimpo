@@ -20,7 +20,8 @@ func raw(from, subject, body string, date time.Time, html bool) []byte {
 	if html {
 		ct = "text/html; charset=utf-8"
 	}
-	return []byte("From: " + from + "\r\nTo: eu@exemplo.com\r\nSubject: " + subject + "\r\nDate: " + date.Format(time.RFC1123Z) + "\r\nContent-Type: " + ct + "\r\n\r\n" + body + "\r\n")
+	id := "<" + strings.ReplaceAll(strings.ToLower(subject), " ", "-") + "@test>"
+	return []byte("From: " + from + "\r\nTo: eu@exemplo.com\r\nSubject: " + subject + "\r\nMessage-ID: " + id + "\r\nDate: " + date.Format(time.RFC1123Z) + "\r\nContent-Type: " + ct + "\r\n\r\n" + body + "\r\n")
 }
 
 func startServer(t *testing.T) string {

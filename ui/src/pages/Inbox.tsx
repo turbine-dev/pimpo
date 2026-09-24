@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BellOff, Sparkles } from 'lucide-react'
+import { AlertTriangle, BellOff, ShieldQuestion, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api } from '../lib/api'
@@ -12,8 +12,10 @@ export function Inbox() {
   const routines = useQuery({ queryKey: ['routines'], queryFn: api.routines })
   const repair = useMutation({ mutationFn: (id: string) => api.routineAction(id, 'repair'), onSuccess: (r) => r.exploration && nav(`/explorations/${r.exploration}`) })
   const run = useMutation({ mutationFn: (id: string) => api.routineAction(id, 'run'), onSettled: () => qc.invalidateQueries({ queryKey: ['routines'] }) })
+  const approvals = useQuery({ queryKey: ['approvals'], queryFn: api.approvals, refetchInterval: 10_000 })
+  const answer = useMutation({ mutationFn: ({ id, a }: { id: string; a: 'once' | 'always' | 'deny' }) => api.answer(id, a), onSettled: () => qc.invalidateQueries({ queryKey: ['approvals'] }) })
   const broken = (routines.data ?? []).filter((r) => r.state === 'broken')
-  const items = (ready.data?.length ?? 0) + broken.length
+  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0)
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -25,6 +27,22 @@ export function Inbox() {
         </EmptyState>
       )}
       <div className="space-y-3">
+        {(approvals.data ?? []).map((ap) => (
+          <Card key={ap.id} className={`flex flex-wrap items-center gap-4 p-4 ${ap.action.risk >= 3 ? 'border-danger/40' : 'border-change/40'}`}>
+            <div className={`grid size-10 place-items-center rounded-xl ${ap.action.risk >= 3 ? 'bg-danger-soft text-danger' : 'bg-change-soft text-change'}`}>
+              <ShieldQuestion size={18} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-medium">{ap.text}</div>
+              <div className="text-[12.5px] text-ink-3">Regra: {ap.reason} · esperando você</div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => answer.mutate({ id: ap.id, a: 'deny' })}>Negar</Button>
+              <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'always' })}>Sempre</Button>
+              <Button size="sm" variant="primary" onClick={() => answer.mutate({ id: ap.id, a: 'once' })}>Permitir</Button>
+            </div>
+          </Card>
+        ))}
         {broken.map((r) => (
           <Card key={r.id} className="flex flex-wrap items-center gap-4 border-danger/40 p-4">
             <div className="grid size-10 place-items-center rounded-xl bg-danger-soft text-danger">

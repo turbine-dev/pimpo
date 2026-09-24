@@ -18,6 +18,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/event"
 	"github.com/denerFernandes/vigia/internal/host"
 	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/vigia/internal/routine"
 	"github.com/denerFernandes/vigia/internal/store"
 	"github.com/denerFernandes/vigia/internal/trace"
 )
@@ -197,5 +198,42 @@ func TestDeriveExpectUsesDataValues(t *testing.T) {
 	exp := DeriveExpect(calls)
 	if len(exp) != 1 || *exp[0].Count != 1 || strings.Join(exp[0].Contains, ",") != "Standup" {
 		t.Fatalf("expect %+v", exp)
+	}
+}
+
+func TestRepairMustKeepOldTests(t *testing.T) {
+	s, _, _, _ := setup(t)
+	ctx := context.Background()
+	id, _ := s.Start(ctx, "Arquiva as newsletters não lidas e me avisa", "human:owner")
+	s.Wait()
+	r, err := s.Approve(ctx, id, "human:owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Give the routine a test the repair will break: it expects the count.
+	one := 1
+	r.Body.Tests = []routine.Test{{Name: "counts", Scenario: trace.Scenario{Now: "2026-09-24T18:00:00Z",
+		Responses: []trace.Response{{Capability: "gmail.search", Result: json.RawMessage(`[{"id":"n1","subject":"Promo"}]`)}},
+		Judgments: map[string]map[string]float64{"newsletter": {"n1": 0.95}},
+		Expect:    []trace.Expect{{Capability: "telegram.send", Count: &one, Contains: []string{"Arquivei 1"}}}}}}
+	s.Store.SaveRoutine(ctx, r.ID, r.Body, "add test", "owner")
+
+	silent := strings.Replace(routineOut, `\"Arquivei \" + n.length + \" newsletter: \" + n.join(\", \")`, `\"Feito: \" + n.join(\", \")`, 1)
+	if silent == routineOut {
+		t.Fatal("test setup: replacement did not apply")
+	}
+	s.Compiler = compiler.Compiler{Model: &llm.Fake{Responses: []llm.Response{{Structured: json.RawMessage(silent)}}}}
+	rid, err := s.Repair(ctx, r.ID, "api changed", "human:owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Wait()
+	_, err = s.Approve(ctx, rid, "human:owner")
+	if err == nil || !strings.Contains(err.Error(), "breaks what the old one did") {
+		t.Fatalf("repair that drops the message was accepted: %v", err)
+	}
+	cur, _ := s.Store.Routine(ctx, r.ID)
+	if cur.Version != 2 {
+		t.Fatalf("a failed repair changed the routine: version %d", cur.Version)
 	}
 }

@@ -242,6 +242,21 @@ func (s *Service) Approve(ctx context.Context, id, actor string) (store.Routine,
 	if len(attempts) > 0 {
 		last = attempts[len(attempts)-1]
 	}
+	// A repair must still pass the tests of the version it replaces.
+	if e.Routine != "" && err == nil && last.Accepted() {
+		if old, oerr := s.Store.Routine(ctx, e.Routine); oerr == nil {
+			for _, t := range old.Body.Tests {
+				if o := routine.Check(ctx, last.Routine, "previous test "+t.Name, t.Scenario); !o.Passed {
+					last.Outcomes = append(last.Outcomes, o)
+				}
+			}
+			if !last.Accepted() {
+				err = fmt.Errorf("the repaired routine breaks what the old one did: %s", strings.Join(last.Problems(), "; "))
+			} else {
+				last.Routine.Tests = append(last.Routine.Tests, old.Body.Tests...)
+			}
+		}
+	}
 	if err != nil || !last.Accepted() {
 		e.State = store.ExplorationReady
 		if err == nil {

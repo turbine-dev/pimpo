@@ -33,6 +33,22 @@ type Env struct {
 	Budget *budget.Budget
 	Events *event.Store
 	Policy policy.Policy
+	// Approver asks the owner when a rule says so; nil denies.
+	Approver Approver
+	// Remember turns an "always" answer into a lasting permission.
+	Remember func(ctx context.Context, a policy.Action)
+}
+
+type Approver interface {
+	Ask(ctx context.Context, a policy.Action, reason string) (always bool, err error)
+}
+
+// reversibleForm is how an irreversible capability is done when the policy
+// asks for a reversible version: delete goes to the trash, sending waits in
+// the outbox long enough to be cancelled.
+var reversibleForm = map[string]string{
+	"gmail.delete": "gmail.trash",
+	"gmail.send":   "outbox.send_later",
 }
 
 type Host struct {
@@ -82,7 +98,11 @@ type ActionRecord struct {
 	Reason     string          `json:"reason,omitempty"`
 	Rule       string          `json:"rule,omitempty"`
 	DryRun     bool            `json:"dry_run,omitempty"`
-	Millis     int64           `json:"ms"`
+	// Done is the capability actually called when the policy swapped in a
+	// reversible form, e.g. gmail.trash for gmail.delete.
+	Done     string `json:"done,omitempty"`
+	Approved string `json:"approved,omitempty"`
+	Millis   int64  `json:"ms"`
 }
 
 var ErrBlocked = errors.New("blocked by a rule")
@@ -94,23 +114,46 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	if pol == nil {
 		pol = policy.Open{}
 	}
-	d := pol.Decide(ctx, policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source})
+	act := policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source}
+	d := pol.Decide(ctx, act)
 	rec.Verdict, rec.Reason, rec.Rule = d.Verdict, d.Reason, d.Rule
-	if d.Verdict == policy.Block || d.Verdict == policy.Ask {
+	simulated := h.DryRun && spec.Risk >= capability.Reversible
+
+	if d.Verdict == policy.Block {
 		rec.Error = d.Reason
 		h.record(ctx, rec, nil)
-		if d.Verdict == policy.Ask {
-			return nil, fmt.Errorf("%s is waiting for your approval: %s", name, d.Reason)
-		}
 		return nil, fmt.Errorf("%w: %s", ErrBlocked, d.Reason)
 	}
+	if d.Verdict == policy.Ask && !simulated {
+		if h.Approver == nil {
+			rec.Error = "needs approval and nobody can answer"
+			h.record(ctx, rec, nil)
+			return nil, fmt.Errorf("%s needs your approval: %s", name, d.Reason)
+		}
+		always, err := h.Approver.Ask(ctx, act, d.Reason)
+		if err != nil {
+			rec.Error, rec.Approved = err.Error(), "no"
+			h.record(ctx, rec, nil)
+			return nil, fmt.Errorf("%s was not approved: %w", name, err)
+		}
+		rec.Approved = "yes"
+		if always && h.Remember != nil {
+			rec.Approved = "always"
+			h.Remember(ctx, act)
+		}
+	}
+
 	start := time.Now()
 	var result any
 	var err error
-	if h.DryRun && spec.Risk >= capability.Reversible {
+	switch {
+	case simulated:
 		rec.DryRun = true
 		result = map[string]any{"ok": true, "dry_run": true}
-	} else {
+	case d.Verdict == policy.Reversible && reversibleForm[name] != "":
+		rec.Done = reversibleForm[name]
+		result, err = h.Router.Call(ctx, rec.Done, scope, args)
+	default:
 		result, err = h.Router.Call(ctx, name, scope, args)
 	}
 	rec.Millis = time.Since(start).Milliseconds()
@@ -135,9 +178,13 @@ func (h *Host) record(ctx context.Context, rec ActionRecord, result any) {
 	}
 }
 
+// JudgeEstimate is the most one judgment may cost; calls that could pass
+// the daily limit are refused before they start.
+const JudgeEstimate = 0.01
+
 func (h *Host) Judge(ctx context.Context, name, question string, item any) (float64, error) {
 	if h.Budget != nil {
-		if err := h.Budget.Check(ctx); err != nil {
+		if err := h.Budget.CheckFor(ctx, JudgeEstimate); err != nil {
 			return 0, err
 		}
 	}

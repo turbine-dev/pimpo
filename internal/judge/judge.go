@@ -103,7 +103,7 @@ func (l LLM) Ask(ctx context.Context, question string, item any) (Answer, error)
 		Prompt:     "Question: " + question + "\nItem: " + string(b),
 		Schema:     probSchema,
 		Model:      l.Name,
-		MaxCostUSD: 0.1,
+		MaxCostUSD: 0.01,
 	})
 	if err != nil {
 		return Answer{}, err

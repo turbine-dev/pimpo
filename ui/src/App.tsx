@@ -6,6 +6,9 @@ import { Shell, nav } from './components/Shell'
 import { api } from './lib/api'
 import { useLiveEvents } from './lib/live'
 import { Connections } from './pages/Connections'
+import { Cost } from './pages/Cost'
+import { Receipts } from './pages/Receipts'
+import { Rules } from './pages/Rules'
 import { Design } from './pages/Design'
 import { ExplorationPage } from './pages/ExplorationPage'
 import { Inbox } from './pages/Inbox'
@@ -13,7 +16,7 @@ import { RoutinePage } from './pages/RoutinePage'
 import { Routines } from './pages/Routines'
 import { Settings } from './pages/Settings'
 
-const ready = new Set(['/', '/inbox', '/connections', '/settings'])
+const ready = new Set(['/', '/inbox', '/receipts', '/rules', '/cost', '/connections', '/settings'])
 
 export default function App() {
   const [newTask, setNewTask] = useState(false)
@@ -28,6 +31,9 @@ export default function App() {
         <Route path="/routines/:id" element={<RoutinePage />} />
         <Route path="/explorations/:id" element={<ExplorationPage />} />
         <Route path="/inbox" element={<Inbox />} />
+        <Route path="/receipts" element={<Receipts />} />
+        <Route path="/rules" element={<Rules />} />
+        <Route path="/cost" element={<Cost />} />
         <Route path="/connections" element={<Connections />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/design" element={<Design />} />

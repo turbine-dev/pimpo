@@ -116,3 +116,84 @@ func TestUnconnectedCapabilityExplainsItself(t *testing.T) {
 		t.Fatalf("got %v", err)
 	}
 }
+
+type askAll struct{}
+
+func (askAll) Decide(_ context.Context, a policy.Action) policy.Decision {
+	if a.Capability == "gmail.archive" {
+		return policy.Decision{Verdict: policy.Ask, Reason: "ask before archiving"}
+	}
+	return policy.Decision{Verdict: policy.Allow}
+}
+
+type answer struct {
+	always bool
+	err    error
+	asked  int
+}
+
+func (a *answer) Ask(context.Context, policy.Action, string) (bool, error) {
+	a.asked++
+	return a.always, a.err
+}
+
+func TestApprovalGatesTheCall(t *testing.T) {
+	mail := &fakeMail{}
+	ans := &answer{err: errors.New("the owner said no")}
+	remembered := 0
+	h := &Host{Env: env(t, mail), Source: "routine:triage#2"}
+	h.Policy, h.Approver = askAll{}, ans
+	h.Remember = func(context.Context, policy.Action) { remembered++ }
+	ctx := context.Background()
+	if _, err := h.Call(ctx, "gmail.archive", "", map[string]any{"id": "m1"}); err == nil || len(mail.archived) != 0 {
+		t.Fatalf("denied call went through: %v", err)
+	}
+	ans.err, ans.always = nil, true
+	if _, err := h.Call(ctx, "gmail.archive", "", map[string]any{"id": "m1"}); err != nil || len(mail.archived) != 1 || remembered != 1 {
+		t.Fatalf("approved call: %v archived=%v remembered=%d", err, mail.archived, remembered)
+	}
+	// Simulated calls in an exploration never wait for the owner.
+	x := &Host{Env: env(t, &fakeMail{}), Source: "exploration:e1", DryRun: true}
+	x.Policy, x.Approver = askAll{}, ans
+	asked := ans.asked
+	if _, err := x.Call(ctx, "gmail.archive", "", map[string]any{"id": "m1"}); err != nil || ans.asked != asked {
+		t.Fatalf("exploration asked for a simulated action: %v", err)
+	}
+}
+
+type reversibleAll struct{}
+
+func (reversibleAll) Decide(context.Context, policy.Action) policy.Decision {
+	return policy.Decision{Verdict: policy.Reversible}
+}
+
+type trashCan struct{ trashed []string }
+
+func (t *trashCan) Capabilities() []string { return []string{"gmail.trash", "gmail.delete"} }
+func (t *trashCan) Call(_ context.Context, name, _ string, args any) (any, error) {
+	if name == "gmail.delete" {
+		return nil, errors.New("permanent delete must not be called")
+	}
+	t.trashed = append(t.trashed, args.(map[string]any)["id"].(string))
+	return map[string]bool{"ok": true}, nil
+}
+
+func TestIrreversibleBecomesReversible(t *testing.T) {
+	can := &trashCan{}
+	e := env(t, &fakeMail{})
+	e.Router.Add(can)
+	h := &Host{Env: e, Source: "routine:cleanup#1"}
+	h.Policy = reversibleAll{}
+	if _, err := h.Call(context.Background(), "gmail.delete", "", map[string]any{"id": "m9"}); err != nil {
+		t.Fatal(err)
+	}
+	if len(can.trashed) != 1 {
+		t.Fatal("delete was not turned into trash")
+	}
+	evs, _ := h.Events.List(context.Background(), event.Query{Types: []string{ActionEvent}})
+	var rec ActionRecord
+	evs[0].Decode(&rec)
+	if rec.Done != "gmail.trash" || rec.Capability != "gmail.delete" {
+		t.Fatalf("record %+v", rec)
+	}
+}
