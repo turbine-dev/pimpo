@@ -1,0 +1,223 @@
+// Package host carries out capability calls for routines and explorations.
+// Every call passes the policy, reaches the world through a connector, and
+// is written to the event log with its arguments and result.
+package host
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/denerFernandes/vigia/internal/budget"
+	"github.com/denerFernandes/vigia/internal/capability"
+	"github.com/denerFernandes/vigia/internal/connector"
+	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/vigia/internal/judge"
+	"github.com/denerFernandes/vigia/internal/policy"
+	"github.com/denerFernandes/vigia/internal/trace"
+)
+
+const (
+	ActionEvent   = "action.done"
+	JudgmentEvent = "judgment.made"
+)
+
+// Env is what every host shares; a Host is one run of one routine or one
+// exploration on top of it.
+type Env struct {
+	Router *connector.Router
+	Judge  judge.Judge
+	Budget *budget.Budget
+	Events *event.Store
+	Policy policy.Policy
+}
+
+type Host struct {
+	Env
+	// Source identifies the run in events: "routine:brief#12", "exploration:e1".
+	Source string
+	// DryRun records changes instead of making them. Explorations run this
+	// way: they show what would happen and change nothing but messages to
+	// the owner.
+	DryRun bool
+
+	mu        sync.Mutex
+	calls     []trace.Call
+	judgments map[string]map[string]float64
+	questions map[string]string
+	costUSD   float64
+}
+
+// SetQuestion remembers the wording of a judgment the explorer made.
+func (h *Host) SetQuestion(name, q string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.questions == nil {
+		h.questions = map[string]string{}
+	}
+	if q != "" {
+		h.questions[name] = q
+	}
+}
+
+func (h *Host) Questions() map[string]string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.questions
+}
+
+// ActionRecord is the data of an ActionEvent.
+type ActionRecord struct {
+	Source     string          `json:"source"`
+	Capability string          `json:"capability"`
+	Scope      string          `json:"scope,omitempty"`
+	Risk       string          `json:"risk"`
+	Args       any             `json:"args"`
+	Result     json.RawMessage `json:"result,omitempty"`
+	Error      string          `json:"error,omitempty"`
+	Verdict    policy.Verdict  `json:"verdict"`
+	Reason     string          `json:"reason,omitempty"`
+	Rule       string          `json:"rule,omitempty"`
+	DryRun     bool            `json:"dry_run,omitempty"`
+	Millis     int64           `json:"ms"`
+}
+
+var ErrBlocked = errors.New("blocked by a rule")
+
+func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, error) {
+	spec := capability.Catalog[name]
+	rec := ActionRecord{Source: h.Source, Capability: name, Scope: scope, Risk: spec.Risk.String(), Args: args}
+	pol := h.Policy
+	if pol == nil {
+		pol = policy.Open{}
+	}
+	d := pol.Decide(ctx, policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source})
+	rec.Verdict, rec.Reason, rec.Rule = d.Verdict, d.Reason, d.Rule
+	if d.Verdict == policy.Block || d.Verdict == policy.Ask {
+		rec.Error = d.Reason
+		h.record(ctx, rec, nil)
+		if d.Verdict == policy.Ask {
+			return nil, fmt.Errorf("%s is waiting for your approval: %s", name, d.Reason)
+		}
+		return nil, fmt.Errorf("%w: %s", ErrBlocked, d.Reason)
+	}
+	start := time.Now()
+	var result any
+	var err error
+	if h.DryRun && spec.Risk >= capability.Reversible {
+		rec.DryRun = true
+		result = map[string]any{"ok": true, "dry_run": true}
+	} else {
+		result, err = h.Router.Call(ctx, name, scope, args)
+	}
+	rec.Millis = time.Since(start).Milliseconds()
+	if err != nil {
+		rec.Error = err.Error()
+	}
+	h.record(ctx, rec, result)
+	return result, err
+}
+
+func (h *Host) record(ctx context.Context, rec ActionRecord, result any) {
+	var raw json.RawMessage
+	if result != nil {
+		raw, _ = json.Marshal(result)
+	}
+	h.mu.Lock()
+	h.calls = append(h.calls, trace.Call{Capability: rec.Capability, Args: mustJSON(rec.Args), Result: raw})
+	h.mu.Unlock()
+	rec.Result = truncate(raw, 16<<10)
+	if h.Events != nil {
+		h.Events.Append(ctx, ActionEvent, h.Source, rec)
+	}
+}
+
+func (h *Host) Judge(ctx context.Context, name, question string, item any) (float64, error) {
+	if h.Budget != nil {
+		if err := h.Budget.Check(ctx); err != nil {
+			return 0, err
+		}
+	}
+	if h.Env.Judge == nil {
+		return 0, errors.New("no judgment backend configured; set one in Settings")
+	}
+	a, err := h.Env.Judge.Ask(ctx, question, item)
+	if err != nil {
+		return 0, err
+	}
+	h.addCost(ctx, a.CostUSD, "judgment")
+	if h.Events != nil {
+		h.Events.Append(ctx, JudgmentEvent, h.Source, map[string]any{"source": h.Source, "judgment": name, "question": question, "p": a.P, "backend": a.Backend, "item": truncateAny(item)})
+	}
+	return a.P, nil
+}
+
+// Label records a decision the explorer made, keyed by an item reference.
+func (h *Host) Label(name, item string, p float64) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.judgments == nil {
+		h.judgments = map[string]map[string]float64{}
+	}
+	if h.judgments[name] == nil {
+		h.judgments[name] = map[string]float64{}
+	}
+	h.judgments[name][item] = p
+}
+
+func (h *Host) addCost(ctx context.Context, usd float64, source string) {
+	if usd <= 0 {
+		return
+	}
+	h.mu.Lock()
+	h.costUSD += usd
+	h.mu.Unlock()
+	if h.Budget != nil {
+		h.Budget.Record(ctx, budget.Cost{USD: usd, Source: source, Ref: h.Source})
+	}
+}
+
+// AddCost books a model call made on this run's behalf.
+func (h *Host) AddCost(ctx context.Context, usd float64, source string) { h.addCost(ctx, usd, source) }
+
+func (h *Host) Calls() []trace.Call {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]trace.Call(nil), h.calls...)
+}
+
+func (h *Host) Judgments() map[string]map[string]float64 {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.judgments
+}
+
+func (h *Host) Cost() float64 {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.costUSD
+}
+
+func mustJSON(v any) json.RawMessage {
+	b, _ := json.Marshal(v)
+	return b
+}
+
+func truncate(raw json.RawMessage, n int) json.RawMessage {
+	if len(raw) <= n {
+		return raw
+	}
+	b, _ := json.Marshal(map[string]any{"truncated": true, "bytes": len(raw), "preview": string(raw[:n])})
+	return b
+}
+
+func truncateAny(v any) any {
+	b, _ := json.Marshal(v)
+	if len(b) <= 4096 {
+		return v
+	}
+	return string(b[:4096]) + "…"
+}

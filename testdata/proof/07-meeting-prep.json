@@ -1,0 +1,88 @@
+{
+  "id": "07-meeting-prep",
+  "request": "Toda noite, olha as reuniões de amanhã que têm convidados, busca os emails recentes que cada participante me mandou e me manda no Telegram um resumo pra eu chegar preparado em cada reunião.",
+  "now": "2026-09-24T21:00:00-03:00",
+  "calls": [
+    {
+      "capability": "calendar.events",
+      "args": {"from": "2026-09-25T00:00:00-03:00", "to": "2026-09-25T23:59:59-03:00"},
+      "result": [
+        {"id": "mp-1", "title": "Kickoff Projeto Atlas", "start": "2026-09-25T10:00:00-03:00", "end": "2026-09-25T11:00:00-03:00", "location": "Google Meet", "attendees": ["rafael@atlas.io", "julia@atlas.io"], "calendar": "Trabalho"},
+        {"id": "mp-2", "title": "Almoço", "start": "2026-09-25T12:30:00-03:00", "end": "2026-09-25T13:30:00-03:00", "location": "", "attendees": [], "calendar": "Pessoal"},
+        {"id": "mp-3", "title": "Review de design do onboarding", "start": "2026-09-25T15:00:00-03:00", "end": "2026-09-25T16:00:00-03:00", "location": "Sala Ipê", "attendees": ["pedro@acme.com"], "calendar": "Trabalho"}
+      ]
+    },
+    {
+      "capability": "gmail.search",
+      "args": {"query": "from:rafael@atlas.io", "days": 14, "max": 5},
+      "result": [
+        {"id": "g-701", "from": "rafael@atlas.io", "from_name": "Rafael Mendes", "to": "eu@exemplo.com", "subject": "Escopo revisado v2", "snippet": "Tiramos o módulo de relatórios da fase 1, segue o escopo atualizado.", "date": "2026-09-23T17:40:00-03:00", "labels": ["INBOX"], "replied": true}
+      ]
+    },
+    {
+      "capability": "gmail.search",
+      "args": {"query": "from:julia@atlas.io", "days": 14, "max": 5},
+      "result": [
+        {"id": "g-703", "from": "julia@atlas.io", "from_name": "Julia Prado", "to": "eu@exemplo.com", "subject": "Cronograma de entregas", "snippet": "Proposta: MVP em 15/11 e go-live em 10/12. Consegue validar antes do kickoff?", "date": "2026-09-24T09:10:00-03:00", "labels": ["INBOX"], "replied": false},
+        {"id": "g-702", "from": "julia@atlas.io", "from_name": "Julia Prado", "to": "eu@exemplo.com", "subject": "Acessos ao ambiente de homologação", "snippet": "Liberei os acessos para o seu time.", "date": "2026-09-20T14:00:00-03:00", "labels": ["INBOX"], "replied": true}
+      ]
+    },
+    {
+      "capability": "gmail.search",
+      "args": {"query": "from:pedro@acme.com", "days": 14, "max": 5},
+      "result": [
+        {"id": "g-704", "from": "pedro@acme.com", "from_name": "Pedro Almeida", "to": "eu@exemplo.com", "subject": "Protótipos do onboarding no Figma", "snippet": "Duas opções de fluxo, a B reduz um passo. Queria sua opinião amanhã.", "date": "2026-09-24T16:25:00-03:00", "labels": ["INBOX"], "replied": false}
+      ]
+    },
+    {
+      "capability": "telegram.send",
+      "args": {"text": "Preparação para amanhã (25/09)\n\n10:00 Kickoff Projeto Atlas\n• Rafael Mendes — \"Escopo revisado v2\": relatórios saíram da fase 1\n• Julia Prado — \"Cronograma de entregas\": MVP 15/11, go-live 10/12, pede validação antes do kickoff (sem resposta)\n• Julia Prado — \"Acessos ao ambiente de homologação\"\n\n15:00 Review de design do onboarding\n• Pedro Almeida — \"Protótipos do onboarding no Figma\": duas opções, a B reduz um passo (sem resposta)"},
+      "result": {"ok": true}
+    }
+  ],
+  "outcome": "Um resumo no Telegram com cada reunião de amanhã que tem convidados e, para cada participante, os assuntos dos emails recentes dele.",
+  "expect": [
+    {
+      "capability": "telegram.send",
+      "contains": ["Kickoff Projeto Atlas", "Review de design do onboarding", "Escopo revisado v2", "Cronograma de entregas", "Protótipos do onboarding"],
+      "not_contains": ["Almoço"]
+    }
+  ],
+  "holdout": {
+    "now": "2026-10-06T21:00:00-03:00",
+    "responses": [
+      {
+        "capability": "calendar.events",
+        "result": [
+          {"id": "mp-51", "title": "Academia", "start": "2026-10-07T07:00:00-03:00", "end": "2026-10-07T08:00:00-03:00", "location": "SmartFit Paulista", "attendees": [], "calendar": "Pessoal"},
+          {"id": "mp-52", "title": "Negociação contrato Globex", "start": "2026-10-07T11:00:00-03:00", "end": "2026-10-07T12:00:00-03:00", "location": "Zoom", "attendees": ["hank@globex.example", "lisa@globex.example"], "calendar": "Trabalho"},
+          {"id": "mp-53", "title": "1:1 com Marina", "start": "2026-10-07T16:00:00-03:00", "end": "2026-10-07T16:30:00-03:00", "location": "Sala Jatobá", "attendees": ["marina@acme.com"], "calendar": "Trabalho"}
+        ]
+      },
+      {
+        "capability": "gmail.search",
+        "result": [
+          {"id": "g-752", "from": "hank@globex.example", "from_name": "Hank Scorpio", "to": "eu@exemplo.com", "subject": "Contraproposta de preço", "snippet": "Podemos fechar em 3 anos se o desconto for de 12%.", "date": "2026-10-06T18:00:00-03:00", "labels": ["INBOX"], "replied": false},
+          {"id": "g-751", "from": "hank@globex.example", "from_name": "Hank Scorpio", "to": "eu@exemplo.com", "subject": "SLA de suporte 24x7", "snippet": "Nosso jurídico exige multa por indisponibilidade.", "date": "2026-10-02T10:30:00-03:00", "labels": ["INBOX"], "replied": true}
+        ]
+      },
+      {
+        "capability": "gmail.search",
+        "result": []
+      },
+      {
+        "capability": "gmail.search",
+        "result": [
+          {"id": "g-753", "from": "marina@acme.com", "from_name": "Marina Duarte", "to": "eu@exemplo.com", "subject": "Pedido de promoção do Lucas", "snippet": "Queria discutir o caso do Lucas no nosso 1:1.", "date": "2026-10-05T19:15:00-03:00", "labels": ["INBOX"], "replied": false}
+        ]
+      }
+    ],
+    "expect": [
+      {
+        "capability": "telegram.send",
+        "contains": ["Negociação contrato Globex", "1:1 com Marina", "Contraproposta de preço", "SLA de suporte", "Pedido de promoção do Lucas"],
+        "not_contains": ["Academia", "Kickoff Projeto Atlas", "Escopo revisado"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,3831 @@
+{
+ "rows": [
+  {
+   "feature": "spend_caps",
+   "value": 2.95,
+   "diff": 2.88,
+   "risk": 1.01,
+   "mvp": 2.58,
+   "priority": 2.13
+  },
+  {
+   "feature": "ui_receipts",
+   "value": 2.9,
+   "diff": 2.57,
+   "risk": 1.03,
+   "mvp": 2.3,
+   "priority": 2.0
+  },
+  {
+   "feature": "policy_engine",
+   "value": 2.95,
+   "diff": 2.74,
+   "risk": 1.63,
+   "mvp": 2.74,
+   "priority": 1.96
+  },
+  {
+   "feature": "routine_compiler",
+   "value": 2.97,
+   "diff": 2.63,
+   "risk": 1.73,
+   "mvp": 2.98,
+   "priority": 1.91
+  },
+  {
+   "feature": "audit_log",
+   "value": 2.8,
+   "diff": 2.64,
+   "risk": 1.35,
+   "mvp": 2.32,
+   "priority": 1.91
+  },
+  {
+   "feature": "capabilities",
+   "value": 2.94,
+   "diff": 2.33,
+   "risk": 1.19,
+   "mvp": 2.69,
+   "priority": 1.9
+  },
+  {
+   "feature": "ui_routines",
+   "value": 2.61,
+   "diff": 2.45,
+   "risk": 0.89,
+   "mvp": 1.63,
+   "priority": 1.85
+  },
+  {
+   "feature": "credential_broker",
+   "value": 2.79,
+   "diff": 2.45,
+   "risk": 1.36,
+   "mvp": 2.52,
+   "priority": 1.84
+  },
+  {
+   "feature": "undo",
+   "value": 2.81,
+   "diff": 2.53,
+   "risk": 1.53,
+   "mvp": 2.36,
+   "priority": 1.84
+  },
+  {
+   "feature": "ui_cost",
+   "value": 2.2,
+   "diff": 2.75,
+   "risk": 0.65,
+   "mvp": 1.22,
+   "priority": 1.82
+  },
+  {
+   "feature": "phone_approvals",
+   "value": 2.91,
+   "diff": 1.92,
+   "risk": 0.88,
+   "mvp": 2.92,
+   "priority": 1.81
+  },
+  {
+   "feature": "health_watchdog",
+   "value": 2.7,
+   "diff": 2.29,
+   "risk": 1.17,
+   "mvp": 2.26,
+   "priority": 1.78
+  },
+  {
+   "feature": "judgment_steps",
+   "value": 2.56,
+   "diff": 2.55,
+   "risk": 1.59,
+   "mvp": 2.35,
+   "priority": 1.73
+  },
+  {
+   "feature": "memory_provenance",
+   "value": 2.24,
+   "diff": 2.69,
+   "risk": 1.32,
+   "mvp": 1.63,
+   "priority": 1.69
+  },
+  {
+   "feature": "ui_rules",
+   "value": 2.21,
+   "diff": 2.77,
+   "risk": 1.38,
+   "mvp": 1.17,
+   "priority": 1.69
+  },
+  {
+   "feature": "local_judgment_model",
+   "value": 2.3,
+   "diff": 2.81,
+   "risk": 1.7,
+   "mvp": 1.87,
+   "priority": 1.68
+  },
+  {
+   "feature": "self_repair",
+   "value": 2.46,
+   "diff": 2.68,
+   "risk": 1.93,
+   "mvp": 2.44,
+   "priority": 1.66
+  },
+  {
+   "feature": "ui_explore_live",
+   "value": 2.32,
+   "diff": 2.48,
+   "risk": 1.48,
+   "mvp": 1.82,
+   "priority": 1.62
+  },
+  {
+   "feature": "scheduler",
+   "value": 2.94,
+   "diff": 1.31,
+   "risk": 1.05,
+   "mvp": 2.99,
+   "priority": 1.57
+  },
+  {
+   "feature": "versioned_memory",
+   "value": 1.9,
+   "diff": 2.5,
+   "risk": 1.02,
+   "mvp": 0.82,
+   "priority": 1.53
+  },
+  {
+   "feature": "anti_nag",
+   "value": 2.12,
+   "diff": 2.44,
+   "risk": 1.43,
+   "mvp": 1.23,
+   "priority": 1.52
+  },
+  {
+   "feature": "migration",
+   "value": 2.13,
+   "diff": 2.69,
+   "risk": 1.89,
+   "mvp": 0.43,
+   "priority": 1.52
+  },
+  {
+   "feature": "ui_onboarding",
+   "value": 2.37,
+   "diff": 1.83,
+   "risk": 0.99,
+   "mvp": 1.93,
+   "priority": 1.51
+  },
+  {
+   "feature": "sandbox_default",
+   "value": 2.15,
+   "diff": 2.18,
+   "risk": 1.21,
+   "mvp": 2.18,
+   "priority": 1.49
+  },
+  {
+   "feature": "uc_inbox_triage",
+   "value": 2.59,
+   "diff": 1.87,
+   "risk": 1.63,
+   "mvp": 1.91,
+   "priority": 1.49
+  },
+  {
+   "feature": "uc_morning_brief",
+   "value": 2.76,
+   "diff": 1.35,
+   "risk": 1.53,
+   "mvp": 2.99,
+   "priority": 1.41
+  },
+  {
+   "feature": "ui_approvals",
+   "value": 1.99,
+   "diff": 2.06,
+   "risk": 1.03,
+   "mvp": 1.16,
+   "priority": 1.41
+  },
+  {
+   "feature": "single_binary",
+   "value": 1.9,
+   "diff": 2.09,
+   "risk": 0.91,
+   "mvp": 1.61,
+   "priority": 1.4
+  },
+  {
+   "feature": "ch_telegram",
+   "value": 2.76,
+   "diff": 1.17,
+   "risk": 1.3,
+   "mvp": 2.79,
+   "priority": 1.39
+  },
+  {
+   "feature": "ui_memory",
+   "value": 1.74,
+   "diff": 2.28,
+   "risk": 0.98,
+   "mvp": 0.75,
+   "priority": 1.39
+  },
+  {
+   "feature": "safe_updates",
+   "value": 1.41,
+   "diff": 2.43,
+   "risk": 0.86,
+   "mvp": 1.53,
+   "priority": 1.31
+  },
+  {
+   "feature": "uc_small_business",
+   "value": 2.27,
+   "diff": 1.57,
+   "risk": 1.55,
+   "mvp": 0.12,
+   "priority": 1.26
+  },
+  {
+   "feature": "threat_network",
+   "value": 1.04,
+   "diff": 2.88,
+   "risk": 1.69,
+   "mvp": 0.19,
+   "priority": 1.14
+  },
+  {
+   "feature": "explore_mode",
+   "value": 2.19,
+   "diff": 1.19,
+   "risk": 1.62,
+   "mvp": 2.88,
+   "priority": 1.08
+  },
+  {
+   "feature": "guard_plugin",
+   "value": 1.41,
+   "diff": 2.36,
+   "risk": 1.91,
+   "mvp": 0.03,
+   "priority": 1.08
+  },
+  {
+   "feature": "ch_voice",
+   "value": 1.22,
+   "diff": 1.92,
+   "risk": 1.38,
+   "mvp": 0.27,
+   "priority": 0.95
+  },
+  {
+   "feature": "family_mode",
+   "value": 0.89,
+   "diff": 2.27,
+   "risk": 1.49,
+   "mvp": 0.03,
+   "priority": 0.9
+  },
+  {
+   "feature": "ui_pwa",
+   "value": 0.91,
+   "diff": 1.73,
+   "risk": 0.82,
+   "mvp": 0.38,
+   "priority": 0.85
+  },
+  {
+   "feature": "ui_desktop",
+   "value": 0.97,
+   "diff": 1.56,
+   "risk": 0.77,
+   "mvp": 0.64,
+   "priority": 0.83
+  },
+  {
+   "feature": "ch_whatsapp",
+   "value": 1.48,
+   "diff": 1.26,
+   "risk": 1.49,
+   "mvp": 0.86,
+   "priority": 0.81
+  },
+  {
+   "feature": "ch_email",
+   "value": 0.87,
+   "diff": 1.93,
+   "risk": 1.45,
+   "mvp": 0.36,
+   "priority": 0.78
+  },
+  {
+   "feature": "subscription_brain",
+   "value": 0.95,
+   "diff": 1.84,
+   "risk": 1.63,
+   "mvp": 0.87,
+   "priority": 0.75
+  },
+  {
+   "feature": "uc_skills_import",
+   "value": 1.12,
+   "diff": 1.6,
+   "risk": 1.82,
+   "mvp": 0.18,
+   "priority": 0.7
+  },
+  {
+   "feature": "mobile_app",
+   "value": 0.97,
+   "diff": 1.68,
+   "risk": 1.7,
+   "mvp": 0.6,
+   "priority": 0.68
+  },
+  {
+   "feature": "any_provider",
+   "value": 1.21,
+   "diff": 0.3,
+   "risk": 1.14,
+   "mvp": 1.34,
+   "priority": 0.42
+  }
+ ],
+ "raw": {
+  "explore_mode": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.19,
+     "confidence": 0.19,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.06,
+      "1": 0.21,
+      "2": 0.22,
+      "3": 0.51
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.19,
+     "confidence": 0.17,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.27,
+      "1": 0.29,
+      "2": 0.43,
+      "3": 0.01
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.62,
+     "confidence": 0.62,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.34,
+      "2": 0.64,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.88,
+     "confidence": 0.88,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.02,
+      "2": 0.05,
+      "3": 0.92
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1043,
+    "output_tokens": 64
+   }
+  },
+  "routine_compiler": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.97,
+     "confidence": 0.97,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.02,
+      "3": 0.98
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.63,
+     "confidence": 0.63,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.01,
+      "2": 0.33,
+      "3": 0.65
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.73,
+     "confidence": 0.72,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.27,
+      "2": 0.73,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.98,
+     "confidence": 0.98,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.01,
+      "3": 0.99
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1051,
+    "output_tokens": 64
+   }
+  },
+  "judgment_steps": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.56,
+     "confidence": 0.56,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.39,
+      "3": 0.59
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.55,
+     "confidence": 0.55,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.4,
+      "3": 0.58
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.59,
+     "confidence": 0.56,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.42,
+      "2": 0.56,
+      "3": 0.02
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.35,
+     "confidence": 0.35,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.12,
+      "2": 0.38,
+      "3": 0.49
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1050,
+    "output_tokens": 64
+   }
+  },
+  "self_repair": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.46,
+     "confidence": 0.46,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.07,
+      "2": 0.36,
+      "3": 0.56
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.68,
+     "confidence": 0.68,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.01,
+      "2": 0.29,
+      "3": 0.7
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.93,
+     "confidence": 0.91,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.08,
+      "2": 0.91,
+      "3": 0.01
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.44,
+     "confidence": 0.44,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.09,
+      "2": 0.33,
+      "3": 0.56
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1057,
+    "output_tokens": 64
+   }
+  },
+  "scheduler": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.94,
+     "confidence": 0.94,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.05,
+      "3": 0.95
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.31,
+     "confidence": 0.17,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.23,
+      "1": 0.3,
+      "2": 0.4,
+      "3": 0.07
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.05,
+     "confidence": 0.72,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.12,
+      "1": 0.71,
+      "2": 0.17,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.99,
+     "confidence": 0.99,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.01,
+      "3": 0.99
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1032,
+    "output_tokens": 64
+   }
+  },
+  "policy_engine": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.95,
+     "confidence": 0.95,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.04,
+      "3": 0.96
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.74,
+     "confidence": 0.74,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.26,
+      "3": 0.74
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.63,
+     "confidence": 0.62,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.36,
+      "2": 0.63,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.74,
+     "confidence": 0.74,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.03,
+      "2": 0.19,
+      "3": 0.78
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1044,
+    "output_tokens": 64
+   }
+  },
+  "capabilities": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.94,
+     "confidence": 0.94,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.04,
+      "3": 0.96
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.33,
+     "confidence": 0.62,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.01,
+      "2": 0.64,
+      "3": 0.35
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.19,
+     "confidence": 0.68,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.07,
+      "1": 0.68,
+      "2": 0.25,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.69,
+     "confidence": 0.69,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.04,
+      "2": 0.23,
+      "3": 0.73
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1046,
+    "output_tokens": 64
+   }
+  },
+  "phone_approvals": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.91,
+     "confidence": 0.91,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.01,
+      "2": 0.07,
+      "3": 0.92
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.92,
+     "confidence": 0.83,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.09,
+      "2": 0.85,
+      "3": 0.05
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 0.88,
+     "confidence": 0.68,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.22,
+      "1": 0.68,
+      "2": 0.1,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.92,
+     "confidence": 0.92,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.07,
+      "3": 0.93
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1043,
+    "output_tokens": 64
+   }
+  },
+  "anti_nag": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.12,
+     "confidence": 0.63,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.1,
+      "2": 0.64,
+      "3": 0.25
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.44,
+     "confidence": 0.51,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.52,
+      "3": 0.46
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.43,
+     "confidence": 0.54,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.54,
+      "2": 0.44,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.23,
+     "confidence": 0.43,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.17,
+      "1": 0.51,
+      "2": 0.24,
+      "3": 0.08
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1045,
+    "output_tokens": 64
+   }
+  },
+  "credential_broker": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.79,
+     "confidence": 0.79,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.01,
+      "2": 0.13,
+      "3": 0.84
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.45,
+     "confidence": 0.5,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.51,
+      "3": 0.47
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.36,
+     "confidence": 0.6,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.6,
+      "2": 0.38,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.52,
+     "confidence": 0.52,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.06,
+      "2": 0.33,
+      "3": 0.6
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1045,
+    "output_tokens": 64
+   }
+  },
+  "sandbox_default": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.15,
+     "confidence": 0.15,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.12,
+      "1": 0.11,
+      "2": 0.27,
+      "3": 0.5
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.18,
+     "confidence": 0.65,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.06,
+      "2": 0.67,
+      "3": 0.26
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.21,
+     "confidence": 0.64,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.08,
+      "1": 0.64,
+      "2": 0.28,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.18,
+     "confidence": 0.51,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.12,
+      "2": 0.52,
+      "3": 0.34
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1031,
+    "output_tokens": 64
+   }
+  },
+  "spend_caps": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.95,
+     "confidence": 0.95,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.04,
+      "3": 0.96
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.88,
+     "confidence": 0.88,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.12,
+      "3": 0.88
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.01,
+     "confidence": 0.68,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.15,
+      "1": 0.68,
+      "2": 0.17,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.58,
+     "confidence": 0.58,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.09,
+      "2": 0.19,
+      "3": 0.71
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1042,
+    "output_tokens": 64
+   }
+  },
+  "audit_log": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.8,
+     "confidence": 0.8,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.15,
+      "3": 0.83
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.64,
+     "confidence": 0.64,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.01,
+      "2": 0.35,
+      "3": 0.64
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.35,
+     "confidence": 0.58,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.57,
+      "2": 0.39,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.32,
+     "confidence": 0.5,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.07,
+      "2": 0.51,
+      "3": 0.41
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1040,
+    "output_tokens": 64
+   }
+  },
+  "undo": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.81,
+     "confidence": 0.81,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.15,
+      "3": 0.83
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.53,
+     "confidence": 0.53,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.01,
+      "2": 0.45,
+      "3": 0.54
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.53,
+     "confidence": 0.53,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.03,
+      "1": 0.41,
+      "2": 0.56,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.36,
+     "confidence": 0.45,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.08,
+      "2": 0.46,
+      "3": 0.45
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1042,
+    "output_tokens": 64
+   }
+  },
+  "versioned_memory": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.9,
+     "confidence": 0.52,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.03,
+      "1": 0.23,
+      "2": 0.55,
+      "3": 0.19
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.5,
+     "confidence": 0.5,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.04,
+      "2": 0.4,
+      "3": 0.55
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.02,
+     "confidence": 0.75,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.12,
+      "1": 0.74,
+      "2": 0.14,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.82,
+     "confidence": 0.51,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.34,
+      "1": 0.52,
+      "2": 0.13,
+      "3": 0.01
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1036,
+    "output_tokens": 64
+   }
+  },
+  "memory_provenance": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.24,
+     "confidence": 0.41,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.03,
+      "1": 0.11,
+      "2": 0.45,
+      "3": 0.41
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.69,
+     "confidence": 0.69,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.01,
+      "2": 0.28,
+      "3": 0.71
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.32,
+     "confidence": 0.6,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.6,
+      "2": 0.36,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.63,
+     "confidence": 0.41,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.08,
+      "1": 0.33,
+      "2": 0.48,
+      "3": 0.11
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1039,
+    "output_tokens": 64
+   }
+  },
+  "health_watchdog": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.7,
+     "confidence": 0.7,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.02,
+      "2": 0.25,
+      "3": 0.72
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.29,
+     "confidence": 0.56,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.06,
+      "2": 0.57,
+      "3": 0.36
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.17,
+     "confidence": 0.65,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.09,
+      "1": 0.65,
+      "2": 0.26,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.26,
+     "confidence": 0.5,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.09,
+      "2": 0.52,
+      "3": 0.38
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1040,
+    "output_tokens": 64
+   }
+  },
+  "safe_updates": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.41,
+     "confidence": 0.22,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.17,
+      "1": 0.34,
+      "2": 0.4,
+      "3": 0.09
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.43,
+     "confidence": 0.43,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.11,
+      "2": 0.32,
+      "3": 0.56
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 0.86,
+     "confidence": 0.72,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.21,
+      "1": 0.72,
+      "2": 0.07,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.53,
+     "confidence": 0.33,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.11,
+      "1": 0.36,
+      "2": 0.43,
+      "3": 0.1
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1034,
+    "output_tokens": 64
+   }
+  },
+  "single_binary": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.9,
+     "confidence": 0.49,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.06,
+      "1": 0.19,
+      "2": 0.55,
+      "3": 0.2
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.09,
+     "confidence": 0.09,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.03,
+      "1": 0.25,
+      "2": 0.32,
+      "3": 0.4
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 0.91,
+     "confidence": 0.7,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.2,
+      "1": 0.7,
+      "2": 0.1,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.61,
+     "confidence": 0.38,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.06,
+      "1": 0.39,
+      "2": 0.44,
+      "3": 0.11
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1046,
+    "output_tokens": 64
+   }
+  },
+  "migration": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.13,
+     "confidence": 0.13,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.06,
+      "1": 0.17,
+      "2": 0.34,
+      "3": 0.43
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.69,
+     "confidence": 0.69,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.04,
+      "2": 0.23,
+      "3": 0.73
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.89,
+     "confidence": 0.89,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.1,
+      "2": 0.9,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.43,
+     "confidence": 0.57,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.64,
+      "1": 0.31,
+      "2": 0.04,
+      "3": 0.01
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1046,
+    "output_tokens": 64
+   }
+  },
+  "guard_plugin": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.41,
+     "confidence": 0.07,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.25,
+      "1": 0.26,
+      "2": 0.32,
+      "3": 0.17
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.36,
+     "confidence": 0.36,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.07,
+      "2": 0.43,
+      "3": 0.48
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.91,
+     "confidence": 0.9,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.08,
+      "2": 0.92,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.03,
+     "confidence": 0.97,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.98,
+      "1": 0.02,
+      "2": 0.0,
+      "3": 0.0
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1043,
+    "output_tokens": 64
+   }
+  },
+  "subscription_brain": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 0.95,
+     "confidence": 0.05,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.4,
+      "1": 0.33,
+      "2": 0.21,
+      "3": 0.06
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.84,
+     "confidence": 0.0,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.16,
+      "1": 0.25,
+      "2": 0.18,
+      "3": 0.41
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.63,
+     "confidence": 0.63,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.03,
+      "1": 0.32,
+      "2": 0.65,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.87,
+     "confidence": 0.37,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.38,
+      "1": 0.44,
+      "2": 0.11,
+      "3": 0.07
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1047,
+    "output_tokens": 64
+   }
+  },
+  "any_provider": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.21,
+     "confidence": 0.37,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.21,
+      "1": 0.43,
+      "2": 0.3,
+      "3": 0.06
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 0.3,
+     "confidence": 0.7,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.76,
+      "1": 0.18,
+      "2": 0.05,
+      "3": 0.01
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.14,
+     "confidence": 0.6,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.13,
+      "1": 0.6,
+      "2": 0.27,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.34,
+     "confidence": 0.4,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.13,
+      "1": 0.47,
+      "2": 0.32,
+      "3": 0.08
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1043,
+    "output_tokens": 64
+   }
+  },
+  "local_judgment_model": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.3,
+     "confidence": 0.3,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.08,
+      "2": 0.43,
+      "3": 0.45
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.81,
+     "confidence": 0.81,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.16,
+      "3": 0.82
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.7,
+     "confidence": 0.65,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.32,
+      "2": 0.66,
+      "3": 0.02
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.87,
+     "confidence": 0.36,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.06,
+      "1": 0.27,
+      "2": 0.42,
+      "3": 0.25
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1044,
+    "output_tokens": 64
+   }
+  },
+  "uc_morning_brief": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.76,
+     "confidence": 0.76,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.23,
+      "3": 0.77
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.35,
+     "confidence": 0.26,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.22,
+      "1": 0.25,
+      "2": 0.49,
+      "3": 0.04
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.53,
+     "confidence": 0.53,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.45,
+      "2": 0.54,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.99,
+     "confidence": 0.99,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3": 1.0
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1036,
+    "output_tokens": 64
+   }
+  },
+  "uc_inbox_triage": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.59,
+     "confidence": 0.59,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.4,
+      "3": 0.6
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.87,
+     "confidence": 0.69,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.06,
+      "1": 0.11,
+      "2": 0.74,
+      "3": 0.09
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.63,
+     "confidence": 0.63,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.35,
+      "2": 0.64,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.91,
+     "confidence": 0.24,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.1,
+      "1": 0.22,
+      "2": 0.35000000000000003,
+      "3": 0.33
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1036,
+    "output_tokens": 64
+   }
+  },
+  "uc_small_business": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.27,
+     "confidence": 0.59,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.06,
+      "2": 0.6,
+      "3": 0.34
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.57,
+     "confidence": 0.34,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.16,
+      "1": 0.22,
+      "2": 0.51,
+      "3": 0.11
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.55,
+     "confidence": 0.55,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.43,
+      "2": 0.56,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.12,
+     "confidence": 0.88,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.9,
+      "1": 0.08,
+      "2": 0.01,
+      "3": 0.01
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1042,
+    "output_tokens": 64
+   }
+  },
+  "uc_skills_import": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.12,
+     "confidence": 0.47,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.21,
+      "1": 0.51,
+      "2": 0.25,
+      "3": 0.03
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.6,
+     "confidence": 0.23,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.15,
+      "1": 0.28,
+      "2": 0.38,
+      "3": 0.19
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.82,
+     "confidence": 0.81,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.18,
+      "2": 0.82,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.18,
+     "confidence": 0.82,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.83,
+      "1": 0.16,
+      "2": 0.01,
+      "3": 0.0
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1039,
+    "output_tokens": 64
+   }
+  },
+  "ch_telegram": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.76,
+     "confidence": 0.76,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.19,
+      "3": 0.79
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.17,
+     "confidence": 0.12,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.3,
+      "1": 0.26,
+      "2": 0.42,
+      "3": 0.02
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.3,
+     "confidence": 0.59,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.05,
+      "1": 0.59,
+      "2": 0.36,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.79,
+     "confidence": 0.79,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.03,
+      "2": 0.14,
+      "3": 0.83
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1026,
+    "output_tokens": 64
+   }
+  },
+  "ch_whatsapp": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.48,
+     "confidence": 0.18,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.16,
+      "1": 0.34,
+      "2": 0.35,
+      "3": 0.15
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.26,
+     "confidence": 0.0,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.49,
+      "1": 0.09,
+      "2": 0.08,
+      "3": 0.34
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.49,
+     "confidence": 0.49,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.05,
+      "1": 0.41,
+      "2": 0.54,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.86,
+     "confidence": 0.14,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.45,
+      "1": 0.34,
+      "2": 0.13,
+      "3": 0.08
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1024,
+    "output_tokens": 64
+   }
+  },
+  "ch_email": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 0.87,
+     "confidence": 0.64,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.25,
+      "1": 0.64,
+      "2": 0.1,
+      "3": 0.01
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.93,
+     "confidence": 0.0,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.24,
+      "1": 0.11,
+      "2": 0.11,
+      "3": 0.54
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.45,
+     "confidence": 0.45,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.47,
+      "2": 0.49,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.36,
+     "confidence": 0.64,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.76,
+      "1": 0.16,
+      "2": 0.03,
+      "3": 0.05
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1031,
+    "output_tokens": 64
+   }
+  },
+  "ch_voice": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.22,
+     "confidence": 0.7,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.7,
+      "2": 0.26,
+      "3": 0.0
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.92,
+     "confidence": 0.0,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.23,
+      "1": 0.11,
+      "2": 0.16,
+      "3": 0.5
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.38,
+     "confidence": 0.55,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.03,
+      "1": 0.56,
+      "2": 0.41,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.27,
+     "confidence": 0.73,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.74,
+      "1": 0.26,
+      "2": 0.0,
+      "3": 0.0
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1025,
+    "output_tokens": 64
+   }
+  },
+  "family_mode": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 0.89,
+     "confidence": 0.63,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.24,
+      "1": 0.64,
+      "2": 0.11,
+      "3": 0.01
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.27,
+     "confidence": 0.27,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.12,
+      "2": 0.39,
+      "3": 0.45
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.49,
+     "confidence": 0.49,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.48,
+      "2": 0.51,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.03,
+     "confidence": 0.97,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.97,
+      "1": 0.03,
+      "2": 0.0,
+      "3": 0.0
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1036,
+    "output_tokens": 64
+   }
+  },
+  "threat_network": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.04,
+     "confidence": 0.52,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.22,
+      "1": 0.53,
+      "2": 0.23,
+      "3": 0.02
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.88,
+     "confidence": 0.88,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.08,
+      "3": 0.9
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.69,
+     "confidence": 0.66,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.31,
+      "2": 0.67,
+      "3": 0.01
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.19,
+     "confidence": 0.81,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.81,
+      "1": 0.19,
+      "2": 0.0,
+      "3": 0.0
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1037,
+    "output_tokens": 64
+   }
+  },
+  "mobile_app": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 0.97,
+     "confidence": 0.38,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.32,
+      "1": 0.42,
+      "2": 0.22,
+      "3": 0.04
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.68,
+     "confidence": 0.0,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.29,
+      "1": 0.14,
+      "2": 0.17,
+      "3": 0.4
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.7,
+     "confidence": 0.7,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.03,
+      "1": 0.25,
+      "2": 0.72,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.6,
+     "confidence": 0.4,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.51,
+      "1": 0.41,
+      "2": 0.05,
+      "3": 0.03
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1029,
+    "output_tokens": 64
+   }
+  },
+  "ui_routines": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.61,
+     "confidence": 0.61,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.02,
+      "2": 0.35,
+      "3": 0.63
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.45,
+     "confidence": 0.45,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.04,
+      "2": 0.45,
+      "3": 0.5
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 0.89,
+     "confidence": 0.72,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.2,
+      "1": 0.72,
+      "2": 0.08,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.63,
+     "confidence": 0.5,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.35,
+      "2": 0.55,
+      "3": 0.06
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1050,
+    "output_tokens": 64
+   }
+  },
+  "ui_receipts": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.9,
+     "confidence": 0.9,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.09,
+      "3": 0.91
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.57,
+     "confidence": 0.57,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.01,
+      "2": 0.41,
+      "3": 0.58
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.03,
+     "confidence": 0.75,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.11,
+      "1": 0.75,
+      "2": 0.14,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 2.3,
+     "confidence": 0.53,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.07,
+      "2": 0.54,
+      "3": 0.38
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1044,
+    "output_tokens": 64
+   }
+  },
+  "ui_approvals": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.99,
+     "confidence": 0.59,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.18,
+      "2": 0.61,
+      "3": 0.2
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.06,
+     "confidence": 0.64,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.14,
+      "2": 0.64,
+      "3": 0.21
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.03,
+     "confidence": 0.79,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.09,
+      "1": 0.79,
+      "2": 0.12,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.16,
+     "confidence": 0.56,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.14,
+      "1": 0.58,
+      "2": 0.26,
+      "3": 0.02
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1043,
+    "output_tokens": 64
+   }
+  },
+  "ui_rules": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.21,
+     "confidence": 0.52,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.11,
+      "2": 0.53,
+      "3": 0.35
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.77,
+     "confidence": 0.77,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.21,
+      "3": 0.79
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.38,
+     "confidence": 0.58,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.59,
+      "2": 0.39,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.17,
+     "confidence": 0.53,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.15,
+      "1": 0.55,
+      "2": 0.28,
+      "3": 0.02
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1052,
+    "output_tokens": 64
+   }
+  },
+  "ui_explore_live": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.32,
+     "confidence": 0.32,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.11,
+      "2": 0.42,
+      "3": 0.46
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.48,
+     "confidence": 0.48,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.04,
+      "2": 0.41,
+      "3": 0.54
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 1.48,
+     "confidence": 0.49,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.01,
+      "1": 0.49,
+      "2": 0.5,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.82,
+     "confidence": 0.45,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.29,
+      "2": 0.48,
+      "3": 0.19
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1047,
+    "output_tokens": 64
+   }
+  },
+  "ui_cost": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.2,
+     "confidence": 0.5,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.03,
+      "1": 0.1,
+      "2": 0.52,
+      "3": 0.35
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.75,
+     "confidence": 0.75,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.01,
+      "2": 0.22,
+      "3": 0.77
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 0.65,
+     "confidence": 0.59,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.38,
+      "1": 0.59,
+      "2": 0.03,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.22,
+     "confidence": 0.5,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.14,
+      "1": 0.51,
+      "2": 0.34,
+      "3": 0.01
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1039,
+    "output_tokens": 64
+   }
+  },
+  "ui_memory": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 1.74,
+     "confidence": 0.53,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.29,
+      "2": 0.5700000000000001,
+      "3": 0.1
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 2.28,
+     "confidence": 0.47,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.09,
+      "2": 0.49,
+      "3": 0.4
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 0.98,
+     "confidence": 0.77,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.12,
+      "1": 0.77,
+      "2": 0.11,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.75,
+     "confidence": 0.5,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.38,
+      "1": 0.5,
+      "2": 0.11,
+      "3": 0.01
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1035,
+    "output_tokens": 64
+   }
+  },
+  "ui_onboarding": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 2.37,
+     "confidence": 0.37,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.1,
+      "2": 0.35,
+      "3": 0.53
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.83,
+     "confidence": 0.55,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.04,
+      "1": 0.23,
+      "2": 0.59,
+      "3": 0.14
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 0.99,
+     "confidence": 0.66,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.18,
+      "1": 0.66,
+      "2": 0.16,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 1.93,
+     "confidence": 0.58,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.02,
+      "1": 0.2,
+      "2": 0.6,
+      "3": 0.18
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1050,
+    "output_tokens": 64
+   }
+  },
+  "ui_pwa": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 0.91,
+     "confidence": 0.69,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.2,
+      "1": 0.69,
+      "2": 0.11,
+      "3": 0.0
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.73,
+     "confidence": 0.0,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.15,
+      "1": 0.31,
+      "2": 0.19,
+      "3": 0.35
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 0.82,
+     "confidence": 0.71,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.23,
+      "1": 0.72,
+      "2": 0.05,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.38,
+     "confidence": 0.62,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.62,
+      "1": 0.37,
+      "2": 0.01,
+      "3": 0.0
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1035,
+    "output_tokens": 64
+   }
+  },
+  "ui_desktop": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "user_value": {
+     "type": "score",
+     "score": 0.97,
+     "confidence": 0.62,
+     "legend": {
+      "0": "Little: nice to have, most users would not notice",
+      "1": "Some: useful occasionally",
+      "2": "High: solves a pain they feel often",
+      "3": "Critical: a main reason they would switch or stay"
+     },
+     "probabilities": {
+      "0": 0.21,
+      "1": 0.62,
+      "2": 0.17,
+      "3": 0.0
+     }
+    },
+    "differentiation": {
+     "type": "score",
+     "score": 1.56,
+     "confidence": 0.07,
+     "legend": {
+      "0": "Parity: both already have it",
+      "1": "Slightly better: a modest improvement on what they have",
+      "2": "Clearly better: they have a weak or off-by-default version",
+      "3": "Unique: neither has anything like it"
+     },
+     "probabilities": {
+      "0": 0.22,
+      "1": 0.25,
+      "2": 0.28,
+      "3": 0.25
+     }
+    },
+    "build_risk": {
+     "type": "score",
+     "score": 0.77,
+     "confidence": 0.72,
+     "legend": {
+      "0": "Low: standard engineering",
+      "1": "Moderate: some tricky parts with known solutions",
+      "2": "High: hard problems, many edge cases or fragile third-party APIs",
+      "3": "Very high: open research problem"
+     },
+     "probabilities": {
+      "0": 0.26,
+      "1": 0.71,
+      "2": 0.03,
+      "3": 0.0
+     }
+    },
+    "mvp_need": {
+     "type": "score",
+     "score": 0.64,
+     "confidence": 0.56,
+     "legend": {
+      "0": "Not needed: can wait until after the MVP",
+      "1": "Helpful: improves the MVP but the goal works without it",
+      "2": "Important: a minimal version should be in the MVP",
+      "3": "Essential: the MVP goal cannot be reached without it"
+     },
+     "probabilities": {
+      "0": 0.4,
+      "1": 0.56,
+      "2": 0.03,
+      "3": 0.0
+     }
+    }
+   },
+   "usage": {
+    "input_tokens": 1038,
+    "output_tokens": 64
+   }
+  }
+ }
+}

@@ -1,0 +1,83 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Colors carry meaning: green reads, amber changes something reversible,
+   red cannot be undone, blue is the agent exploring. Everything else is neutral. */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --color-bg: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-raised: #ffffff;
+  --color-sunken: #efefec;
+  --color-line: #e4e4df;
+  --color-line-strong: #d3d3cc;
+  --color-ink: #16171a;
+  --color-ink-2: #4a4d55;
+  --color-ink-3: #82858d;
+
+  --color-read: #0f9d6b;
+  --color-read-soft: #e3f6ee;
+  --color-change: #c77700;
+  --color-change-soft: #fdf1dc;
+  --color-danger: #d4344e;
+  --color-danger-soft: #fce6ea;
+  --color-explore: #3b6cf6;
+  --color-explore-soft: #e6edff;
+  --color-accent: #5b4cf0;
+
+  --radius-card: 14px;
+  --shadow-card: 0 1px 0 rgb(0 0 0 / 0.02), 0 1px 3px rgb(16 17 20 / 0.06);
+  --shadow-pop: 0 12px 32px -8px rgb(16 17 20 / 0.22);
+
+  --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+}
+
+[data-theme=dark] {
+  --color-bg: #0c0d10;
+  --color-surface: #131519;
+  --color-raised: #1a1d22;
+  --color-sunken: #0f1013;
+  --color-line: #23262d;
+  --color-line-strong: #30343c;
+  --color-ink: #eceef2;
+  --color-ink-2: #a8adb8;
+  --color-ink-3: #6d727d;
+
+  --color-read: #34d399;
+  --color-read-soft: rgb(52 211 153 / 0.12);
+  --color-change: #fbbf24;
+  --color-change-soft: rgb(251 191 36 / 0.12);
+  --color-danger: #fb7185;
+  --color-danger-soft: rgb(251 113 133 / 0.13);
+  --color-explore: #7aa2ff;
+  --color-explore-soft: rgb(122 162 255 / 0.13);
+  --color-accent: #8b7dff;
+
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-pop: 0 16px 40px -8px rgb(0 0 0 / 0.6);
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: color-mix(in oklab, var(--color-accent) 30%, transparent); }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 6px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+}

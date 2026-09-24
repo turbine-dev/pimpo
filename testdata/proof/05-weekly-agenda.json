@@ -1,0 +1,55 @@
+{
+  "id": "05-weekly-agenda",
+  "request": "Every Sunday evening, send me my agenda for the coming week (next 7 days) on Telegram, grouped by day so I can skim it.",
+  "now": "2026-09-27T20:00:00-03:00",
+  "calls": [
+    {
+      "capability": "calendar.events",
+      "args": {"from": "2026-09-28T00:00:00-03:00", "to": "2026-10-04T23:59:59-03:00"},
+      "result": [
+        {"id": "wk-1", "title": "Standup", "start": "2026-09-28T09:30:00-03:00", "end": "2026-09-28T09:45:00-03:00", "location": "Google Meet", "attendees": ["team@acme.com"], "calendar": "Work"},
+        {"id": "wk-2", "title": "Sprint planning", "start": "2026-09-28T14:00:00-03:00", "end": "2026-09-28T15:30:00-03:00", "location": "Room Ipê", "attendees": ["team@acme.com"], "calendar": "Work"},
+        {"id": "wk-3", "title": "Dentist cleaning", "start": "2026-09-29T08:00:00-03:00", "end": "2026-09-29T08:45:00-03:00", "location": "Rua Augusta, 1200", "attendees": [], "calendar": "Personal"},
+        {"id": "wk-4", "title": "Client demo - Initech", "start": "2026-09-30T16:00:00-03:00", "end": "2026-09-30T17:00:00-03:00", "location": "Zoom", "attendees": ["bill@initech.example", "peter@initech.example"], "calendar": "Work"},
+        {"id": "wk-5", "title": "Team happy hour", "start": "2026-10-02T18:00:00-03:00", "end": "2026-10-02T20:00:00-03:00", "location": "Bar do Zé", "attendees": ["team@acme.com"], "calendar": "Work"},
+        {"id": "wk-6", "title": "Lucas soccer game", "start": "2026-10-03T10:00:00-03:00", "end": "2026-10-03T11:30:00-03:00", "location": "Clube Pinheiros", "attendees": [], "calendar": "Family"}
+      ]
+    },
+    {
+      "capability": "telegram.send",
+      "args": {"text": "Your week ahead:\n\nMon 28/09\n• 09:30 Standup\n• 14:00 Sprint planning\n\nTue 29/09\n• 08:00 Dentist cleaning\n\nWed 30/09\n• 16:00 Client demo - Initech\n\nThu 01/10\n• nothing scheduled\n\nFri 02/10\n• 18:00 Team happy hour\n\nSat 03/10\n• 10:00 Lucas soccer game\n\nSun 04/10\n• nothing scheduled"},
+      "result": {"ok": true}
+    }
+  ],
+  "outcome": "One Telegram message on Sunday night with every event of the next 7 days, grouped under each day with its start time.",
+  "expect": [
+    {
+      "capability": "telegram.send",
+      "count": 1,
+      "contains": ["Standup", "Sprint planning", "Dentist cleaning", "Client demo - Initech", "Team happy hour", "Lucas soccer game"]
+    }
+  ],
+  "holdout": {
+    "now": "2026-10-11T20:00:00-03:00",
+    "responses": [
+      {
+        "capability": "calendar.events",
+        "result": [
+          {"id": "wk-51", "title": "Quarterly business review", "start": "2026-10-12T10:00:00-03:00", "end": "2026-10-12T12:00:00-03:00", "location": "Room Jatobá", "attendees": ["exec@acme.com"], "calendar": "Work"},
+          {"id": "wk-52", "title": "Flight GRU → POA", "start": "2026-10-14T07:10:00-03:00", "end": "2026-10-14T08:50:00-03:00", "location": "GRU Terminal 2", "attendees": [], "calendar": "Travel"},
+          {"id": "wk-53", "title": "Workshop with Umbrella Corp", "start": "2026-10-14T13:30:00-03:00", "end": "2026-10-14T17:00:00-03:00", "location": "Porto Alegre office", "attendees": ["alice@umbrella.example"], "calendar": "Work"},
+          {"id": "wk-54", "title": "Pediatrician - Sofia", "start": "2026-10-16T11:15:00-03:00", "end": "2026-10-16T12:00:00-03:00", "location": "Clínica Bem Estar", "attendees": [], "calendar": "Family"},
+          {"id": "wk-55", "title": "Half marathon", "start": "2026-10-18T06:30:00-03:00", "end": "2026-10-18T09:00:00-03:00", "location": "Parque Ibirapuera", "attendees": [], "calendar": "Personal"}
+        ]
+      }
+    ],
+    "expect": [
+      {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": ["Quarterly business review", "Flight GRU → POA", "Workshop with Umbrella Corp", "Pediatrician - Sofia", "Half marathon"],
+        "not_contains": ["Sprint planning", "Client demo - Initech"]
+      }
+    ]
+  }
+}

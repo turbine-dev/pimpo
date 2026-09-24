@@ -1,0 +1,55 @@
+{
+  "id": "02-bills",
+  "request": "Toda manhã dá uma olhada nos meus emails e me avisa no Telegram das contas que vencem nos próximos 7 dias (boletos, faturas, invoices), com o valor e a data de vencimento.",
+  "now": "2026-09-24T08:00:00-03:00",
+  "calls": [
+    {
+      "capability": "gmail.search",
+      "args": {"query": "boleto OR fatura OR invoice OR vencimento", "days": 30, "max": 30},
+      "result": [
+        {"id": "b-305", "from": "financeiro@colegiosaberes.com.br", "from_name": "Colégio Saberes", "to": "eu@exemplo.com", "subject": "Boleto mensalidade escolar - Outubro", "snippet": "Segue o boleto da mensalidade no valor de R$ 2.350,00, vencimento 29/09/2026.", "date": "2026-09-23T10:00:00-03:00", "labels": ["INBOX"], "replied": false},
+        {"id": "b-304", "from": "noreply@vivo.com.br", "from_name": "Vivo", "to": "eu@exemplo.com", "subject": "Pagamento confirmado - Fatura Vivo Fibra", "snippet": "Recebemos o pagamento de R$ 129,99 referente à fatura com vencimento em 20/09/2026.", "date": "2026-09-21T09:12:00-03:00", "labels": ["INBOX"], "replied": false},
+        {"id": "b-303", "from": "contas@enel.com.br", "from_name": "Enel", "to": "eu@exemplo.com", "subject": "Conta de luz Enel - Setembro", "snippet": "Total a pagar R$ 189,90 — vence em 30/09/2026. Código de barras no anexo.", "date": "2026-09-19T07:30:00-03:00", "labels": ["INBOX"], "replied": false},
+        {"id": "b-302", "from": "adm@edificioaurora.com.br", "from_name": "Condomínio Edifício Aurora", "to": "eu@exemplo.com", "subject": "Boleto condomínio - Outubro", "snippet": "Valor: R$ 890,00. Vencimento: 10/10/2026.", "date": "2026-09-18T15:00:00-03:00", "labels": ["INBOX"], "replied": false},
+        {"id": "b-301", "from": "todomundo@nubank.com.br", "from_name": "Nubank", "to": "eu@exemplo.com", "subject": "Sua fatura Nubank chegou", "snippet": "O valor da sua fatura é R$ 1.482,35 com vencimento em 28/09/2026.", "date": "2026-09-17T08:00:00-03:00", "labels": ["INBOX"], "replied": false}
+      ]
+    },
+    {
+      "capability": "telegram.send",
+      "args": {"text": "Contas vencendo nos próximos 7 dias:\n\n• 28/09 — Fatura Nubank: R$ 1.482,35\n• 29/09 — Mensalidade escolar (Colégio Saberes): R$ 2.350,00\n• 30/09 — Conta de luz Enel: R$ 189,90\n\nTotal: R$ 4.022,25"},
+      "result": {"ok": true}
+    }
+  ],
+  "outcome": "Uma mensagem no Telegram listando só as contas em aberto com vencimento entre hoje e daqui a 7 dias, cada uma com valor e data.",
+  "expect": [
+    {
+      "capability": "telegram.send",
+      "count": 1,
+      "contains": ["R$ 1.482,35", "R$ 2.350,00", "R$ 189,90", "Nubank", "Enel"],
+      "not_contains": ["R$ 890,00", "R$ 129,99"]
+    }
+  ],
+  "holdout": {
+    "now": "2026-10-13T08:00:00-03:00",
+    "responses": [
+      {
+        "capability": "gmail.search",
+        "result": [
+          {"id": "b-315", "from": "billing@hetzner.example", "from_name": "Hetzner Online", "to": "eu@exemplo.com", "subject": "Invoice #4471 - Cloud servers", "snippet": "Amount due: R$ 54,30. Vencimento 14/10/2026. Pay by card or boleto.", "date": "2026-10-12T04:00:00-03:00", "labels": ["INBOX"], "replied": false},
+          {"id": "b-314", "from": "noreply@sabesp.com.br", "from_name": "Sabesp", "to": "eu@exemplo.com", "subject": "Comprovante de pagamento - Conta de água", "snippet": "Confirmamos o pagamento de R$ 98,40 referente ao vencimento 10/10/2026.", "date": "2026-10-10T11:20:00-03:00", "labels": ["INBOX"], "replied": false},
+          {"id": "b-313", "from": "atendimento@smartfit.example", "from_name": "Academia SmartFit", "to": "eu@exemplo.com", "subject": "Boleto Academia - plano anual", "snippet": "Parcela de R$ 119,90 com vencimento em 25/10/2026.", "date": "2026-10-09T09:00:00-03:00", "labels": ["INBOX"], "replied": false},
+          {"id": "b-312", "from": "iptu@prefeitura.sp.gov.br", "from_name": "Prefeitura de São Paulo", "to": "eu@exemplo.com", "subject": "IPTU 2026 - parcela 10/10", "snippet": "Valor da parcela: R$ 412,77. Vencimento: 19/10/2026.", "date": "2026-10-05T08:00:00-03:00", "labels": ["INBOX"], "replied": false},
+          {"id": "b-311", "from": "faturas@itau.com.br", "from_name": "Itaú Cartões", "to": "eu@exemplo.com", "subject": "Fatura Itaú Visa Platinum disponível", "snippet": "Sua fatura fechou em R$ 3.205,10 e vence em 15/10/2026.", "date": "2026-10-04T07:45:00-03:00", "labels": ["INBOX"], "replied": false}
+        ]
+      }
+    ],
+    "expect": [
+      {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": ["R$ 3.205,10", "R$ 412,77", "R$ 54,30", "Itaú", "IPTU"],
+        "not_contains": ["R$ 119,90", "R$ 98,40", "Nubank", "R$ 1.482,35"]
+      }
+    ]
+  }
+}

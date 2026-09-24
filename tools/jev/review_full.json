@@ -1,0 +1,493 @@
+{
+ "document": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "complete_plan": {
+    "type": "noul",
+    "noul": 0.96
+   },
+   "post_v1_detail": {
+    "type": "score",
+    "score": 2.57,
+    "confidence": 0.57,
+    "legend": {
+     "0": "Much thinner: a list of themes",
+     "1": "Thinner: deliverables but little detail",
+     "2": "Similar: comparable detail",
+     "3": "Equally detailed including gates and metrics"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.08,
+     "2": 0.27,
+     "3": 0.65
+    }
+   },
+   "missing_area": {
+    "type": "choice",
+    "choice": "user_research",
+    "confidence": 0.93,
+    "probabilities": {
+     "performance": 0.01,
+     "data_backup": 0.03,
+     "legal_tos": 0.0,
+     "maintainer_load": 0.02,
+     "nothing_major": 0.0,
+     "user_research": 0.94
+    }
+   },
+   "ui_complete": {
+    "type": "noul",
+    "noul": 0.73
+   }
+  },
+  "usage": {
+   "input_tokens": 19964,
+   "output_tokens": 123
+  }
+ },
+ "phases": {
+  "F0 · Fundação e prova do compilador": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.98,
+     "confidence": 0.98,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.02,
+      "3": 0.98
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.7
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.96
+    }
+   },
+   "usage": {
+    "input_tokens": 1441,
+    "output_tokens": 55
+   }
+  },
+  "F1 · A rotina compilada → v0.1 (experimental)": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.93,
+     "confidence": 0.93,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.07,
+      "3": 0.93
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.8
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.93
+    }
+   },
+   "usage": {
+    "input_tokens": 1467,
+    "output_tokens": 55
+   }
+  },
+  "F2 · Seguro por construção → v0.2": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.97,
+     "confidence": 0.97,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.03,
+      "3": 0.97
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.8
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.91
+    }
+   },
+   "usage": {
+    "input_tokens": 1519,
+    "output_tokens": 55
+   }
+  },
+  "F3 · A UI que conta a história → v0.3": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.45,
+     "confidence": 0.55,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.55,
+      "3": 0.45
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.63
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.87
+    }
+   },
+   "usage": {
+    "input_tokens": 1404,
+    "output_tokens": 55
+   }
+  },
+  "F4 · Três usos perfeitos → v0.4": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.43,
+     "confidence": 0.57,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.57,
+      "3": 0.43
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.61
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.91
+    }
+   },
+   "usage": {
+    "input_tokens": 1396,
+    "output_tokens": 55
+   }
+  },
+  "F5 · Instalação sem terminal e migração → v1.0 (primeira versão estável)": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.62,
+     "confidence": 0.62,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.38,
+      "3": 0.62
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.58
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.88
+    }
+   },
+   "usage": {
+    "input_tokens": 1461,
+    "output_tokens": 55
+   }
+  },
+  "F6 · Memória com origem, família e WhatsApp → v1.1": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.69,
+     "confidence": 0.69,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.31,
+      "3": 0.69
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.78
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.85
+    }
+   },
+   "usage": {
+    "input_tokens": 1367,
+    "output_tokens": 55
+   }
+  },
+  "F7 · Galeria de rotinas e skills com capacidades → v1.2": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.59,
+     "confidence": 0.59,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.41,
+      "3": 0.59
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.49
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.85
+    }
+   },
+   "usage": {
+    "input_tokens": 1421,
+    "output_tokens": 55
+   }
+  },
+  "F8 · Mais canais e conectores → v1.3": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.25,
+     "confidence": 0.75,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.75,
+      "3": 0.25
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.74
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.89
+    }
+   },
+   "usage": {
+    "input_tokens": 1288,
+    "output_tokens": 55
+   }
+  },
+  "F9 · Pequeno negócio completo → v1.4": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.47,
+     "confidence": 0.53,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.53,
+      "3": 0.47
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.67
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.84
+    }
+   },
+   "usage": {
+    "input_tokens": 1317,
+    "output_tokens": 55
+   }
+  },
+  "F10 · Apps nativos → v1.5": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.58,
+     "confidence": 0.58,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.42,
+      "3": 0.58
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.74
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.78
+    }
+   },
+   "usage": {
+    "input_tokens": 1355,
+    "output_tokens": 55
+   }
+  },
+  "F11 · Rede de proteção compartilhada e Guard → v2.0": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.66,
+     "confidence": 0.66,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.34,
+      "3": 0.66
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.53
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.7
+    }
+   },
+   "usage": {
+    "input_tokens": 1407,
+    "output_tokens": 55
+   }
+  },
+  "F12 · Longevidade → v2.x": {
+   "model": "jev-1.13.0",
+   "answers": {
+    "specificity": {
+     "type": "score",
+     "score": 2.28,
+     "confidence": 0.72,
+     "legend": {
+      "0": "Vague: a theme without deliverables",
+      "1": "Sketched: deliverables named but gate or quality unclear",
+      "2": "Concrete: deliverables, quality and a verifiable gate",
+      "3": "Ready to execute: also edge cases, dependencies and metrics"
+     },
+     "probabilities": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.72,
+      "3": 0.28
+     }
+    },
+    "gate_verifiable": {
+     "type": "noul",
+     "noul": 0.54
+    },
+    "right_place": {
+     "type": "noul",
+     "noul": 0.89
+    }
+   },
+   "usage": {
+    "input_tokens": 1301,
+    "output_tokens": 55
+   }
+  }
+ }
+}

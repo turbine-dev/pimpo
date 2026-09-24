@@ -1,0 +1,74 @@
+{
+  "id": "06-package-tracking",
+  "request": "Every morning, check my email for shipping notifications that have a tracking code, look each code up and send me the current status of every package on Telegram.",
+  "now": "2026-09-24T09:00:00-03:00",
+  "calls": [
+    {
+      "capability": "gmail.search",
+      "args": {"query": "tracking OR rastreio OR \"código de rastreamento\" OR shipped OR enviado", "days": 14, "max": 20},
+      "result": [
+        {"id": "s-603", "from": "news@bancoalfa.com.br", "from_name": "Banco Alfa", "to": "me@example.com", "subject": "Track your spending with our new app", "snippet": "Tracking your budget has never been easier. Download now.", "date": "2026-09-23T12:00:00-03:00", "labels": ["INBOX", "CATEGORY_PROMOTIONS"], "replied": false},
+        {"id": "s-602", "from": "vendas@mercadolivre.example", "from_name": "Mercado Livre", "to": "me@example.com", "subject": "Seu pedido foi enviado!", "snippet": "Teclado mecânico Keychron K2 a caminho. Código de rastreio: LB987654321CN", "date": "2026-09-21T15:30:00-03:00", "labels": ["INBOX", "CATEGORY_UPDATES"], "replied": false},
+        {"id": "s-601", "from": "ship-confirm@amazon.example", "from_name": "Amazon", "to": "me@example.com", "subject": "Your order has shipped", "snippet": "Kindle Paperwhite is on its way. Tracking number: BR123456789US. Carrier: Correios.", "date": "2026-09-19T10:05:00-03:00", "labels": ["INBOX", "CATEGORY_UPDATES"], "replied": false}
+      ]
+    },
+    {
+      "capability": "http.getJSON",
+      "args": "https://api.trackingmore.example/v1/track?code=LB987654321CN",
+      "result": {"code": "LB987654321CN", "carrier": "Correios", "status": "out_for_delivery", "last_event": "Objeto saiu para entrega ao destinatário - São Paulo/SP", "updated_at": "2026-09-24T07:12:00-03:00", "eta": "2026-09-24"}
+    },
+    {
+      "capability": "http.getJSON",
+      "args": "https://api.trackingmore.example/v1/track?code=BR123456789US",
+      "result": {"code": "BR123456789US", "carrier": "Correios", "status": "in_transit", "last_event": "Objeto em trânsito - de Curitiba/PR para São Paulo/SP", "updated_at": "2026-09-23T18:42:00-03:00", "eta": "2026-09-26"}
+    },
+    {
+      "capability": "telegram.send",
+      "args": {"text": "📦 Package status\n\n• LB987654321CN (Mercado Livre — Keychron K2): out for delivery — Objeto saiu para entrega ao destinatário - São Paulo/SP\n• BR123456789US (Amazon — Kindle Paperwhite): in transit — Objeto em trânsito - de Curitiba/PR para São Paulo/SP, ETA 2026-09-26"},
+      "result": {"ok": true}
+    }
+  ],
+  "outcome": "One Telegram message listing each tracking code found in shipping emails with its current status from the tracking API.",
+  "expect": [
+    {
+      "capability": "telegram.send",
+      "count": 1,
+      "contains": ["LB987654321CN", "BR123456789US"],
+      "not_contains": ["Track your spending"]
+    }
+  ],
+  "holdout": {
+    "now": "2026-10-09T09:00:00-03:00",
+    "responses": [
+      {
+        "capability": "gmail.search",
+        "result": [
+          {"id": "s-654", "from": "pedidos@shopee.example", "from_name": "Shopee", "to": "me@example.com", "subject": "Pedido enviado: capa de celular", "snippet": "Seu pedido #88213 foi enviado. Código de rastreamento: NX556677889BR", "date": "2026-10-08T17:00:00-03:00", "labels": ["INBOX", "CATEGORY_UPDATES"], "replied": false},
+          {"id": "s-653", "from": "noreply@fitapp.example", "from_name": "FitApp", "to": "me@example.com", "subject": "You're on track! Weekly summary", "snippet": "You tracked 42 km this week. Keep it up!", "date": "2026-10-07T08:00:00-03:00", "labels": ["INBOX"], "replied": false},
+          {"id": "s-652", "from": "envios@magalu.example", "from_name": "Magalu", "to": "me@example.com", "subject": "Seu pedido está a caminho", "snippet": "Air fryer Mondial 5L enviada. Rastreio: QB112233445BR", "date": "2026-10-05T11:40:00-03:00", "labels": ["INBOX", "CATEGORY_UPDATES"], "replied": false},
+          {"id": "s-651", "from": "ship-confirm@amazon.example", "from_name": "Amazon", "to": "me@example.com", "subject": "Your order has shipped", "snippet": "Echo Dot is on its way. Tracking number: OS778899001BR. Carrier: Correios.", "date": "2026-10-01T09:20:00-03:00", "labels": ["INBOX", "CATEGORY_UPDATES"], "replied": false}
+        ]
+      },
+      {
+        "capability": "http.getJSON",
+        "result": {"code": "NX556677889BR", "carrier": "Correios", "status": "posted", "last_event": "Objeto postado - Recife/PE", "updated_at": "2026-10-08T16:20:00-03:00", "eta": "2026-10-16"}
+      },
+      {
+        "capability": "http.getJSON",
+        "result": {"code": "QB112233445BR", "carrier": "Correios", "status": "in_transit", "last_event": "Objeto em trânsito - de Cajamar/SP para São Paulo/SP", "updated_at": "2026-10-08T22:05:00-03:00", "eta": "2026-10-10"}
+      },
+      {
+        "capability": "http.getJSON",
+        "result": {"code": "OS778899001BR", "carrier": "Correios", "status": "delivered", "last_event": "Objeto entregue ao destinatário", "updated_at": "2026-10-06T14:33:00-03:00", "eta": "2026-10-06"}
+      }
+    ],
+    "expect": [
+      {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": ["NX556677889BR", "QB112233445BR", "OS778899001BR"],
+        "not_contains": ["LB987654321CN", "BR123456789US", "on track"]
+      }
+    ]
+  }
+}

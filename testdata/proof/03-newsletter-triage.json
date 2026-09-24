@@ -1,0 +1,77 @@
+{
+  "id": "03-newsletter-triage",
+  "request": "Every evening, archive the unread newsletters and promo emails sitting in my inbox, then just text me how many you archived. Don't touch anything from actual people or important notifications.",
+  "now": "2026-09-24T20:00:00-03:00",
+  "calls": [
+    {
+      "capability": "gmail.search",
+      "args": {"query": "in:inbox is:unread", "days": 2, "unread": true, "max": 50},
+      "result": [
+        {"id": "n-406", "from": "noreply@github.com", "from_name": "GitHub", "to": "me@example.com", "subject": "[vigia] Security alert: critical vulnerability in golang.org/x/net", "snippet": "A dependency in your repository has a known critical vulnerability.", "date": "2026-09-24T18:40:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_UPDATES"], "replied": false},
+        {"id": "n-405", "from": "stratechery@substack.com", "from_name": "Stratechery", "to": "me@example.com", "subject": "The weekly update: AI and the aggregators", "snippet": "This week: why distribution still wins. Read in app.", "date": "2026-09-24T16:00:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+        {"id": "n-404", "from": "helena.m@gmail.com", "from_name": "Mom", "to": "me@example.com", "subject": "Dinner Sunday?", "snippet": "Your aunt is coming, can you bring dessert?", "date": "2026-09-24T14:22:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+        {"id": "n-403", "from": "store-news@amazon.example", "from_name": "Amazon", "to": "me@example.com", "subject": "Up to 40% off headphones this week", "snippet": "Deals picked for you based on your browsing history.", "date": "2026-09-24T11:00:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_PROMOTIONS"], "replied": false},
+        {"id": "n-402", "from": "dana.kim@acme.com", "from_name": "Dana Kim", "to": "me@example.com", "subject": "Q3 numbers before the board call", "snippet": "Can you sanity-check slide 4? Revenue looks off.", "date": "2026-09-24T09:15:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+        {"id": "n-401", "from": "crew@morningbrew.example", "from_name": "Morning Brew", "to": "me@example.com", "subject": "☕ Markets rally on rate-cut hopes", "snippet": "Good morning. Here's what you need to know today.", "date": "2026-09-24T06:00:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_PROMOTIONS"], "replied": false}
+      ]
+    },
+    {"capability": "gmail.archive", "args": {"id": "n-405"}, "result": {"ok": true}},
+    {"capability": "gmail.archive", "args": {"id": "n-403"}, "result": {"ok": true}},
+    {"capability": "gmail.archive", "args": {"id": "n-401"}, "result": {"ok": true}},
+    {
+      "capability": "telegram.send",
+      "args": {"text": "Inbox cleanup done: archived 3 newsletters/promos (Stratechery, Amazon, Morning Brew)."},
+      "result": {"ok": true}
+    }
+  ],
+  "judgments": {
+    "newsletter": {"n-401": 0.98, "n-402": 0.01, "n-403": 0.96, "n-404": 0.01, "n-405": 0.95, "n-406": 0.06}
+  },
+  "outcome": "Unread newsletters and promotions get archived and I get one Telegram message with the count.",
+  "expect": [
+    {
+      "capability": "gmail.archive",
+      "count": 3,
+      "contains": ["n-401", "n-403", "n-405"],
+      "not_contains": ["n-402", "n-404", "n-406"]
+    },
+    {
+      "capability": "telegram.send",
+      "count": 1,
+      "contains": ["3"]
+    }
+  ],
+  "holdout": {
+    "now": "2026-10-02T20:00:00-03:00",
+    "responses": [
+      {
+        "capability": "gmail.search",
+        "result": [
+          {"id": "n-457", "from": "deals@techshop.example", "from_name": "TechShop", "to": "me@example.com", "subject": "Flash sale: 24 hours only", "snippet": "Laptops, monitors and more at unbeatable prices.", "date": "2026-10-02T19:00:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_PROMOTIONS"], "replied": false},
+          {"id": "n-456", "from": "rui.alves@acme.com", "from_name": "Rui Alves", "to": "me@example.com", "subject": "Offsite agenda draft", "snippet": "Attached the draft, comments by Monday please.", "date": "2026-10-02T17:30:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+          {"id": "n-455", "from": "hello@tldrnews.example", "from_name": "TLDR", "to": "me@example.com", "subject": "TLDR: new open-weights model tops benchmarks", "snippet": "Big Tech & Startups, Science, Programming. 5 minute read.", "date": "2026-10-02T13:00:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+          {"id": "n-454", "from": "alerts@bancoalfa.com.br", "from_name": "Banco Alfa", "to": "me@example.com", "subject": "New sign-in to your account from Chrome on Windows", "snippet": "If this wasn't you, block your card immediately.", "date": "2026-10-02T12:10:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_UPDATES"], "replied": false},
+          {"id": "n-453", "from": "news@spotify.example", "from_name": "Spotify", "to": "me@example.com", "subject": "Get 3 months of Premium for R$ 1,99", "snippet": "Limited-time offer for returning listeners.", "date": "2026-10-02T10:00:00-03:00", "labels": ["INBOX", "UNREAD", "CATEGORY_PROMOTIONS"], "replied": false},
+          {"id": "n-452", "from": "lenny@substack.com", "from_name": "Lenny's Newsletter", "to": "me@example.com", "subject": "How the best PMs run discovery", "snippet": "Free edition. Upgrade to read the full post.", "date": "2026-10-02T08:00:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false},
+          {"id": "n-451", "from": "pedro.s@gmail.com", "from_name": "Pedro Santos", "to": "me@example.com", "subject": "Soccer on Saturday", "snippet": "We need one more player, you in?", "date": "2026-10-02T07:40:00-03:00", "labels": ["INBOX", "UNREAD"], "replied": false}
+        ]
+      }
+    ],
+    "judgments": {
+      "newsletter": {"n-451": 0.01, "n-452": 0.97, "n-453": 0.95, "n-454": 0.04, "n-455": 0.97, "n-456": 0.01, "n-457": 0.97}
+    },
+    "expect": [
+      {
+        "capability": "gmail.archive",
+        "count": 4,
+        "contains": ["n-452", "n-453", "n-455", "n-457"],
+        "not_contains": ["n-451", "n-454", "n-456", "n-401"]
+      },
+      {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": ["4"]
+      }
+    ]
+  }
+}

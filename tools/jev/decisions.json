@@ -1,0 +1,86 @@
+{
+ "model": "jev-1.13.0",
+ "answers": {
+  "name": {
+   "type": "choice",
+   "choice": "vigia",
+   "confidence": 0.26,
+   "probabilities": {
+    "keel": 0.02,
+    "ledgerly": 0.04,
+    "vigia": 0.39,
+    "routinely": 0.17,
+    "tollgate": 0.37,
+    "waypost": 0.01
+   }
+  },
+  "judgment_backend": {
+   "type": "choice",
+   "choice": "local_default",
+   "confidence": 0.78,
+   "probabilities": {
+    "jev_default": 0.06,
+    "jev_optional_llm_default": 0.09,
+    "local_default": 0.85
+   }
+  },
+  "gmail_access": {
+   "type": "choice",
+   "choice": "imap_app_password",
+   "confidence": 0.15,
+   "probabilities": {
+    "oauth_own_client": 0.25,
+    "both_imap_first": 0.32,
+    "imap_app_password": 0.43
+   }
+  },
+  "llm_backend_dev": {
+   "type": "choice",
+   "choice": "claude_cli",
+   "confidence": 0.91,
+   "probabilities": {
+    "anthropic_api": 0.05,
+    "openai_compatible": 0.01,
+    "claude_cli": 0.94
+   }
+  },
+  "routine_language": {
+   "type": "choice",
+   "choice": "js_goja",
+   "confidence": 0.83,
+   "probabilities": {
+    "starlark": 0.1,
+    "js_quickjs_wasm": 0.02,
+    "js_goja": 0.88
+   }
+  },
+  "policy_language": {
+   "type": "choice",
+   "choice": "custom_yaml",
+   "confidence": 0.12,
+   "probabilities": {
+    "rego": 0.36,
+    "cel": 0.23,
+    "custom_yaml": 0.41
+   }
+  },
+  "ui_stack": {
+   "type": "choice",
+   "choice": "react_vite_tailwind",
+   "confidence": 0.67,
+   "probabilities": {
+    "react_vite_tailwind": 0.78,
+    "htmx": 0.17,
+    "svelte": 0.05
+   }
+  },
+  "private_research": {
+   "type": "noul",
+   "noul": 0.7
+  }
+ },
+ "usage": {
+  "input_tokens": 1519,
+  "output_tokens": 362
+ }
+}

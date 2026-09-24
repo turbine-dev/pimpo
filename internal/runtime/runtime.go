@@ -1,0 +1,273 @@
+// Package runtime runs compiled routines. A routine is plain JavaScript that
+// defines `async function run()`. It sees only the capability objects its
+// manifest declares, plus now() and log(). There is no network, disk,
+// process or timer access: everything goes through the Host.
+package runtime
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/dop251/goja"
+
+	"github.com/denerFernandes/vigia/internal/capability"
+)
+
+// Host performs capability calls on behalf of a routine. It is where the
+// policy engine, recording and real connectors live.
+type Host interface {
+	Call(ctx context.Context, capability, scope string, args any) (any, error)
+	// Judge answers a declared judgment about one item with a probability.
+	Judge(ctx context.Context, name, question string, item any) (float64, error)
+}
+
+type Manifest struct {
+	Schedule     string            `json:"schedule"`
+	Capabilities []string          `json:"capabilities"`
+	Judgments    map[string]string `json:"judgments,omitempty"`
+	// Locale is the language of the routine's messages, e.g. pt-BR or en-US.
+	Locale string `json:"locale,omitempty"`
+}
+
+type Options struct {
+	Now time.Time
+	// Zone and Locale drive the dates and money helpers; they default to
+	// the machine's zone and Portuguese.
+	Zone    *time.Location
+	Locale  string
+	Timeout time.Duration
+	// MaxCalls bounds capability calls per run, so a runaway loop stops.
+	MaxCalls int
+}
+
+type Result struct {
+	Logs  []string
+	Calls int
+}
+
+var ErrTimeout = errors.New("routine ran past its time limit")
+
+// Validate checks a manifest against the capability catalog.
+func (m Manifest) Validate() error {
+	if len(m.Capabilities) == 0 {
+		return errors.New("manifest declares no capabilities")
+	}
+	for _, c := range m.Capabilities {
+		if _, _, err := capability.Parse(c); err != nil {
+			return err
+		}
+	}
+	for name := range m.Judgments {
+		if !isIdent(name) {
+			return fmt.Errorf("judgment name %q must be a JavaScript identifier", name)
+		}
+	}
+	return nil
+}
+
+// Run executes the routine once.
+func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (Result, error) {
+	if err := m.Validate(); err != nil {
+		return Result{}, err
+	}
+	if opt.Timeout == 0 {
+		opt.Timeout = 30 * time.Second
+	}
+	if opt.MaxCalls == 0 {
+		opt.MaxCalls = 500
+	}
+	if opt.Now.IsZero() {
+		opt.Now = time.Now()
+	}
+	if opt.Zone == nil {
+		opt.Zone = opt.Now.Location()
+	}
+	if m.Locale != "" {
+		opt.Locale = m.Locale
+	}
+	if opt.Locale == "" {
+		opt.Locale = "pt-BR"
+	}
+	opt.Now = opt.Now.In(opt.Zone)
+	vm := goja.New()
+	vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
+	res := &Result{}
+
+	fail := func(err error) {
+		panic(vm.NewGoError(err))
+	}
+	bind := func(obj *goja.Object, method string, fn func(goja.FunctionCall) goja.Value) {
+		if err := obj.Set(method, fn); err != nil {
+			fail(err)
+		}
+	}
+
+	scopes := map[string][]string{}
+	for _, entry := range m.Capabilities {
+		spec, scope, _ := capability.Parse(entry)
+		scopes[spec.Name] = append(scopes[spec.Name], scope)
+	}
+	objects := map[string]*goja.Object{}
+	for name, allowed := range scopes {
+		ns, method, _ := strings.Cut(name, ".")
+		obj, ok := objects[ns]
+		if !ok {
+			obj = vm.NewObject()
+			objects[ns] = obj
+			vm.Set(ns, obj)
+		}
+		name, allowed := name, allowed
+		bind(obj, method, func(call goja.FunctionCall) goja.Value {
+			res.Calls++
+			if res.Calls > opt.MaxCalls {
+				fail(fmt.Errorf("routine made more than %d capability calls", opt.MaxCalls))
+			}
+			args := exportArgs(call)
+			scope := ""
+			if allowed[0] != "" {
+				scope = scopeFor(name, args, allowed)
+				if scope == "" {
+					fail(fmt.Errorf("%s: %v is outside the manifest scope %v", name, args, allowed))
+				}
+			}
+			out, err := host.Call(ctx, name, scope, args)
+			if err != nil {
+				fail(fmt.Errorf("%s: %w", name, err))
+			}
+			return toJS(vm, out)
+		})
+	}
+	if len(m.Judgments) > 0 {
+		judge := vm.NewObject()
+		vm.Set("judge", judge)
+		for name, question := range m.Judgments {
+			name, question := name, question
+			bind(judge, name, func(call goja.FunctionCall) goja.Value {
+				res.Calls++
+				p, err := host.Judge(ctx, name, question, call.Argument(0).Export())
+				if err != nil {
+					fail(fmt.Errorf("judge.%s: %w", name, err))
+				}
+				return vm.ToValue(map[string]any{"p": p})
+			})
+		}
+	}
+	vm.Set("now", func() string { return opt.Now.Format(time.RFC3339) })
+	installStdlib(vm, opt.Zone, opt.Locale, opt.Now)
+	vm.Set("log", func(msg string) { res.Logs = append(res.Logs, msg) })
+
+	timer := time.AfterFunc(opt.Timeout, func() { vm.Interrupt(ErrTimeout) })
+	defer timer.Stop()
+	stop := context.AfterFunc(ctx, func() { vm.Interrupt(ctx.Err()) })
+	defer stop()
+
+	if _, err := vm.RunString(code); err != nil {
+		return *res, jsError(err)
+	}
+	run, ok := goja.AssertFunction(vm.Get("run"))
+	if !ok {
+		return *res, errors.New("routine does not define function run()")
+	}
+	v, err := run(goja.Undefined())
+	if err != nil {
+		return *res, jsError(err)
+	}
+	if p, ok := v.Export().(*goja.Promise); ok {
+		switch p.State() {
+		case goja.PromiseStateRejected:
+			return *res, jsError(rejection(p.Result()))
+		case goja.PromiseStatePending:
+			return *res, errors.New("routine awaited something that never resolved")
+		}
+	}
+	return *res, nil
+}
+
+func exportArgs(call goja.FunctionCall) any {
+	if len(call.Arguments) == 0 {
+		return map[string]any{}
+	}
+	if len(call.Arguments) == 1 {
+		return call.Arguments[0].Export()
+	}
+	out := make([]any, len(call.Arguments))
+	for i, a := range call.Arguments {
+		out[i] = a.Export()
+	}
+	return out
+}
+
+// scopeFor returns the manifest scope that covers a call, or "" if none does.
+// For http.getJSON the scope is the URL host.
+func scopeFor(name string, args any, allowed []string) string {
+	url, _ := args.(string)
+	host := url
+	if i := strings.Index(host, "://"); i >= 0 {
+		host = host[i+3:]
+	}
+	host, _, _ = strings.Cut(host, "/")
+	host, _, _ = strings.Cut(host, "?")
+	for _, a := range allowed {
+		if strings.EqualFold(host, a) {
+			return a
+		}
+	}
+	return ""
+}
+
+// toJS round-trips through JSON so routines get plain objects and arrays
+// with the field names connectors use.
+func toJS(vm *goja.Runtime, v any) goja.Value {
+	if v == nil {
+		return goja.Null()
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return vm.ToValue(v)
+	}
+	var plain any
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return vm.ToValue(v)
+	}
+	return vm.ToValue(plain)
+}
+
+func rejection(v goja.Value) error {
+	if o, ok := v.(*goja.Object); ok {
+		if msg := o.Get("message"); msg != nil && !goja.IsUndefined(msg) {
+			return errors.New(msg.String())
+		}
+	}
+	return fmt.Errorf("%v", v.Export())
+}
+
+func jsError(err error) error {
+	var ex *goja.Exception
+	if errors.As(err, &ex) {
+		return errors.New(strings.TrimSpace(ex.Error()))
+	}
+	var intr *goja.InterruptedError
+	if errors.As(err, &intr) {
+		if e, ok := intr.Value().(error); ok {
+			return e
+		}
+	}
+	return err
+}
+
+func isIdent(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i, r := range s {
+		if r == '_' || r == '$' || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (i > 0 && r >= '0' && r <= '9') {
+			continue
+		}
+		return false
+	}
+	return true
+}

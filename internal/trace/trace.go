@@ -1,0 +1,84 @@
+// Package trace describes a recorded exploration: what the user asked,
+// every capability call the agent made with its result, and what a correct
+// outcome looks like. The compiler turns a trace into a routine.
+package trace
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+)
+
+type Trace struct {
+	ID      string `json:"id"`
+	Request string `json:"request"`
+	// Now is the wall clock during the exploration, RFC 3339.
+	Now   string `json:"now"`
+	Calls []Call `json:"calls"`
+	// Judgments are the decisions the agent made while exploring, keyed by
+	// judgment name, then by a substring that identifies the item.
+	Judgments map[string]map[string]float64 `json:"judgments,omitempty"`
+	// Questions holds the wording the agent used for each judgment.
+	Questions map[string]string `json:"questions,omitempty"`
+	// Outcome is what the user approved at the end of the exploration.
+	Outcome string   `json:"outcome"`
+	Expect  []Expect `json:"expect"`
+	// Holdout is a second scenario the compiler never sees. A routine that
+	// only memorized the recording fails it.
+	Holdout *Scenario `json:"holdout,omitempty"`
+}
+
+type Call struct {
+	Capability string          `json:"capability"`
+	Args       json.RawMessage `json:"args"`
+	Result     json.RawMessage `json:"result"`
+}
+
+// Scenario is a set of inputs and the calls a correct routine makes with them.
+type Scenario struct {
+	Now       string                        `json:"now"`
+	Responses []Response                    `json:"responses"`
+	Judgments map[string]map[string]float64 `json:"judgments,omitempty"`
+	Expect    []Expect                      `json:"expect"`
+}
+
+// Response is a canned result for one call to a read capability. Calls to
+// the same capability consume responses in order.
+type Response struct {
+	Capability string          `json:"capability"`
+	Result     json.RawMessage `json:"result"`
+}
+
+// Expect checks the write calls a routine makes to one capability.
+type Expect struct {
+	Capability  string   `json:"capability"`
+	Count       *int     `json:"count,omitempty"`
+	Contains    []string `json:"contains,omitempty"`
+	NotContains []string `json:"not_contains,omitempty"`
+}
+
+func Load(path string) (Trace, error) {
+	var t Trace
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return t, err
+	}
+	if err := json.Unmarshal(b, &t); err != nil {
+		return t, fmt.Errorf("parse trace %s: %w", path, err)
+	}
+	if t.ID == "" || t.Request == "" || len(t.Calls) == 0 || len(t.Expect) == 0 {
+		return t, fmt.Errorf("trace %s: id, request, calls and expect are required", path)
+	}
+	return t, nil
+}
+
+// Replay is the scenario recorded in the trace itself.
+func (t Trace) Replay() Scenario {
+	s := Scenario{Now: t.Now, Judgments: t.Judgments, Expect: t.Expect}
+	for _, c := range t.Calls {
+		if len(c.Result) > 0 {
+			s.Responses = append(s.Responses, Response{Capability: c.Capability, Result: c.Result})
+		}
+	}
+	return s
+}
