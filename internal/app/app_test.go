@@ -137,6 +137,24 @@ func TestExploreApproveRunThroughTheAPI(t *testing.T) {
 	}
 }
 
+func TestEmptyListsAreArraysNotNull(t *testing.T) {
+	ta := newApp(t, llm.FakeAgent{Script: func(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
+		return llm.Response{Text: "nada"}, nil
+	}}, &llm.Fake{})
+	_, out := ta.do(t, "POST", "/api/explorations", map[string]string{"request": "algo"})
+	ta.Explore.Wait()
+	_, out = ta.do(t, "GET", "/api/explorations/"+out["id"].(string), nil)
+	if _, ok := out["actions"].([]any); !ok {
+		t.Fatalf("actions is %T, want a list", out["actions"])
+	}
+	for _, path := range []string{"/api/routines", "/api/explorations", "/api/receipts", "/api/approvals", "/api/rules", "/api/events"} {
+		_, out := ta.do(t, "GET", path, nil)
+		if _, ok := out["list"].([]any); !ok {
+			t.Fatalf("%s returned %v, want a list", path, out)
+		}
+	}
+}
+
 func TestConnectionsValidateAndHideSecrets(t *testing.T) {
 	ta := newApp(t, weatherAgent, &llm.Fake{})
 	code, _ := ta.do(t, "PUT", "/api/connections/calendar", map[string]string{"feeds": "http://insecure.example/basic.ics"})
@@ -179,5 +197,25 @@ func TestSettingsAndBudget(t *testing.T) {
 	_, state := ta.do(t, "GET", "/api/state", nil)
 	if state["budget"].(map[string]any)["limit"] != 0.5 {
 		t.Fatalf("budget %v", state["budget"])
+	}
+}
+
+func TestSetupAndPresets(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	_, s := ta.do(t, "GET", "/api/setup", nil)
+	if s["done"] != false || s["telegram"] != false {
+		t.Fatalf("fresh setup %v", s)
+	}
+	code, rules := ta.do(t, "PUT", "/api/rules/preset", map[string]string{"preset": "conservative"})
+	if code != 200 || len(rules["list"].([]any)) != 1 {
+		t.Fatalf("preset %d %v", code, rules)
+	}
+	if code, _ := ta.do(t, "PUT", "/api/rules/preset", map[string]string{"preset": "yolo"}); code != 400 {
+		t.Fatalf("unknown preset accepted: %d", code)
+	}
+	ta.do(t, "POST", "/api/setup/done", nil)
+	_, s = ta.do(t, "GET", "/api/setup", nil)
+	if s["done"] != true || s["preset"] != "conservative" {
+		t.Fatalf("after setup %v", s)
 	}
 }

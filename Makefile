@@ -1,7 +1,7 @@
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build ui test test-go test-ui lint proof check
+.PHONY: build ui test test-go test-ui lint proof check e2e
 
 build: ui
 	go build -ldflags "$(LDFLAGS)" -o bin/vigia ./cmd/vigia
@@ -31,3 +31,7 @@ check:
 	go vet ./...
 	cd ui && npx tsc -b && npx vitest run && npx vite build
 	go test -race ./...
+
+# e2e runs the browser flows and accessibility checks against the demo.
+e2e: build
+	cd ui && npx playwright test

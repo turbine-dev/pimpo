@@ -122,6 +122,20 @@ func Preset() []Rule {
 	}
 }
 
+// Presets are the three starting points offered at setup.
+func Presets() map[string][]Rule {
+	return map[string][]Rule{
+		"conservative": {
+			{ID: "preset-changes", Text: "Me pergunte antes de qualquer mudança, mesmo as reversíveis.", When: When{MinRisk: "reversible"}, Then: Ask},
+		},
+		"balanced": Preset(),
+		"liberal": {
+			{ID: "preset-others", Text: "Só me pergunte antes de enviar algo para outras pessoas.", When: When{Capabilities: []string{"gmail.send"}}, Then: Ask},
+			{ID: "preset-delete", Text: "Apagar sempre vira mover para a lixeira.", When: When{Capabilities: []string{"gmail.delete"}}, Then: Reversible},
+		},
+	}
+}
+
 // strength orders verdicts: when several rules match, the strictest wins.
 var strength = map[Verdict]int{Allow: 0, Reversible: 1, Ask: 2, Block: 3}
 

@@ -3,6 +3,7 @@ package approval
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -75,5 +76,48 @@ func TestDenyAndExpiry(t *testing.T) {
 	}
 	if len(quick.Open()) != 0 {
 		t.Fatal("expired request still open")
+	}
+}
+
+func TestRunAnswerCoversTheRestOfTheRun(t *testing.T) {
+	m, n := manager(t, time.Minute)
+	act := policy.Action{Capability: "gmail.archive", Risk: 2, Source: "routine:triage#7"}
+	go func() {
+		<-n.got
+		m.Resolve(context.Background(), idOf(n.list[0]), Run, "human:owner")
+	}()
+	for i := 0; i < 200; i++ {
+		if _, err := m.Ask(context.Background(), act, "ask before archiving"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(n.list) != 1 {
+		t.Fatalf("asked %d times for one run", len(n.list))
+	}
+	next := policy.Action{Capability: "gmail.archive", Risk: 2, Source: "routine:triage#8"}
+	go func() {
+		<-n.got
+		m.Resolve(context.Background(), idOf(n.list[1]), Deny, "human:owner")
+	}()
+	if _, err := m.Ask(context.Background(), next, "r"); err == nil {
+		t.Fatal("a run answer leaked into the next run")
+	}
+}
+
+func TestSuggestsAlwaysAfterThreeApprovals(t *testing.T) {
+	m, n := manager(t, time.Minute)
+	for i := 0; i < 4; i++ {
+		act := policy.Action{Capability: "gmail.send", Risk: 3, Source: fmt.Sprintf("routine:followup#%d", i)}
+		go func() {
+			<-n.got
+			n.mu.Lock()
+			last := n.list[len(n.list)-1]
+			n.mu.Unlock()
+			m.Resolve(context.Background(), idOf(last), Once, "human:owner")
+		}()
+		m.Ask(context.Background(), act, "r")
+	}
+	if !strings.Contains(n.list[3].Text, "3 vezes") || strings.Contains(n.list[2].Text, "3 vezes") {
+		t.Fatalf("suggestion missing or early:\n%s\n%s", n.list[2].Text, n.list[3].Text)
 	}
 }

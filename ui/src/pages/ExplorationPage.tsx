@@ -3,7 +3,7 @@ import { ArrowLeft, Check, Code2, FlaskConical, Loader2, ShieldCheck, Sparkles, 
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CapabilityChip, RoutineCard } from '../components/RoutineCard'
-import { Button, Card, RiskBadge } from '../components/ui'
+import { Button, Card, PageSkeleton, RiskBadge } from '../components/ui'
 import { describe } from '../lib/actions'
 import { api, type ActionRecord, type VEvent } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -17,8 +17,9 @@ export function ExplorationPage() {
   const compile = useMutation({ mutationFn: () => api.compile(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['routines'] }) })
   const discard = useMutation({ mutationFn: () => api.discard(id), onSuccess: () => nav('/') })
 
-  if (!q.data) return <div className="mx-auto max-w-3xl text-sm text-ink-3">{q.error ? q.error.message : 'Carregando…'}</div>
-  const { exploration: e, actions } = q.data
+  if (!q.data) return q.error ? <div className="mx-auto max-w-3xl text-sm text-danger">{q.error.message}</div> : <PageSkeleton />
+  const { exploration: e } = q.data
+  const actions = q.data.actions ?? []
   const running = e.state === 'running'
 
   return (
@@ -45,10 +46,23 @@ export function ExplorationPage() {
         <div className="border-b border-line px-5 py-3 text-[12.5px] font-medium text-ink-3">O que eu fiz · {actions.length} passo{actions.length === 1 ? '' : 's'}</div>
         <ol className="divide-y divide-line">
           <AnimatePresence initial={false}>
-            {[...actions].reverse().map((ev) => (
+            {actions.map((ev) => (
               <Step key={ev.id} ev={ev} />
             ))}
           </AnimatePresence>
+          {Object.entries(e.trace?.judgments ?? {}).map(([name, labels]) => {
+            const yes = Object.values(labels).filter((p) => p >= 0.5).length
+            const no = Object.values(labels).length - yes
+            return (
+              <li key={name} className="flex items-start gap-3 px-5 py-3.5">
+                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" />
+                <div className="min-w-0 flex-1 text-[13.5px]">
+                  Decidiu “{e.trace?.questions?.[name] ?? name}” · {yes} sim, {no} não
+                  <div className="text-[12px] text-ink-3">A rotina vai repetir essa decisão com um modelo pequeno, item por item.</div>
+                </div>
+              </li>
+            )
+          })}
           {running && (
             <li className="flex items-center gap-3 px-5 py-3.5 text-[13px] text-ink-3">
               <span className="size-2 animate-pulse-soft rounded-full bg-explore" /> pensando no próximo passo…
@@ -162,18 +176,29 @@ function CompileMoment({ state, error, exploreCost, routine, routineId, onCompil
               </div>
               <div className="rounded-xl border border-read/30 bg-read-soft p-4">
                 <div className="text-[12px] text-read">Cada execução da rotina</div>
-                <div className="mt-1 text-[22px] font-semibold tabular-nums text-read">~$0,00</div>
+                <div className="mt-1 text-[22px] font-semibold tabular-nums text-read">~{usd(0)}</div>
               </div>
             </div>
             {routine && (
               <>
-                <div className="mb-4 flex flex-wrap gap-1.5">
+                <div className="mb-2 text-[12.5px] font-medium text-ink-3">Ela só pode:</div>
+                <div className="mb-5 flex flex-wrap gap-1.5">
                   {routine.capabilities.map((c) => (
                     <CapabilityChip key={c} entry={c} />
                   ))}
                 </div>
-                <div className="max-w-sm">
-                  <RoutineCard r={routine} onOpen={() => nav(`/routines/${routine.id}`)} />
+                <div className="flex flex-wrap items-end gap-4">
+                  <div className="w-full max-w-sm">
+                    <RoutineCard r={routine} onOpen={() => nav(`/routines/${routine.id}`)} />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <span className="flex items-center gap-1.5 text-[13px] text-read">
+                      <FlaskConical size={14} /> Passou nos testes, inclusive refazendo o que acabei de fazer
+                    </span>
+                    <Button size="sm" onClick={() => nav(`/routines/${routine.id}?tab=code`)}>
+                      <Code2 size={14} /> Ver o código
+                    </Button>
+                  </div>
                 </div>
               </>
             )}

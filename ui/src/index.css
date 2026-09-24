@@ -18,17 +18,17 @@
   --color-line-strong: #d3d3cc;
   --color-ink: #16171a;
   --color-ink-2: #4a4d55;
-  --color-ink-3: #82858d;
+  --color-ink-3: #62656c;
 
-  --color-read: #0f9d6b;
+  --color-read: #07754f;
   --color-read-soft: #e3f6ee;
-  --color-change: #c77700;
+  --color-change: #9a5b00;
   --color-change-soft: #fdf1dc;
-  --color-danger: #d4344e;
+  --color-danger: #b8243c;
   --color-danger-soft: #fce6ea;
-  --color-explore: #3b6cf6;
+  --color-explore: #2854d4;
   --color-explore-soft: #e6edff;
-  --color-accent: #5b4cf0;
+  --color-accent: #4c3ee0;
 
   --radius-card: 14px;
   --shadow-card: 0 1px 0 rgb(0 0 0 / 0.02), 0 1px 3px rgb(16 17 20 / 0.06);
@@ -50,7 +50,7 @@
   --color-line-strong: #30343c;
   --color-ink: #eceef2;
   --color-ink-2: #a8adb8;
-  --color-ink-3: #6d727d;
+  --color-ink-3: #8a8f99;
 
   --color-read: #34d399;
   --color-read-soft: rgb(52 211 153 / 0.12);

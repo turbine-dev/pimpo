@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +28,9 @@ const (
 	Once   Answer = "once"
 	Always Answer = "always"
 	Deny   Answer = "deny"
+	// Run allows the same capability for the rest of this run, so a loop
+	// over 200 emails asks once, not 200 times.
+	Run Answer = "run"
 )
 
 var ErrDenied = errors.New("the owner said no")
@@ -51,6 +55,21 @@ type Manager struct {
 	mu      sync.Mutex
 	pending map[string]chan Answer
 	open    map[string]Request
+	// runs holds "allow for the rest of this run" answers by run and capability.
+	runs map[string]bool
+	// onces counts one-off approvals per routine and capability, to suggest
+	// making them permanent.
+	onces map[string]int
+}
+
+func runKey(a policy.Action) string { return a.Source + "|" + a.Capability }
+
+func routineKey(a policy.Action) string {
+	src := a.Source
+	if i := strings.IndexByte(src, '#'); i >= 0 {
+		src = src[:i]
+	}
+	return src + "|" + a.Capability
 }
 
 func newID() string {
@@ -61,6 +80,13 @@ func newID() string {
 
 // Ask blocks until the owner answers, the timeout passes or ctx ends.
 func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answer, error) {
+	m.mu.Lock()
+	if m.runs[runKey(a)] {
+		m.mu.Unlock()
+		return Run, nil
+	}
+	suggest := m.onces[routineKey(a)] >= 3
+	m.mu.Unlock()
 	id := newID()
 	text := fmt.Sprintf("%s (%s)", a.Capability, a.Source)
 	if m.Describe != nil {
@@ -85,9 +111,14 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 	if a.Risk >= 3 {
 		icon = "🔴"
 	}
+	body := fmt.Sprintf("%s Posso fazer isto?\n%s\n\nRegra: %s", icon, text, reason)
+	if suggest {
+		body += "\n\nVocê já permitiu isto 3 vezes. Quer que eu não pergunte mais?"
+	}
 	m.Notify.Notify(ctx, explore.Notice{
-		Text:    fmt.Sprintf("%s Posso fazer isto?\n%s\n\nRegra: %s", icon, text, reason),
-		Actions: []explore.Action{{Label: "Permitir", Data: "approve:" + id}, {Label: "Sempre", Data: "always:" + id}, {Label: "Negar", Data: "deny:" + id}},
+		Text: body,
+		Actions: []explore.Action{{Label: "Permitir", Data: "approve:" + id}, {Label: "Todos desta vez", Data: "batch:" + id},
+			{Label: "Sempre", Data: "always:" + id}, {Label: "Negar", Data: "deny:" + id}},
 	})
 	timeout := m.Timeout
 	if timeout == 0 {
@@ -97,6 +128,17 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 	defer timer.Stop()
 	select {
 	case ans := <-ch:
+		m.mu.Lock()
+		if m.runs == nil {
+			m.runs, m.onces = map[string]bool{}, map[string]int{}
+		}
+		switch ans {
+		case Run:
+			m.runs[runKey(a)] = true
+		case Once:
+			m.onces[routineKey(a)]++
+		}
+		m.mu.Unlock()
 		if ans == Deny {
 			return ans, ErrDenied
 		}
@@ -124,6 +166,13 @@ func (m *Manager) Resolve(ctx context.Context, id string, ans Answer, actor stri
 	m.Events.Append(ctx, EventResolved, actor, map[string]string{"id": id, "answer": string(ans)})
 	ch <- ans
 	return true
+}
+
+// Suggest reports whether the owner keeps approving this kind of action.
+func (m *Manager) Suggest(a policy.Action) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.onces[routineKey(a)] >= 3
 }
 
 // Open lists the requests still waiting, oldest first.

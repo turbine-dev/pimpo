@@ -61,10 +61,29 @@ export function EmptyState({ icon, title, children, action }: { icon: ReactNode;
 /** The last runs of a routine as dots: green ran fine, red failed, grey did not run. */
 export function RunDots({ runs }: { runs: ('ok' | 'failed' | 'skipped')[] }) {
   return (
-    <div className="flex items-center gap-[3px]" aria-label={`${runs.filter((r) => r === 'ok').length} de ${runs.length} execuções bem-sucedidas`}>
+    <div className="flex items-center gap-[3px]" role="img" aria-label={`${runs.filter((r) => r === 'ok').length} de ${runs.length} execuções bem-sucedidas`}>
       {runs.map((r, i) => (
         <span key={i} className={cn('h-3.5 w-1.5 rounded-full', r === 'ok' && 'bg-read', r === 'failed' && 'bg-danger', r === 'skipped' && 'bg-line-strong')} />
       ))}
+    </div>
+  )
+}
+
+/** Skeleton stands in for content while it loads, keeping the layout still. */
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cn('animate-pulse-soft rounded-lg bg-sunken', className)} aria-hidden />
+}
+
+export function PageSkeleton() {
+  return (
+    <div className="mx-auto max-w-5xl space-y-4" aria-busy="true" aria-label="Carregando">
+      <Skeleton className="h-7 w-64" />
+      <Skeleton className="h-4 w-96 max-w-full" />
+      <div className="grid gap-4 pt-4 sm:grid-cols-2 xl:grid-cols-3">
+        <Skeleton className="h-44" />
+        <Skeleton className="h-44" />
+        <Skeleton className="h-44" />
+      </div>
     </div>
   )
 }

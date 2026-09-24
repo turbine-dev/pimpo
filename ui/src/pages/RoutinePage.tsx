@@ -1,10 +1,11 @@
 import * as Tabs from '@radix-ui/react-tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Pause, Play, RotateCcw, Wrench } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Code } from '../components/Code'
 import { capRisk, capabilityLabel } from '../components/RoutineCard'
-import { Button, Card, RiskBadge, RunDots } from '../components/ui'
+import { Button, Card, PageSkeleton, RiskBadge, RunDots } from '../components/ui'
+import { Diff } from '../components/Diff'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
 import { cronText, relative, usd, when } from '../lib/format'
@@ -18,6 +19,7 @@ const riskText: Record<string, string> = {
 
 export function RoutinePage() {
   const { id = '' } = useParams()
+  const [params] = useSearchParams()
   const qc = useQueryClient()
   const nav = useNavigate()
   const q = useQuery({ queryKey: ['routine', id], queryFn: () => api.routine(id) })
@@ -29,7 +31,7 @@ export function RoutinePage() {
       if (res.exploration) nav(`/explorations/${res.exploration}`)
     },
   })
-  if (!q.data) return <div className="mx-auto max-w-5xl text-sm text-ink-3">{q.error ? q.error.message : 'Carregando…'}</div>
+  if (!q.data) return q.error ? <div className="mx-auto max-w-5xl text-sm text-danger">{q.error.message}</div> : <PageSkeleton />
   const { summary: s, routine: r, versions, runs } = q.data
   const lastError = runs.find((x) => x.outcome === 'failed')?.error
 
@@ -78,7 +80,7 @@ export function RoutinePage() {
       )}
       {act.data?.error && <p className="mb-4 text-sm text-danger">{act.data.error}</p>}
 
-      <Tabs.Root defaultValue="overview">
+      <Tabs.Root defaultValue={params.get('tab') ?? 'overview'}>
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label="Detalhes da rotina">
           {[
             ['overview', 'Execuções'],
@@ -161,14 +163,24 @@ export function RoutinePage() {
           <p className="pt-2 text-[12.5px] text-ink-3">Qualquer coisa fora desta lista é impossível para a rotina: não existe no ambiente em que ela roda.</p>
         </Tabs.Content>
 
-        <Tabs.Content value="history" className="space-y-2">
-          {versions.map((v) => (
-            <Card key={v.version} className="flex items-center justify-between gap-4 p-4">
-              <div>
-                <div className="text-[14px] font-medium">Versão {v.version}</div>
-                <div className="text-[12.5px] text-ink-3">{v.reason}</div>
+        <Tabs.Content value="history" className="space-y-3">
+          {versions.map((v, i) => (
+            <Card key={v.version} className="p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-[14px] font-medium">Versão {v.version}</div>
+                  <div className="text-[12.5px] text-ink-3">{v.reason}</div>
+                </div>
+                <span className="text-[12px] text-ink-3">{relative(v.created_at)}</span>
               </div>
-              <span className="text-[12px] text-ink-3">{relative(v.created_at)}</span>
+              {versions[i + 1] && versions[i + 1].routine.code !== v.routine.code && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-[12.5px] text-ink-2">O que mudou em relação à versão {versions[i + 1].version}</summary>
+                  <div className="mt-2">
+                    <Diff before={versions[i + 1].routine.code} after={v.routine.code} />
+                  </div>
+                </details>
+              )}
             </Card>
           ))}
         </Tabs.Content>
