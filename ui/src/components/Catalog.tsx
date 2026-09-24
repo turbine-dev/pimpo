@@ -7,12 +7,33 @@ import { cn } from '../lib/cn'
 import { Button, Card, RiskBadge } from './ui'
 
 export function Catalog() {
+  const qc = useQueryClient()
   const q = useQuery({ queryKey: ['catalog'], queryFn: api.catalog })
   const list = q.data?.connectors ?? []
+  const refresh = () => qc.invalidateQueries({ queryKey: ['catalog'] })
+  const reload = useMutation({ mutationFn: () => fetch('/api/connectors/reload', { method: 'POST', credentials: 'same-origin' }), onSuccess: refresh })
+  const install = useMutation({
+    mutationFn: async (f: File) => {
+      const form = new FormData()
+      form.append('file', f)
+      const res = await fetch('/api/connectors/install', { method: 'POST', body: form, credentials: 'same-origin' })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? res.statusText)
+    },
+    onSuccess: refresh,
+  })
   return (
     <section aria-label="Mais conexões" className="mt-8">
       <h2 className="mb-1 text-[17px] font-semibold tracking-tight">Mais conexões</h2>
-      <p className="mb-4 text-[13px] text-ink-2">Cada uma diz exatamente o que permite fazer. O que não dá para desfazer sempre pede sua aprovação.</p>
+      <p className="mb-3 text-[13px] text-ink-2">Cada uma diz exatamente o que permite fazer. O que não dá para desfazer sempre pede sua aprovação.</p>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 py-1.5 text-[13px] hover:border-line-strong">
+          <Puzzle size={14} /> Instalar conector (.zip)
+          <input type="file" accept=".zip" className="sr-only" onChange={(e) => e.target.files?.[0] && install.mutate(e.target.files[0])} />
+        </label>
+        <Button size="sm" variant="ghost" onClick={() => reload.mutate()} disabled={reload.isPending}>Recarregar a pasta de conectores</Button>
+        <a className="text-[12.5px] text-ink-3 underline" href="https://github.com/denerFernandes/vigia/blob/main/docs/CONNECTORS.md" target="_blank" rel="noreferrer">Como criar um conector</a>
+        {install.error && <span className="text-[12.5px] text-danger">{install.error.message}</span>}
+      </div>
       {(q.data?.broken ?? []).map((b) => (
         <p key={b} className="mb-2 flex gap-2 rounded-xl bg-danger-soft px-3 py-2 text-[13px] text-danger"><AlertTriangle size={15} className="mt-0.5 shrink-0" /> Conector não carregado: {b}</p>
       ))}

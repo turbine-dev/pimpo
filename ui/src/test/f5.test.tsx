@@ -36,14 +36,21 @@ describe('Import', () => {
 })
 
 describe('PhonePairing', () => {
-  it('keeps the pairing code hidden until asked', async () => {
+  it('pairs a named device, shows its code once and revokes it', async () => {
     const { PhonePairing } = await import('../components/PhonePairing')
-    const calls = mockFetch({ '/api/pairing': { base: 'https://v.ts.net', link: 'https://v.ts.net/auth?token=t' } })
+    const calls = mockFetch({
+      '/api/pairing': { base: 'https://v.ts.net', devices: [{ id: 'd1', name: 'Tablet', created: new Date().toISOString() }] },
+      'POST /api/pairing': { base: 'https://v.ts.net', id: 'd2', link: 'https://v.ts.net/auth?token=t' },
+      'DELETE /api/devices/d1': {},
+    })
     wrap(<PhonePairing />)
     expect(await screen.findByDisplayValue('https://v.ts.net')).toBeInTheDocument()
     expect(screen.queryByAltText(/Código QR/)).not.toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Nome do aparelho'), 'Celular')
     await userEvent.click(screen.getByRole('button', { name: 'Gerar código' }))
-    await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url === '/api/pairing')).toBe(true))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ base: 'https://v.ts.net', device: 'Celular' }))
     expect(await screen.findByAltText(/Código QR/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Desconectar Tablet' }))
+    await waitFor(() => expect(calls.some((c) => c.method === 'DELETE' && c.url === '/api/devices/d1')).toBe(true))
   })
 })

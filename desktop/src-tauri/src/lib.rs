@@ -56,6 +56,7 @@ mod desktop {
             .args(["serve", "--addr", &addr])
             .env("VIGIA_TOKEN", &token)
             .env("VIGIA_EXIT_WITH_PARENT", "1")
+            .env("VIGIA_DESKTOP_NOTIFY", "1")
             .spawn()?;
         app.manage(Server(Mutex::new(Some(child))));
 

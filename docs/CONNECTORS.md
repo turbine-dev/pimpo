@@ -55,11 +55,16 @@ A connector is a program in any language that speaks [MCP](https://modelcontextp
 TIDES_KEY=... vigia connector check ./tides
 ```
 
+No part of Vigia needs recompiling, and it does not need a restart either. Two ways to install:
+
+- In **Conexões › Instalar conector (.zip)**, send a zip with `connector.json` at its root (or inside one folder). Vigia checks the manifest before anything is installed.
+- Or copy the folder yourself and choose **Recarregar a pasta de conectores**:
+
 ```bash
 cp -r ./tides ~/.vigia/connectors/
 ```
 
-Restart Vigia and the connector shows up in Connections, with its capabilities, their risk and a **Testar** button that runs the contract.
+The connector shows up in Connections with its capabilities, their risk, fields for the env vars it declares, and a **Testar** button that runs the contract. Connectors travel with **Exportar tudo**, like everything else.
 
 ## Built-in connectors
 

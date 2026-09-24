@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownToLine, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BackupCard } from '../components/BackupCard'
 import { PhonePairing } from '../components/PhonePairing'
 import { Button, Card } from '../components/ui'
 import { api, type Settings as S } from '../lib/api'
@@ -45,6 +46,7 @@ export function Settings() {
         <ChevronRight size={17} className="text-ink-3" />
       </Card>
       <PhonePairing />
+      <BackupCard />
       <Card className="flex items-start gap-4 p-5">
         <div className="flex-1">
           <div className="text-[15px] font-medium">Pedir por e-mail</div>

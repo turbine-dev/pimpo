@@ -26,6 +26,9 @@ var dist embed.FS
 type Server struct {
 	Events *event.Store
 	Token  string
+	// Device accepts tokens given to paired devices, which can be revoked
+	// one by one; nil accepts only the session token.
+	Device func(token string) bool
 	mux    *http.ServeMux
 	api    map[string]http.HandlerFunc
 }
@@ -74,12 +77,15 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid or expired link", http.StatusUnauthorized)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: cookie, Value: s.Token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
+	http.SetCookie(w, &http.Cookie{Name: cookie, Value: r.URL.Query().Get("token"), Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (s *Server) valid(t string) bool {
-	return t != "" && subtle.ConstantTimeCompare([]byte(t), []byte(s.Token)) == 1
+	if t == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(t), []byte(s.Token)) == 1 || (s.Device != nil && s.Device(t))
 }
 
 func (s *Server) auth(h http.HandlerFunc) http.Handler {

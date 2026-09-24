@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/denerFernandes/vigia/internal/llm"
@@ -72,19 +74,43 @@ func TestImportFromHermes(t *testing.T) {
 	}
 }
 
-func TestPairingNeedsASafeAddress(t *testing.T) {
+func TestDevicePairingAndRevocation(t *testing.T) {
 	ta := newApp(t, weatherAgent, &llm.Fake{})
-	if code, _ := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://vigia.example.com"}); code != 400 {
+	if code, _ := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://vigia.example.com", "device": "Celular"}); code != 400 {
 		t.Fatalf("accepted plain http on a public host: %d", code)
 	}
-	code, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "https://vigia.tail1.ts.net/some/path"})
-	if code != 200 || out["link"] != "https://vigia.tail1.ts.net/auth?token=tok" {
-		t.Fatalf("pairing %d %v", code, out)
-	}
-	if code, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://192.168.1.20:7788"}); code != 200 || out["base"] != "http://192.168.1.20:7788" {
+	if code, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://192.168.1.20:7788"}); code != 200 || out["link"] != nil {
 		t.Fatalf("home network %d %v", code, out)
 	}
-	if _, out := ta.do(t, "GET", "/api/pairing", nil); out["base"] != "http://192.168.1.20:7788" {
-		t.Fatalf("get %v", out)
+	_, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "https://vigia.tail1.ts.net/x", "device": "Celular da Ana"})
+	link, _ := out["link"].(string)
+	if !strings.HasPrefix(link, "https://vigia.tail1.ts.net/auth?token=") || strings.Contains(link, "token=tok") {
+		t.Fatalf("link %q", link)
+	}
+	token := strings.TrimPrefix(link, "https://vigia.tail1.ts.net/auth?token=")
+	get := func(tok string) int {
+		req, _ := http.NewRequest("GET", ta.srv.URL+"/api/routines", nil)
+		req.Header.Set("Authorization", "Bearer "+tok)
+		resp, _ := http.DefaultClient.Do(req)
+		return resp.StatusCode
+	}
+	if get(token) != 200 {
+		t.Fatal("the device token does not open Vigia")
+	}
+	resp, _ := http.Get(ta.srv.URL + "/auth?token=" + token)
+	if resp.Request.URL.Path != "/" {
+		t.Fatalf("login with the device link: %s", resp.Request.URL)
+	}
+	_, list := ta.do(t, "GET", "/api/pairing", nil)
+	devs := list["devices"].([]any)
+	if len(devs) != 1 || devs[0].(map[string]any)["name"] != "Celular da Ana" || devs[0].(map[string]any)["hash"] != nil {
+		t.Fatalf("devices %v", devs)
+	}
+	ta.do(t, "DELETE", "/api/devices/"+devs[0].(map[string]any)["id"].(string), nil)
+	if get(token) != 401 {
+		t.Fatal("a revoked device still gets in")
+	}
+	if get("tok") != 200 {
+		t.Fatal("revoking a device locked out the owner")
 	}
 }

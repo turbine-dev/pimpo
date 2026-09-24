@@ -23,6 +23,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/connector/services"
 	"github.com/denerFernandes/vigia/internal/connector/telegramcap"
 	"github.com/denerFernandes/vigia/internal/connector/web"
+	"github.com/denerFernandes/vigia/internal/desktop"
 	"github.com/denerFernandes/vigia/internal/event"
 	"github.com/denerFernandes/vigia/internal/explore"
 	"github.com/denerFernandes/vigia/internal/gallery"
@@ -95,6 +96,12 @@ type App struct {
 	VoiceModel string
 	// PaymentsAPI replaces the payment provider's API; tests only.
 	PaymentsAPI string
+	// DesktopNotify shows notices as system notifications, for the
+	// desktop app.
+	DesktopNotify bool
+	// Home is the data directory and Version the running version, for
+	// backups and connectors.
+	Home, Version string
 	// MailInsecure uses plain IMAP; tests only.
 	MailInsecure bool
 	// Router is shared by every run; the demo swaps connectors in it.
@@ -129,7 +136,13 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Channel = &owner.Channel{Events: events, Bot: a.bot, Handler: handler{a}}
 	a.People = &people.Directory{Events: events, OwnerChat: a.Channel.Chat, OwnerWhatsApp: a.ownerWhatsApp}
 	a.Channel.People = a.People
-	a.Channel.Mirror = a.mirrorWhatsApp
+	a.Channel.Mirror = func(ctx context.Context, n explore.Notice) {
+		a.mirrorWhatsApp(ctx, n)
+		if a.DesktopNotify && (n.To == "" || n.To == people.OwnerID) {
+			title, body, _ := strings.Cut(n.Text, "\n")
+			go desktop.Notify(context.WithoutCancel(ctx), "Vigia", strings.TrimSpace(title+" "+body))
+		}
+	}
 	a.Channel.ReadPhoto = ocr.Tesseract{}.Read
 	a.Channel.Transcribe = func(ctx context.Context, audio []byte) (string, error) {
 		return voice.Whisper{Model: a.VoiceModel, Language: strings.SplitN(a.Settings(ctx).Locale, "-", 2)[0]}.Transcribe(ctx, audio)
@@ -164,6 +177,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.galleryRoutes()
 	a.catalogRoutes()
 	a.businessRoutes()
+	a.backupRoutes()
 	return a, nil
 }
 
