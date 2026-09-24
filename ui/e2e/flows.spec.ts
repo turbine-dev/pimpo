@@ -88,4 +88,71 @@ test.describe.serial('the story, end to end', () => {
     const width = await page.evaluate(() => document.documentElement.scrollWidth)
     expect(width).toBeLessThanOrEqual(390)
   })
+
+  test('a gallery routine is checked and installed', async ({ page }) => {
+    await login(page)
+    await page.goto('/gallery')
+    await page.getByRole('tab', { name: 'Só leem e avisam você' }).click()
+    await page.getByText('Agenda do dia', { exact: true }).click()
+    await expect(page.getByText(/Assinatura confere/)).toBeVisible()
+    await page.getByRole('button', { name: 'Instalar esta rotina' }).click()
+    await expect(page).toHaveURL(/\/routines\/agenda-do-dia/)
+  })
+
+  test('a client gets a quote that becomes an invoice with a PDF', async ({ page }) => {
+    await login(page)
+    await page.goto('/business')
+    await page.getByRole('tab', { name: 'Clientes' }).click()
+    await page.getByLabel('Nome do cliente').fill('Ana Obras')
+    await page.getByLabel('E-mail do cliente').fill('ana@obras.com')
+    await page.getByRole('button', { name: 'Adicionar' }).click()
+    await expect(page.getByText('ana@obras.com')).toBeVisible()
+    await page.getByRole('button', { name: 'Orçamento', exact: true }).click()
+    await page.getByLabel('Item 1').fill('Pintura')
+    await page.getByLabel('Preço 1').fill('1500')
+    await page.getByRole('button', { name: 'Criar rascunho' }).click()
+    await page.getByRole('tab', { name: 'Documentos' }).click()
+    await page.getByRole('button', { name: 'Virar fatura' }).click()
+    await expect(page.getByText('Fatura 1')).toBeVisible()
+    const pdf = await page.request.get('/api/business/documents/invoice-1/pdf')
+    expect((await pdf.body()).subarray(0, 4).toString()).toBe('%PDF')
+  })
+
+  test('someone is invited to the house', async ({ page }) => {
+    await login(page)
+    await page.goto('/people')
+    await page.getByRole('button', { name: 'Convidar alguém' }).click()
+    await page.getByLabel('Nome').fill('Léo')
+    await page.getByRole('radio', { name: /Convidado/ }).click()
+    await page.getByRole('button', { name: 'Criar convite' }).click()
+    await expect(page.getByRole('button', { name: 'Copiar convite' })).toContainText('/start')
+  })
+
+  test('everything exports to one file', async ({ page }) => {
+    await login(page)
+    await page.goto('/settings')
+    await page.getByLabel('Senha para exportar').fill('uma senha longa')
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Exportar' }).click()
+    expect((await download).suggestedFilename()).toMatch(/\.vigia$/)
+  })
+
+  test('the phone menu reaches every screen', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await login(page)
+    const nav = page.getByRole('navigation', { name: 'Principal (celular)' })
+    await expect(nav.getByRole('link', { name: 'Aprovar' })).toBeVisible()
+    await nav.getByRole('button', { name: 'Mais' }).click()
+    await page.getByRole('link', { name: 'Negócio' }).click()
+    await expect(page.getByRole('heading', { name: 'Negócio' })).toBeVisible()
+  })
+})
+
+
+test('every screen is in the sidebar', async ({ page }) => {
+  await page.goto('/auth?token=e2e-token')
+  const nav = page.getByRole('navigation', { name: 'Principal', exact: true })
+  for (const name of ['Rotinas', 'Precisa de você', 'Galeria', 'Recibos', 'Regras', 'Negócio', 'Custo', 'Memória', 'Conexões', 'Pessoas', 'Ajustes']) {
+    await expect(nav.getByRole('link', { name })).toBeVisible()
+  }
 })

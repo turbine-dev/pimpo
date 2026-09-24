@@ -24,8 +24,6 @@ import { Gallery } from './pages/Gallery'
 import { Business } from './pages/Business'
 import { Settings } from './pages/Settings'
 
-const ready = new Set(['/', '/inbox', '/receipts', '/rules', '/cost', '/memory', '/connections', '/settings'])
-
 export default function App() {
   const [newTask, setNewTask] = useState(false)
   const [palette, setPalette] = useState(false)
@@ -44,7 +42,7 @@ export default function App() {
   useLiveEvents()
   const state = useQuery({ queryKey: ['state'], queryFn: api.state, refetchInterval: 30_000 })
   const attention = (state.data?.awaiting ?? 0) + (state.data?.broken ?? 0)
-  const items = nav.filter((n) => ready.has(n.to)).map((n) => (n.to === '/inbox' ? { ...n, badge: attention } : n))
+  const items = nav.map((n) => (n.to === '/inbox' ? { ...n, badge: attention } : n))
   if (location.pathname === '/welcome') {
     return (
       <div className="min-h-full px-4">
