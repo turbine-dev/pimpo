@@ -1,0 +1,67 @@
+{
+ "name": "Dólar hoje",
+ "description": "Cotação do dólar em reais nos dias úteis.",
+ "manifest": {
+  "schedule": "0 10 * * 1-5",
+  "capabilities": [
+   "http.getJSON:economia.awesomeapi.com.br",
+   "telegram.send"
+  ],
+  "locale": "pt-BR"
+ },
+ "code": "async function run() {\n  const q = (await http.getJSON(\"https://economia.awesomeapi.com.br/json/last/USD-BRL\")).USDBRL;\n  const change = Number(q.pctChange);\n  const arrow = change > 0 ? \"📈\" : change < 0 ? \"📉\" : \"➡️\";\n  await telegram.send({text: arrow + \" Dólar: \" + money.format(Number(q.bid), \"BRL\") + \" (\" + (change > 0 ? \"+\" : \"\") + change.toFixed(2).replace(\".\", \",\") + \"% hoje)\"});\n}",
+ "tests": [
+  {
+   "name": "subiu",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "USDBRL": {
+       "bid": "5.4321",
+       "pctChange": "0.85"
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "📈",
+      "5,43",
+      "+0,85%"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "caiu",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "USDBRL": {
+       "bid": "5.1",
+       "pctChange": "-1.2"
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "📉",
+      "5,10",
+      "-1,20%"
+     ]
+    }
+   ]
+  }
+ ]
+}

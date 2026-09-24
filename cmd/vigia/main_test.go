@@ -60,3 +60,11 @@ func TestMigrateDryRunTouchesNothing(t *testing.T) {
 		t.Fatal("a dry run touched Vigia's data")
 	}
 }
+
+// The starter gallery shipped in the binary must always verify.
+func TestStarterGalleryVerifies(t *testing.T) {
+	var out strings.Builder
+	if err := galleryVerify("../../gallery/index.json", &out); err != nil {
+		t.Fatalf("%v\n%s", err, out.String())
+	}
+}

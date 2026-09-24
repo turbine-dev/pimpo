@@ -1,0 +1,82 @@
+{
+ "name": "Clima da manhã",
+ "description": "Previsão do dia em São Paulo (troque a latitude e a longitude pela sua cidade).",
+ "manifest": {
+  "schedule": "0 7 * * *",
+  "capabilities": [
+   "http.getJSON:api.open-meteo.com",
+   "telegram.send"
+  ],
+  "locale": "pt-BR"
+ },
+ "code": "async function run() {\n  const w = await http.getJSON(\"https://api.open-meteo.com/v1/forecast?latitude=-23.55&longitude=-46.63&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=1\");\n  const d = w.daily;\n  let text = \"🌤️ Hoje: mínima de \" + Math.round(d.temperature_2m_min[0]) + \"°, máxima de \" + Math.round(d.temperature_2m_max[0]) + \"°.\";\n  if (d.precipitation_probability_max[0] >= 50) text += \" ☔ Leve guarda-chuva (\" + d.precipitation_probability_max[0] + \"% de chuva).\";\n  await telegram.send({text});\n}",
+ "tests": [
+  {
+   "name": "dia de chuva",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "temperature_2m_max": [
+        24.6
+       ],
+       "temperature_2m_min": [
+        16.2
+       ],
+       "precipitation_probability_max": [
+        80
+       ]
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "mínima de 16°",
+      "máxima de 25°",
+      "guarda-chuva"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "dia seco",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "temperature_2m_max": [
+        30
+       ],
+       "temperature_2m_min": [
+        19
+       ],
+       "precipitation_probability_max": [
+        5
+       ]
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "máxima de 30°"
+     ],
+     "not_contains": [
+      "guarda-chuva"
+     ]
+    }
+   ]
+  }
+ ]
+}

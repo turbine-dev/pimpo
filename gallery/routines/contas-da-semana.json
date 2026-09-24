@@ -1,0 +1,111 @@
+{
+ "name": "Contas que chegaram",
+ "description": "Toda sexta, lista boletos e faturas que chegaram na semana, com os valores.",
+ "manifest": {
+  "schedule": "0 9 * * 5",
+  "capabilities": [
+   "gmail.search",
+   "telegram.send"
+  ],
+  "locale": "pt-BR"
+ },
+ "code": "async function run() {\n  const found = [];\n  for (const q of [\"boleto\", \"fatura\"]) {\n    for (const m of await gmail.search({query: q, days: 7, max: 30})) {\n      if (!found.some(f => f.id === m.id)) found.push(m);\n    }\n  }\n  if (!found.length) { await telegram.send({text: \"💸 Nenhuma conta nova esta semana.\"}); return; }\n  const lines = found.map(m => {\n    const v = money.parse(money.find(m.subject + \" \" + m.snippet) || \"\");\n    return \"• \" + m.from_name + \": \" + m.subject + (v ? \" — \" + money.format(v, \"BRL\") : \"\");\n  });\n  await telegram.send({text: \"💸 Contas da semana:\\n\" + lines.join(\"\\n\")});\n}",
+ "tests": [
+  {
+   "name": "duas contas",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "c1",
+       "from": "cobranca@luz.com",
+       "from_name": "cobranca",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Sua fatura chegou",
+       "snippet": "Valor: R$ 187,90 vence dia 10",
+       "date": "2026-09-23T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      },
+      {
+       "id": "c2",
+       "from": "banco@banco.com",
+       "from_name": "banco",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Boleto do condomínio",
+       "snippet": "Total R$ 950,00",
+       "date": "2026-09-23T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      },
+      {
+       "id": "x",
+       "from": "ana@amigos.com",
+       "from_name": "ana",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Almoço",
+       "snippet": "Vamos?",
+       "date": "2026-09-23T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "Sua fatura chegou",
+      "187,90",
+      "Boleto do condomínio",
+      "950,00"
+     ],
+     "not_contains": [
+      "Almoço"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "sem contas",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "Nenhuma conta"
+     ]
+    }
+   ]
+  }
+ ]
+}

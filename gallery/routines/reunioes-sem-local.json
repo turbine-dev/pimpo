@@ -1,0 +1,82 @@
+{
+ "name": "Reuniões de amanhã sem local",
+ "description": "À noite, avisa dos compromissos de amanhã que ainda não têm local nem link.",
+ "manifest": {
+  "schedule": "0 20 * * *",
+  "capabilities": [
+   "calendar.events",
+   "telegram.send"
+  ],
+  "locale": "pt-BR"
+ },
+ "code": "async function run() {\n  const tomorrow = dates.startOfDay(dates.today(), 1);\n  const events = await calendar.events({from: tomorrow, to: dates.startOfDay(tomorrow, 1)});\n  const missing = events.filter(e => !e.location || !e.location.trim());\n  if (!missing.length) return;\n  await telegram.send({text: \"📍 Amanhã sem local definido:\\n\" + missing.map(e => \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\")});\n}",
+ "tests": [
+  {
+   "name": "um sem local",
+   "now": "2026-09-24T20:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "Café com Rui",
+       "title": "Café com Rui",
+       "start": "2026-09-25T09:00:00-03:00",
+       "end": "2026-09-25T10:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      },
+      {
+       "id": "Médico",
+       "title": "Médico",
+       "start": "2026-09-25T15:00:00-03:00",
+       "end": "2026-09-25T16:00:00-03:00",
+       "location": "Rua A, 10",
+       "attendees": [],
+       "calendar": "pessoal"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "09:00 Café com Rui"
+     ],
+     "not_contains": [
+      "Médico"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "todos com local",
+   "now": "2026-09-24T20:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "Médico",
+       "title": "Médico",
+       "start": "2026-09-25T15:00:00-03:00",
+       "end": "2026-09-25T16:00:00-03:00",
+       "location": "Rua A, 10",
+       "attendees": [],
+       "calendar": "pessoal"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 0
+    }
+   ]
+  }
+ ]
+}

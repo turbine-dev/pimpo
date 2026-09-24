@@ -1,0 +1,92 @@
+{
+ "name": "Aniversários da semana",
+ "description": "Domingo à noite, os aniversários dos próximos sete dias.",
+ "manifest": {
+  "schedule": "0 19 * * 0",
+  "capabilities": [
+   "calendar.events",
+   "telegram.send"
+  ],
+  "locale": "pt-BR"
+ },
+ "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 7)});\n  const birthdays = events.filter(e => /anivers[aá]rio|birthday/i.test(e.title));\n  if (!birthdays.length) return;\n  await telegram.send({text: \"🎂 Aniversários da semana:\\n\" + birthdays.map(e => \"• \" + dates.format(e.start, \"EEE dd/MM\") + \": \" + e.title).join(\"\\n\")});\n}",
+ "tests": [
+  {
+   "name": "dois aniversários",
+   "now": "2026-09-27T19:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "Aniversário da Ana",
+       "title": "Aniversário da Ana",
+       "start": "2026-09-29T00:00:00-03:00",
+       "end": "2026-09-30T00:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      },
+      {
+       "id": "Reunião",
+       "title": "Reunião",
+       "start": "2026-09-29T10:00:00-03:00",
+       "end": "2026-09-29T11:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      },
+      {
+       "id": "Rui's birthday",
+       "title": "Rui's birthday",
+       "start": "2026-10-01T00:00:00-03:00",
+       "end": "2026-10-02T00:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "Aniversário da Ana",
+      "Rui's birthday"
+     ],
+     "not_contains": [
+      "Reunião"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nenhum",
+   "now": "2026-09-27T19:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "Reunião",
+       "title": "Reunião",
+       "start": "2026-09-29T10:00:00-03:00",
+       "end": "2026-09-29T11:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 0
+    }
+   ]
+  }
+ ]
+}

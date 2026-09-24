@@ -20,6 +20,7 @@ import { RoutinePage } from './pages/RoutinePage'
 import { Routines } from './pages/Routines'
 import { Import } from './pages/Import'
 import { People } from './pages/People'
+import { Gallery } from './pages/Gallery'
 import { Settings } from './pages/Settings'
 
 const ready = new Set(['/', '/inbox', '/receipts', '/rules', '/cost', '/memory', '/connections', '/settings'])
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/import" element={<Import />} />
         <Route path="/people" element={<People />} />
+        <Route path="/gallery" element={<Gallery />} />
         <Route path="/design" element={<Design />} />
       </Routes>
       </ErrorBoundary>

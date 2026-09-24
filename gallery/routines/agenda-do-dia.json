@@ -1,0 +1,85 @@
+{
+ "name": "Agenda do dia",
+ "description": "Toda manhã, os compromissos de hoje no Telegram.",
+ "manifest": {
+  "schedule": "30 6 * * *",
+  "capabilities": [
+   "calendar.events",
+   "telegram.send"
+  ],
+  "locale": "pt-BR"
+ },
+ "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 1)});\n  let text = \"📅 \" + dates.format(today, \"EEEE, d 'de' MMMM\") + \"\\n\";\n  text += events.length ? events.map(e => \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\") : \"Agenda livre hoje.\";\n  await telegram.send({text});\n}",
+ "tests": [
+  {
+   "name": "dois compromissos",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "Dentista",
+       "title": "Dentista",
+       "start": "2026-09-24T09:00:00-03:00",
+       "end": "2026-09-24T10:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      },
+      {
+       "id": "Reunião do projeto",
+       "title": "Reunião do projeto",
+       "start": "2026-09-24T14:30:00-03:00",
+       "end": "2026-09-24T15:30:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      },
+      {
+       "id": "Amanhã",
+       "title": "Amanhã",
+       "start": "2026-09-25T09:00:00-03:00",
+       "end": "2026-09-25T10:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "09:00 Dentista",
+      "14:30 Reunião do projeto"
+     ],
+     "not_contains": [
+      "Amanhã"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "dia livre",
+   "now": "2026-09-24T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "telegram.send",
+     "count": 1,
+     "contains": [
+      "Agenda livre"
+     ]
+    }
+   ]
+  }
+ ]
+}

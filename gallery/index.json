@@ -1,0 +1,1020 @@
+{
+ "authors": {
+  "dener": {
+   "name": "Dener Fernandes",
+   "key": "EIAHPy96DzE04seq6FsRVy91CawUQp3Kqc6W+EGSstg="
+  }
+ },
+ "entries": [
+  {
+   "id": "agenda-da-semana",
+   "author": "dener",
+   "routine": {
+    "name": "Agenda da semana",
+    "description": "Segunda de manhã, o que vem nos próximos sete dias.",
+    "manifest": {
+     "schedule": "0 8 * * 1",
+     "capabilities": [
+      "calendar.events",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 7)});\n  if (!events.length) { await telegram.send({text: \"🗓️ Semana sem compromissos marcados.\"}); return; }\n  const lines = events.map(e =\u003e \"• \" + dates.format(e.start, \"EEE dd/MM HH:mm\") + \" \" + e.title);\n  await telegram.send({text: \"🗓️ Sua semana (\" + events.length + \"):\\n\" + lines.join(\"\\n\")});\n}",
+    "tests": [
+     {
+      "name": "três eventos",
+      "now": "2026-09-28T08:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": [
+         {
+          "id": "Dentista",
+          "title": "Dentista",
+          "start": "2026-09-28T09:00:00-03:00",
+          "end": "2026-09-28T10:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Jantar",
+          "title": "Jantar",
+          "start": "2026-09-30T20:00:00-03:00",
+          "end": "2026-09-30T22:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Longe",
+          "title": "Longe",
+          "start": "2026-10-20T09:00:00-03:00",
+          "end": "2026-10-20T10:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "(2)",
+         "seg 28/09 09:00 Dentista",
+         "qua 30/09 20:00 Jantar"
+        ],
+        "not_contains": [
+         "Longe"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "semana vazia",
+      "now": "2026-09-28T08:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": []
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "sem compromissos"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "bd0b7140727afdbc4d28aa3be84308bc793f6cfc8b595f94b25d52c01982e9b2",
+   "signature": "gVHcg7Z93flTvbENnpLGrV9pPMlZe057gxX8s9lBP/aBcaCgCbmDQw2mi8Y5d1mN/Wp8oXfRH5SJZPfUq7BjBg==",
+   "published": "2026-09-24T20:59:45Z"
+  },
+  {
+   "id": "agenda-do-dia",
+   "author": "dener",
+   "routine": {
+    "name": "Agenda do dia",
+    "description": "Toda manhã, os compromissos de hoje no Telegram.",
+    "manifest": {
+     "schedule": "30 6 * * *",
+     "capabilities": [
+      "calendar.events",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 1)});\n  let text = \"📅 \" + dates.format(today, \"EEEE, d 'de' MMMM\") + \"\\n\";\n  text += events.length ? events.map(e =\u003e \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\") : \"Agenda livre hoje.\";\n  await telegram.send({text});\n}",
+    "tests": [
+     {
+      "name": "dois compromissos",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": [
+         {
+          "id": "Dentista",
+          "title": "Dentista",
+          "start": "2026-09-24T09:00:00-03:00",
+          "end": "2026-09-24T10:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Reunião do projeto",
+          "title": "Reunião do projeto",
+          "start": "2026-09-24T14:30:00-03:00",
+          "end": "2026-09-24T15:30:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Amanhã",
+          "title": "Amanhã",
+          "start": "2026-09-25T09:00:00-03:00",
+          "end": "2026-09-25T10:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "09:00 Dentista",
+         "14:30 Reunião do projeto"
+        ],
+        "not_contains": [
+         "Amanhã"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "dia livre",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": []
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "Agenda livre"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "db3c20f647f9b824d1ff74b6177860c89f35926f87287c075d69e534dc144443",
+   "signature": "YaPeisx2FXXa1ynol6LTsqQN9s2b30LJwZi5MX4mfdOdQ+kPN6uvVaORdblHKhDDYb8S9WE43ypJnQvLH1FLCw==",
+   "published": "2026-09-24T20:59:45Z"
+  },
+  {
+   "id": "aniversarios-da-semana",
+   "author": "dener",
+   "routine": {
+    "name": "Aniversários da semana",
+    "description": "Domingo à noite, os aniversários dos próximos sete dias.",
+    "manifest": {
+     "schedule": "0 19 * * 0",
+     "capabilities": [
+      "calendar.events",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 7)});\n  const birthdays = events.filter(e =\u003e /anivers[aá]rio|birthday/i.test(e.title));\n  if (!birthdays.length) return;\n  await telegram.send({text: \"🎂 Aniversários da semana:\\n\" + birthdays.map(e =\u003e \"• \" + dates.format(e.start, \"EEE dd/MM\") + \": \" + e.title).join(\"\\n\")});\n}",
+    "tests": [
+     {
+      "name": "dois aniversários",
+      "now": "2026-09-27T19:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": [
+         {
+          "id": "Aniversário da Ana",
+          "title": "Aniversário da Ana",
+          "start": "2026-09-29T00:00:00-03:00",
+          "end": "2026-09-30T00:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Reunião",
+          "title": "Reunião",
+          "start": "2026-09-29T10:00:00-03:00",
+          "end": "2026-09-29T11:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Rui's birthday",
+          "title": "Rui's birthday",
+          "start": "2026-10-01T00:00:00-03:00",
+          "end": "2026-10-02T00:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "Aniversário da Ana",
+         "Rui's birthday"
+        ],
+        "not_contains": [
+         "Reunião"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "nenhum",
+      "now": "2026-09-27T19:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": [
+         {
+          "id": "Reunião",
+          "title": "Reunião",
+          "start": "2026-09-29T10:00:00-03:00",
+          "end": "2026-09-29T11:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 0
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "93cb35f123a0f8d041b8607b02c06bbac24554c0534efed70c69883a9372824a",
+   "signature": "PVMLwVNssI4dnHg3o/2YkoWxr+sZAQpvmSr5vuL30UyH3ZhhL5j25TRd9CZcAoZ67NcRtQA/z9rET3E7zGRZBw==",
+   "published": "2026-09-24T20:59:45Z"
+  },
+  {
+   "id": "arquivar-promocoes",
+   "author": "dener",
+   "routine": {
+    "name": "Arquivar promoções",
+    "description": "Todo dia, tira da caixa de entrada as promoções com mais de uma semana. Dá para desfazer.",
+    "manifest": {
+     "schedule": "0 22 * * *",
+     "capabilities": [
+      "gmail.search",
+      "gmail.archive",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:7d in:inbox\", max: 50});\n  for (const m of mails) await gmail.archive({id: m.id});\n  if (mails.length) await telegram.send({text: \"🧹 Arquivei \" + mails.length + (mails.length === 1 ? \" promoção antiga.\" : \" promoções antigas.\")});\n}",
+    "tests": [
+     {
+      "name": "três promoções",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "gmail.search",
+        "result": [
+         {
+          "id": "p1",
+          "from": "loja@promo.com",
+          "from_name": "loja",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "50% off",
+          "snippet": "",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         },
+         {
+          "id": "p2",
+          "from": "ofertas@promo.com",
+          "from_name": "ofertas",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "Só hoje",
+          "snippet": "",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         },
+         {
+          "id": "p3",
+          "from": "news@promo.com",
+          "from_name": "news",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "Novidades",
+          "snippet": "",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "gmail.archive",
+        "count": 3
+       },
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "Arquivei 3 promoções"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "nada",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "gmail.search",
+        "result": []
+       }
+      ],
+      "expect": [
+       {
+        "capability": "gmail.archive",
+        "count": 0
+       },
+       {
+        "capability": "telegram.send",
+        "count": 0
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "09923f809c004a374df0ec499726354953d268656d5174a074d111bc72559600",
+   "signature": "zYFkPXwzESZEZqbzO0RTTXMQFTyNrIP3swY9HWvso2F5OZGCCgptYr4mhWw8/IIyo6NQeh0SVx9zyJwwkI9zDA==",
+   "published": "2026-09-24T20:59:45Z"
+  },
+  {
+   "id": "clima-da-manha",
+   "author": "dener",
+   "routine": {
+    "name": "Clima da manhã",
+    "description": "Previsão do dia em São Paulo (troque a latitude e a longitude pela sua cidade).",
+    "manifest": {
+     "schedule": "0 7 * * *",
+     "capabilities": [
+      "http.getJSON:api.open-meteo.com",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const w = await http.getJSON(\"https://api.open-meteo.com/v1/forecast?latitude=-23.55\u0026longitude=-46.63\u0026daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max\u0026timezone=America%2FSao_Paulo\u0026forecast_days=1\");\n  const d = w.daily;\n  let text = \"🌤️ Hoje: mínima de \" + Math.round(d.temperature_2m_min[0]) + \"°, máxima de \" + Math.round(d.temperature_2m_max[0]) + \"°.\";\n  if (d.precipitation_probability_max[0] \u003e= 50) text += \" ☔ Leve guarda-chuva (\" + d.precipitation_probability_max[0] + \"% de chuva).\";\n  await telegram.send({text});\n}",
+    "tests": [
+     {
+      "name": "dia de chuva",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "http.getJSON",
+        "result": {
+         "daily": {
+          "temperature_2m_max": [
+           24.6
+          ],
+          "temperature_2m_min": [
+           16.2
+          ],
+          "precipitation_probability_max": [
+           80
+          ]
+         }
+        }
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "mínima de 16°",
+         "máxima de 25°",
+         "guarda-chuva"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "dia seco",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "http.getJSON",
+        "result": {
+         "daily": {
+          "temperature_2m_max": [
+           30
+          ],
+          "temperature_2m_min": [
+           19
+          ],
+          "precipitation_probability_max": [
+           5
+          ]
+         }
+        }
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "máxima de 30°"
+        ],
+        "not_contains": [
+         "guarda-chuva"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "77782f303a2fb4eef9a3abda33d8e85fea3da31f34637e0a27f10d4c591b0a95",
+   "signature": "1WD1+zU20P7nDzpepPtP6xSgsSpQDKXFHhHkRWLZ5QSTkQ8ax65kvinry94vcDngn8h1lyWRr/GD/VDJ1zGKCg==",
+   "published": "2026-09-24T20:59:45Z"
+  },
+  {
+   "id": "contas-da-semana",
+   "author": "dener",
+   "routine": {
+    "name": "Contas que chegaram",
+    "description": "Toda sexta, lista boletos e faturas que chegaram na semana, com os valores.",
+    "manifest": {
+     "schedule": "0 9 * * 5",
+     "capabilities": [
+      "gmail.search",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const found = [];\n  for (const q of [\"boleto\", \"fatura\"]) {\n    for (const m of await gmail.search({query: q, days: 7, max: 30})) {\n      if (!found.some(f =\u003e f.id === m.id)) found.push(m);\n    }\n  }\n  if (!found.length) { await telegram.send({text: \"💸 Nenhuma conta nova esta semana.\"}); return; }\n  const lines = found.map(m =\u003e {\n    const v = money.parse(money.find(m.subject + \" \" + m.snippet) || \"\");\n    return \"• \" + m.from_name + \": \" + m.subject + (v ? \" — \" + money.format(v, \"BRL\") : \"\");\n  });\n  await telegram.send({text: \"💸 Contas da semana:\\n\" + lines.join(\"\\n\")});\n}",
+    "tests": [
+     {
+      "name": "duas contas",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "gmail.search",
+        "result": [
+         {
+          "id": "c1",
+          "from": "cobranca@luz.com",
+          "from_name": "cobranca",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "Sua fatura chegou",
+          "snippet": "Valor: R$ 187,90 vence dia 10",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         },
+         {
+          "id": "c2",
+          "from": "banco@banco.com",
+          "from_name": "banco",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "Boleto do condomínio",
+          "snippet": "Total R$ 950,00",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         },
+         {
+          "id": "x",
+          "from": "ana@amigos.com",
+          "from_name": "ana",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "Almoço",
+          "snippet": "Vamos?",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "Sua fatura chegou",
+         "187,90",
+         "Boleto do condomínio",
+         "950,00"
+        ],
+        "not_contains": [
+         "Almoço"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "sem contas",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "gmail.search",
+        "result": []
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "Nenhuma conta"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "9a98db99b1154e7d85c814e0a8dfbb624a92a863b2e0221022b119d4479f4ea0",
+   "signature": "sIbHckFgLuzzLh3hF+g+LOVsDtqm8hWUTVgTFnyNbKwULK9JuvmLcbUIJW0OnXjeaPiWj34OGSoAli0J43pIDQ==",
+   "published": "2026-09-24T20:59:58Z"
+  },
+  {
+   "id": "dolar-hoje",
+   "author": "dener",
+   "routine": {
+    "name": "Dólar hoje",
+    "description": "Cotação do dólar em reais nos dias úteis.",
+    "manifest": {
+     "schedule": "0 10 * * 1-5",
+     "capabilities": [
+      "http.getJSON:economia.awesomeapi.com.br",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const q = (await http.getJSON(\"https://economia.awesomeapi.com.br/json/last/USD-BRL\")).USDBRL;\n  const change = Number(q.pctChange);\n  const arrow = change \u003e 0 ? \"📈\" : change \u003c 0 ? \"📉\" : \"➡️\";\n  await telegram.send({text: arrow + \" Dólar: \" + money.format(Number(q.bid), \"BRL\") + \" (\" + (change \u003e 0 ? \"+\" : \"\") + change.toFixed(2).replace(\".\", \",\") + \"% hoje)\"});\n}",
+    "tests": [
+     {
+      "name": "subiu",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "http.getJSON",
+        "result": {
+         "USDBRL": {
+          "bid": "5.4321",
+          "pctChange": "0.85"
+         }
+        }
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "📈",
+         "5,43",
+         "+0,85%"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "caiu",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "http.getJSON",
+        "result": {
+         "USDBRL": {
+          "bid": "5.1",
+          "pctChange": "-1.2"
+         }
+        }
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "📉",
+         "5,10",
+         "-1,20%"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "bf5fb5727e5089fe7183da64f6dcfb3bea14df82c99f791b466585811b5beec5",
+   "signature": "qb09Kbt206JAMFf8roVqVWRkFJrn/REJldKf1kGrsoZ3Oc/78TFSiaq7I11iKQHznq57Nwt23ouH312MMux2CQ==",
+   "published": "2026-09-24T20:59:45Z"
+  },
+  {
+   "id": "lixeira-promocoes-antigas",
+   "author": "dener",
+   "routine": {
+    "name": "Promoções antigas para a lixeira",
+    "description": "Uma vez por semana, move para a lixeira as promoções com mais de 30 dias. Ficam 30 dias lá antes de sumir.",
+    "manifest": {
+     "schedule": "0 21 * * 0",
+     "capabilities": [
+      "gmail.search",
+      "gmail.trash",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:30d\", max: 50});\n  for (const m of mails) await gmail.trash({id: m.id});\n  await telegram.send({text: mails.length ? \"🗑️ \" + mails.length + \" promoções antigas foram para a lixeira.\" : \"🗑️ Nenhuma promoção antiga esta semana.\"});\n}",
+    "tests": [
+     {
+      "name": "duas antigas",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "gmail.search",
+        "result": [
+         {
+          "id": "a",
+          "from": "x@promo.com",
+          "from_name": "x",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "Velha 1",
+          "snippet": "",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         },
+         {
+          "id": "b",
+          "from": "y@promo.com",
+          "from_name": "y",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "Velha 2",
+          "snippet": "",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "gmail.trash",
+        "count": 2
+       },
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "2 promoções"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "nenhuma",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "gmail.search",
+        "result": []
+       }
+      ],
+      "expect": [
+       {
+        "capability": "gmail.trash",
+        "count": 0
+       },
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "Nenhuma"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "ac0c946e1c57b657dba762e2113dffc83633074251811efeaf8a19d3a30f4842",
+   "signature": "llVCH9akV0wMosJwLosbd69qVizwypn3xQMGOd9MstAdQ/xkz9ln6XxgrKwxN6n7vM80Mx2+A1psadbyjqyyCg==",
+   "published": "2026-09-24T20:59:45Z"
+  },
+  {
+   "id": "nao-lidos-por-remetente",
+   "author": "dener",
+   "routine": {
+    "name": "Não lidos por remetente",
+    "description": "De manhã, quantos e-mails não lidos chegaram e de quem.",
+    "manifest": {
+     "schedule": "15 7 * * *",
+     "capabilities": [
+      "gmail.search",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const mails = await gmail.search({query: \"is:unread\", days: 1, max: 50});\n  if (!mails.length) { await telegram.send({text: \"📭 Nada novo desde ontem.\"}); return; }\n  const by = {};\n  for (const m of mails) by[m.from_name] = (by[m.from_name] || 0) + 1;\n  const top = Object.entries(by).sort((a, b) =\u003e b[1] - a[1]).slice(0, 5);\n  await telegram.send({text: \"📬 \" + mails.length + \" não lidos. Mais frequentes:\\n\" + top.map(([n, c]) =\u003e \"• \" + n + \" (\" + c + \")\").join(\"\\n\")});\n}",
+    "tests": [
+     {
+      "name": "vários",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "gmail.search",
+        "result": [
+         {
+          "id": "1",
+          "from": "ana@x.com",
+          "from_name": "ana",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "a",
+          "snippet": "",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         },
+         {
+          "id": "2",
+          "from": "ana@x.com",
+          "from_name": "ana",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "b",
+          "snippet": "",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         },
+         {
+          "id": "3",
+          "from": "bot@y.com",
+          "from_name": "bot",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "c",
+          "snippet": "",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": true,
+          "can_unsubscribe": false
+         },
+         {
+          "id": "4",
+          "from": "lido@z.com",
+          "from_name": "lido",
+          "to": [
+           "eu@exemplo.com"
+          ],
+          "subject": "d",
+          "snippet": "",
+          "date": "2026-09-23T10:00:00-03:00",
+          "labels": [
+           "INBOX"
+          ],
+          "replied": false,
+          "unread": false,
+          "can_unsubscribe": false
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "3 não lidos",
+         "ana (2)",
+         "bot (1)"
+        ],
+        "not_contains": [
+         "lido ("
+        ]
+       }
+      ]
+     },
+     {
+      "name": "nenhum",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "gmail.search",
+        "result": []
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "Nada novo"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "a60c008f73e6a57e8abaae24e99835bb441735ffc481edcb68c2c0d75bfd6ec4",
+   "signature": "DkOiMr+OoySqFV28tBSA6//26bSuXgfHoMDw3BxPDAMQFMM4JCpIY3ggcwEY7IOOxfSJ2kJPUhGuEzrh2tysCw==",
+   "published": "2026-09-24T20:59:58Z"
+  },
+  {
+   "id": "reunioes-sem-local",
+   "author": "dener",
+   "routine": {
+    "name": "Reuniões de amanhã sem local",
+    "description": "À noite, avisa dos compromissos de amanhã que ainda não têm local nem link.",
+    "manifest": {
+     "schedule": "0 20 * * *",
+     "capabilities": [
+      "calendar.events",
+      "telegram.send"
+     ],
+     "locale": "pt-BR"
+    },
+    "code": "async function run() {\n  const tomorrow = dates.startOfDay(dates.today(), 1);\n  const events = await calendar.events({from: tomorrow, to: dates.startOfDay(tomorrow, 1)});\n  const missing = events.filter(e =\u003e !e.location || !e.location.trim());\n  if (!missing.length) return;\n  await telegram.send({text: \"📍 Amanhã sem local definido:\\n\" + missing.map(e =\u003e \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\")});\n}",
+    "tests": [
+     {
+      "name": "um sem local",
+      "now": "2026-09-24T20:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": [
+         {
+          "id": "Café com Rui",
+          "title": "Café com Rui",
+          "start": "2026-09-25T09:00:00-03:00",
+          "end": "2026-09-25T10:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Médico",
+          "title": "Médico",
+          "start": "2026-09-25T15:00:00-03:00",
+          "end": "2026-09-25T16:00:00-03:00",
+          "location": "Rua A, 10",
+          "attendees": [],
+          "calendar": "pessoal"
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 1,
+        "contains": [
+         "09:00 Café com Rui"
+        ],
+        "not_contains": [
+         "Médico"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "todos com local",
+      "now": "2026-09-24T20:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": [
+         {
+          "id": "Médico",
+          "title": "Médico",
+          "start": "2026-09-25T15:00:00-03:00",
+          "end": "2026-09-25T16:00:00-03:00",
+          "location": "Rua A, 10",
+          "attendees": [],
+          "calendar": "pessoal"
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "telegram.send",
+        "count": 0
+       }
+      ]
+     }
+    ]
+   },
+   "hash": "55a298ef13efeadcb695b416735f20e8944afede8d55d57ecc4c7c1353c37a5b",
+   "signature": "lYfSf+8EeZqHYUtQFn8pglm2fKpGylHFrA8qWVSNlXbeBY91iNGac68K1Ia8GygtQZWyvsEMOeGRo0CEs9E9Bg==",
+   "published": "2026-09-24T20:59:45Z"
+  }
+ ]
+}

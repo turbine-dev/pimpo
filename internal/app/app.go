@@ -22,6 +22,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/connector/web"
 	"github.com/denerFernandes/vigia/internal/event"
 	"github.com/denerFernandes/vigia/internal/explore"
+	"github.com/denerFernandes/vigia/internal/gallery"
 	"github.com/denerFernandes/vigia/internal/host"
 	"github.com/denerFernandes/vigia/internal/judge"
 	"github.com/denerFernandes/vigia/internal/llm"
@@ -49,10 +50,12 @@ type Settings struct {
 	ExploreModel  string `json:"explore_model"`
 	CompileModel  string `json:"compile_model"`
 	JudgeModel    string `json:"judge_model"`
+	// GalleryURL is the routine gallery index; a local path works too.
+	GalleryURL string `json:"gallery_url"`
 }
 
 func defaultSettings() Settings {
-	return Settings{Zone: time.Local.String(), Locale: "pt-BR", JudgeBackend: "local", OllamaModel: "qwen3:1.7b", LocalJudgeURL: "http://127.0.0.1:11500", ExploreModel: "sonnet", CompileModel: "sonnet", JudgeModel: "haiku"}
+	return Settings{Zone: time.Local.String(), Locale: "pt-BR", JudgeBackend: "local", OllamaModel: "qwen3:1.7b", LocalJudgeURL: "http://127.0.0.1:11500", ExploreModel: "sonnet", CompileModel: "sonnet", JudgeModel: "haiku", GalleryURL: gallery.DefaultIndex}
 }
 
 type App struct {
@@ -135,6 +138,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.pairingRoutes()
 	a.peopleRoutes()
 	a.whatsappRoutes()
+	a.galleryRoutes()
 	return a, nil
 }
 
