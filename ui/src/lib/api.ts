@@ -1,0 +1,106 @@
+export type RunOutcome = 'ok' | 'failed' | 'skipped'
+
+export type RoutineSummary = {
+  id: string
+  name: string
+  description: string
+  state: 'active' | 'paused' | 'broken'
+  version: number
+  next_run?: string
+  runs: RunOutcome[]
+  cost_month_usd: number
+  capabilities: string[]
+  schedule: string
+}
+
+export type Scenario = {
+  now: string
+  responses: { capability: string; result: unknown }[]
+  judgments?: Record<string, Record<string, number>>
+  expect: { capability: string; count?: number; contains?: string[]; not_contains?: string[] }[]
+}
+
+export type Routine = {
+  name: string
+  description: string
+  manifest: { schedule: string; capabilities: string[]; judgments?: Record<string, string>; locale?: string }
+  code: string
+  tests: ({ name: string } & Scenario)[]
+}
+
+export type Run = { id: number; version: number; started_at: string; ended_at?: string; outcome: string; error?: string; cost_usd: number; calls: number }
+export type Version = { version: number; routine: Routine; reason: string; approved_by: string; created_at: string }
+
+export type Exploration = {
+  id: string
+  request: string
+  state: 'running' | 'ready' | 'compiling' | 'done' | 'failed' | 'discarded'
+  summary: string
+  routine?: string
+  cost_usd: number
+  error?: string
+  created_at: string
+  updated_at: string
+}
+
+export type VEvent<T = Record<string, unknown>> = { id: number; ts: string; type: string; actor: string; data: T; hash: string }
+
+export type ActionRecord = {
+  source: string
+  capability: string
+  scope?: string
+  risk: 'read' | 'notify' | 'reversible' | 'irreversible'
+  args: unknown
+  result?: unknown
+  error?: string
+  verdict: string
+  reason?: string
+  rule?: string
+  dry_run?: boolean
+  ms: number
+}
+
+export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; telegram_paired: boolean; log_intact: boolean; claude: boolean }
+export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string }
+export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; explore_model: string; compile_model: string; judge_model: string }
+
+export class ApiError extends Error {
+  status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, { method, headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin' })
+  const text = await res.text()
+  const data = text ? JSON.parse(text) : null
+  if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText)
+  return data as T
+}
+
+export const api = {
+  state: () => request<AppState>('GET', '/api/state'),
+  routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
+  routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),
+  routineAction: (id: string, action: 'run' | 'pause' | 'resume' | 'repair') => request<{ run?: Run; error?: string; exploration?: string }>('POST', `/api/routines/${id}/${action}`),
+  explorations: (state?: string) => request<Exploration[]>('GET', `/api/explorations${state ? `?state=${state}` : ''}`),
+  exploration: (id: string) => request<{ exploration: Exploration; actions: VEvent<ActionRecord>[] }>('GET', `/api/explorations/${id}`),
+  explore: (text: string) => request<{ id: string }>('POST', '/api/explorations', { request: text }),
+  compile: (id: string) => request<RoutineSummary>('POST', `/api/explorations/${id}/compile`),
+  discard: (id: string) => request<void>('POST', `/api/explorations/${id}/discard`),
+  events: (q: { types?: string; q?: string; limit?: number }) => {
+    const p = new URLSearchParams()
+    if (q.types) p.set('types', q.types)
+    if (q.q) p.set('q', q.q)
+    if (q.limit) p.set('limit', String(q.limit))
+    return request<VEvent[]>('GET', `/api/events?${p}`)
+  },
+  settings: () => request<Settings>('GET', '/api/settings'),
+  saveSettings: (s: Settings) => request<Settings>('PUT', '/api/settings', s),
+  setBudget: (daily_usd: number) => request<void>('PUT', '/api/budget', { daily_usd }),
+  connections: () => request<Connection[]>('GET', '/api/connections'),
+  connect: (kind: string, body: Record<string, string>) => request<void>('PUT', `/api/connections/${kind}`, body),
+  disconnect: (kind: string) => request<void>('DELETE', `/api/connections/${kind}`),
+}

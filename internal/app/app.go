@@ -1,0 +1,344 @@
+// Package app wires Vigia together: storage, connectors, the policy, the
+// explorer, the scheduler, the Telegram channel and the web API.
+package app
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os/exec"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/denerFernandes/vigia/internal/budget"
+	"github.com/denerFernandes/vigia/internal/compiler"
+	"github.com/denerFernandes/vigia/internal/connector"
+	"github.com/denerFernandes/vigia/internal/connector/calendar"
+	"github.com/denerFernandes/vigia/internal/connector/mail"
+	"github.com/denerFernandes/vigia/internal/connector/telegramcap"
+	"github.com/denerFernandes/vigia/internal/connector/web"
+	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/vigia/internal/explore"
+	"github.com/denerFernandes/vigia/internal/host"
+	"github.com/denerFernandes/vigia/internal/judge"
+	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/vigia/internal/owner"
+	"github.com/denerFernandes/vigia/internal/policy"
+	"github.com/denerFernandes/vigia/internal/scheduler"
+	"github.com/denerFernandes/vigia/internal/server"
+	"github.com/denerFernandes/vigia/internal/store"
+	"github.com/denerFernandes/vigia/internal/telegram"
+	"github.com/denerFernandes/vigia/internal/vault"
+)
+
+type Settings struct {
+	Zone         string `json:"zone"`
+	Locale       string `json:"locale"`
+	JudgeBackend string `json:"judge_backend"` // local, jev, llm
+	OllamaModel  string `json:"ollama_model"`
+	ExploreModel string `json:"explore_model"`
+	CompileModel string `json:"compile_model"`
+	JudgeModel   string `json:"judge_model"`
+}
+
+func defaultSettings() Settings {
+	return Settings{Zone: time.Local.String(), Locale: "pt-BR", JudgeBackend: "local", OllamaModel: "qwen3:1.7b", ExploreModel: "sonnet", CompileModel: "sonnet", JudgeModel: "haiku"}
+}
+
+type App struct {
+	Events    *event.Store
+	Vault     *vault.Vault
+	Store     *store.Store
+	Budget    *budget.Budget
+	Channel   *owner.Channel
+	Explore   *explore.Service
+	Scheduler *scheduler.Scheduler
+	Server    *server.Server
+	Policy    policy.Policy
+	// LLM and Agent default to Claude Code; tests replace them.
+	LLM   llm.Model
+	Agent llm.Agent
+	// TelegramAPI points at a self-hosted Bot API server; empty means Telegram's.
+	TelegramAPI string
+	// MailInsecure uses plain IMAP; tests only.
+	MailInsecure bool
+
+	mu       sync.Mutex
+	listenFn context.CancelFunc
+}
+
+// New assembles an App on top of an open event store.
+func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseURL string) (*App, error) {
+	st, err := store.Open(events.DB())
+	if err != nil {
+		return nil, err
+	}
+	a := &App{Events: events, Vault: v, Store: st, Policy: policy.Open{}}
+	a.LLM = claude{a}
+	a.Agent = claude{a}
+	set := a.Settings(ctx)
+	zone := loadZone(set.Zone)
+	a.Budget = &budget.Budget{Events: events, Zone: zone}
+	a.Channel = &owner.Channel{Events: events, Bot: a.bot, Handler: handler{a}}
+	env := host.Env{Router: a.router(), Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide)}
+	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone}
+	a.Explore = &explore.Service{Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 2},
+		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
+	a.Server = server.New(events, token)
+	a.routes()
+	return a, nil
+}
+
+// Start runs the scheduler and the Telegram listener until ctx ends.
+func (a *App) Start(ctx context.Context) error {
+	if err := a.Scheduler.Start(ctx); err != nil {
+		return err
+	}
+	a.restartListener(ctx)
+	return nil
+}
+
+func (a *App) restartListener(ctx context.Context) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.listenFn != nil {
+		a.listenFn()
+	}
+	lctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	a.listenFn = cancel
+	if a.bot(ctx) == nil {
+		return
+	}
+	go a.Channel.Listen(lctx)
+}
+
+func loadZone(name string) *time.Location {
+	if l, err := time.LoadLocation(name); err == nil {
+		return l
+	}
+	return time.Local
+}
+
+func (a *App) Settings(ctx context.Context) Settings {
+	s := defaultSettings()
+	if raw, _ := a.Events.Get(ctx, "settings"); raw != "" {
+		json.Unmarshal([]byte(raw), &s)
+	}
+	return s
+}
+
+func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error {
+	if _, err := time.LoadLocation(s.Zone); err != nil {
+		return server.StatusError{Status: 400, Msg: "unknown time zone " + s.Zone}
+	}
+	switch s.JudgeBackend {
+	case "local", "jev", "llm":
+	default:
+		return server.StatusError{Status: 400, Msg: "judge backend must be local, jev or llm"}
+	}
+	b, _ := json.Marshal(s)
+	if err := a.Events.Put(ctx, "settings", string(b)); err != nil {
+		return err
+	}
+	_, err := a.Events.Append(ctx, "settings.changed", actor, s)
+	return err
+}
+
+func (a *App) secret(ctx context.Context, name string) (string, error) {
+	v, err := a.Vault.Get(ctx, name)
+	if errors.Is(err, vault.ErrNotFound) {
+		return "", fmt.Errorf("%s is not set up; open Connections", strings.SplitN(name, ".", 2)[0])
+	}
+	return v, err
+}
+
+// bot builds a Telegram client from the stored token on every use, so a
+// new token takes effect without a restart.
+func (a *App) bot(ctx context.Context) owner.Bot {
+	tok, err := a.Vault.Get(ctx, "telegram.token")
+	if err != nil || tok == "" {
+		return nil
+	}
+	return telegram.Bot{Token: tok, BaseURL: a.TelegramAPI}
+}
+
+type botSender struct{ a *App }
+
+func (b botSender) Send(ctx context.Context, chat int64, text string, rows ...[]telegram.Button) (telegram.Message, error) {
+	bot := b.a.bot(ctx)
+	if bot == nil {
+		return telegram.Message{}, errors.New("Telegram is not set up; open Connections")
+	}
+	return bot.Send(ctx, chat, text, rows...)
+}
+
+func (a *App) router() *connector.Router {
+	cal := &calendar.Calendar{TTL: time.Minute, Feeds: func(ctx context.Context) ([]string, error) {
+		raw, err := a.secret(ctx, "calendar.feeds")
+		if err != nil {
+			return nil, err
+		}
+		var urls []string
+		for _, l := range strings.Split(raw, "\n") {
+			if l = strings.TrimSpace(l); l != "" {
+				urls = append(urls, l)
+			}
+		}
+		return urls, nil
+	}}
+	return connector.NewRouter(
+		zoned{a, cal},
+		mailConn{a},
+		&web.Web{},
+		&telegramcap.Owner{Bot: botSender{a}, Chat: a.Channel.Chat},
+	)
+}
+
+// zoned gives the calendar the owner's current zone on every call.
+type zoned struct {
+	a   *App
+	cal *calendar.Calendar
+}
+
+func (z zoned) Capabilities() []string { return z.cal.Capabilities() }
+func (z zoned) Call(ctx context.Context, c, s string, args any) (any, error) {
+	z.cal.Zone = loadZone(z.a.Settings(ctx).Zone)
+	return z.cal.Call(ctx, c, s, args)
+}
+
+// mailConn reads the account settings on every call.
+type mailConn struct{ a *App }
+
+func (m mailConn) Capabilities() []string { return (&mail.Mail{}).Capabilities() }
+func (m mailConn) Call(ctx context.Context, c, s string, args any) (any, error) {
+	addr, _ := m.a.Events.Get(ctx, "mail.addr")
+	user, _ := m.a.Events.Get(ctx, "mail.user")
+	if addr == "" || user == "" {
+		return nil, errors.New("email is not set up; open Connections")
+	}
+	acct := mail.Account{Addr: addr, Username: user, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) { return m.a.secret(ctx, "mail.password") }}
+	return (&mail.Mail{Account: acct}).Call(ctx, c, s, args)
+}
+
+func (a *App) judge(ctx context.Context, question string, item any) (judge.Answer, error) {
+	set := a.Settings(ctx)
+	backends := map[string]judge.Judge{
+		"local": judge.Ollama{Model: set.OllamaModel},
+		"jev":   judge.Jev{Key: func(ctx context.Context) (string, error) { return a.secret(ctx, "typesafe.key") }},
+		"llm":   judge.LLM{Model: a.LLM, Name: set.JudgeModel},
+	}
+	order := []string{set.JudgeBackend}
+	for _, n := range []string{"jev", "local", "llm"} {
+		if n != set.JudgeBackend {
+			order = append(order, n)
+		}
+	}
+	var chain judge.Chain
+	for _, n := range order {
+		if n == "jev" {
+			if _, err := a.Vault.Get(ctx, "typesafe.key"); err != nil {
+				continue
+			}
+		}
+		chain = append(chain, backends[n])
+	}
+	return chain.Ask(ctx, question, item)
+}
+
+func (a *App) decide(ctx context.Context, act policy.Action) policy.Decision {
+	return a.Policy.Decide(ctx, act)
+}
+
+func (a *App) generate(ctx context.Context, r llm.Request) (llm.Response, error) {
+	if r.Model == "" {
+		r.Model = a.Settings(ctx).CompileModel
+	}
+	return a.LLM.Generate(ctx, r)
+}
+
+func (a *App) runAgent(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
+	if r.Model == "" {
+		r.Model = a.Settings(ctx).ExploreModel
+	}
+	return a.Agent.Run(ctx, r)
+}
+
+// claude is the default model backend: Claude Code with the owner's login.
+type claude struct{ a *App }
+
+func (c claude) Generate(ctx context.Context, r llm.Request) (llm.Response, error) {
+	return llm.ClaudeCLI{}.Generate(ctx, r)
+}
+func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
+	return llm.ClaudeCLI{}.Run(ctx, r)
+}
+
+func claudeInstalled() bool { _, err := exec.LookPath("claude"); return err == nil }
+
+type judgeFunc func(context.Context, string, any) (judge.Answer, error)
+
+func (f judgeFunc) Ask(ctx context.Context, q string, item any) (judge.Answer, error) {
+	return f(ctx, q, item)
+}
+
+type policyFunc func(context.Context, policy.Action) policy.Decision
+
+func (f policyFunc) Decide(ctx context.Context, a policy.Action) policy.Decision { return f(ctx, a) }
+
+type modelFunc func(context.Context, llm.Request) (llm.Response, error)
+
+func (f modelFunc) Generate(ctx context.Context, r llm.Request) (llm.Response, error) {
+	return f(ctx, r)
+}
+
+type agentFunc func(context.Context, llm.AgentRequest) (llm.Response, error)
+
+func (f agentFunc) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
+	return f(ctx, r)
+}
+
+// handler answers the owner on Telegram.
+type handler struct{ a *App }
+
+func (h handler) Request(ctx context.Context, text string) (string, error) {
+	if _, err := h.a.Explore.Start(ctx, text, "human:owner"); err != nil {
+		return "", err
+	}
+	return "Entendi. Vou fazer agora e te mostro o resultado. 🔎", nil
+}
+
+func (h handler) Button(ctx context.Context, action, id string) (string, error) {
+	switch action {
+	case "compile":
+		r, err := h.a.Explore.Approve(ctx, id, "human:owner")
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("Rotina \"%s\" criada. Próxima execução: %s.", r.Body.Name, h.a.nextText(ctx, r.ID)), nil
+	case "discard":
+		return "Descartado.", h.a.Explore.Discard(ctx, id, "human:owner")
+	case "run":
+		h.a.Store.SetRoutineState(ctx, id, store.RoutineActive)
+		h.a.Scheduler.Changed(ctx, id)
+		if _, err := h.a.Scheduler.RunNow(ctx, id, "owner"); err != nil {
+			return "", err
+		}
+		return "Rodou de novo e deu certo. Rotina reativada.", nil
+	case "repair":
+		if _, err := h.a.Explore.Repair(ctx, id, "", "human:owner"); err != nil {
+			return "", err
+		}
+		return "Vou refazer com o agente e te mostro.", nil
+	}
+	return "", fmt.Errorf("unknown action %q", action)
+}
+
+func (a *App) nextText(ctx context.Context, id string) string {
+	n := a.Scheduler.Next(id)
+	if n.IsZero() {
+		return "não agendada"
+	}
+	return n.In(loadZone(a.Settings(ctx).Zone)).Format("02/01 15:04")
+}

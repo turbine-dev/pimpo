@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/denerFernandes/vigia/internal/routine"
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS explorations (
   routine    TEXT,
   cost_usd   REAL NOT NULL DEFAULT 0,
   error      TEXT,
+  candidate  TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -62,9 +64,19 @@ CREATE TABLE IF NOT EXISTS runs (
 );
 CREATE INDEX IF NOT EXISTS runs_routine ON runs (routine, id);`
 
+// columns added after the first release, applied to older databases.
+var additions = []string{
+	`ALTER TABLE explorations ADD COLUMN candidate TEXT`,
+}
+
 func Open(db *sql.DB) (*Store, error) {
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("migrate store: %w", err)
+	}
+	for _, stmt := range additions {
+		if _, err := db.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
+			return nil, fmt.Errorf("migrate store: %w", err)
+		}
 	}
 	return &Store{db: db}, nil
 }
@@ -210,29 +222,36 @@ func affected(res sql.Result, err error) error {
 }
 
 type Exploration struct {
-	ID        string       `json:"id"`
-	Request   string       `json:"request"`
-	State     string       `json:"state"`
-	Trace     *trace.Trace `json:"trace,omitempty"`
-	Summary   string       `json:"summary"`
-	Routine   string       `json:"routine,omitempty"`
-	CostUSD   float64      `json:"cost_usd"`
-	Error     string       `json:"error,omitempty"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
+	ID      string       `json:"id"`
+	Request string       `json:"request"`
+	State   string       `json:"state"`
+	Trace   *trace.Trace `json:"trace,omitempty"`
+	Summary string       `json:"summary"`
+	Routine string       `json:"routine,omitempty"`
+	CostUSD float64      `json:"cost_usd"`
+	Error   string       `json:"error,omitempty"`
+	// Candidate is the last routine the compiler proposed, kept when it
+	// failed its checks so the owner can see why.
+	Candidate *routine.Routine `json:"candidate,omitempty"`
+	CreatedAt time.Time        `json:"created_at"`
+	UpdatedAt time.Time        `json:"updated_at"`
 }
 
 func (s *Store) SaveExploration(ctx context.Context, e Exploration) error {
-	var tr any
+	var tr, cand any
 	if e.Trace != nil {
 		b, _ := json.Marshal(e.Trace)
 		tr = string(b)
 	}
+	if e.Candidate != nil {
+		b, _ := json.Marshal(e.Candidate)
+		cand = string(b)
+	}
 	now := ts(time.Now())
-	_, err := s.db.ExecContext(ctx, `INSERT INTO explorations (id, request, state, trace, summary, routine, cost_usd, error, created_at, updated_at)
-	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	  ON CONFLICT(id) DO UPDATE SET state = excluded.state, trace = excluded.trace, summary = excluded.summary, routine = excluded.routine, cost_usd = excluded.cost_usd, error = excluded.error, updated_at = excluded.updated_at`,
-		e.ID, e.Request, e.State, tr, e.Summary, e.Routine, e.CostUSD, e.Error, now, now)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO explorations (id, request, state, trace, summary, routine, cost_usd, error, candidate, created_at, updated_at)
+	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	  ON CONFLICT(id) DO UPDATE SET state = excluded.state, trace = excluded.trace, summary = excluded.summary, routine = excluded.routine, cost_usd = excluded.cost_usd, error = excluded.error, candidate = excluded.candidate, updated_at = excluded.updated_at`,
+		e.ID, e.Request, e.State, tr, e.Summary, e.Routine, e.CostUSD, e.Error, cand, now, now)
 	return err
 }
 
@@ -268,7 +287,7 @@ func repeat(s string, n int) string {
 }
 
 func (s *Store) explorations(ctx context.Context, where string, args ...any) ([]Exploration, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id, request, state, trace, summary, routine, cost_usd, error, created_at, updated_at FROM explorations `+where, args...)
+	rows, err := s.db.QueryContext(ctx, `SELECT id, request, state, trace, summary, routine, cost_usd, error, candidate, created_at, updated_at FROM explorations `+where, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -276,13 +295,19 @@ func (s *Store) explorations(ctx context.Context, where string, args ...any) ([]
 	out := []Exploration{}
 	for rows.Next() {
 		var e Exploration
-		var tr, summary, rt, errText sql.NullString
+		var tr, summary, rt, errText, cand sql.NullString
 		var created, updated string
-		if err := rows.Scan(&e.ID, &e.Request, &e.State, &tr, &summary, &rt, &e.CostUSD, &errText, &created, &updated); err != nil {
+		if err := rows.Scan(&e.ID, &e.Request, &e.State, &tr, &summary, &rt, &e.CostUSD, &errText, &cand, &created, &updated); err != nil {
 			return nil, err
 		}
 		e.Summary, e.Routine, e.Error = summary.String, rt.String, errText.String
 		e.CreatedAt, e.UpdatedAt = parse(created), parse(updated)
+		if cand.Valid && cand.String != "" {
+			var r routine.Routine
+			if json.Unmarshal([]byte(cand.String), &r) == nil {
+				e.Candidate = &r
+			}
+		}
 		if tr.Valid && tr.String != "" {
 			var t trace.Trace
 			if json.Unmarshal([]byte(tr.String), &t) == nil {
@@ -351,3 +376,6 @@ func (s *Store) RunCostSince(ctx context.Context, routine string, t time.Time) (
 	err := s.db.QueryRowContext(ctx, `SELECT SUM(cost_usd) FROM runs WHERE routine = ? AND started_at >= ?`, routine, ts(t)).Scan(&c)
 	return c.Float64, err
 }
+
+// DB exposes the connection for tests and migrations.
+func (s *Store) DB() *sql.DB { return s.db }
