@@ -41,6 +41,8 @@ export type Exploration = {
   error?: string
   created_at: string
   updated_at: string
+  trace?: { judgments?: Record<string, Record<string, number>>; questions?: Record<string, string> }
+  candidate?: Routine
 }
 
 export type VEvent<T = Record<string, unknown>> = { id: number; ts: string; type: string; actor: string; data: T; hash: string }
@@ -105,12 +107,15 @@ export const api = {
   receipts: (q?: string) => request<Receipt[]>('GET', `/api/receipts${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   undo: (id: number) => request<void>('POST', `/api/actions/${id}/undo`),
   approvals: () => request<Approval[]>('GET', '/api/approvals'),
-  answer: (id: string, answer: 'once' | 'always' | 'deny') => request<void>('POST', `/api/approvals/${id}/${answer}`),
+  answer: (id: string, answer: 'once' | 'run' | 'always' | 'deny') => request<void>('POST', `/api/approvals/${id}/${answer}`),
   rules: () => request<Rule[]>('GET', '/api/rules'),
   saveRules: (rules: Rule[]) => request<Rule[]>('PUT', '/api/rules', rules),
   compileRule: (text: string) => request<{ rule: Rule; summary: string }>('POST', '/api/rules/compile', { text }),
   testRule: (rule: Rule) => request<{ matches: { event: number; ts: string; source: string; capability: string; was: string; would_be: string }[] }>('POST', '/api/rules/test', rule),
   cost: () => request<CostView>('GET', '/api/cost'),
+  setup: () => request<{ done: boolean; demo: boolean; telegram: boolean; mail: boolean; calendar: boolean; preset: string; claude: boolean }>('GET', '/api/setup'),
+  setupDone: () => request<void>('POST', '/api/setup/done'),
+  preset: (preset: 'conservative' | 'balanced' | 'liberal') => request<Rule[]>('PUT', '/api/rules/preset', { preset }),
   settings: () => request<Settings>('GET', '/api/settings'),
   saveSettings: (s: Settings) => request<Settings>('PUT', '/api/settings', s),
   setBudget: (daily_usd: number) => request<void>('PUT', '/api/budget', { daily_usd }),

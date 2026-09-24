@@ -84,9 +84,12 @@ func (a *App) safetyRoutes() {
 	s.Handle("POST /api/approvals/{id}/{answer}", a.answerApproval)
 	s.Handle("GET /api/rules", func(w http.ResponseWriter, r *http.Request) { server.WriteJSON(w, 200, a.Rules.Rules(r.Context())) })
 	s.Handle("PUT /api/rules", a.putRules)
+	s.Handle("PUT /api/rules/preset", a.putPreset)
 	s.Handle("POST /api/rules/compile", a.compileRule)
 	s.Handle("POST /api/rules/test", a.testRule)
 	s.Handle("GET /api/cost", a.cost)
+	s.Handle("GET /api/setup", a.setup)
+	s.Handle("POST /api/setup/done", a.setupDone)
 }
 
 type receipt struct {
@@ -147,8 +150,8 @@ func (a *App) undoAction(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) answerApproval(w http.ResponseWriter, r *http.Request) {
 	ans := approval.Answer(r.PathValue("answer"))
-	if ans != approval.Once && ans != approval.Always && ans != approval.Deny {
-		server.WriteError(w, server.StatusError{Status: 400, Msg: "answer must be once, always or deny"})
+	if ans != approval.Once && ans != approval.Always && ans != approval.Deny && ans != approval.Run {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "answer must be once, run, always or deny"})
 		return
 	}
 	if !a.Approvals.Resolve(r.Context(), r.PathValue("id"), ans, "human:owner") {
@@ -156,6 +159,36 @@ func (a *App) answerApproval(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	server.WriteJSON(w, 200, map[string]string{"answer": string(ans)})
+}
+
+// putPreset replaces the rules with one of the setup presets, keeping the
+// owner's own rules.
+func (a *App) putPreset(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Preset string `json:"preset"`
+	}
+	if err := server.Decode(r, &req); err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	preset, ok := policy.Presets()[req.Preset]
+	if !ok {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "preset must be conservative, balanced or liberal"})
+		return
+	}
+	var keep []policy.Rule
+	for _, rule := range a.Rules.Rules(r.Context()) {
+		if !strings.HasPrefix(rule.ID, "preset-") {
+			keep = append(keep, rule)
+		}
+	}
+	rules := append(preset, keep...)
+	if err := a.Rules.SaveRules(r.Context(), rules, "human:owner"); err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	a.Events.Put(r.Context(), "setup.preset", req.Preset)
+	server.WriteJSON(w, 200, rules)
 }
 
 func (a *App) putRules(w http.ResponseWriter, r *http.Request) {
@@ -297,4 +330,30 @@ func (a *App) cost(w http.ResponseWriter, r *http.Request) {
 		"projected_month": month / days * daysInMonth,
 		"by_day":          byDay, "by_source": bySource,
 	})
+}
+
+// setup reports what the first-run guide still needs.
+func (a *App) setup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	has := func(name string) bool { _, err := a.Vault.Get(ctx, name); return err == nil }
+	chat, _ := a.Channel.Chat(ctx)
+	done, _ := a.Events.Get(ctx, "setup.done")
+	preset, _ := a.Events.Get(ctx, "setup.preset")
+	demo, _ := a.Events.Get(ctx, "demo")
+	routines, _ := a.Store.Routines(ctx)
+	server.WriteJSON(w, 200, map[string]any{
+		"done":     done == "true" || len(routines) > 0,
+		"demo":     demo == "true",
+		"telegram": chat != 0,
+		"mail":     has("mail.password"),
+		"calendar": has("calendar.feeds"),
+		"preset":   preset,
+		"claude":   claudeInstalled(),
+	})
+}
+
+func (a *App) setupDone(w http.ResponseWriter, r *http.Request) {
+	a.Events.Put(r.Context(), "setup.done", "true")
+	a.Events.Append(r.Context(), "setup.finished", "human:owner", map[string]string{})
+	server.WriteJSON(w, 200, map[string]bool{"done": true})
 }

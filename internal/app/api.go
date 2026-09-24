@@ -191,6 +191,9 @@ func (a *App) getExploration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	actions, _ := a.Events.List(r.Context(), event.Query{Types: []string{"action.done"}, Search: `"exploration:` + e.ID + `"`})
+	if actions == nil {
+		actions = []event.Event{}
+	}
 	server.WriteJSON(w, 200, map[string]any{"exploration": e, "actions": actions})
 }
 

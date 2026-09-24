@@ -10,6 +10,12 @@ import (
 // These filters make scenario responses behave like the real service for
 // the arguments the routine actually sent.
 
+// FilterResponse applies a read capability's arguments to canned data, the
+// way the real service would. The demo mailbox uses it too.
+func FilterResponse(capability string, args any, v any, now time.Time) any {
+	return filterResponse(capability, args, v, now)
+}
+
 func filterResponse(capability string, args any, v any, now time.Time) any {
 	a, _ := args.(map[string]any)
 	list, ok := v.([]any)

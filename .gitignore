@@ -5,3 +5,5 @@ ui/playwright-report/
 *.log
 .DS_Store
 tools/jev/__pycache__/
+ui/test-results/
+ui/playwright-report/

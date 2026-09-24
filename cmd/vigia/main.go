@@ -61,10 +61,14 @@ func serve(args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	addr := fs.String("addr", "127.0.0.1:7788", "listen address (loopback only unless you know why)")
 	dir := fs.String("data", "", "data directory (default ~/.vigia)")
+	demoMode := fs.Bool("demo", false, "try Vigia with a demo mailbox and calendar, no accounts and no model costs")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	home := dataDir(*dir)
+	if *demoMode && *dir == "" {
+		home += "-demo"
+	}
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		return err
 	}
@@ -93,6 +97,10 @@ func serve(args []string) error {
 		return err
 	}
 	a.TelegramAPI = os.Getenv("VIGIA_TELEGRAM_API")
+	if *demoMode {
+		a.EnableDemo(ctx, 700*time.Millisecond)
+		fmt.Println("Demo mode: a sample mailbox and calendar, a scripted agent, no model costs.")
+	}
 	if err := a.Start(ctx); err != nil {
 		return err
 	}
@@ -114,6 +122,10 @@ func serve(args []string) error {
 // sessionToken is created once and kept, so the login link stays valid
 // across restarts until the user rotates it.
 func sessionToken(ctx context.Context, s *event.Store) (string, error) {
+	// Browser tests pin the token so they can log in.
+	if t := os.Getenv("VIGIA_TOKEN"); t != "" {
+		return t, s.Put(ctx, "session_token", t)
+	}
 	if t, err := s.Get(ctx, "session_token"); err != nil || t != "" {
 		return t, err
 	}

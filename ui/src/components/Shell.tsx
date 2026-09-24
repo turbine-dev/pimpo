@@ -66,7 +66,7 @@ export function Budget({ spent, limit }: { spent: number; limit: number }) {
   )
 }
 
-export function Shell({ children, items = nav, budget, healthy = true }: { children: ReactNode; items?: NavItem[]; budget?: { spent: number; limit: number }; healthy?: boolean }) {
+export function Shell({ children, items = nav, budget, healthy = true, onSearch }: { children: ReactNode; items?: NavItem[]; budget?: { spent: number; limit: number }; healthy?: boolean; onSearch?: () => void }) {
   const [theme, toggle] = useTheme()
   return (
     <div className="flex h-full">
@@ -102,7 +102,7 @@ export function Shell({ children, items = nav, budget, healthy = true }: { child
           <div className="flex items-center gap-2 md:hidden">
             <Logo size={24} />
           </div>
-          <button className="flex h-9 max-w-md flex-1 items-center gap-2 rounded-[10px] border border-line bg-surface px-3 text-left text-[13px] text-ink-3 hover:border-line-strong">
+          <button onClick={onSearch} className="flex h-9 max-w-md flex-1 items-center gap-2 rounded-[10px] border border-line bg-surface px-3 text-left text-[13px] text-ink-3 hover:border-line-strong">
             <Search size={15} />
             <span className="flex-1">Buscar rotinas, recibos, regras…</span>
             <Kbd>⌘K</Kbd>

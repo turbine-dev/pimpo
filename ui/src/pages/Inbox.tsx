@@ -13,7 +13,7 @@ export function Inbox() {
   const repair = useMutation({ mutationFn: (id: string) => api.routineAction(id, 'repair'), onSuccess: (r) => r.exploration && nav(`/explorations/${r.exploration}`) })
   const run = useMutation({ mutationFn: (id: string) => api.routineAction(id, 'run'), onSettled: () => qc.invalidateQueries({ queryKey: ['routines'] }) })
   const approvals = useQuery({ queryKey: ['approvals'], queryFn: api.approvals, refetchInterval: 10_000 })
-  const answer = useMutation({ mutationFn: ({ id, a }: { id: string; a: 'once' | 'always' | 'deny' }) => api.answer(id, a), onSettled: () => qc.invalidateQueries({ queryKey: ['approvals'] }) })
+  const answer = useMutation({ mutationFn: ({ id, a }: { id: string; a: 'once' | 'run' | 'always' | 'deny' }) => api.answer(id, a), onSettled: () => qc.invalidateQueries({ queryKey: ['approvals'] }) })
   const broken = (routines.data ?? []).filter((r) => r.state === 'broken')
   const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0)
 
@@ -38,6 +38,7 @@ export function Inbox() {
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="ghost" onClick={() => answer.mutate({ id: ap.id, a: 'deny' })}>Negar</Button>
+              <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'run' })} title="Permite o resto desta execução sem perguntar de novo">Todos desta vez</Button>
               <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'always' })}>Sempre</Button>
               <Button size="sm" variant="primary" onClick={() => answer.mutate({ id: ap.id, a: 'once' })}>Permitir</Button>
             </div>

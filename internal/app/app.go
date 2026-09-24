@@ -71,6 +71,10 @@ type App struct {
 	TelegramAPI string
 	// MailInsecure uses plain IMAP; tests only.
 	MailInsecure bool
+	// Router is shared by every run; the demo swaps connectors in it.
+	Router *connector.Router
+	// DemoJudge replaces the judgment backends in demo mode.
+	DemoJudge judge.Judge
 
 	mu       sync.Mutex
 	listenFn context.CancelFunc
@@ -93,6 +97,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Channel = &owner.Channel{Events: events, Bot: a.bot, Handler: handler{a}}
 	a.Approvals = &approval.Manager{Events: events, Notify: a.Channel, Describe: describeAction}
 	router := a.router()
+	a.Router = router
 	a.Outbox = &outbox.Outbox{DB: events.DB(), Events: events, Send: func(ctx context.Context, args any) (any, error) { return router.Call(ctx, "gmail.send", "", args) }}
 	if err := a.Outbox.Init(); err != nil {
 		return nil, err
@@ -244,6 +249,9 @@ func (m mailConn) Call(ctx context.Context, c, s string, args any) (any, error) 
 }
 
 func (a *App) judge(ctx context.Context, question string, item any) (judge.Answer, error) {
+	if a.DemoJudge != nil {
+		return a.DemoJudge.Ask(ctx, question, item)
+	}
 	set := a.Settings(ctx)
 	backends := map[string]judge.Judge{
 		"local": judge.Ollama{Model: set.OllamaModel},
@@ -352,12 +360,12 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 			return "", err
 		}
 		return "Vou refazer com o agente e te mostro.", nil
-	case "approve", "always", "deny":
-		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny}[action]
+	case "approve", "always", "deny", "batch":
+		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run}[action]
 		if !h.a.Approvals.Resolve(ctx, id, ans, "human:owner") {
 			return "", fmt.Errorf("este pedido já não está esperando")
 		}
-		return map[string]string{"approve": "Permitido.", "always": "Permitido, e não pergunto mais.", "deny": "Negado."}[action], nil
+		return map[string]string{"approve": "Permitido.", "batch": "Permitido para o resto desta execução.", "always": "Permitido, e não pergunto mais.", "deny": "Negado."}[action], nil
 	}
 	return "", fmt.Errorf("unknown action %q", action)
 }
