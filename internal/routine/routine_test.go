@@ -88,17 +88,24 @@ func TestLongestLabelWins(t *testing.T) {
 
 func TestReadsReplayInOrderThenRepeat(t *testing.T) {
 	h := newScenarioHost(trace.Scenario{Responses: []trace.Response{
+		{Capability: "http.getJSON", Result: json.RawMessage(`[1]`)},
+		{Capability: "http.getJSON", Result: json.RawMessage(`[2]`)},
 		{Capability: "calendar.events", Result: json.RawMessage(`[1]`)},
 		{Capability: "calendar.events", Result: json.RawMessage(`[2]`)},
 	}})
 	var got []any
 	for range 3 {
-		v, _ := h.Call(context.Background(), "calendar.events", "", nil)
+		v, _ := h.Call(context.Background(), "http.getJSON", "", nil)
 		got = append(got, v)
 	}
 	b, _ := json.Marshal(got)
 	if string(b) != "[[1],[2],[2]]" {
 		t.Fatalf("got %s", b)
+	}
+	// Searchable lists answer from everything seen, every time.
+	v, _ := h.Call(context.Background(), "calendar.events", "", nil)
+	if b, _ := json.Marshal(v); string(b) != "[1,2]" {
+		t.Fatalf("calendar got %s", b)
 	}
 	if v, _ := h.Call(context.Background(), "gmail.search", "", nil); len(v.([]any)) != 0 {
 		t.Fatal("unrecorded read should return an empty list")
@@ -150,5 +157,23 @@ func TestAuditFindsUndeclaredCalls(t *testing.T) {
 	_, problems = Audit(context.Background(), liar)
 	if !strings.Contains(strings.Join(problems, "\n"), "calls gmail.send without declaring it") || !strings.Contains(strings.Join(problems, "\n"), "outside the manifest scope") {
 		t.Fatalf("liar: %v", problems)
+	}
+}
+
+// The explorer may search twice (one empty try, then the right one); the
+// routine searching once must still see everything the explorer saw.
+func TestReplayAnswersFromEverythingSeen(t *testing.T) {
+	r := Routine{Code: `async function run() {
+  const today = dates.today();
+  const events = await calendar.events({from: today, to: dates.addDays(today, 1)});
+  await telegram.send({text: events.map(e => e.title).join(",")});
+}`, Manifest: runtime.Manifest{Capabilities: []string{"calendar.events", "telegram.send"}}}
+	s := trace.Scenario{Now: "2026-09-25T00:17:55+02:00", Responses: []trace.Response{
+		{Capability: "calendar.events", Result: json.RawMessage(`null`)},
+		{Capability: "calendar.events", Result: json.RawMessage(`[{"id":"s1","title":"Standup do time","start":"2026-09-25T14:00:00+02:00","end":"2026-09-25T14:30:00+02:00"},{"id":"t1","title":"Amanhã","start":"2026-09-26T09:00:00+02:00","end":"2026-09-26T10:00:00+02:00"}]`)},
+		{Capability: "calendar.events", Result: json.RawMessage(`[{"id":"s1","title":"Standup do time","start":"2026-09-25T14:00:00+02:00","end":"2026-09-25T14:30:00+02:00"}]`)},
+	}, Expect: []trace.Expect{{Capability: "telegram.send", Contains: []string{"Standup do time"}, NotContains: []string{"Amanhã", "Standup do time,Standup"}}}}
+	if out := Check(context.Background(), r, "x", s); !out.Passed {
+		t.Fatalf("%v", out.Problems)
 	}
 }

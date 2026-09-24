@@ -141,6 +141,10 @@ func flatten(v any) string {
 }
 
 type scenarioHost struct {
+	// world is, for searchable lists (mail, events), everything any
+	// recorded call returned: the routine may ask differently from the
+	// explorer, and gets what a real server would answer from that data.
+	world     map[string][]any
 	responses map[string][]json.RawMessage
 	last      map[string]json.RawMessage
 	judgments map[string]map[string]float64
@@ -148,10 +152,33 @@ type scenarioHost struct {
 	now       time.Time
 }
 
+// searchable capabilities answer queries over a set of items, so replay
+// can answer any query from the items the exploration saw.
+var searchable = map[string]bool{"gmail.search": true, "calendar.events": true}
+
 func newScenarioHost(s trace.Scenario) *scenarioHost {
-	h := &scenarioHost{responses: map[string][]json.RawMessage{}, last: map[string]json.RawMessage{}, judgments: s.Judgments}
+	h := &scenarioHost{world: map[string][]any{}, responses: map[string][]json.RawMessage{}, last: map[string]json.RawMessage{}, judgments: s.Judgments}
+	seen := map[string]bool{}
 	for _, r := range s.Responses {
 		h.responses[r.Capability] = append(h.responses[r.Capability], r.Result)
+		if !searchable[r.Capability] {
+			continue
+		}
+		var list []any
+		json.Unmarshal(r.Result, &list)
+		if _, ok := h.world[r.Capability]; !ok {
+			h.world[r.Capability] = []any{}
+		}
+		for _, it := range list {
+			key := r.Capability + "|" + flatten(it)
+			if m, ok := it.(map[string]any); ok && str(m["id"]) != "" {
+				key = r.Capability + "|" + str(m["id"])
+			}
+			if !seen[key] {
+				seen[key] = true
+				h.world[r.Capability] = append(h.world[r.Capability], it)
+			}
+		}
 	}
 	return h
 }
@@ -161,6 +188,9 @@ func (h *scenarioHost) Call(_ context.Context, name, _ string, args any) (any, e
 	if spec.Writes() {
 		h.writes = append(h.writes, Write{Capability: name, Args: args})
 		return map[string]any{"ok": true}, nil
+	}
+	if list, ok := h.world[name]; ok {
+		return filterResponse(name, normalize(args), append([]any{}, list...), h.now), nil
 	}
 	var raw json.RawMessage
 	if q := h.responses[name]; len(q) > 0 {

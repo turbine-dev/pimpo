@@ -26,7 +26,7 @@ func filterResponse(capability string, args any, v any, now time.Time) any {
 	case "gmail.search":
 		return filterMail(list, a, now)
 	case "calendar.events":
-		return filterEvents(list, a)
+		return filterEvents(list, a, now.Location())
 	}
 	return v
 }
@@ -197,25 +197,25 @@ func exactAddress(field, addr string) func(map[string]any) bool {
 	}
 }
 
-func filterEvents(list []any, a map[string]any) []any {
+func filterEvents(list []any, a map[string]any, zone *time.Location) []any {
 	from, to := str(a["from"]), str(a["to"])
 	if from == "" || to == "" {
 		return list
 	}
-	lo, errLo := parseAny(from)
-	hi, errHi := parseAny(to)
+	lo, errLo := parseAny(from, zone)
+	hi, errHi := parseAny(to, zone)
 	if errLo != nil || errHi != nil {
 		return list
 	}
 	var out []any
 	for _, it := range list {
 		m, _ := it.(map[string]any)
-		start, err := parseAny(str(m["start"]))
+		start, err := parseAny(str(m["start"]), zone)
 		if err != nil {
 			out = append(out, it)
 			continue
 		}
-		end, err := parseAny(str(m["end"]))
+		end, err := parseAny(str(m["end"]), zone)
 		if err != nil {
 			end = start
 		}
@@ -229,11 +229,20 @@ func filterEvents(list []any, a map[string]any) []any {
 	return out
 }
 
-func parseAny(s string) (time.Time, error) {
+// parseAny reads times the way the calendar connector does: RFC 3339, or
+// a local date and time (or date) in the scenario's zone.
+func parseAny(s string, zone *time.Location) (time.Time, error) {
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
 		return t, nil
 	}
-	return time.Parse("2006-01-02", s)
+	var err error
+	for _, layout := range []string{"2006-01-02T15:04:05", "2006-01-02T15:04", "2006-01-02 15:04", "2006-01-02"} {
+		var t time.Time
+		if t, err = time.ParseInLocation(layout, s, zone); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, err
 }
 
 func str(v any) string {
