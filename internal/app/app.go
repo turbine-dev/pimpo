@@ -144,6 +144,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Channel.People = a.People
 	a.Channel.Mirror = func(ctx context.Context, n explore.Notice) {
 		a.mirrorWhatsApp(ctx, n)
+		go a.mirrorWebhook(context.WithoutCancel(ctx), n)
 		if a.DesktopNotify && (n.To == "" || n.To == people.OwnerID) {
 			title, body, _ := strings.Cut(n.Text, "\n")
 			go desktop.Notify(context.WithoutCancel(ctx), "Vigia", strings.TrimSpace(title+" "+body))
@@ -185,6 +186,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.businessRoutes()
 	a.backupRoutes()
 	a.guardRoutes()
+	a.channelRoutes()
 	return a, nil
 }
 

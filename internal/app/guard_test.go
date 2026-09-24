@@ -3,10 +3,16 @@ package app
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/denerFernandes/vigia/internal/event"
 	"github.com/denerFernandes/vigia/internal/host"
@@ -72,5 +78,43 @@ func TestGuardForOtherAgents(t *testing.T) {
 	req, _ = http.NewRequest("POST", ta.srv.URL+"/api/guard/check", bytes.NewReader(b))
 	if resp, _ := http.DefaultClient.Do(req); resp.StatusCode != 401 {
 		t.Fatal("guard answered without a token")
+	}
+}
+
+func TestGenericChannel(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	got := make(chan *http.Request, 4)
+	bodies := make(chan []byte, 4)
+	bridge := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		got <- r
+		bodies <- b
+	}))
+	defer bridge.Close()
+	if code, _ := ta.do(t, "PUT", "/api/channel/webhook", map[string]string{"url": "http://example.com/hook"}); code != 400 {
+		t.Fatalf("accepted plain http to a public host: %d", code)
+	}
+	_, set := ta.do(t, "PUT", "/api/channel/webhook", map[string]string{"url": bridge.URL})
+	secret, _ := set["secret"].(string)
+	if _, out := ta.do(t, "POST", "/api/channel/message", map[string]string{"text": "Me mande a previsão do tempo toda manhã"}); out["reply"] == "" {
+		t.Fatalf("message %v", out)
+	}
+	ta.Explore.Wait()
+	select {
+	case r := <-got:
+		body := <-bodies
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write(body)
+		if r.Header.Get("X-Vigia-Signature") != "sha256="+hex.EncodeToString(mac.Sum(nil)) || !strings.Contains(string(body), `"data":"compile:`) {
+			t.Fatalf("webhook %s %s", r.Header.Get("X-Vigia-Signature"), body)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("no notice reached the bridge")
+	}
+	if code, _ := ta.do(t, "POST", "/api/channel/message", map[string]string{"person": "ghost", "text": "x"}); code != 404 {
+		t.Fatalf("unknown person: %d", code)
+	}
+	if code, out := ta.do(t, "POST", "/api/channel/button", map[string]string{"data": "approve:nothing"}); code != 400 || !strings.Contains(out["error"].(string), "esperando") {
+		t.Fatalf("button %d %v", code, out)
 	}
 }
