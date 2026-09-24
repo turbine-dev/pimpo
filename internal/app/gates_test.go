@@ -46,7 +46,9 @@ func mailbox(t *testing.T, ta *testApp, n int) *mail.Mail {
 		user.Append("INBOX", lit{bytes.NewReader(raw), int64(len(raw))}, &imap.AppendOptions{Time: time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)})
 	}
 	mem.AddUser(user)
-	srv := imapserver.New(&imapserver.Options{NewSession: func(*imapserver.Conn) (imapserver.Session, *imapserver.GreetingData, error) { return mem.NewSession(), nil, nil },
+	srv := imapserver.New(&imapserver.Options{NewSession: func(*imapserver.Conn) (imapserver.Session, *imapserver.GreetingData, error) {
+		return mem.NewSession(), nil, nil
+	},
 		InsecureAuth: true, Caps: imap.CapSet{imap.CapIMAP4rev1: {}, imap.CapIMAP4rev2: {}}})
 	ln, _ := net.Listen("tcp", "127.0.0.1:0")
 	go srv.Serve(ln)
