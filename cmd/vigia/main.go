@@ -14,11 +14,14 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/denerFernandes/vigia/internal/app"
 	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/vigia/internal/snapshot"
 	"github.com/denerFernandes/vigia/internal/vault"
 )
 
@@ -39,11 +42,13 @@ func run(args []string) error {
 	switch cmd {
 	case "serve":
 		return serve(args)
+	case "snapshot", "snapshots", "restore":
+		return snapshots(cmd, args)
 	case "version":
 		fmt.Println(version)
 		return nil
 	}
-	return fmt.Errorf("unknown command %q (try: serve, version)", cmd)
+	return fmt.Errorf("unknown command %q (try: serve, snapshot, snapshots, restore, version)", cmd)
 }
 
 func dataDir(flagValue string) string {
@@ -79,6 +84,12 @@ func serve(args []string) error {
 	defer store.Close()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if err := guardVersion(ctx, store, home); err != nil {
+		return err
+	}
+	os.WriteFile(filepath.Join(home, "vigia.pid"), []byte(strconv.Itoa(os.Getpid())), 0o600)
+	defer os.Remove(filepath.Join(home, "vigia.pid"))
+	go dailySnapshots(ctx, store, home)
 
 	token, err := sessionToken(ctx, store)
 	if err != nil {
@@ -94,6 +105,9 @@ func serve(args []string) error {
 	}
 	a, err := app.New(ctx, store, v, token, "http://"+ln.Addr().String())
 	if err != nil {
+		return err
+	}
+	if err := a.AttachMemory(filepath.Join(home, "memory")); err != nil {
 		return err
 	}
 	a.TelegramAPI = os.Getenv("VIGIA_TELEGRAM_API")
@@ -115,6 +129,97 @@ func serve(args []string) error {
 	}()
 	if err := httpSrv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
+	}
+	return nil
+}
+
+// guardVersion snapshots the data before a new version touches it.
+func guardVersion(ctx context.Context, s *event.Store, home string) error {
+	last, _ := s.Get(ctx, "last_version")
+	if last != "" && last != version {
+		snap, err := snapshot.Create(s.DB(), home, "before-"+version)
+		if err != nil {
+			return fmt.Errorf("could not snapshot before updating from %s: %w", last, err)
+		}
+		fmt.Printf("Updated from %s to %s. Snapshot %s keeps the old data; `vigia restore %s` brings it back.\n", last, version, snap.Name, snap.Name)
+	}
+	return s.Put(ctx, "last_version", version)
+}
+
+func dailySnapshots(ctx context.Context, s *event.Store, home string) {
+	t := time.NewTicker(24 * time.Hour)
+	defer t.Stop()
+	for {
+		select {
+		case <-t.C:
+			snapshot.Create(s.DB(), home, "daily")
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func running(home string) bool {
+	b, err := os.ReadFile(filepath.Join(home, "vigia.pid"))
+	if err != nil {
+		return false
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	if err != nil {
+		return false
+	}
+	p, err := os.FindProcess(pid)
+	return err == nil && p.Signal(syscall.Signal(0)) == nil
+}
+
+func snapshots(cmd string, args []string) error {
+	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
+	dir := fs.String("data", "", "data directory (default ~/.vigia)")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	home := dataDir(*dir)
+	switch cmd {
+	case "snapshots":
+		list, err := snapshot.List(home)
+		if err != nil {
+			return err
+		}
+		if len(list) == 0 {
+			fmt.Println("No snapshots yet.")
+		}
+		for _, s := range list {
+			fmt.Printf("%s  %s  %.1f MB\n", s.Name, s.When.Local().Format("02/01/2006 15:04"), float64(s.Bytes)/1e6)
+		}
+		return nil
+	case "snapshot":
+		store, err := event.Open(filepath.Join(home, "vigia.db"))
+		if err != nil {
+			return err
+		}
+		defer store.Close()
+		s, err := snapshot.Create(store.DB(), home, strings.Join(fs.Args(), " "))
+		if err != nil {
+			return err
+		}
+		fmt.Println("Saved", s.Name)
+		return nil
+	case "restore":
+		if fs.NArg() != 1 {
+			return errors.New("usage: vigia restore NAME (see vigia snapshots)")
+		}
+		if running(home) {
+			return errors.New("stop Vigia before restoring")
+		}
+		store, err := event.Open(filepath.Join(home, "vigia.db"))
+		if err != nil {
+			return err
+		}
+		if err := snapshot.Restore(home, fs.Arg(0), store.DB()); err != nil {
+			return err
+		}
+		fmt.Println("Restored", fs.Arg(0), "- your previous state was saved as a snapshot too.")
+		return nil
 	}
 	return nil
 }

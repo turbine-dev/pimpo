@@ -25,6 +25,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/host"
 	"github.com/denerFernandes/vigia/internal/judge"
 	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/vigia/internal/memory"
 	"github.com/denerFernandes/vigia/internal/outbox"
 	"github.com/denerFernandes/vigia/internal/owner"
 	"github.com/denerFernandes/vigia/internal/policy"
@@ -64,6 +65,7 @@ type App struct {
 	Approvals *approval.Manager
 	Outbox    *outbox.Outbox
 	Undo      *undo.Undo
+	Memory    *memory.Memory
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
 	Agent llm.Agent
@@ -112,6 +114,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Server = server.New(events, token)
 	a.routes()
 	a.safetyRoutes()
+	a.memoryRoutes()
 	return a, nil
 }
 

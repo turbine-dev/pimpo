@@ -32,6 +32,7 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
         if (e.type.startsWith('connection') || e.type === 'telegram.paired') qc.invalidateQueries({ queryKey: ['connections'] })
         if (e.type.startsWith('approval')) qc.invalidateQueries({ queryKey: ['approvals'] })
         if (e.type === 'action.done' || e.type === 'action.undone') qc.invalidateQueries({ queryKey: ['receipts'] })
+        if (e.type === 'memory.changed') qc.invalidateQueries({ queryKey: ['memory'] })
         if (e.type === 'rules.changed') qc.invalidateQueries({ queryKey: ['rules'] })
         if (e.type === 'cost.recorded') qc.invalidateQueries({ queryKey: ['cost'] })
         qc.invalidateQueries({ queryKey: ['events'] })

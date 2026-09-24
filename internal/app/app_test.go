@@ -36,6 +36,9 @@ func newApp(t *testing.T, agent llm.Agent, model llm.Model) *testApp {
 		t.Fatal(err)
 	}
 	a.Agent, a.LLM = agent, model
+	if err := a.AttachMemory(filepath.Join(dir, "memory")); err != nil {
+		t.Fatal(err)
+	}
 	srv := httptest.NewServer(a.Server)
 	t.Cleanup(srv.Close)
 	a.Explore.BaseURL = srv.URL
@@ -217,5 +220,24 @@ func TestSetupAndPresets(t *testing.T) {
 	_, s = ta.do(t, "GET", "/api/setup", nil)
 	if s["done"] != true || s["preset"] != "conservative" {
 		t.Fatalf("after setup %v", s)
+	}
+}
+
+func TestMemoryAPI(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	code, f := ta.do(t, "POST", "/api/memory", map[string]string{"text": "Minha chefe é a Ana", "topic": "trabalho"})
+	if code != 200 || f["trust"] != "high" {
+		t.Fatalf("add %d %v", code, f)
+	}
+	_, m := ta.do(t, "GET", "/api/memory", nil)
+	if len(m["facts"].([]any)) != 1 || len(m["history"].([]any)) != 1 {
+		t.Fatalf("memory %v", m)
+	}
+	hash := m["history"].([]any)[0].(map[string]any)["hash"].(string)
+	ta.do(t, "DELETE", "/api/memory/"+f["id"].(string), nil)
+	ta.do(t, "POST", "/api/memory-versions/"+hash+"/restore", nil)
+	_, m = ta.do(t, "GET", "/api/memory", nil)
+	if len(m["facts"].([]any)) != 1 {
+		t.Fatalf("after restore %v", m["facts"])
 	}
 }

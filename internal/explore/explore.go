@@ -20,6 +20,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/host"
 	"github.com/denerFernandes/vigia/internal/llm"
 	"github.com/denerFernandes/vigia/internal/mcp"
+	"github.com/denerFernandes/vigia/internal/memory"
 	"github.com/denerFernandes/vigia/internal/routine"
 	"github.com/denerFernandes/vigia/internal/store"
 	"github.com/denerFernandes/vigia/internal/trace"
@@ -56,6 +57,8 @@ type Service struct {
 	BaseURL string
 	Zone    *time.Location
 	Model   string
+	// Memory is optional; confirmed facts guide explorations.
+	Memory *memory.Memory
 
 	mu       sync.Mutex
 	sessions map[string]session
@@ -143,7 +146,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 	if s.sessions == nil {
 		s.sessions = map[string]session{}
 	}
-	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "vigia", Tools: tools(h)}}
+	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "vigia", Tools: tools(h, s.Memory)}}
 	s.mu.Unlock()
 	defer func() {
 		s.mu.Lock()
@@ -153,7 +156,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 
 	now := time.Now().In(s.zone())
 	resp, err := s.Agent.Run(ctx, llm.AgentRequest{
-		System:     explorerPrompt(now),
+		System:     explorerPrompt(now) + s.knownFacts(),
 		Prompt:     e.Request,
 		MCPURL:     fmt.Sprintf("%s/mcp/explore/%s?key=%s", s.BaseURL, e.ID, key),
 		Model:      s.Model,
@@ -180,6 +183,27 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 	}
 	text += "\n\nQuer que eu faça isso sozinho, sem gastar com modelo a cada vez?"
 	s.Notify.Notify(ctx, Notice{Text: text, Actions: []Action{{"Transformar em rotina", "compile:" + e.ID}, {"Descartar", "discard:" + e.ID}}})
+}
+
+// knownFacts lists what the owner confirmed, for the explorer's prompt.
+// Unconfirmed facts stay out: they may come from hostile content.
+func (s *Service) knownFacts() string {
+	if s.Memory == nil {
+		return ""
+	}
+	facts, _ := s.Memory.Instructions()
+	if len(facts) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n\nWhat the owner has told you (confirmed):\n")
+	for i, f := range facts {
+		if i == 30 {
+			break
+		}
+		b.WriteString("- " + f.Text + "\n")
+	}
+	return b.String()
 }
 
 func (s *Service) maxCost(ctx context.Context) float64 {

@@ -37,6 +37,10 @@ type Message struct {
 	Unread   bool     `json:"unread"`
 	// MessageID survives moves between mailboxes; undo uses it.
 	MessageID string `json:"message_id,omitempty"`
+	// CanUnsubscribe is true when the sender offers a List-Unsubscribe.
+	CanUnsubscribe bool `json:"can_unsubscribe"`
+	unsubscribe    string
+	oneClick       bool
 }
 
 // Account is one IMAP mailbox. Password is resolved from the vault per call.
@@ -57,7 +61,7 @@ type Mail struct {
 }
 
 func (m *Mail) Capabilities() []string {
-	return []string{"gmail.search", "gmail.archive", "gmail.label", "gmail.trash", "gmail.delete", "gmail.draft", "gmail.send"}
+	return []string{"gmail.search", "gmail.archive", "gmail.label", "gmail.trash", "gmail.delete", "gmail.draft", "gmail.send", "gmail.unsubscribe"}
 }
 
 func (m *Mail) Call(ctx context.Context, capability, _ string, args any) (any, error) {
@@ -103,6 +107,12 @@ func (m *Mail) Call(ctx context.Context, capability, _ string, args any) (any, e
 			return m.draft(ctx, o)
 		}
 		return m.send(ctx, o)
+	case "gmail.unsubscribe":
+		id, err := idArg(args)
+		if err != nil {
+			return nil, err
+		}
+		return m.unsubscribe(ctx, id)
 	case "gmail.label":
 		var a struct {
 			ID    string `json:"id"`
@@ -255,7 +265,10 @@ func toMessage(fm *imapclient.FetchMessageBuffer, section *imap.FetchItemBodySec
 	} else {
 		msg.Labels = append(msg.Labels, "UNREAD")
 	}
-	msg.Snippet = snippet(fm.FindBodySection(section))
+	raw := fm.FindBodySection(section)
+	msg.Snippet = snippet(raw)
+	msg.unsubscribe, msg.oneClick = listUnsubscribe(raw)
+	msg.CanUnsubscribe = msg.unsubscribe != ""
 	return msg
 }
 

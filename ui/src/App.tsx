@@ -15,11 +15,12 @@ import { Rules } from './pages/Rules'
 import { Design } from './pages/Design'
 import { ExplorationPage } from './pages/ExplorationPage'
 import { Inbox } from './pages/Inbox'
+import { Memory } from './pages/Memory'
 import { RoutinePage } from './pages/RoutinePage'
 import { Routines } from './pages/Routines'
 import { Settings } from './pages/Settings'
 
-const ready = new Set(['/', '/inbox', '/receipts', '/rules', '/cost', '/connections', '/settings'])
+const ready = new Set(['/', '/inbox', '/receipts', '/rules', '/cost', '/memory', '/connections', '/settings'])
 
 export default function App() {
   const [newTask, setNewTask] = useState(false)
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/receipts" element={<Receipts />} />
         <Route path="/rules" element={<Rules />} />
         <Route path="/cost" element={<Cost />} />
+        <Route path="/memory" element={<Memory />} />
         <Route path="/connections" element={<Connections />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/design" element={<Design />} />

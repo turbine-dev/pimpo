@@ -3,6 +3,7 @@ import { Loader2, Plus, Repeat, Sparkles } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
 import { RoutineCard } from '../components/RoutineCard'
+import { SinceYesterday } from '../components/SinceYesterday'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api, type Exploration } from '../lib/api'
 import { relative } from '../lib/format'
@@ -25,6 +26,8 @@ export function Routines({ onNew }: { onNew: () => void }) {
           <Plus size={16} /> Nova tarefa
         </Button>
       </div>
+
+      {list.length > 0 && <SinceYesterday />}
 
       {open.length > 0 && (
         <div className="mb-6 grid gap-3 sm:grid-cols-2">

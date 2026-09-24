@@ -53,6 +53,25 @@ func startServer(t *testing.T) string {
 	return ln.Addr().String()
 }
 
+// startServerWith starts an IMAP server holding exactly the given raw messages.
+func startServerWith(t *testing.T, raws ...string) string {
+	t.Helper()
+	mem := imapmemserver.New()
+	user := imapmemserver.NewUser("eu@exemplo.com", "app-password")
+	user.Create("INBOX", nil)
+	for _, r := range raws {
+		user.Append("INBOX", literal{bytes.NewReader([]byte(r)), int64(len(r))}, &imap.AppendOptions{Time: now})
+	}
+	mem.AddUser(user)
+	srv := imapserver.New(&imapserver.Options{NewSession: func(*imapserver.Conn) (imapserver.Session, *imapserver.GreetingData, error) {
+		return mem.NewSession(), nil, nil
+	}, InsecureAuth: true, Caps: imap.CapSet{imap.CapIMAP4rev2: {}, imap.CapIMAP4rev1: {}, imap.CapMove: {}}})
+	ln, _ := net.Listen("tcp", "127.0.0.1:0")
+	go srv.Serve(ln)
+	t.Cleanup(func() { srv.Close() })
+	return ln.Addr().String()
+}
+
 type literal struct {
 	*bytes.Reader
 	n int64
