@@ -830,3 +830,22 @@ Três rodadas de revisão, com correções entre elas.
 - **Os gates da F7 e da F11** dependem de comunidade, e por isso nunca ficam totalmente sob controle do projeto.
 - **A F11 fica tarde na sequência** (0,70 na avaliação de posição). O Guard poderia vir antes, como porta de entrada para usuários do OpenClaw e do Hermes, mas a priorização deu a ele valor baixo para o público inicial (1,08). Fica como decisão a revisitar depois da v1.0.
 
+
+## Apêndice C — Decisões técnicas de F6 a F12 (Jev)
+
+Tomadas com `tools/jev/decisions_later.py` (resultado em `decisions_later.json`), antes de cada fase:
+
+| Decisão | Escolha | Probabilidade | Alternativa mais próxima |
+|---|---|---|---|
+| WhatsApp | API oficial (Cloud API) | 0,56 | ponte local (0,26), com risco de bloqueio do número |
+| Assinatura da galeria | chaves Ed25519 dos autores | 0,74 | Sigstore (0,25) |
+| Voz | whisper.cpp local | 0,51 | API do provedor (0,26) |
+| PDF | biblioteca em Go puro | 0,84 | Typst (0,09) |
+| Fotos | Tesseract local | 0,51 | Tesseract com fallback para o modelo (0,35) |
+| Avisos no celular | Telegram como canal de push | 0,53 | ntfy (0,44) |
+| SDK de conectores | processos MCP por stdio | 0,47 | pacotes Go compilados (0,43) |
+| Rede de proteção | arquivo estático assinado num repositório | 0,95 | API própria (0,05) |
+
+Duas mudanças em relação ao plano original, ambas pela decisão acima: a galeria usa chaves Ed25519 em vez de Sigstore, e o app de celular usa o Telegram (e o canal genérico) para avisos instantâneos em vez de push próprio.
+
+O modelo local de julgamento foi medido antes de virar padrão: sozinho acerta 85%; em cascata com o Jev, enviando só os 22% de respostas incertas, acerta 92% (Jev sozinho: 94,5%). Por isso o backend local roda em cascata.
