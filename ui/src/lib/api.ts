@@ -57,6 +57,14 @@ export type CatalogKind = {
   external?: boolean
 }
 
+export type Client = { id: string; name: string; email: string; phone: string; document: string; notes: string; created: string }
+export type DocItem = { description: string; quantity: number; unit_price: number }
+export type BizDocument = {
+  id: string; kind: 'quote' | 'invoice'; number: number; client: string; client_name?: string; items: DocItem[]; currency: string; total: number
+  status: 'draft' | 'sent' | 'accepted' | 'paid' | 'cancelled'; due?: string; notes?: string; payment_link?: string; source?: string; created: string
+}
+export type BizProfile = { name: string; document: string; address: string; email: string; phone: string; payment: string; quote_footer: string; invoice_footer: string; payments: '' | 'stripe' | 'mercadopago'; has_payments_key?: boolean; payments_key?: string }
+
 export type MigrationSource = 'openclaw' | 'hermes'
 export type MigrationPlan = {
   from: MigrationSource
@@ -186,6 +194,14 @@ export const api = {
   setCatalog: (id: string, values: Record<string, string>) => request<void>('PUT', `/api/catalog/${id}`, values),
   removeCatalog: (id: string) => request<void>('DELETE', `/api/catalog/${id}`),
   checkCatalog: (id: string) => request<{ ok: boolean; detail?: string }>('POST', `/api/catalog/${id}/check`),
+  business: () => request<{ receivable: number; overdue: number; open_quotes: number; clients: number }>('GET', '/api/business'),
+  clients: () => request<Client[]>('GET', '/api/business/clients'),
+  saveClient: (c: Partial<Client>) => request<Client>('POST', '/api/business/clients', c),
+  documents: () => request<BizDocument[]>('GET', '/api/business/documents'),
+  createDocument: (d: { kind: string; client: string; items: DocItem[]; due?: string; notes?: string }) => request<BizDocument>('POST', '/api/business/documents', d),
+  documentAction: (id: string, action: string, body?: Record<string, string>) => request<unknown>('POST', `/api/business/documents/${id}/${action}`, body ?? {}),
+  bizProfile: () => request<BizProfile>('GET', '/api/business/profile'),
+  saveBizProfile: (p: BizProfile) => request<BizProfile>('PUT', '/api/business/profile', p),
   connections: () => request<Connection[]>('GET', '/api/connections'),
   googleStart: (client_id: string, client_secret: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/google/start', { client_id, client_secret }),
   connect: (kind: string, body: Record<string, string>) => request<void>('PUT', `/api/connections/${kind}`, body),

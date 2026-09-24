@@ -14,6 +14,7 @@ import (
 
 	"github.com/denerFernandes/vigia/internal/approval"
 	"github.com/denerFernandes/vigia/internal/budget"
+	"github.com/denerFernandes/vigia/internal/business"
 	"github.com/denerFernandes/vigia/internal/compiler"
 	"github.com/denerFernandes/vigia/internal/connector"
 	"github.com/denerFernandes/vigia/internal/connector/calendar"
@@ -30,6 +31,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/llm"
 	"github.com/denerFernandes/vigia/internal/memory"
 	"github.com/denerFernandes/vigia/internal/oauth"
+	"github.com/denerFernandes/vigia/internal/ocr"
 	"github.com/denerFernandes/vigia/internal/outbox"
 	"github.com/denerFernandes/vigia/internal/owner"
 	"github.com/denerFernandes/vigia/internal/people"
@@ -80,6 +82,7 @@ type App struct {
 	Undo      *undo.Undo
 	Memory    *memory.Memory
 	People    *people.Directory
+	Business  *business.Book
 	Google    *oauth.Google
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
@@ -90,6 +93,8 @@ type App struct {
 	WhatsAppAPI string
 	// VoiceModel is the whisper.cpp model used for voice notes.
 	VoiceModel string
+	// PaymentsAPI replaces the payment provider's API; tests only.
+	PaymentsAPI string
 	// MailInsecure uses plain IMAP; tests only.
 	MailInsecure bool
 	// Router is shared by every run; the demo swaps connectors in it.
@@ -109,7 +114,11 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	if err != nil {
 		return nil, err
 	}
-	a := &App{Events: events, Vault: v, Store: st}
+	book, err := business.Open(events.DB())
+	if err != nil {
+		return nil, err
+	}
+	a := &App{Events: events, Vault: v, Store: st, Business: book}
 	a.Rules = &policy.Engine{Events: events}
 	a.Policy = a.Rules
 	a.LLM = claude{a}
@@ -121,6 +130,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.People = &people.Directory{Events: events, OwnerChat: a.Channel.Chat, OwnerWhatsApp: a.ownerWhatsApp}
 	a.Channel.People = a.People
 	a.Channel.Mirror = a.mirrorWhatsApp
+	a.Channel.ReadPhoto = ocr.Tesseract{}.Read
 	a.Channel.Transcribe = func(ctx context.Context, audio []byte) (string, error) {
 		return voice.Whisper{Model: a.VoiceModel, Language: strings.SplitN(a.Settings(ctx).Locale, "-", 2)[0]}.Transcribe(ctx, audio)
 	}
@@ -153,6 +163,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.whatsappRoutes()
 	a.galleryRoutes()
 	a.catalogRoutes()
+	a.businessRoutes()
 	return a, nil
 }
 
@@ -261,6 +272,7 @@ func (a *App) router() *connector.Router {
 		&web.Web{},
 		&telegramcap.Owner{Bot: botSender{a}, Chat: a.personChat},
 		whatsappCap{a},
+		businessCap{a},
 	)
 	for _, k := range services.All() {
 		r.Add(k.Connector(a.catalogConfig))

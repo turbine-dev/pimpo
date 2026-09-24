@@ -155,3 +155,26 @@ func TestVoiceNotesBecomeRequests(t *testing.T) {
 		t.Fatalf("without transcription: %v", bot.sent)
 	}
 }
+
+func TestPhotosBecomeRequests(t *testing.T) {
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "v.db"))
+	defer ev.Close()
+	bot := &voiceBot{}
+	h := &handler{}
+	c := &Channel{Events: ev, Bot: func(context.Context) Bot { return bot }, Handler: h,
+		ReadPhoto: func(_ context.Context, img []byte) (string, error) {
+			return "Pintura sala R$ 1.800 (" + string(img) + ")", nil
+		}}
+	ctx := context.Background()
+	ev.Put(ctx, chatKey, "42")
+	u := msg(42, "")
+	u.Message.Caption = "Faça um orçamento para a Ana"
+	u.Message.Photo = []struct {
+		FileID string `json:"file_id"`
+		Width  int    `json:"width"`
+	}{{"small", 90}, {"big", 1280}}
+	c.handle(ctx, bot, u)
+	if len(h.requests) != 1 || !strings.HasPrefix(h.requests[0], "Faça um orçamento para a Ana") || !strings.Contains(h.requests[0], "(audio:big)") {
+		t.Fatalf("%v", h.requests)
+	}
+}

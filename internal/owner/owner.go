@@ -52,6 +52,8 @@ type Channel struct {
 	// Transcribe turns a voice note into text; nil means voice notes are
 	// not understood.
 	Transcribe func(ctx context.Context, audio []byte) (string, error)
+	// ReadPhoto finds the text in a photo; nil means photos are ignored.
+	ReadPhoto func(ctx context.Context, image []byte) (string, error)
 
 	mu   sync.Mutex
 	code string
@@ -143,6 +145,18 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 			// Only people of the house can talk to Vigia; others get nothing.
 			return
 		}
+		if text == "" && len(m.Photo) > 0 {
+			seen, err := c.read(ctx, bot, m.Photo[len(m.Photo)-1].FileID)
+			if err != nil {
+				bot.Send(ctx, m.Chat.ID, "📷 Não consegui ler: "+err.Error())
+				return
+			}
+			ask := strings.TrimSpace(m.Caption)
+			if ask == "" {
+				ask = "Veja o que fazer com isto"
+			}
+			text = ask + "\n\nTexto da foto:\n" + seen
+		}
 		if text == "" && m.Voice != nil {
 			heard, err := c.listen(ctx, bot, m.Voice.FileID)
 			if err != nil {
@@ -182,6 +196,20 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 			bot.Edit(ctx, cb.Message.Chat.ID, cb.Message.ID, cb.Message.Text+"\n\n→ "+reply)
 		}
 	}
+}
+
+func (c *Channel) read(ctx context.Context, bot Bot, fileID string) (string, error) {
+	d, ok := bot.(interface {
+		Download(ctx context.Context, fileID string) ([]byte, error)
+	})
+	if c.ReadPhoto == nil || !ok {
+		return "", errors.New("photos are not set up")
+	}
+	img, err := d.Download(ctx, fileID)
+	if err != nil {
+		return "", err
+	}
+	return c.ReadPhoto(ctx, img)
 }
 
 func (c *Channel) listen(ctx context.Context, bot Bot, fileID string) (string, error) {
