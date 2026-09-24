@@ -1,0 +1,31 @@
+{
+ "judge": "local-base-Qwen3-0.6B",
+ "all": {
+  "n": 422,
+  "accuracy": 0.512,
+  "brier": 0.282,
+  "ece": 0.255,
+  "auc": 0.661
+ },
+ "seen": {
+  "n": 206,
+  "accuracy": 0.515,
+  "brier": 0.283,
+  "ece": 0.233,
+  "auc": 0.69
+ },
+ "unseen": {
+  "n": 216,
+  "accuracy": 0.509,
+  "brier": 0.282,
+  "ece": 0.289,
+  "auc": 0.656
+ },
+ "hard": {
+  "n": 96,
+  "accuracy": 0.469,
+  "brier": 0.332,
+  "ece": 0.296,
+  "auc": 0.479
+ }
+}

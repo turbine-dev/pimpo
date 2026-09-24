@@ -1,0 +1,31 @@
+{
+ "judge": "claude-haiku",
+ "all": {
+  "n": 422,
+  "accuracy": 0.953,
+  "brier": 0.038,
+  "ece": 0.027,
+  "auc": 0.986
+ },
+ "seen": {
+  "n": 206,
+  "accuracy": 0.922,
+  "brier": 0.059,
+  "ece": 0.054,
+  "auc": 0.973
+ },
+ "unseen": {
+  "n": 216,
+  "accuracy": 0.981,
+  "brier": 0.019,
+  "ece": 0.017,
+  "auc": 0.994
+ },
+ "hard": {
+  "n": 96,
+  "accuracy": 0.865,
+  "brier": 0.107,
+  "ece": 0.09,
+  "auc": 0.921
+ }
+}

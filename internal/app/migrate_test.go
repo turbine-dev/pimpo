@@ -71,3 +71,20 @@ func TestImportFromHermes(t *testing.T) {
 		t.Fatalf("smtp %q", smtp)
 	}
 }
+
+func TestPairingNeedsASafeAddress(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	if code, _ := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://vigia.example.com"}); code != 400 {
+		t.Fatalf("accepted plain http on a public host: %d", code)
+	}
+	code, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "https://vigia.tail1.ts.net/some/path"})
+	if code != 200 || out["link"] != "https://vigia.tail1.ts.net/auth?token=tok" {
+		t.Fatalf("pairing %d %v", code, out)
+	}
+	if code, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://192.168.1.20:7788"}); code != 200 || out["base"] != "http://192.168.1.20:7788" {
+		t.Fatalf("home network %d %v", code, out)
+	}
+	if _, out := ta.do(t, "GET", "/api/pairing", nil); out["base"] != "http://192.168.1.20:7788" {
+		t.Fatalf("get %v", out)
+	}
+}

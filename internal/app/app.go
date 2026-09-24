@@ -121,6 +121,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.safetyRoutes()
 	a.memoryRoutes()
 	a.migrateRoutes()
+	a.pairingRoutes()
 	return a, nil
 }
 
