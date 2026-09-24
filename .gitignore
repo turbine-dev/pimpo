@@ -19,3 +19,6 @@ desktop/src-tauri/gen/android/app/build/
 desktop/src-tauri/gen/android/.gradle/
 desktop/src-tauri/binaries/
 dist/
+.claude/worktrees/
+*.salive
+**/.kotlin/

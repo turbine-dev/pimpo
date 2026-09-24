@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Ask Vigia's rules and the shared protection list before OpenClaw runs a tool.",
   "type": "module",
-  "license": "MIT",
   "openclaw": { "extensions": ["./index.ts"] },
   "scripts": { "test": "node --test guard.test.ts" }
 }
