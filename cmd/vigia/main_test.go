@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -41,5 +42,21 @@ func TestNewVersionTakesASnapshotFirst(t *testing.T) {
 func TestUnknownCommand(t *testing.T) {
 	if err := run([]string{"nope"}); err == nil || !strings.Contains(err.Error(), "snapshots") {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestMigrateDryRunTouchesNothing(t *testing.T) {
+	src, data := t.TempDir(), t.TempDir()
+	os.MkdirAll(filepath.Join(src, "memories"), 0o755)
+	os.WriteFile(filepath.Join(src, "memories", "MEMORY.md"), []byte("Gym on Tuesdays"), 0o600)
+	var out strings.Builder
+	if err := migrateCmd([]string{"hermes", "--home", src, "--data", data}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "1 memories") || !strings.Contains(out.String(), "Nothing imported") {
+		t.Fatalf("dry run:\n%s", out.String())
+	}
+	if _, err := os.Stat(filepath.Join(data, "vigia.db")); err == nil {
+		t.Fatal("a dry run touched Vigia's data")
 	}
 }

@@ -92,6 +92,9 @@ const (
 	ExplorationDone      = "done"
 	ExplorationFailed    = "failed"
 	ExplorationDiscarded = "discarded"
+	// ExplorationImported is a task brought from another agent, waiting
+	// for the owner to explore it once.
+	ExplorationImported = "imported"
 )
 
 type Routine struct {

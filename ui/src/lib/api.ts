@@ -31,10 +31,26 @@ export type Routine = {
 export type Run = { id: number; version: number; started_at: string; ended_at?: string; outcome: string; error?: string; cost_usd: number; calls: number }
 export type Version = { version: number; routine: Routine; reason: string; approved_by: string; created_at: string }
 
+export type MigrationSource = 'openclaw' | 'hermes'
+export type MigrationPlan = {
+  from: MigrationSource
+  home: string
+  timezone?: string
+  memories: { text: string; topic: string }[]
+  tasks: { name: string; prompt: string; schedule: string; timezone?: string; deliver?: string; enabled: boolean }[]
+  rules: { file: string; text: string }[]
+  skills: { name: string; description: string; capabilities: string[]; missing: string[]; secrets?: string[]; verdict: 'works' | 'partial' | 'no' }[]
+  telegram: { has_bot: boolean; allowed?: string[] }
+  mail: { address?: string; imap?: string; smtp?: string }
+  warnings: string[]
+}
+export type ImportOptions = { memories: boolean; rules: boolean; tasks: boolean; secrets: boolean; trust: boolean }
+export type Imported = { memories: number; rules: number; tasks: number; telegram: boolean; mail: boolean }
+
 export type Exploration = {
   id: string
   request: string
-  state: 'running' | 'ready' | 'compiling' | 'done' | 'failed' | 'discarded'
+  state: 'running' | 'ready' | 'compiling' | 'done' | 'failed' | 'discarded' | 'imported'
   summary: string
   routine?: string
   cost_usd: number
@@ -127,6 +143,9 @@ export const api = {
   settings: () => request<Settings>('GET', '/api/settings'),
   saveSettings: (s: Settings) => request<Settings>('PUT', '/api/settings', s),
   setBudget: (daily_usd: number) => request<void>('PUT', '/api/budget', { daily_usd }),
+  migratePreview: (from: MigrationSource, home: string) => request<MigrationPlan>('POST', '/api/migrate/preview', { from, home }),
+  migrateApply: (from: MigrationSource, home: string, o: ImportOptions) => request<Imported>('POST', '/api/migrate/apply', { from, home, ...o }),
+  exploreImported: (id: string) => request<{ id: string }>('POST', `/api/explorations/${id}/explore`),
   connections: () => request<Connection[]>('GET', '/api/connections'),
   googleStart: (client_id: string, client_secret: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/google/start', { client_id, client_secret }),
   connect: (kind: string, body: Record<string, string>) => request<void>('PUT', `/api/connections/${kind}`, body),

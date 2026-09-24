@@ -1,0 +1,31 @@
+{
+ "judge": "jev",
+ "all": {
+  "n": 422,
+  "accuracy": 0.945,
+  "brier": 0.036,
+  "ece": 0.052,
+  "auc": 0.991
+ },
+ "seen": {
+  "n": 206,
+  "accuracy": 0.917,
+  "brier": 0.051,
+  "ece": 0.08,
+  "auc": 0.983
+ },
+ "unseen": {
+  "n": 216,
+  "accuracy": 0.972,
+  "brier": 0.022,
+  "ece": 0.04,
+  "auc": 0.998
+ },
+ "hard": {
+  "n": 96,
+  "accuracy": 0.802,
+  "brier": 0.123,
+  "ece": 0.106,
+  "auc": 0.922
+ }
+}

@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowDownToLine, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button, Card } from '../components/ui'
 import { api, type Settings as S } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -12,6 +14,7 @@ const judges: { value: S['judge_backend']; title: string; text: string }[] = [
 
 export function Settings() {
   const qc = useQueryClient()
+  const nav = useNavigate()
   const settings = useQuery({ queryKey: ['settings'], queryFn: api.settings })
   const state = useQuery({ queryKey: ['state'], queryFn: api.state })
   const [s, setS] = useState<S>()
@@ -32,6 +35,14 @@ export function Settings() {
         <h1 className="mb-1 text-[22px] font-semibold tracking-tight">Ajustes</h1>
         <p className="text-sm text-ink-2">Quanto posso gastar, como decido o que é subjetivo, e onde você está.</p>
       </div>
+      <Card role="link" tabIndex={0} onClick={() => nav('/import')} onKeyDown={(k) => k.key === 'Enter' && nav('/import')} className="flex cursor-pointer items-center gap-4 p-5 hover:border-line-strong">
+        <div className="grid size-10 place-items-center rounded-xl bg-explore-soft text-explore"><ArrowDownToLine size={18} /></div>
+        <div className="flex-1">
+          <div className="text-[15px] font-medium">Trazer do OpenClaw ou do Hermes</div>
+          <div className="text-[13px] text-ink-3">Memórias, tarefas agendadas e regras. Você revisa antes.</div>
+        </div>
+        <ChevronRight size={17} className="text-ink-3" />
+      </Card>
       <Card className="p-5">
         <div className="text-[15px] font-medium">Limite de gasto por dia</div>
         <p className="mb-3 text-[13px] text-ink-3">Conferido antes de cada chamada a um modelo. Rotinas compiladas quase não gastam.</p>

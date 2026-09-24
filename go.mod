@@ -8,10 +8,13 @@ require (
 	github.com/dop251/goja v0.0.0-20260917113740-793a2a65c13b
 	github.com/emersion/go-imap/v2 v2.0.0-beta.8
 	github.com/emersion/go-message v0.18.2
+	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/teambition/rrule-go v1.8.2
+	github.com/titanous/json5 v1.0.0
 	github.com/zalando/go-keyring v0.2.8
+	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.59.0
 )
 
@@ -24,7 +27,6 @@ require (
 	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/dlclark/regexp2/v2 v2.5.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.0 // indirect
