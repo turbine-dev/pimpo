@@ -50,11 +50,15 @@ func run(args []string) error {
 		return galleryCmd(args, os.Stdout)
 	case "connector":
 		return connectorCmd(args, os.Stdout)
+	case "export":
+		return exportCmd(args, os.Stdout)
+	case "import":
+		return importCmd(args, os.Stdout)
 	case "version":
 		fmt.Println(version)
 		return nil
 	}
-	return fmt.Errorf("unknown command %q (try: serve, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
+	return fmt.Errorf("unknown command %q (try: serve, export, import, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
 }
 
 func dataDir(flagValue string) string {
@@ -82,6 +86,13 @@ func serve(args []string) error {
 	}
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		return err
+	}
+	if pendingImport(home) {
+		keep, err := applyImport(home)
+		if err != nil {
+			return fmt.Errorf("finishing the import: %w", err)
+		}
+		fmt.Printf("Imported the backup. What was here before is in %s.\n", keep)
 	}
 	store, err := event.Open(filepath.Join(home, "vigia.db"))
 	if err != nil {
@@ -121,6 +132,8 @@ func serve(args []string) error {
 	}
 	a.AttachConnectors(filepath.Join(home, "connectors"))
 	a.VoiceModel = filepath.Join(home, "models", "ggml-base.bin")
+	a.Home, a.Version = home, version
+	a.DesktopNotify = os.Getenv("VIGIA_DESKTOP_NOTIFY") != ""
 	a.TelegramAPI = os.Getenv("VIGIA_TELEGRAM_API")
 	if *demoMode {
 		a.EnableDemo(ctx, 700*time.Millisecond)
