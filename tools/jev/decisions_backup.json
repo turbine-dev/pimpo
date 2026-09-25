@@ -1,0 +1,30 @@
+{
+ "model": "jev-1.13.0",
+ "answers": {
+  "s3": {
+   "type": "choice",
+   "choice": "sdk_signer",
+   "confidence": 0.46,
+   "probabilities": {
+    "hand_sigv4": 0.01,
+    "minio_go": 0.21,
+    "sdk_signer": 0.6,
+    "full_sdk": 0.18
+   }
+  },
+  "drive_scope": {
+   "type": "choice",
+   "choice": "drive_file",
+   "confidence": 0.87,
+   "probabilities": {
+    "drive_file": 0.92,
+    "drive_full": 0.0,
+    "drive_appdata": 0.08
+   }
+  }
+ },
+ "usage": {
+  "input_tokens": 1066,
+  "output_tokens": 97
+ }
+}

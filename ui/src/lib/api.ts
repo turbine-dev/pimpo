@@ -20,6 +20,11 @@ export type RoutineSummary = {
 export type ParamType = 'text' | 'number' | 'boolean' | 'date' | 'time' | 'location' | 'select' | 'multiselect' | 'email' | 'destinations'
 export type RoutineParam = { name: string; label: string; type: ParamType; default?: unknown; options?: string[]; help?: string }
 export type Place = { name: string; latitude: number; longitude: number; timezone?: string; country?: string }
+export type CloudConfig = { kind: '' | 's3' | 'drive'; every: 'daily' | 'weekly'; keep: number; endpoint?: string; region?: string; bucket?: string; prefix?: string }
+export type CloudRun = { at: string; ok: boolean; name?: string; size?: number; error?: string }
+export type CloudState = { config: CloudConfig; has_keys: boolean; has_passphrase: boolean; google: { connected: boolean; drive: boolean }; last?: CloudRun; next?: string }
+export type CloudFile = { name: string; size: number; modified: string }
+
 export type RemoteState = {
   tailscale: { state: 'off' | 'starting' | 'needs_login' | 'needs_funnel' | 'running' | 'error'; auth_url?: string; url?: string; error?: string }
   lan: { on: boolean; url?: string; error?: string }
@@ -148,6 +153,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 export const api = {
   state: () => request<AppState>('GET', '/api/state'),
+  cloud: () => request<CloudState>('GET', '/api/backup/cloud'),
+  saveCloud: (c: CloudConfig & { access_key?: string; secret_key?: string; passphrase?: string }) => request<CloudState>('PUT', '/api/backup/cloud', c),
+  cloudOff: () => request<CloudState>('DELETE', '/api/backup/cloud'),
+  cloudRun: () => request<CloudRun>('POST', '/api/backup/cloud/run'),
+  cloudFiles: () => request<CloudFile[]>('GET', '/api/backup/cloud/files'),
+  cloudRestore: (name: string, passphrase?: string) => request<{ secrets: number }>('POST', '/api/backup/cloud/restore', { name, passphrase }),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),

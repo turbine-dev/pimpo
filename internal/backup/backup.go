@@ -7,6 +7,8 @@ package backup
 
 import (
 	"archive/tar"
+	"bufio"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/aes"
@@ -50,7 +52,47 @@ type Secrets interface {
 
 var ErrPassphrase = errors.New("wrong passphrase, or the file was changed")
 
-func seal(plain []byte, pass string) ([]byte, error) {
+func seal(plain []byte, pass string) ([]byte, error) { return sealWith(plain, pass, format) }
+
+func open(sealed []byte, pass string) ([]byte, error) { return openWith(sealed, pass, format) }
+
+// sealedMagic starts a backup encrypted as a whole, for storage the owner
+// does not control: the database and memory, not only the secrets, are
+// unreadable without the passphrase.
+const sealedMagic = "ZODIM-SEALED-1\n"
+
+// Seal encrypts a whole exported archive.
+func Seal(archive []byte, pass string) ([]byte, error) {
+	if len(pass) < 8 {
+		return nil, errors.New("choose a passphrase of at least 8 characters")
+	}
+	b, err := sealWith(archive, pass, sealedMagic)
+	if err != nil {
+		return nil, err
+	}
+	return append([]byte(sealedMagic), b...), nil
+}
+
+// unseal returns a reader over the archive, decrypting it when it was
+// sealed as a whole.
+func unseal(r io.Reader, pass string) (io.Reader, error) {
+	br := bufio.NewReader(r)
+	head, _ := br.Peek(len(sealedMagic))
+	if string(head) != sealedMagic {
+		return br, nil
+	}
+	all, err := io.ReadAll(io.LimitReader(br, 4<<30))
+	if err != nil {
+		return nil, err
+	}
+	plain, err := openWith(all[len(sealedMagic):], pass, sealedMagic)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(plain), nil
+}
+
+func sealWith(plain []byte, pass, aad string) ([]byte, error) {
 	salt := make([]byte, 16)
 	rand.Read(salt)
 	key, err := scrypt.Key([]byte(pass), salt, 1<<15, 8, 1, 32)
@@ -61,10 +103,10 @@ func seal(plain []byte, pass string) ([]byte, error) {
 	gcm, _ := cipher.NewGCM(block)
 	nonce := make([]byte, gcm.NonceSize())
 	rand.Read(nonce)
-	return append(append(salt, nonce...), gcm.Seal(nil, nonce, plain, []byte(format))...), nil
+	return append(append(salt, nonce...), gcm.Seal(nil, nonce, plain, []byte(aad))...), nil
 }
 
-func open(sealed []byte, pass string) ([]byte, error) {
+func openWith(sealed []byte, pass, aad string) ([]byte, error) {
 	if len(sealed) < 16+12 {
 		return nil, ErrPassphrase
 	}
@@ -74,7 +116,7 @@ func open(sealed []byte, pass string) ([]byte, error) {
 	}
 	block, _ := aes.NewCipher(key)
 	gcm, _ := cipher.NewGCM(block)
-	plain, err := gcm.Open(nil, sealed[16:16+12], sealed[16+12:], []byte(format))
+	plain, err := gcm.Open(nil, sealed[16:16+12], sealed[16+12:], []byte(aad))
 	if err != nil {
 		return nil, ErrPassphrase
 	}
@@ -217,10 +259,14 @@ func walk(r io.Reader, fn func(name string, data io.Reader) error) error {
 func Unpack(r io.Reader, dir, passphrase string) (Manifest, map[string]string, error) {
 	var m Manifest
 	var sealed []byte
+	r, err := unseal(r, passphrase)
+	if err != nil {
+		return m, nil, err
+	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return m, nil, err
 	}
-	err := walk(r, func(name string, data io.Reader) error {
+	err = walk(r, func(name string, data io.Reader) error {
 		clean := filepath.Clean(filepath.FromSlash(name))
 		if filepath.IsAbs(clean) || strings.HasPrefix(clean, "..") {
 			return fmt.Errorf("unsafe path in backup: %s", name)

@@ -60,6 +60,12 @@ Browse ready-made routines, filtered by what they can touch. Zodim checks the au
 
 ## Moving and backups
 
+- **Ajustes › Backup automático na nuvem** keeps a copy of everything in your own storage, every day or every week, and keeps the last copies you choose:
+  - **Amazon S3 or compatible** (Cloudflare R2, Backblaze B2, MinIO, Wasabi): give the bucket, the region (`auto` on R2), the service address when it is not Amazon, and an access key that can read, write, list and delete in that bucket.
+  - **Google Drive**: connect Google in **Conexões** (with the Google Drive API turned on in your Google Cloud project) and allow Drive. Backups go to a "Zodim backups" folder; Zodim only sees files it created.
+  - Each backup is encrypted on your computer with the passphrase you choose, database and memory included, so the storage service cannot read it. Keep the passphrase somewhere safe: without it no one can open the backups.
+  - **Ver backups › Restaurar** brings one back; it takes effect when Zodim restarts, and what was there is kept aside. If a backup fails, you get a message.
+
 - **Ajustes › Exportar e importar tudo** creates one file with everything, the keys sealed with a passphrase you choose. Import it on another computer. What was there before is kept aside.
 - `zodim export file.zodim` and `zodim import file.zodim` do the same from the terminal.
 - `zodim snapshots` and `zodim restore` go back to an automatic daily snapshot.

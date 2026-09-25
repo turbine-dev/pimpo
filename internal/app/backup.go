@@ -2,16 +2,16 @@ package app
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"io"
 	"strings"
 
 	"fmt"
-	"github.com/denerFernandes/zodim/internal/connector/external"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/denerFernandes/zodim/internal/connector/external"
 
 	"github.com/denerFernandes/zodim/internal/backup"
 	"github.com/denerFernandes/zodim/internal/server"
@@ -46,13 +46,8 @@ func (a *App) exportBackup(w http.ResponseWriter, r *http.Request) {
 	a.Events.Append(r.Context(), "backup.exported", "human:owner", map[string]string{"file": name})
 }
 
-// importBackup checks and stages a backup; it takes effect when Zodim
-// restarts, since the database cannot be swapped while it is open.
+// importBackup stages an uploaded backup file.
 func (a *App) importBackup(w http.ResponseWriter, r *http.Request) {
-	if a.Home == "" {
-		server.WriteError(w, server.StatusError{Status: 503, Msg: "import is not available here"})
-		return
-	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4<<30)
 	file, _, err := r.FormFile("file")
 	if err != nil {
@@ -60,21 +55,7 @@ func (a *App) importBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-	stage := filepath.Join(a.Home, "import-pending")
-	os.RemoveAll(stage)
-	m, secrets, err := backup.Unpack(file, stage, r.FormValue("passphrase"))
-	if err != nil {
-		os.RemoveAll(stage)
-		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
-		return
-	}
-	b, _ := json.Marshal(secrets)
-	if err := os.WriteFile(filepath.Join(stage, "secrets.json"), b, 0o600); err != nil {
-		server.WriteError(w, err)
-		return
-	}
-	a.Events.Append(r.Context(), "backup.staged", "human:owner", map[string]any{"created": m.Created, "secrets": m.Secrets})
-	server.WriteJSON(w, 200, map[string]any{"created": m.Created, "version": m.Version, "secrets": m.Secrets, "restart": true})
+	a.stageImport(w, r, file, r.FormValue("passphrase"))
 }
 
 // reloadConnectors picks up connectors copied into the connectors folder

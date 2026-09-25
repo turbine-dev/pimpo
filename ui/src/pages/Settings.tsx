@@ -3,6 +3,7 @@ import { ArrowDownToLine, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BackupCard } from '../components/BackupCard'
+import { CloudBackup } from '../components/CloudBackup'
 import { ProtectionCard } from '../components/ProtectionCard'
 import { PhonePairing } from '../components/PhonePairing'
 import { Button, Card } from '../components/ui'
@@ -50,6 +51,7 @@ export function Settings() {
       </Card>
       <PhonePairing />
       <BackupCard />
+      <CloudBackup />
       <ProtectionCard on={!!s.protection_network} toggle={() => setS({ ...s, protection_network: !s.protection_network })} />
       <Card className="flex items-start gap-4 p-5">
         <div className="flex-1">

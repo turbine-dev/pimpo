@@ -185,6 +185,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.channelRoutes()
 	a.destinationRoutes()
 	a.remoteRoutes()
+	a.cloudRoutes()
 	return a, nil
 }
 
@@ -197,6 +198,7 @@ func (a *App) Start(ctx context.Context) error {
 	go a.emailChannel(ctx, time.Minute)
 	go a.refreshProtection(ctx)
 	a.startRemote(ctx)
+	go a.cloudLoop(ctx, 15*time.Minute)
 	a.restartListener(ctx)
 	return nil
 }
