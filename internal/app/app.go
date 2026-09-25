@@ -187,6 +187,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.remoteRoutes()
 	a.cloudRoutes()
 	a.mcpRoutes()
+	a.organizeRoutes()
 	return a, nil
 }
 
@@ -200,6 +201,7 @@ func (a *App) Start(ctx context.Context) error {
 	go a.refreshProtection(ctx)
 	a.startRemote(ctx)
 	go a.cloudLoop(ctx, 15*time.Minute)
+	go a.organizeLoop(ctx, 30*time.Minute)
 	a.restartListener(ctx)
 	return nil
 }

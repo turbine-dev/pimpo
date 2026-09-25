@@ -44,6 +44,8 @@ Every action has a receipt: what was done, with which arguments, under which rul
 
 Zodim remembers what you tell it. Facts it read somewhere are marked "não confirmado" and never guide it until you confirm them. Every change is versioned: **Histórico › Voltar para aqui** undoes any change.
 
+Search memory in plain words ("what can't I eat?"): with Jev set up, Zodim finds facts by meaning, not only by the words they share, and the agent uses the same search. Every night Zodim merges facts that say the same thing, never trading one you confirmed for one it read somewhere, and never merging facts that differ in a date, place or name. **Organizar** does it now, and **Histórico** undoes it.
+
 ## People
 
 In **Pessoas**, invite family members as a member or a guest. They send the invite code to the bot and get their own memory and accounts. Choose who approves each person's requests: a guest's changes always wait for that person. Only the owner makes lasting rules.

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/denerFernandes/zodim/internal/memory"
@@ -16,6 +17,14 @@ func (a *App) AttachMemory(dir string) error {
 	}
 	a.Memory = m
 	a.Explore.Memory = m
+	a.Explore.Recall = func(ctx context.Context, q, person string) ([]memory.Fact, error) {
+		res, _, err := a.SearchMeaning(ctx, q, person)
+		out := make([]memory.Fact, 0, len(res))
+		for _, f := range res {
+			out = append(out, f.Fact)
+		}
+		return out, err
+	}
 	return nil
 }
 

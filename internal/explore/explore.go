@@ -62,6 +62,8 @@ type Service struct {
 	Model   string
 	// Memory is optional; confirmed facts guide explorations.
 	Memory *memory.Memory
+	// Recall, when set, searches memory by meaning.
+	Recall Recall
 
 	mu       sync.Mutex
 	sessions map[string]session
@@ -158,7 +160,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 	if s.sessions == nil {
 		s.sessions = map[string]session{}
 	}
-	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "zodim", Tools: tools(h, s.Memory)}}
+	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "zodim", Tools: tools(h, s.Memory, s.Recall)}}
 	s.mu.Unlock()
 	defer func() {
 		s.mu.Lock()
