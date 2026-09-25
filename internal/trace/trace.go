@@ -45,6 +45,9 @@ type Scenario struct {
 	Params map[string]any `json:"params,omitempty"`
 	// Event is what wakes a watching routine in this scenario.
 	Event any `json:"event,omitempty"`
+	// Writes are canned texts for the routine's writes: name -> identifying
+	// substring of the input -> text.
+	Writes map[string]map[string]string `json:"writes,omitempty"`
 }
 
 // Response is a canned result for one call to a read capability. Calls to

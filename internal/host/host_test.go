@@ -197,3 +197,28 @@ func TestIrreversibleBecomesReversible(t *testing.T) {
 		t.Fatalf("record %+v", rec)
 	}
 }
+
+func TestWriteIsBudgetedAndRecorded(t *testing.T) {
+	e := env(t, &fakeMail{})
+	ctx := context.Background()
+	e.Write = func(_ context.Context, instruction string, input any) (string, float64, error) {
+		return "Pede a assinatura hoje.", 0.004, nil
+	}
+	h := &Host{Env: e, Source: "routine:ana#3"}
+	text, err := h.Write(ctx, "pedido", "Diga o que o e-mail pede", map[string]any{"subject": "Contrato"})
+	if err != nil || text != "Pede a assinatura hoje." || h.Cost() != 0.004 {
+		t.Fatalf("%q %v %v", text, err, h.Cost())
+	}
+	evs, _ := e.Events.List(ctx, event.Query{Types: []string{WriteEvent}})
+	if len(evs) != 1 || !strings.Contains(string(evs[0].Data), "Pede a assinatura hoje.") {
+		t.Fatalf("%v", evs)
+	}
+	e.Budget.SetLimit(ctx, 0.01, "test")
+	if _, err := (&Host{Env: e, Source: "routine:ana#4"}).Write(ctx, "pedido", "x", nil); err == nil {
+		t.Fatal("wrote past the budget")
+	}
+	e.Write = nil
+	if _, err := (&Host{Env: e}).Write(ctx, "pedido", "x", nil); err == nil {
+		t.Fatal("wrote with no model")
+	}
+}

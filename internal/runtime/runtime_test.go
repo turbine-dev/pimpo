@@ -126,3 +126,45 @@ func TestManifestValidation(t *testing.T) {
 		}
 	}
 }
+
+type writingHost struct {
+	recordingHost
+	inputs []string
+	sent   []string
+}
+
+func (h *writingHost) Call(ctx context.Context, name, scope string, args any) (any, error) {
+	if m, ok := args.(map[string]any); ok && name == "telegram.send" {
+		h.sent = append(h.sent, m["text"].(string))
+	}
+	return h.recordingHost.Call(ctx, name, scope, args)
+}
+
+func (h *writingHost) Write(_ context.Context, name, instruction string, input any) (string, error) {
+	h.inputs = append(h.inputs, name+":"+input.(map[string]any)["subject"].(string))
+	return "Ela pede a assinatura do contrato hoje.", nil
+}
+
+func TestWriteStep(t *testing.T) {
+	m := Manifest{Schedule: "0 7 * * *", Capabilities: []string{"telegram.send"}, Writes: map[string]string{"pedido": "Diga em uma frase o que o e-mail pede"}}
+	code := `async function run() { for (const e of event.items) { const w = await write.pedido(e); await telegram.send({text: e.subject + " — " + w.text}); } }`
+	h := &writingHost{}
+	ev := map[string]any{"items": []any{map[string]any{"subject": "Contrato Q4"}}}
+	if _, err := Run(context.Background(), code, m, h, Options{Event: ev}); err != nil {
+		t.Fatal(err)
+	}
+	if len(h.sent) != 1 || h.sent[0] != "Contrato Q4 — Ela pede a assinatura do contrato hoje." || h.inputs[0] != "pedido:Contrato Q4" {
+		t.Fatalf("%v %v", h.sent, h.inputs)
+	}
+	if _, err := Run(context.Background(), code, m, &recordingHost{}, Options{Event: ev}); err == nil || !strings.Contains(err.Error(), "no model") {
+		t.Fatalf("ran without a writer: %v", err)
+	}
+	many := `async function run() { for (let i = 0; i < 30; i++) await write.pedido({subject: "x"}); }`
+	if _, err := Run(context.Background(), many, m, &writingHost{}, Options{}); err == nil || !strings.Contains(err.Error(), "more than 20 texts") {
+		t.Fatalf("no cap on writes: %v", err)
+	}
+	m.Writes = map[string]string{"pedido": ""}
+	if m.Validate() == nil {
+		t.Fatal("accepted a write without instruction")
+	}
+}

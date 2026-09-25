@@ -25,10 +25,22 @@ type Host interface {
 	Judge(ctx context.Context, name, question string, item any) (float64, error)
 }
 
+// Writer composes short text for a routine: a summary, what an email
+// asks, a draft reply. Only hosts that can reach a model implement it.
+type Writer interface {
+	Write(ctx context.Context, name, instruction string, input any) (string, error)
+}
+
+// MaxWrites bounds the text a single run may ask a model to write.
+const MaxWrites = 20
+
 type Manifest struct {
 	Schedule     string            `json:"schedule"`
 	Capabilities []string          `json:"capabilities"`
 	Judgments    map[string]string `json:"judgments,omitempty"`
+	// Writes are texts a small model composes for each item, by name:
+	// the instruction, in the routine's language.
+	Writes map[string]string `json:"writes,omitempty"`
 	// Locale is the language of the routine's messages, e.g. pt-BR or en-US.
 	Locale string `json:"locale,omitempty"`
 	// Params are the settings the owner can change without code.
@@ -118,6 +130,14 @@ func (m Manifest) Validate() error {
 	for name := range m.Judgments {
 		if !isIdent(name) {
 			return fmt.Errorf("judgment name %q must be a JavaScript identifier", name)
+		}
+	}
+	for name, instruction := range m.Writes {
+		if !isIdent(name) {
+			return fmt.Errorf("write name %q must be a JavaScript identifier", name)
+		}
+		if strings.TrimSpace(instruction) == "" || len([]rune(instruction)) > 500 {
+			return fmt.Errorf("write %s needs an instruction of up to 500 characters", name)
 		}
 	}
 	if w := m.Watch; w != nil {
@@ -243,6 +263,29 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 					fail(fmt.Errorf("judge.%s: %w", name, err))
 				}
 				return vm.ToValue(map[string]any{"p": p})
+			})
+		}
+	}
+	if len(m.Writes) > 0 {
+		writer, ok := host.(Writer)
+		if !ok {
+			return Result{}, errors.New("this routine writes text, and no model is available to write it")
+		}
+		write := vm.NewObject()
+		vm.Set("write", write)
+		written := 0
+		for name, instruction := range m.Writes {
+			name, instruction := name, instruction
+			bind(write, name, func(call goja.FunctionCall) goja.Value {
+				written++
+				if written > MaxWrites {
+					fail(fmt.Errorf("routine asked for more than %d texts in one run", MaxWrites))
+				}
+				text, err := writer.Write(ctx, name, instruction, call.Argument(0).Export())
+				if err != nil {
+					fail(fmt.Errorf("write.%s: %w", name, err))
+				}
+				return vm.ToValue(map[string]any{"text": text})
 			})
 		}
 	}
