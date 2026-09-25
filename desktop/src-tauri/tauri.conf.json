@@ -10,6 +10,7 @@
     "windows": [
       {
         "label": "main",
+        "create": false,
         "title": "Vigia",
         "width": 1180,
         "height": 800,

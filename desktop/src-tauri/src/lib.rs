@@ -11,12 +11,31 @@ mod desktop {
 
     use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-    use tauri::{AppHandle, Manager, Url, WindowEvent};
+    use tauri::webview::NewWindowResponse;
+    use tauri::{AppHandle, Manager, Url, WebviewWindowBuilder, WindowEvent};
+    use tauri_plugin_opener::OpenerExt;
     use tauri_plugin_autostart::ManagerExt as _;
     use tauri_plugin_shell::process::{CommandChild, CommandEvent};
     use tauri_plugin_shell::ShellExt;
 
     pub struct Server(pub Mutex<Option<CommandChild>>);
+
+    // The window is built here rather than from the config so links that
+    // ask for a new window (target=_blank) open in the system browser; the
+    // webview would otherwise swallow them.
+    pub fn window(app: &AppHandle) -> tauri::Result<()> {
+        let conf = app.config().app.windows.iter().find(|w| w.label == "main").expect("main window config").clone();
+        let handle = app.clone();
+        WebviewWindowBuilder::from_config(app, &conf)?
+            .on_new_window(move |url, _| {
+                if matches!(url.scheme(), "http" | "https" | "mailto") {
+                    let _ = handle.opener().open_url(url.as_str(), None::<&str>);
+                }
+                NewWindowResponse::Deny
+            })
+            .build()?;
+        Ok(())
+    }
 
     pub fn show(app: &AppHandle) {
         if let Some(w) = app.get_webview_window("main") {
@@ -159,10 +178,18 @@ pub fn run() {
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .on_window_event(|w, ev| desktop::keep_running_on_close(ev, w))
         .setup(|app| {
+            desktop::window(app.handle())?;
             desktop::tray(app.handle())?;
             desktop::start(app.handle())?;
             Ok(())
         });
+
+    #[cfg(mobile)]
+    let builder = builder.setup(|app| {
+        let conf = app.config().app.windows.iter().find(|w| w.label == "main").expect("main window config").clone();
+        tauri::WebviewWindowBuilder::from_config(app.handle(), &conf)?.build()?;
+        Ok(())
+    });
 
     let app = builder
         .build(tauri::generate_context!())

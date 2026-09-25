@@ -53,7 +53,7 @@ describe('PhonePairing', () => {
     await userEvent.click(screen.getByRole('switch', { name: 'Em casa' }))
     expect(await screen.findByText('http://192.168.1.20:7788')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('switch', { name: 'De qualquer lugar' }))
-    expect((await screen.findByRole('button', { name: 'Entrar no Tailscale' })).closest('a')).toHaveAttribute('href', 'https://login.tailscale.com/a/x')
+    expect(await screen.findByRole('link', { name: 'Entrar no Tailscale' })).toHaveAttribute('href', 'https://login.tailscale.com/a/x')
     await userEvent.type(screen.getByLabelText('Nome do aparelho'), 'Celular')
     await userEvent.click(screen.getByRole('button', { name: 'Gerar código' }))
     await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.url === '/api/pairing')?.body).toEqual({ base: '', device: 'Celular' }))
