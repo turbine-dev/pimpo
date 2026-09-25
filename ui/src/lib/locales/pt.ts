@@ -764,6 +764,16 @@ export const pt = {
   'runs.calls_one': '{count} chamada',
   'runs.calls_other': '{count} chamadas',
   'runs.took': 'levou {s}',
+  'memory.search': 'Buscar na memória',
+  'memory.searchPlaceholder': 'Buscar… (ex.: o que não posso comer?)',
+  'memory.byMeaning': 'pelo sentido',
+  'memory.noResults': 'Nada encontrado.',
+  'memory.meaningNeedsJev': 'Para buscar pelo sentido, e não só pelas palavras, configure o Jev em Conexões.',
+  'memory.organize': 'Organizar',
+  'memory.organizeHint': 'Junta fatos repetidos. Toda noite isso acontece sozinho, e dá para desfazer no Histórico.',
+  'memory.organized_one': 'Organizada {when}: {count} fato repetido juntado.',
+  'memory.organized_other': 'Organizada {when}: {count} fatos repetidos juntados.',
+  'memory.organizedNone': 'Organizada {when}: nada repetido.',
 }
 
 export type Key = keyof typeof pt

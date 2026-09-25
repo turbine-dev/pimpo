@@ -1,0 +1,62 @@
+[
+ {
+  "a": "Academia às terças",
+  "b": "Vou à academia às terças",
+  "same": 1,
+  "p": 0.75
+ },
+ {
+  "a": "Reunião com a Ana dia 12",
+  "b": "Reunião com a Ana dia 19",
+  "same": 0,
+  "p": 0.03
+ },
+ {
+  "a": "Minha irmã se chama Ana",
+  "b": "A irmã se chama Ana Paula",
+  "same": 0,
+  "p": 0.1
+ },
+ {
+  "a": "Prefiro café sem açúcar",
+  "b": "Gosto de café sem açúcar",
+  "same": 1,
+  "p": 0.94
+ },
+ {
+  "a": "Moro em São Paulo",
+  "b": "Moro em Lisboa",
+  "same": 0,
+  "p": 0.02
+ },
+ {
+  "a": "Alergia a amendoim",
+  "b": "Tenho alergia a amendoim",
+  "same": 1,
+  "p": 0.96
+ },
+ {
+  "a": "Não gosto de reuniões antes das 10h",
+  "b": "Evito reuniões antes das 10h",
+  "same": 1,
+  "p": 0.68
+ },
+ {
+  "a": "O carro é um Civic 2019",
+  "b": "O carro é um Civic",
+  "same": 0,
+  "p": 0.23
+ },
+ {
+  "a": "Meu aniversário é 3 de maio",
+  "b": "Faço aniversário em 3 de maio",
+  "same": 1,
+  "p": 0.98
+ },
+ {
+  "a": "Trabalho na Beevo",
+  "b": "Trabalhava na Beevo",
+  "same": 0,
+  "p": 0.31
+ }
+]

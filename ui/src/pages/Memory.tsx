@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Brain, Check, History, Plus, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Brain, Check, History, Loader2, Plus, Search, Sparkles, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api, type Fact } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -41,6 +41,37 @@ export function Memory() {
     return [...m.entries()]
   }, [q.data, filter])
   const unconfirmed = (q.data?.facts ?? []).filter((f) => f.trust === 'low').length
+  const [typed, setTyped] = useState('')
+  const [query, setQuery] = useState('')
+  useEffect(() => {
+    const id = setTimeout(() => setQuery(typed.trim()), 400)
+    return () => clearTimeout(id)
+  }, [typed])
+  const results = useQuery({ queryKey: ['memory-search', query], queryFn: () => api.searchMemory(query), enabled: query !== '' })
+  const organized = useQuery({ queryKey: ['memory-organized'], queryFn: api.memoryOrganized })
+  const organize = useMutation({ mutationFn: api.organizeMemory, onSuccess: () => { done(); qc.invalidateQueries({ queryKey: ['memory-organized'] }) } })
+  const row = (f: Fact, meaning?: boolean) => (
+    <div key={f.id} className={cn('flex items-start gap-3 px-4 py-3', f.trust === 'low' && 'bg-change-soft/30')}>
+      <div className="min-w-0 flex-1">
+        <div className="text-[14px]">{f.text}</div>
+        <div className="mt-0.5 text-[12px] text-ink-3">
+          {meaning && <span className="mr-1.5 inline-flex items-center gap-1 rounded-full bg-explore-soft px-1.5 py-px text-[11px] font-medium text-explore"><Sparkles size={10} /> {t('memory.byMeaning')}</span>}
+          {f.person && <span className="mr-1.5 rounded-full bg-explore-soft px-1.5 py-px text-[11px] font-medium text-explore">{nameOf(f.person)}</span>}
+          {sourceText(f)} · {relative(f.created)}
+          {f.trust === 'low' && <span className="ml-1.5 font-medium text-change">{t('memory.notConfirmed')}</span>}
+        </div>
+      </div>
+      {f.trust === 'low' && (
+        <Button size="sm" onClick={() => confirm.mutate(f.id)}>
+          <Check size={14} /> {t('memory.confirm')}
+        </Button>
+      )}
+      <Button size="sm" variant="ghost" aria-label={t('memory.forget', { text: f.text })} onClick={() => remove.mutate(f.id)}>
+        <Trash2 size={14} />
+      </Button>
+    </div>
+  )
+  const last = organized.data
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -88,6 +119,30 @@ export function Memory() {
         </p>
       )}
 
+      {(q.data?.facts.length ?? 0) > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <label className="flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-[10px] border border-line bg-surface px-3 focus-within:border-accent">
+            <Search size={15} className="text-ink-3" />
+            <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={t('memory.searchPlaceholder')} aria-label={t('memory.search')} className="flex-1 bg-transparent text-sm outline-none" />
+          </label>
+          <Button variant="ghost" onClick={() => organize.mutate()} disabled={organize.isPending} title={t('memory.organizeHint')}>
+            {organize.isPending ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />} {t('memory.organize')}
+          </Button>
+        </div>
+      )}
+      {(organize.data ?? last)?.at && (
+        <p className="mb-4 text-[12.5px] text-ink-3">
+          {(() => {
+            const o = organize.data ?? last!
+            return o.merged.length
+              ? t('memory.organized', { count: o.merged.length, when: relative(o.at) })
+              : t('memory.organizedNone', { when: relative(o.at) })
+          })()}
+          {(organize.data ?? last)?.merged.map((m) => <span key={m.dropped} className="mt-0.5 block">“{m.dropped}” → “{m.kept}”</span>)}
+        </p>
+      )}
+      {organize.error && <p className="mb-4 text-[13px] text-danger">{organize.error.message}</p>}
+
       {showHistory && (
         <Card className="mb-5 divide-y divide-line">
           {(q.data?.history ?? []).map((v, i) => (
@@ -109,35 +164,24 @@ export function Memory() {
           {t('memory.emptyText')}
         </EmptyState>
       )}
+      {query !== '' ? (
+        <section aria-label={t('memory.search')}>
+          {results.isPending ? <Loader2 size={16} className="animate-spin text-ink-3" /> : (results.data?.facts.length ?? 0) === 0 ? (
+            <p className="text-[13px] text-ink-3">{t('memory.noResults')}{results.data && !results.data.meaning && ' ' + t('memory.meaningNeedsJev')}</p>
+          ) : (
+            <Card className="divide-y divide-line">{results.data!.facts.map((f) => row(f, f.by === 'meaning'))}</Card>
+          )}
+        </section>
+      ) : (
       <div className="space-y-5">
         {groups.map(([topic, facts]) => (
           <section key={topic}>
             <h2 className="mb-2 text-[12.5px] font-medium capitalize text-ink-3">{topic}</h2>
-            <Card className="divide-y divide-line">
-              {facts.map((f) => (
-                <div key={f.id} className={cn('flex items-start gap-3 px-4 py-3', f.trust === 'low' && 'bg-change-soft/30')}>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[14px]">{f.text}</div>
-                    <div className="mt-0.5 text-[12px] text-ink-3">
-                      {f.person && <span className="mr-1.5 rounded-full bg-explore-soft px-1.5 py-px text-[11px] font-medium text-explore">{nameOf(f.person)}</span>}
-                      {sourceText(f)} · {relative(f.created)}
-                      {f.trust === 'low' && <span className="ml-1.5 font-medium text-change">{t('memory.notConfirmed')}</span>}
-                    </div>
-                  </div>
-                  {f.trust === 'low' && (
-                    <Button size="sm" onClick={() => confirm.mutate(f.id)}>
-                      <Check size={14} /> {t('memory.confirm')}
-                    </Button>
-                  )}
-                  <Button size="sm" variant="ghost" aria-label={t('memory.forget', { text: f.text })} onClick={() => remove.mutate(f.id)}>
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              ))}
-            </Card>
+            <Card className="divide-y divide-line">{facts.map((f) => row(f))}</Card>
           </section>
         ))}
       </div>
+      )}
     </div>
   )
 }

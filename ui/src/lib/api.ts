@@ -33,6 +33,8 @@ export type McpTool = { tool: string; capability: string; title?: string; descri
 
 export type RecentRun = { id: number; routine: string; name: string; version: number; started_at: string; ended_at?: string; outcome: 'ok' | 'failed' | 'skipped' | 'running'; error?: string; cost_usd: number; calls: number }
 
+export type Organized = { at?: string; checked: number; merged: { kept: string; dropped: string }[]; error?: string }
+
 export type RemoteState = {
   tailscale: { state: 'off' | 'starting' | 'needs_login' | 'needs_funnel' | 'running' | 'error'; auth_url?: string; url?: string; error?: string }
   lan: { on: boolean; url?: string; error?: string }
@@ -173,6 +175,9 @@ export const api = {
   mcpAdd: (s: McpSource & { description?: string; source?: string; tools: Record<string, CapRisk> }) => request<{ loaded: number }>('POST', '/api/connectors/add', s),
   mcpRemove: (name: string) => request<{ loaded: number }>('DELETE', `/api/connectors/${name}`),
   recentRuns: (outcome = '', before = 0) => request<RecentRun[]>('GET', `/api/runs?outcome=${outcome}&before=${before}&limit=50`),
+  searchMemory: (q: string) => request<{ facts: (Fact & { by: 'words' | 'meaning'; score: number })[]; meaning: boolean }>('GET', `/api/memory/search?q=${encodeURIComponent(q)}`),
+  organizeMemory: () => request<Organized>('POST', '/api/memory/organize'),
+  memoryOrganized: () => request<Organized>('GET', '/api/memory/organized'),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),

@@ -36,26 +36,19 @@ type Jev struct {
 	HTTP    *http.Client
 }
 
-func (j Jev) Ask(ctx context.Context, question string, item any) (Answer, error) {
+func (j Jev) call(ctx context.Context, state any, questions map[string]any) (map[string]json.RawMessage, error) {
 	key, err := j.Key(ctx)
 	if err != nil {
-		return Answer{}, err
+		return nil, err
 	}
 	base := j.BaseURL
 	if base == "" {
 		base = "https://api.typesafe.ai/v1/systemone"
 	}
-	body, _ := json.Marshal(map[string]any{
-		"model": "jev-latest",
-		"state": map[string]any{"item": item},
-		"questions": map[string]any{"q": map[string]any{
-			"type":         "noul",
-			"instructions": question + " Answer about `item`.",
-		}},
-	})
+	body, _ := json.Marshal(map[string]any{"model": "jev-latest", "state": state, "questions": questions})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base, bytes.NewReader(body))
 	if err != nil {
-		return Answer{}, err
+		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+key)
 	req.Header.Set("Content-Type", "application/json")
@@ -65,26 +58,55 @@ func (j Jev) Ask(ctx context.Context, question string, item any) (Answer, error)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return Answer{}, fmt.Errorf("jev unreachable")
+		return nil, fmt.Errorf("jev unreachable")
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode != 200 {
-		return Answer{}, fmt.Errorf("jev answered %d", resp.StatusCode)
+		return nil, fmt.Errorf("jev answered %d", resp.StatusCode)
 	}
 	var out struct {
-		Answers map[string]struct {
-			Noul float64 `json:"noul"`
-		} `json:"answers"`
+		Answers map[string]json.RawMessage `json:"answers"`
 	}
 	if err := json.Unmarshal(raw, &out); err != nil {
-		return Answer{}, errors.New("jev returned an unreadable answer")
+		return nil, errors.New("jev returned an unreadable answer")
 	}
-	a, ok := out.Answers["q"]
-	if !ok {
+	return out.Answers, nil
+}
+
+func (j Jev) Ask(ctx context.Context, question string, item any) (Answer, error) {
+	answers, err := j.call(ctx, map[string]any{"item": item}, map[string]any{"q": map[string]any{
+		"type":         "noul",
+		"instructions": question + " Answer about `item`.",
+	}})
+	if err != nil {
+		return Answer{}, err
+	}
+	var a struct {
+		Noul float64 `json:"noul"`
+	}
+	raw, ok := answers["q"]
+	if !ok || json.Unmarshal(raw, &a) != nil {
 		return Answer{}, errors.New("jev returned no answer")
 	}
 	return Answer{P: clamp(a.Noul), Backend: "jev"}, nil
+}
+
+// Choose asks which option best fits, returning each option's
+// probability. Options map an id to what it means.
+func (j Jev) Choose(ctx context.Context, instructions string, state any, options map[string]string) (map[string]float64, error) {
+	answers, err := j.call(ctx, state, map[string]any{"q": map[string]any{"type": "choice", "instructions": instructions, "criteria": options}})
+	if err != nil {
+		return nil, err
+	}
+	var a struct {
+		Probabilities map[string]float64 `json:"probabilities"`
+	}
+	raw, ok := answers["q"]
+	if !ok || json.Unmarshal(raw, &a) != nil || a.Probabilities == nil {
+		return nil, errors.New("jev returned no answer")
+	}
+	return a.Probabilities, nil
 }
 
 // LLM asks a language model for a probability. Less calibrated than Jev,
