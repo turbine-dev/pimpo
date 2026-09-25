@@ -97,6 +97,10 @@ Browse ready-made routines, filtered by what they can touch. Zodim checks the au
 
 **Ajuda** (at the bottom of the menu) answers questions about Zodim itself: it starts a chat, and the agent reads this guide to answer. In **Ajustes › Notificações** choose what reaches you outside the app: task results, failed routines and backup problems can be silenced (they stay in **Precisa de você**); approval requests always arrive. **Ajustes › Laboratório** turns off newer features: organizing memory every night, searching memory by meaning, and exploring the MCP registry.
 
+## Models
+
+By default Zodim uses Claude Code with your own subscription. In **Ajustes › Modelos** you can pick another model for each job (tasks and chat, writing routines, judgments): Anthropic, OpenAI or OpenRouter with your API key, or a local model through Ollama. An API model needs its price per million tokens before it runs, because the daily spending limit counts every call with it; **Testar** checks the key with a call capped at one cent. Rules and approvals do not change with the model: every tool call still goes through Zodim.
+
 ## Costs
 
 **Custo** shows what you spent today, this month and on what. The daily limit (Ajustes) is checked before every model call; routines barely spend anything.

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BackupCard } from '../components/BackupCard'
 import { CloudBackup } from '../components/CloudBackup'
+import { ModelsCard } from '../components/ModelsCard'
 import { ProtectionCard } from '../components/ProtectionCard'
 import { PhonePairing } from '../components/PhonePairing'
 import { Button, Card } from '../components/ui'
@@ -90,6 +91,7 @@ export function Settings() {
           </label>
         )}
       </Card>
+      <ModelsCard s={s} set={setS} />
       <Toggles title={t('notif.title')} text={t('notif.text')} items={[
         { key: 'approval', label: t('notif.approval'), hint: t('notif.approvalHint'), on: true, locked: true },
         ...(['task', 'failure', 'backup'] as const).map((k) => ({ key: k, label: t(`notif.${k}`), on: !(s.mute ?? []).includes(k) })),
