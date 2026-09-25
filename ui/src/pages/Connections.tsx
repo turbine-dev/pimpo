@@ -3,6 +3,7 @@ import { Bot, CalendarDays, Check, Cpu, Mail, MessageCircle, Sparkles } from 'lu
 import { type ReactNode, useState } from 'react'
 import { Button, Card } from '../components/ui'
 import { Catalog } from '../components/Catalog'
+import { TelegramBots } from '../components/TelegramBots'
 import { api, type Connection } from '../lib/api'
 import { cn } from '../lib/cn'
 import { fill, useT } from '../lib/i18n'
@@ -17,6 +18,7 @@ export function Connections() {
       <p className="mb-6 text-sm text-ink-2">{t('conn.subtitle')}</p>
       <div className="space-y-4">
         <Telegram c={by('telegram')} />
+        <TelegramBots />
         <GoogleSignIn connected={!!by('mail')?.detail?.includes('(Google)')} />
         <Setup
           kind="mail"

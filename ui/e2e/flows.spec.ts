@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
 async function login(page: Page) {
@@ -136,5 +137,29 @@ test('every screen is in the sidebar', async ({ page }) => {
   const nav = page.getByRole('navigation', { name: 'Principal', exact: true })
   for (const name of ['Rotinas', 'Precisa de você', 'Galeria', 'Recibos', 'Regras', 'Custo', 'Memória', 'Conexões', 'Pessoas', 'Ajustes']) {
     await expect(nav.getByRole('link', { name })).toBeVisible()
+  }
+})
+
+test('a routine\'s schedule and settings change without code', async ({ page }) => {
+  await page.goto('/auth?token=e2e-token')
+  await page.goto('/gallery')
+  await page.getByText('Clima da manhã', { exact: true }).click()
+  await page.getByRole('button', { name: 'Instalar esta rotina' }).click()
+  await expect(page).toHaveURL(/\/routines\/clima-da-manha/)
+  await page.getByLabel('Quando').selectOption('weekdays')
+  await page.getByLabel('às').fill('06:30')
+  await page.getByLabel('Avisar guarda-chuva a partir de (% de chuva)').fill('80')
+  await page.getByRole('button', { name: 'Salvar ajustes' }).click()
+  await expect(page.getByText('Salvo.')).toBeVisible()
+  await page.reload()
+  await expect(page.getByLabel('Quando')).toHaveValue('weekdays')
+  await expect(page.getByLabel('Avisar guarda-chuva a partir de (% de chuva)')).toHaveValue('80')
+  await expect(page.getByText(/dias úteis às 06:30/i).first()).toBeVisible()
+  for (const theme of ['dark', 'light']) {
+    await page.evaluate((t) => localStorage.setItem('vigia.theme', t), theme)
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+    expect(results.violations.map((v) => `${theme}: ${v.id} ${v.nodes.map((n) => n.html.slice(0, 120)).join(' | ')}`)).toEqual([])
   }
 })

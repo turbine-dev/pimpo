@@ -1,15 +1,29 @@
 {
  "name": "Agenda da semana",
- "description": "Segunda de manhã, o que vem nos próximos sete dias.",
+ "description": "Segunda de manhã, o que vem nos próximos dias (você escolhe quantos).",
  "manifest": {
   "schedule": "0 8 * * 1",
   "capabilities": [
    "calendar.events",
-   "telegram.send"
+   "notify.send"
   ],
-  "locale": "pt-BR"
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "dias",
+    "label": "Quantos dias à frente",
+    "type": "number",
+    "default": 7
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
  },
- "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 7)});\n  if (!events.length) { await telegram.send({text: \"🗓️ Semana sem compromissos marcados.\"}); return; }\n  const lines = events.map(e => \"• \" + dates.format(e.start, \"EEE dd/MM HH:mm\") + \" \" + e.title);\n  await telegram.send({text: \"🗓️ Sua semana (\" + events.length + \"):\\n\" + lines.join(\"\\n\")});\n}",
+ "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, params.dias)});\n  if (!events.length) { await notify.send({text: \"🗓️ Nada marcado nos próximos dias.\"}); return; }\n  const lines = events.map(e => \"• \" + dates.format(e.start, \"EEE dd/MM HH:mm\") + \" \" + e.title);\n  await notify.send({text: \"🗓️ Próximos dias (\" + events.length + \"):\\n\" + lines.join(\"\\n\")});\n}",
  "tests": [
   {
    "name": "três eventos",
@@ -50,7 +64,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "(2)",
@@ -74,13 +88,68 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
-      "sem compromissos"
+      "Nada marcado"
      ]
     }
    ]
+  },
+  {
+   "name": "só hoje",
+   "now": "2026-09-28T08:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "Dentista",
+       "title": "Dentista",
+       "start": "2026-09-28T09:00:00-03:00",
+       "end": "2026-09-28T10:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      },
+      {
+       "id": "Jantar",
+       "title": "Jantar",
+       "start": "2026-09-30T20:00:00-03:00",
+       "end": "2026-09-30T22:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      },
+      {
+       "id": "Longe",
+       "title": "Longe",
+       "start": "2026-10-20T09:00:00-03:00",
+       "end": "2026-10-20T10:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "(1)",
+      "Dentista"
+     ],
+     "not_contains": [
+      "Jantar",
+      "Longe"
+     ]
+    }
+   ],
+   "params": {
+    "dias": 1
+   }
   }
  ]
 }

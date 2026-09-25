@@ -5,11 +5,19 @@
   "schedule": "0 20 * * *",
   "capabilities": [
    "calendar.events",
-   "telegram.send"
+   "notify.send"
   ],
-  "locale": "pt-BR"
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
  },
- "code": "async function run() {\n  const tomorrow = dates.startOfDay(dates.today(), 1);\n  const events = await calendar.events({from: tomorrow, to: dates.startOfDay(tomorrow, 1)});\n  const missing = events.filter(e => !e.location || !e.location.trim());\n  if (!missing.length) return;\n  await telegram.send({text: \"📍 Amanhã sem local definido:\\n\" + missing.map(e => \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\")});\n}",
+ "code": "async function run() {\n  const tomorrow = dates.startOfDay(dates.today(), 1);\n  const events = await calendar.events({from: tomorrow, to: dates.startOfDay(tomorrow, 1)});\n  const missing = events.filter(e => !e.location || !e.location.trim());\n  if (!missing.length) return;\n  await notify.send({text: \"📍 Amanhã sem local definido:\\n\" + missing.map(e => \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\")});\n}",
  "tests": [
   {
    "name": "um sem local",
@@ -41,7 +49,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "09:00 Café com Rui"
@@ -73,7 +81,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 0
     }
    ]

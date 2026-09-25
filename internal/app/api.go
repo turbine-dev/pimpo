@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/vigia/internal/runtime"
 	"github.com/denerFernandes/vigia/internal/server"
 	"github.com/denerFernandes/vigia/internal/store"
 	"github.com/denerFernandes/vigia/internal/telegram"
@@ -45,11 +46,25 @@ type routineSummary struct {
 	CostMonthUSD float64  `json:"cost_month_usd"`
 	Capabilities []string `json:"capabilities"`
 	Schedule     string   `json:"schedule"`
+	// DefaultSchedule is the manifest's, to offer going back to it.
+	DefaultSchedule string          `json:"default_schedule"`
+	Params          []runtime.Param `json:"params"`
+	// Values are the parameters as the routine sees them, defaults included.
+	Values map[string]any `json:"values"`
 }
 
 func (a *App) summary(ctx context.Context, r store.Routine) routineSummary {
 	sum := routineSummary{ID: r.ID, Name: r.Body.Name, Description: r.Body.Description, State: r.State, Version: r.Version,
-		Capabilities: r.Body.Manifest.Capabilities, Schedule: r.Body.Manifest.Schedule, Runs: []string{}}
+		Capabilities: r.Body.Manifest.Capabilities, Schedule: r.Schedule(), DefaultSchedule: r.Body.Manifest.Schedule, Runs: []string{},
+		Params: r.Body.Manifest.Params, Values: map[string]any{}}
+	if sum.Params == nil {
+		sum.Params = []runtime.Param{}
+	}
+	if v, err := r.Body.Manifest.ResolveParams(r.Settings.Params); err == nil {
+		sum.Values = v
+	} else {
+		sum.Values = r.Settings.Params
+	}
 	if n := a.Scheduler.Next(r.ID); !n.IsZero() {
 		sum.NextRun = n.Format(time.RFC3339)
 	}

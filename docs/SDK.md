@@ -7,7 +7,7 @@ Every way to extend Vigia works with the binary you already have: no recompiling
 | New services | **Connectors**: any language, MCP over stdio, a `connector.json` | [CONNECTORS.md](CONNECTORS.md) |
 | New chat apps | **Channel API**: a signed webhook out, two endpoints in | below |
 | New judgment models | **Judge API**: one HTTP endpoint | below |
-| Ready-made automations | **Gallery routines**: a signed JSON file | [gallery/README.md](../gallery/README.md) |
+| Ready-made automations | **Gallery routines**: a signed JSON file, with typed settings (`params`) people change without code | [gallery/README.md](../gallery/README.md) |
 | Other agents | **Guard API**: ask before running a tool | [guard/README.md](../guard/README.md) |
 | Threat intelligence | **Protection list**: signed entries | [protection/README.md](../protection/README.md) |
 

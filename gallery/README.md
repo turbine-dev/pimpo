@@ -11,6 +11,10 @@ Vigia checks every routine before installing it:
 
 If any check fails, Vigia refuses to install it and says why.
 
+## Settings, not code
+
+A routine declares what people may change in `manifest.params`: a city, a limit, some words, a currency. Types are text, number, boolean, date, time, location, select, multiselect, email and destinations. The code reads `params.<name>`, and people change the values in Vigia without touching the code. Messages to the owner go through `notify.send`, together with a `destinations` parameter, so each person picks where to be told. Tests can set `params` to show the routine works with values other than the defaults.
+
 ## Proposing a routine
 
 1. In Vigia, open the routine and choose **Publicar na galeria**. You get a signed entry and your author key.

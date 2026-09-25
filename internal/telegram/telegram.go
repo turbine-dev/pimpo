@@ -41,7 +41,8 @@ type Message struct {
 		Duration int    `json:"duration"`
 	} `json:"voice,omitempty"`
 	Chat struct {
-		ID int64 `json:"id"`
+		ID    int64  `json:"id"`
+		Title string `json:"title,omitempty"`
 	} `json:"chat"`
 	From struct {
 		ID        int64  `json:"id"`

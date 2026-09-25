@@ -95,7 +95,7 @@ func (s *Scheduler) Changed(ctx context.Context, id string) {
 	if err != nil || r.State != store.RoutineActive {
 		return
 	}
-	sched, err := parser.Parse(r.Body.Manifest.Schedule)
+	sched, err := parser.Parse(r.Schedule())
 	if err != nil {
 		s.Env.Events.Append(ctx, EventRunFailed, "routine:"+id, map[string]string{"routine": id, "error": "invalid schedule: " + err.Error()})
 		return
@@ -120,7 +120,7 @@ func (s *Scheduler) catchUp(ctx context.Context, r store.Routine) {
 	if r.State != store.RoutineActive {
 		return
 	}
-	sched, err := parser.Parse(r.Body.Manifest.Schedule)
+	sched, err := parser.Parse(r.Schedule())
 	if err != nil {
 		return
 	}
@@ -180,9 +180,12 @@ func (s *Scheduler) RunNow(ctx context.Context, id, trigger string) (store.Run, 
 	source := fmt.Sprintf("routine:%s#%d", id, runID)
 	s.Env.Events.Append(ctx, EventRunStarted, source, map[string]any{"routine": id, "run": runID, "version": r.Version, "trigger": trigger})
 	h := &host.Host{Env: s.Env, Source: source, Person: r.Person}
+	if params, err := r.Body.Manifest.ResolveParams(r.Settings.Params); err == nil {
+		h.Destinations = r.Body.Manifest.Destinations(params)
+	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
-	res, runErr := runtime.Run(ctx, r.Body.Code, r.Body.Manifest, h, runtime.Options{Now: s.now(), Zone: s.zone(), Timeout: 90 * time.Second})
+	res, runErr := runtime.Run(ctx, r.Body.Code, r.Body.Manifest, h, runtime.Options{Now: s.now(), Zone: s.zone(), Timeout: 90 * time.Second, Params: r.Settings.Params})
 	outcome, errText := store.RunOK, ""
 	if runErr != nil {
 		outcome, errText = store.RunFailed, runErr.Error()

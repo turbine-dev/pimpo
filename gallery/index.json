@@ -11,16 +11,30 @@
    "author": "dener",
    "routine": {
     "name": "Agenda da semana",
-    "description": "Segunda de manhã, o que vem nos próximos sete dias.",
+    "description": "Segunda de manhã, o que vem nos próximos dias (você escolhe quantos).",
     "manifest": {
      "schedule": "0 8 * * 1",
      "capabilities": [
       "calendar.events",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "dias",
+       "label": "Quantos dias à frente",
+       "type": "number",
+       "default": 7
+      },
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 7)});\n  if (!events.length) { await telegram.send({text: \"🗓️ Semana sem compromissos marcados.\"}); return; }\n  const lines = events.map(e =\u003e \"• \" + dates.format(e.start, \"EEE dd/MM HH:mm\") + \" \" + e.title);\n  await telegram.send({text: \"🗓️ Sua semana (\" + events.length + \"):\\n\" + lines.join(\"\\n\")});\n}",
+    "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, params.dias)});\n  if (!events.length) { await notify.send({text: \"🗓️ Nada marcado nos próximos dias.\"}); return; }\n  const lines = events.map(e =\u003e \"• \" + dates.format(e.start, \"EEE dd/MM HH:mm\") + \" \" + e.title);\n  await notify.send({text: \"🗓️ Próximos dias (\" + events.length + \"):\\n\" + lines.join(\"\\n\")});\n}",
     "tests": [
      {
       "name": "três eventos",
@@ -61,7 +75,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "(2)",
@@ -85,19 +99,74 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
-         "sem compromissos"
+         "Nada marcado"
         ]
        }
       ]
+     },
+     {
+      "name": "só hoje",
+      "now": "2026-09-28T08:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": [
+         {
+          "id": "Dentista",
+          "title": "Dentista",
+          "start": "2026-09-28T09:00:00-03:00",
+          "end": "2026-09-28T10:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Jantar",
+          "title": "Jantar",
+          "start": "2026-09-30T20:00:00-03:00",
+          "end": "2026-09-30T22:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Longe",
+          "title": "Longe",
+          "start": "2026-10-20T09:00:00-03:00",
+          "end": "2026-10-20T10:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "notify.send",
+        "count": 1,
+        "contains": [
+         "(1)",
+         "Dentista"
+        ],
+        "not_contains": [
+         "Jantar",
+         "Longe"
+        ]
+       }
+      ],
+      "params": {
+       "dias": 1
+      }
      }
     ]
    },
-   "hash": "bd0b7140727afdbc4d28aa3be84308bc793f6cfc8b595f94b25d52c01982e9b2",
-   "signature": "gVHcg7Z93flTvbENnpLGrV9pPMlZe057gxX8s9lBP/aBcaCgCbmDQw2mi8Y5d1mN/Wp8oXfRH5SJZPfUq7BjBg==",
-   "published": "2026-09-24T20:59:45Z"
+   "hash": "4969b54365de0a9f03c8600998fe8d4a46631e5b88289831fcaa2c1f290bd2f3",
+   "signature": "YB/2LxQIDBkp0LDFjHvVYQcmBqX8ElVCSSE4UoFEWQ5j5KWoCKsCo67Aj7C5BBuMT2CPn72HENTnQvfjPDqBAA==",
+   "published": "2026-09-25T07:48:18Z"
   },
   {
    "id": "agenda-do-dia",
@@ -109,11 +178,19 @@
      "schedule": "30 6 * * *",
      "capabilities": [
       "calendar.events",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 1)});\n  let text = \"📅 \" + dates.format(today, \"EEEE, d 'de' MMMM\") + \"\\n\";\n  text += events.length ? events.map(e =\u003e \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\") : \"Agenda livre hoje.\";\n  await telegram.send({text});\n}",
+    "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 1)});\n  let text = \"📅 \" + dates.format(today, \"EEEE, d 'de' MMMM\") + \"\\n\";\n  text += events.length ? events.map(e =\u003e \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\") : \"Agenda livre hoje.\";\n  await notify.send({text});\n}",
     "tests": [
      {
       "name": "dois compromissos",
@@ -154,7 +231,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "09:00 Dentista",
@@ -177,7 +254,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "Agenda livre"
@@ -187,9 +264,9 @@
      }
     ]
    },
-   "hash": "db3c20f647f9b824d1ff74b6177860c89f35926f87287c075d69e534dc144443",
-   "signature": "YaPeisx2FXXa1ynol6LTsqQN9s2b30LJwZi5MX4mfdOdQ+kPN6uvVaORdblHKhDDYb8S9WE43ypJnQvLH1FLCw==",
-   "published": "2026-09-24T20:59:45Z"
+   "hash": "b2b485403dbc73868d4033a43ff435657733f783ffe5db533e353edf96103026",
+   "signature": "0bqZXOKDzQ01Kdh8NnFevRp7saL3RL26BdHVaQqikQ/tNvEufEWOveVRklSh+zUf+twT6lF36/Ym60eNggWyAw==",
+   "published": "2026-09-25T07:47:59Z"
   },
   {
    "id": "aniversarios-da-semana",
@@ -201,11 +278,26 @@
      "schedule": "0 19 * * 0",
      "capabilities": [
       "calendar.events",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "palavras",
+       "label": "Palavras que indicam aniversário",
+       "type": "text",
+       "default": "aniversário, birthday",
+       "help": "separadas por vírgula"
+      },
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 7)});\n  const birthdays = events.filter(e =\u003e /anivers[aá]rio|birthday/i.test(e.title));\n  if (!birthdays.length) return;\n  await telegram.send({text: \"🎂 Aniversários da semana:\\n\" + birthdays.map(e =\u003e \"• \" + dates.format(e.start, \"EEE dd/MM\") + \": \" + e.title).join(\"\\n\")});\n}",
+    "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 7)});\n  const words = params.palavras.toLowerCase().split(\",\").map(s =\u003e s.trim()).filter(Boolean);\n  const birthdays = events.filter(e =\u003e words.some(w =\u003e e.title.toLowerCase().includes(w)));\n  if (!birthdays.length) return;\n  await notify.send({text: \"🎂 Aniversários da semana:\\n\" + birthdays.map(e =\u003e \"• \" + dates.format(e.start, \"EEE dd/MM\") + \": \" + e.title).join(\"\\n\")});\n}",
     "tests": [
      {
       "name": "dois aniversários",
@@ -246,7 +338,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "Aniversário da Ana",
@@ -279,16 +371,70 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 0
        }
       ]
+     },
+     {
+      "name": "só em português",
+      "now": "2026-09-27T19:00:00-03:00",
+      "responses": [
+       {
+        "capability": "calendar.events",
+        "result": [
+         {
+          "id": "Aniversário da Ana",
+          "title": "Aniversário da Ana",
+          "start": "2026-09-29T00:00:00-03:00",
+          "end": "2026-09-30T00:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Reunião",
+          "title": "Reunião",
+          "start": "2026-09-29T10:00:00-03:00",
+          "end": "2026-09-29T11:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         },
+         {
+          "id": "Rui's birthday",
+          "title": "Rui's birthday",
+          "start": "2026-10-01T00:00:00-03:00",
+          "end": "2026-10-02T00:00:00-03:00",
+          "location": "",
+          "attendees": [],
+          "calendar": "pessoal"
+         }
+        ]
+       }
+      ],
+      "expect": [
+       {
+        "capability": "notify.send",
+        "count": 1,
+        "contains": [
+         "Aniversário da Ana"
+        ],
+        "not_contains": [
+         "Rui's birthday",
+         "Reunião"
+        ]
+       }
+      ],
+      "params": {
+       "palavras": "aniversário"
+      }
      }
     ]
    },
-   "hash": "93cb35f123a0f8d041b8607b02c06bbac24554c0534efed70c69883a9372824a",
-   "signature": "PVMLwVNssI4dnHg3o/2YkoWxr+sZAQpvmSr5vuL30UyH3ZhhL5j25TRd9CZcAoZ67NcRtQA/z9rET3E7zGRZBw==",
-   "published": "2026-09-24T20:59:45Z"
+   "hash": "f643926900c233ebad7eca2bb215a9fa84fb4d3b6525f7b45b8d08c5ffd6a152",
+   "signature": "L2Zh2/ZLPD6WGJWurq0oSw3wiSvWOsLeCMvwEKz/QrQ6gXR80oU8lZgbzP3PBOepc5PFUH7VcFmA4YZwgmcaAg==",
+   "published": "2026-09-25T07:47:59Z"
   },
   {
    "id": "arquivar-promocoes",
@@ -301,11 +447,25 @@
      "capabilities": [
       "gmail.search",
       "gmail.archive",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "dias",
+       "label": "Arquivar promoções com mais de (dias)",
+       "type": "number",
+       "default": 7
+      },
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:7d in:inbox\", max: 50});\n  for (const m of mails) await gmail.archive({id: m.id});\n  if (mails.length) await telegram.send({text: \"🧹 Arquivei \" + mails.length + (mails.length === 1 ? \" promoção antiga.\" : \" promoções antigas.\")});\n}",
+    "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:\" + params.dias + \"d in:inbox\", max: 50});\n  for (const m of mails) await gmail.archive({id: m.id});\n  if (mails.length) await notify.send({text: \"🧹 Arquivei \" + mails.length + (mails.length === 1 ? \" promoção antiga.\" : \" promoções antigas.\")});\n}",
     "tests": [
      {
       "name": "três promoções",
@@ -374,7 +534,7 @@
         "count": 3
        },
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "Arquivei 3 promoções"
@@ -397,32 +557,57 @@
         "count": 0
        },
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 0
        }
       ]
      }
     ]
    },
-   "hash": "09923f809c004a374df0ec499726354953d268656d5174a074d111bc72559600",
-   "signature": "zYFkPXwzESZEZqbzO0RTTXMQFTyNrIP3swY9HWvso2F5OZGCCgptYr4mhWw8/IIyo6NQeh0SVx9zyJwwkI9zDA==",
-   "published": "2026-09-24T20:59:45Z"
+   "hash": "1f1455f7a541940b118191a07dbcb841b63036f04c45977df925ff11872518a6",
+   "signature": "q60hYcbm7+B7TKk8INqNuLF+T01abBl+mENr54XQiaEHs4Y3O2baJSJVcELheq4Ngru/K8K+jNgo733p4480DA==",
+   "published": "2026-09-25T07:47:59Z"
   },
   {
    "id": "clima-da-manha",
    "author": "dener",
    "routine": {
     "name": "Clima da manhã",
-    "description": "Previsão do dia em São Paulo (troque a latitude e a longitude pela sua cidade).",
+    "description": "Previsão do dia na cidade que você escolher, com aviso de guarda-chuva.",
     "manifest": {
      "schedule": "0 7 * * *",
      "capabilities": [
       "http.getJSON:api.open-meteo.com",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "cidade",
+       "label": "Cidade",
+       "type": "location",
+       "default": {
+        "latitude": -23.55,
+        "longitude": -46.63,
+        "name": "São Paulo",
+        "timezone": "America/Sao_Paulo"
+       }
+      },
+      {
+       "name": "chuva",
+       "label": "Avisar guarda-chuva a partir de (% de chuva)",
+       "type": "number",
+       "default": 50
+      },
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const w = await http.getJSON(\"https://api.open-meteo.com/v1/forecast?latitude=-23.55\u0026longitude=-46.63\u0026daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max\u0026timezone=America%2FSao_Paulo\u0026forecast_days=1\");\n  const d = w.daily;\n  let text = \"🌤️ Hoje: mínima de \" + Math.round(d.temperature_2m_min[0]) + \"°, máxima de \" + Math.round(d.temperature_2m_max[0]) + \"°.\";\n  if (d.precipitation_probability_max[0] \u003e= 50) text += \" ☔ Leve guarda-chuva (\" + d.precipitation_probability_max[0] + \"% de chuva).\";\n  await telegram.send({text});\n}",
+    "code": "async function run() {\n  const w = await http.getJSON(\"https://api.open-meteo.com/v1/forecast?latitude=\" + params.cidade.latitude + \"\u0026longitude=\" + params.cidade.longitude + \"\u0026daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max\u0026timezone=auto\u0026forecast_days=1\");\n  const d = w.daily;\n  let text = \"🌤️ \" + params.cidade.name + \" hoje: mínima de \" + Math.round(d.temperature_2m_min[0]) + \"°, máxima de \" + Math.round(d.temperature_2m_max[0]) + \"°.\";\n  if (d.precipitation_probability_max[0] \u003e= params.chuva) text += \" ☔ Leve guarda-chuva (\" + d.precipitation_probability_max[0] + \"% de chuva).\";\n  await notify.send({text});\n}",
     "tests": [
      {
       "name": "dia de chuva",
@@ -447,7 +632,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "mínima de 16°",
@@ -480,7 +665,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "máxima de 30°"
@@ -490,28 +675,92 @@
         ]
        }
       ]
+     },
+     {
+      "name": "Lisboa, só avisa com 90% de chuva",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "http.getJSON",
+        "result": {
+         "daily": {
+          "temperature_2m_max": [
+           24.6
+          ],
+          "temperature_2m_min": [
+           16.2
+          ],
+          "precipitation_probability_max": [
+           80
+          ]
+         }
+        }
+       }
+      ],
+      "expect": [
+       {
+        "capability": "notify.send",
+        "count": 1,
+        "contains": [
+         "Lisboa hoje",
+         "máxima de 25°"
+        ],
+        "not_contains": [
+         "guarda-chuva"
+        ]
+       }
+      ],
+      "params": {
+       "chuva": 90,
+       "cidade": {
+        "latitude": 38.72,
+        "longitude": -9.14,
+        "name": "Lisboa"
+       }
+      }
      }
     ]
    },
-   "hash": "77782f303a2fb4eef9a3abda33d8e85fea3da31f34637e0a27f10d4c591b0a95",
-   "signature": "1WD1+zU20P7nDzpepPtP6xSgsSpQDKXFHhHkRWLZ5QSTkQ8ax65kvinry94vcDngn8h1lyWRr/GD/VDJ1zGKCg==",
-   "published": "2026-09-24T20:59:45Z"
+   "hash": "71b49c4147f02f538e6f65a934a4afb708712b4aa89fb24f9e8b69a3593d9669",
+   "signature": "9NYGJ/Ds6pyyhpnaAC6UULH3lygelJLOcJ00v3oF0KG/lbuGWS4CK454hxuoX60ya5fLnhSsb0SHepoFclhRBA==",
+   "published": "2026-09-25T07:47:59Z"
   },
   {
    "id": "contas-da-semana",
    "author": "dener",
    "routine": {
     "name": "Contas que chegaram",
-    "description": "Toda sexta, lista boletos e faturas que chegaram na semana, com os valores.",
+    "description": "Toda sexta, lista as contas que chegaram, com os valores. Você escolhe as palavras que indicam uma conta.",
     "manifest": {
      "schedule": "0 9 * * 5",
      "capabilities": [
       "gmail.search",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "palavras",
+       "label": "Palavras que indicam uma conta",
+       "type": "text",
+       "default": "boleto, fatura",
+       "help": "separadas por vírgula"
+      },
+      {
+       "name": "dias",
+       "label": "Olhar os últimos (dias)",
+       "type": "number",
+       "default": 7
+      },
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const found = [];\n  for (const q of [\"boleto\", \"fatura\"]) {\n    for (const m of await gmail.search({query: q, days: 7, max: 30})) {\n      if (!found.some(f =\u003e f.id === m.id)) found.push(m);\n    }\n  }\n  if (!found.length) { await telegram.send({text: \"💸 Nenhuma conta nova esta semana.\"}); return; }\n  const lines = found.map(m =\u003e {\n    const v = money.parse(money.find(m.subject + \" \" + m.snippet) || \"\");\n    return \"• \" + m.from_name + \": \" + m.subject + (v ? \" — \" + money.format(v, \"BRL\") : \"\");\n  });\n  await telegram.send({text: \"💸 Contas da semana:\\n\" + lines.join(\"\\n\")});\n}",
+    "code": "async function run() {\n  const found = [];\n  for (const q of params.palavras.split(\",\").map(s =\u003e s.trim()).filter(Boolean)) {\n    for (const m of await gmail.search({query: q, days: params.dias, max: 30})) {\n      if (!found.some(f =\u003e f.id === m.id)) found.push(m);\n    }\n  }\n  if (!found.length) { await notify.send({text: \"💸 Nenhuma conta nova esta semana.\"}); return; }\n  const lines = found.map(m =\u003e {\n    const v = money.parse(money.find(m.subject + \" \" + m.snippet) || \"\");\n    return \"• \" + m.from_name + \": \" + m.subject + (v ? \" — \" + money.format(v, \"BRL\") : \"\");\n  });\n  await notify.send({text: \"💸 Contas da semana:\\n\" + lines.join(\"\\n\")});\n}",
     "tests": [
      {
       "name": "duas contas",
@@ -576,7 +825,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "Sua fatura chegou",
@@ -601,7 +850,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "Nenhuma conta"
@@ -611,25 +860,44 @@
      }
     ]
    },
-   "hash": "9a98db99b1154e7d85c814e0a8dfbb624a92a863b2e0221022b119d4479f4ea0",
-   "signature": "sIbHckFgLuzzLh3hF+g+LOVsDtqm8hWUTVgTFnyNbKwULK9JuvmLcbUIJW0OnXjeaPiWj34OGSoAli0J43pIDQ==",
-   "published": "2026-09-24T20:59:58Z"
+   "hash": "db8881c138ac52f2929a3ac3e216b122e8659e196097602717c9a9b92e9f4503",
+   "signature": "4FeOwqU2M17vXYn170DjT8c4FVYhBh+q21Gygmuao8InFfZF85D3jeCafeh6iLZn+gR+iyhRONHF1xwn6ExBDg==",
+   "published": "2026-09-25T07:47:59Z"
   },
   {
    "id": "dolar-hoje",
    "author": "dener",
    "routine": {
-    "name": "Dólar hoje",
-    "description": "Cotação do dólar em reais nos dias úteis.",
+    "name": "Cotação do dia",
+    "description": "A cotação em reais da moeda que você escolher, nos dias úteis.",
     "manifest": {
      "schedule": "0 10 * * 1-5",
      "capabilities": [
       "http.getJSON:economia.awesomeapi.com.br",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "moeda",
+       "label": "Moeda",
+       "type": "select",
+       "default": "USD",
+       "options": [
+        "USD",
+        "EUR",
+        "GBP"
+       ]
+      },
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const q = (await http.getJSON(\"https://economia.awesomeapi.com.br/json/last/USD-BRL\")).USDBRL;\n  const change = Number(q.pctChange);\n  const arrow = change \u003e 0 ? \"📈\" : change \u003c 0 ? \"📉\" : \"➡️\";\n  await telegram.send({text: arrow + \" Dólar: \" + money.format(Number(q.bid), \"BRL\") + \" (\" + (change \u003e 0 ? \"+\" : \"\") + change.toFixed(2).replace(\".\", \",\") + \"% hoje)\"});\n}",
+    "code": "async function run() {\n  const q = (await http.getJSON(\"https://economia.awesomeapi.com.br/json/last/\" + params.moeda + \"-BRL\"))[params.moeda + \"BRL\"];\n  const change = Number(q.pctChange);\n  const arrow = change \u003e 0 ? \"📈\" : change \u003c 0 ? \"📉\" : \"➡️\";\n  await notify.send({text: arrow + \" \" + params.moeda + \": \" + money.format(Number(q.bid), \"BRL\") + \" (\" + (change \u003e 0 ? \"+\" : \"\") + change.toFixed(2).replace(\".\", \",\") + \"% hoje)\"});\n}",
     "tests": [
      {
       "name": "subiu",
@@ -647,7 +915,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "📈",
@@ -673,7 +941,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "📉",
@@ -682,12 +950,41 @@
         ]
        }
       ]
+     },
+     {
+      "name": "euro",
+      "now": "2026-09-24T07:00:00-03:00",
+      "responses": [
+       {
+        "capability": "http.getJSON",
+        "result": {
+         "EURBRL": {
+          "bid": "6.02",
+          "pctChange": "0.1"
+         }
+        }
+       }
+      ],
+      "expect": [
+       {
+        "capability": "notify.send",
+        "count": 1,
+        "contains": [
+         "EUR:",
+         "6,02",
+         "+0,10%"
+        ]
+       }
+      ],
+      "params": {
+       "moeda": "EUR"
+      }
      }
     ]
    },
-   "hash": "bf5fb5727e5089fe7183da64f6dcfb3bea14df82c99f791b466585811b5beec5",
-   "signature": "qb09Kbt206JAMFf8roVqVWRkFJrn/REJldKf1kGrsoZ3Oc/78TFSiaq7I11iKQHznq57Nwt23ouH312MMux2CQ==",
-   "published": "2026-09-24T20:59:45Z"
+   "hash": "a4857b377daf143f5c4e4a4e76f03495336e37c54cf3bf802674fb65129b1cf6",
+   "signature": "H8SHzYkD/2tBJU2WqB42K7PhSsaJ+XHQUuIFkx3xWAv9o/P6qU6PSXDaA9l0eqW66qFqtatQOUmN2KyXrVRqDQ==",
+   "published": "2026-09-25T07:47:59Z"
   },
   {
    "id": "lixeira-promocoes-antigas",
@@ -700,11 +997,25 @@
      "capabilities": [
       "gmail.search",
       "gmail.trash",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "dias",
+       "label": "Mandar para a lixeira promoções com mais de (dias)",
+       "type": "number",
+       "default": 30
+      },
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:30d\", max: 50});\n  for (const m of mails) await gmail.trash({id: m.id});\n  await telegram.send({text: mails.length ? \"🗑️ \" + mails.length + \" promoções antigas foram para a lixeira.\" : \"🗑️ Nenhuma promoção antiga esta semana.\"});\n}",
+    "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:\" + params.dias + \"d\", max: 50});\n  for (const m of mails) await gmail.trash({id: m.id});\n  await notify.send({text: mails.length ? \"🗑️ \" + mails.length + \" promoções antigas foram para a lixeira.\" : \"🗑️ Nenhuma promoção antiga esta semana.\"});\n}",
     "tests": [
      {
       "name": "duas antigas",
@@ -756,7 +1067,7 @@
         "count": 2
        },
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "2 promoções"
@@ -779,7 +1090,7 @@
         "count": 0
        },
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "Nenhuma"
@@ -789,9 +1100,9 @@
      }
     ]
    },
-   "hash": "ac0c946e1c57b657dba762e2113dffc83633074251811efeaf8a19d3a30f4842",
-   "signature": "llVCH9akV0wMosJwLosbd69qVizwypn3xQMGOd9MstAdQ/xkz9ln6XxgrKwxN6n7vM80Mx2+A1psadbyjqyyCg==",
-   "published": "2026-09-24T20:59:45Z"
+   "hash": "242ddc1bb98e757f9e8706b9ffc7cc4270c3fe1890d47246f67142a14986107c",
+   "signature": "sFLPrljbi9OxSVw2Ct+UU3OdT3VYmfkDf3SV0cFKO0SciKfte7thN6bvFVXKMUeiT5ZgxB15z6+rlI7eASLRBg==",
+   "published": "2026-09-25T07:47:59Z"
   },
   {
    "id": "nao-lidos-por-remetente",
@@ -803,11 +1114,25 @@
      "schedule": "15 7 * * *",
      "capabilities": [
       "gmail.search",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "quantos",
+       "label": "Quantos remetentes mostrar",
+       "type": "number",
+       "default": 5
+      },
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const mails = await gmail.search({query: \"is:unread\", days: 1, max: 50});\n  if (!mails.length) { await telegram.send({text: \"📭 Nada novo desde ontem.\"}); return; }\n  const by = {};\n  for (const m of mails) by[m.from_name] = (by[m.from_name] || 0) + 1;\n  const top = Object.entries(by).sort((a, b) =\u003e b[1] - a[1]).slice(0, 5);\n  await telegram.send({text: \"📬 \" + mails.length + \" não lidos. Mais frequentes:\\n\" + top.map(([n, c]) =\u003e \"• \" + n + \" (\" + c + \")\").join(\"\\n\")});\n}",
+    "code": "async function run() {\n  const mails = await gmail.search({query: \"is:unread\", days: 1, max: 50});\n  if (!mails.length) { await notify.send({text: \"📭 Nada novo desde ontem.\"}); return; }\n  const by = {};\n  for (const m of mails) by[m.from_name] = (by[m.from_name] || 0) + 1;\n  const top = Object.entries(by).sort((a, b) =\u003e b[1] - a[1]).slice(0, params.quantos);\n  await notify.send({text: \"📬 \" + mails.length + \" não lidos. Mais frequentes:\\n\" + top.map(([n, c]) =\u003e \"• \" + n + \" (\" + c + \")\").join(\"\\n\")});\n}",
     "tests": [
      {
       "name": "vários",
@@ -889,7 +1214,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "3 não lidos",
@@ -913,7 +1238,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "Nada novo"
@@ -923,9 +1248,9 @@
      }
     ]
    },
-   "hash": "a60c008f73e6a57e8abaae24e99835bb441735ffc481edcb68c2c0d75bfd6ec4",
-   "signature": "DkOiMr+OoySqFV28tBSA6//26bSuXgfHoMDw3BxPDAMQFMM4JCpIY3ggcwEY7IOOxfSJ2kJPUhGuEzrh2tysCw==",
-   "published": "2026-09-24T20:59:58Z"
+   "hash": "ed3e38f00116708f893a2f6b57bada0fc5cb1be27e0fe9ae0cdc93c65d3f47e9",
+   "signature": "BhK/uoSJrxQ66wYT0rBvsIM4Ka1eMv7zF15gIdw2tJAMr9WUJuqTxo0qe6v1pz//CbTexUWbskLM5AzhQ42TBg==",
+   "published": "2026-09-25T07:47:59Z"
   },
   {
    "id": "reunioes-sem-local",
@@ -937,11 +1262,19 @@
      "schedule": "0 20 * * *",
      "capabilities": [
       "calendar.events",
-      "telegram.send"
+      "notify.send"
      ],
-     "locale": "pt-BR"
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ]
     },
-    "code": "async function run() {\n  const tomorrow = dates.startOfDay(dates.today(), 1);\n  const events = await calendar.events({from: tomorrow, to: dates.startOfDay(tomorrow, 1)});\n  const missing = events.filter(e =\u003e !e.location || !e.location.trim());\n  if (!missing.length) return;\n  await telegram.send({text: \"📍 Amanhã sem local definido:\\n\" + missing.map(e =\u003e \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\")});\n}",
+    "code": "async function run() {\n  const tomorrow = dates.startOfDay(dates.today(), 1);\n  const events = await calendar.events({from: tomorrow, to: dates.startOfDay(tomorrow, 1)});\n  const missing = events.filter(e =\u003e !e.location || !e.location.trim());\n  if (!missing.length) return;\n  await notify.send({text: \"📍 Amanhã sem local definido:\\n\" + missing.map(e =\u003e \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\")});\n}",
     "tests": [
      {
       "name": "um sem local",
@@ -973,7 +1306,7 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 1,
         "contains": [
          "09:00 Café com Rui"
@@ -1005,16 +1338,16 @@
       ],
       "expect": [
        {
-        "capability": "telegram.send",
+        "capability": "notify.send",
         "count": 0
        }
       ]
      }
     ]
    },
-   "hash": "55a298ef13efeadcb695b416735f20e8944afede8d55d57ecc4c7c1353c37a5b",
-   "signature": "lYfSf+8EeZqHYUtQFn8pglm2fKpGylHFrA8qWVSNlXbeBY91iNGac68K1Ia8GygtQZWyvsEMOeGRo0CEs9E9Bg==",
-   "published": "2026-09-24T20:59:45Z"
+   "hash": "ec7be8e9c83cc0f91135818d2e8ce462e94aa25c5552f20bd3fe6a5305133ec8",
+   "signature": "4ILQNF4KWnvh3KBSdxKRkb2UGSxATOoZYO8p49+OdFBQho48JmARiZHSX7Z/PyJ+/nqCLQqgnHs8TFf+Aiz3Aw==",
+   "published": "2026-09-25T07:47:59Z"
   }
  ]
 }

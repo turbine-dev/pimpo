@@ -31,6 +31,8 @@ type Manifest struct {
 	Judgments    map[string]string `json:"judgments,omitempty"`
 	// Locale is the language of the routine's messages, e.g. pt-BR or en-US.
 	Locale string `json:"locale,omitempty"`
+	// Params are the settings the owner can change without code.
+	Params []Param `json:"params,omitempty"`
 }
 
 type Options struct {
@@ -42,6 +44,9 @@ type Options struct {
 	Timeout time.Duration
 	// MaxCalls bounds capability calls per run, so a runaway loop stops.
 	MaxCalls int
+	// Params are the owner's values for the manifest's parameters; missing
+	// ones take their defaults.
+	Params map[string]any
 }
 
 type Result struct {
@@ -65,6 +70,16 @@ func (m Manifest) Validate() error {
 		if !isIdent(name) {
 			return fmt.Errorf("judgment name %q must be a JavaScript identifier", name)
 		}
+	}
+	seen := map[string]bool{}
+	for _, p := range m.Params {
+		if err := p.validate(); err != nil {
+			return err
+		}
+		if seen[p.Name] {
+			return fmt.Errorf("parameter %s is declared twice", p.Name)
+		}
+		seen[p.Name] = true
 	}
 	return nil
 }
@@ -93,6 +108,10 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 		opt.Locale = "pt-BR"
 	}
 	opt.Now = opt.Now.In(opt.Zone)
+	params, err := m.ResolveParams(opt.Params)
+	if err != nil {
+		return Result{}, err
+	}
 	vm := goja.New()
 	vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
 	res := &Result{}
@@ -158,6 +177,11 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 	}
 	vm.Set("now", func() string { return opt.Now.Format(time.RFC3339) })
 	installStdlib(vm, opt.Zone, opt.Locale, opt.Now)
+	raw, _ := json.Marshal(params)
+	vm.Set("__params", string(raw))
+	if _, err := vm.RunString(`var params = (function f(o) { Object.values(o).forEach(v => v && typeof v === "object" && f(v)); return Object.freeze(o) })(JSON.parse(__params)); delete globalThis.__params;`); err != nil {
+		return Result{}, err
+	}
 	vm.Set("log", func(msg string) { res.Logs = append(res.Logs, msg) })
 
 	timer := time.AfterFunc(opt.Timeout, func() { vm.Interrupt(ErrTimeout) })

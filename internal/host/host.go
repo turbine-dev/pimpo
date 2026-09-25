@@ -62,6 +62,9 @@ type Host struct {
 	// Person is who the run acts for. Connectors see it in the context and
 	// use that person's accounts; empty means the owner.
 	Person string
+	// Destinations are where notify.send delivers for this run; empty
+	// means the person's default channel.
+	Destinations []string
 	// DryRun records changes instead of making them. Explorations run this
 	// way: they show what would happen and change nothing but messages to
 	// the owner.
@@ -115,10 +118,19 @@ type ActionRecord struct {
 
 var ErrBlocked = errors.New("blocked by a rule")
 
+type destinationsKey struct{}
+
+// DestinationsFrom returns the destinations of the run ctx belongs to.
+func DestinationsFrom(ctx context.Context) []string {
+	d, _ := ctx.Value(destinationsKey{}).([]string)
+	return d
+}
+
 func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, error) {
 	spec := capability.Catalog[name]
 	person := people.Norm(h.Person)
 	ctx = people.With(ctx, person)
+	ctx = context.WithValue(ctx, destinationsKey{}, h.Destinations)
 	rec := ActionRecord{Source: h.Source, Capability: name, Scope: scope, Risk: spec.Risk.String(), Args: args}
 	if person != people.OwnerID {
 		rec.Person = person
