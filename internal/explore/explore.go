@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -250,8 +251,33 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	if n := dryRuns(t.Calls); n > 0 {
 		text += fmt.Sprintf("\n\n(%d ações foram só simuladas; nada foi alterado.)", n)
 	}
+	if failed := failedReads(t.Calls); failed != "" {
+		// Nothing real was read, so a routine would only repeat the error.
+		text += "\n\nNão ofereço transformar isso em rotina porque não consegui ler os dados de que precisava (" + failed + "). Resolva isso e peça de novo."
+		s.Notify.Notify(ctx, Notice{Text: text, To: e.Person, Kind: "task"})
+		return
+	}
 	text += "\n\nQuer que eu faça isso sozinho, sem gastar com modelo a cada vez?"
 	s.Notify.Notify(ctx, Notice{Text: text, Actions: []Action{{"Transformar em rotina", "compile:" + e.ID}, {"Descartar", "discard:" + e.ID}}, To: e.Person, Kind: "task"})
+}
+
+// failedReads names the capabilities read when every read failed, or ""
+// when at least one worked (or nothing was read).
+func failedReads(calls []trace.Call) string {
+	var names []string
+	for _, c := range calls {
+		spec, ok := capability.Catalog[c.Capability]
+		if !ok || spec.Risk != capability.Read {
+			continue
+		}
+		if c.Error == "" {
+			return ""
+		}
+		if !slices.Contains(names, c.Capability) {
+			names = append(names, c.Capability)
+		}
+	}
+	return strings.Join(names, ", ")
 }
 
 // knownFacts lists what the owner confirmed, for the explorer's prompt.
@@ -314,6 +340,9 @@ func (s *Service) Approve(ctx context.Context, id, actor string) (store.Routine,
 	}
 	if e.State != store.ExplorationReady || e.Trace == nil {
 		return store.Routine{}, fmt.Errorf("exploration is %s, not ready", e.State)
+	}
+	if failed := failedReads(e.Trace.Calls); failed != "" && e.Routine == "" {
+		return store.Routine{}, fmt.Errorf("nothing could be read (%s), so a routine would only repeat the error; fix it and ask again", failed)
 	}
 	if s.Env.Budget != nil {
 		if err := s.Env.Budget.Check(ctx); err != nil {

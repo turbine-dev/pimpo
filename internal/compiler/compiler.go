@@ -64,8 +64,9 @@ func (c Compiler) Compile(ctx context.Context, t trace.Trace) ([]Attempt, error)
 	attempts := max(c.Attempts, 1)
 	var out []Attempt
 	var feedback []string
+	var previous []byte
 	for i := 0; i < attempts; i++ {
-		resp, err := generate(ctx, c.Model, llm.Request{System: system, Prompt: prompt(t, feedback), Schema: schema, MaxCostUSD: 2})
+		resp, err := generate(ctx, c.Model, llm.Request{System: system, Prompt: prompt(t, previous, feedback), Schema: schema, MaxCostUSD: 2})
 		a := Attempt{CostUSD: resp.CostUSD}
 		if err != nil {
 			return out, fmt.Errorf("compile %s: %w", t.ID, err)
@@ -81,6 +82,7 @@ func (c Compiler) Compile(ctx context.Context, t trace.Trace) ([]Attempt, error)
 			break
 		}
 		feedback = a.Problems()
+		previous = resp.Structured
 	}
 	return out, nil
 }
@@ -169,7 +171,7 @@ Rules for the manifest:
 - capabilities: the minimum set the code calls. Scoped capabilities need the host, e.g. "http.getJSON:api.open-meteo.com". The host is fixed; values in the URL's query (latitude, longitude, currency) can come from params.
 - params: each {name (JavaScript identifier), label (short, in the request's language), type, default, options, help}. Types: text, number, boolean, date (YYYY-MM-DD), time (HH:MM), location (default {"name","latitude","longitude","timezone"}), select and multiselect (with options), email, destinations. Every param except destinations has a default taken from the request.
 
-Rules for tests: write 2 or 3 scenarios with NEW fictional data (not the recording) covering the normal case and an edge case (nothing to report, several items, an item that must be excluded). Each has now, responses (canned results for read calls, in the order the code makes them), optional writes (canned texts: write name -> identifying substring of the item -> text), optional params (values for this scenario; at least one test should change a param from its default), judgments (labels for the new items: judgment name -> {identifying substring of the item: probability}) and expect (checks on write calls: capability, optional count, contains, not_contains). Expectations must follow from the data and the request.`
+Rules for tests: write 2 or 3 scenarios with NEW fictional data (not the recording) covering the normal case and an edge case (nothing to report, several items, an item that must be excluded). Each has now, responses (canned results for read calls, in the order the code makes them), optional writes (canned texts: write name -> identifying substring of the item -> text), optional params (values for this scenario; at least one test should change a param from its default), judgments (labels for the new items: judgment name -> {identifying substring of the item: probability}) and expect (checks on write calls: capability, optional count, contains, not_contains). Expectations must follow from the data and the request. Dates in tests: write now and every timestamp in UTC (ending in Z), and keep items at least 3 hours inside or outside any time window, so an item's side of the line never depends on time-zone arithmetic.`
 
 var schema = json.RawMessage(`{
  "type":"object","additionalProperties":false,
@@ -222,18 +224,25 @@ func WatchEvent(t trace.Trace, w runtime.Watch) map[string]any {
 	return map[string]any{"items": items}
 }
 
-func prompt(t trace.Trace, feedback []string) string {
+func prompt(t trace.Trace, previous []byte, feedback []string) string {
 	var b strings.Builder
 	b.WriteString("Capabilities available (call signature -> result):\n")
 	for _, n := range capability.Names() {
 		s := capability.Catalog[n]
-		fmt.Fprintf(&b, "- %s [%s] -> %s\n", s.Signature, s.Risk, s.Returns)
+		scope := ""
+		if s.Scoped {
+			scope = fmt.Sprintf(" (declare with the exact host of the URL, www. included when the URL has it, e.g. %s:www.example.com)", s.Name)
+		}
+		fmt.Fprintf(&b, "- %s [%s]%s -> %s\n", s.Signature, s.Risk, scope, s.Returns)
 	}
 	fmt.Fprintf(&b, "\nThe user asked: %q\nRecorded at: %s\n\nRecorded calls, in order:\n", t.Request, t.Now)
 	for i, c := range t.Calls {
 		fmt.Fprintf(&b, "%d. %s(%s)", i+1, c.Capability, compact(c.Args))
 		if len(c.Result) > 0 {
 			fmt.Fprintf(&b, "\n   -> %s", compact(c.Result))
+		}
+		if c.Error != "" {
+			fmt.Fprintf(&b, "\n   -> failed: %s", c.Error)
 		}
 		b.WriteString("\n")
 	}
@@ -255,10 +264,14 @@ func prompt(t trace.Trace, feedback []string) string {
 	fmt.Fprintf(&b, "\nJudgments you may declare (exactly these names, only if the code needs them): %s\n", judgmentList(t))
 	fmt.Fprintf(&b, "\nThe user approved this outcome: %s\n", t.Outcome)
 	if len(feedback) > 0 {
-		b.WriteString("\nYour previous routine was rejected. Fix these problems:\n")
+		if len(previous) > 0 {
+			fmt.Fprintf(&b, "\nYour previous routine:\n%s\n", previous)
+		}
+		b.WriteString("\nIt was rejected for these problems:\n")
 		for _, f := range feedback {
 			b.WriteString("- " + f + "\n")
 		}
+		b.WriteString("\nFor each failing test, first work out from its data what the routine should send. If the code is right and the test's expectation is wrong (for example, an item that is really outside the time window), fix the test; otherwise fix the code. Change only what is wrong.\n")
 	}
 	return b.String()
 }

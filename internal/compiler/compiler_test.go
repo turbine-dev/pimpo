@@ -71,7 +71,8 @@ func TestCompileFeedsProblemsBack(t *testing.T) {
 		t.Fatalf("attempts %+v", attempts)
 	}
 	second := fake.Requests[1].Prompt
-	if !strings.Contains(second, "hard-codes recorded data") || !strings.Contains(second, "never mentions") {
+	if !strings.Contains(second, "hard-codes recorded data") || !strings.Contains(second, "never mentions") ||
+		!strings.Contains(second, "it sent \"ana: board meeting moved\"") || !strings.Contains(second, "Your previous routine:\n{") {
 		t.Fatalf("feedback missing from retry prompt:\n%s", second)
 	}
 }

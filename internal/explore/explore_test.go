@@ -266,3 +266,22 @@ func TestMemoryNotesAreLowTrustAndOnlyConfirmedFactsGuide(t *testing.T) {
 		t.Fatal("an unconfirmed note reached the prompt as an instruction")
 	}
 }
+
+func TestNoRoutineOfferWhenNothingWasRead(t *testing.T) {
+	cal := trace.Call{Capability: "calendar.events", Error: "calendar is not set up"}
+	ok := trace.Call{Capability: "gmail.search", Result: []byte(`[]`)}
+	send := trace.Call{Capability: "telegram.send"}
+	for _, c := range []struct {
+		calls []trace.Call
+		want  string
+	}{
+		{[]trace.Call{cal, cal, send}, "calendar.events"},
+		{[]trace.Call{cal, ok, send}, ""},
+		{[]trace.Call{send}, ""},
+		{nil, ""},
+	} {
+		if got := failedReads(c.calls); got != c.want {
+			t.Errorf("%v: %q, want %q", c.calls, got, c.want)
+		}
+	}
+}

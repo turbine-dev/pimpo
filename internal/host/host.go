@@ -210,7 +210,7 @@ func (h *Host) record(ctx context.Context, rec ActionRecord, result any) {
 		raw, _ = json.Marshal(result)
 	}
 	h.mu.Lock()
-	h.calls = append(h.calls, trace.Call{Capability: rec.Capability, Args: mustJSON(rec.Args), Result: raw})
+	h.calls = append(h.calls, trace.Call{Capability: rec.Capability, Args: mustJSON(rec.Args), Result: raw, Error: rec.Error})
 	h.mu.Unlock()
 	rec.Result = truncate(raw, 16<<10)
 	if h.QuietReads && rec.Risk == capability.Read.String() && rec.Error == "" {
