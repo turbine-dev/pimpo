@@ -55,6 +55,9 @@ Ordered by Jev (`tools/jev/decisions_next.py`) from complaints about Hermes and 
 2. **A writing step** in routines: a small model writes one text per item, bounded and billed. Built.
 3. **An alert when a channel stops working**, sent on the others and again when it comes back. Built.
 4. **Going back after an update**: the copy made before each update, like the daily ones, can be put back from Ajustes › Backup, and the owner is told after an update. It restores data, not the old binary (there is no auto-updater to roll back). Built.
+5. **Prompt caching** with Anthropic's API: system prompt, tools and the growing conversation are cached; cache writes and reads are priced in the budget. Checked against a fake server; needs an owner's API key to check live.
+6. **Desktop as a client of a remote Zodim**: the menu bar switches between the local server and one elsewhere, paired with the phone's link; the local server stops meanwhile. The connection page was checked in the browser against a real server with the native calls stood in for; the native switch itself was built but not clicked through, since the owner's app was running.
+7. **iMessage**: cut (needs full disk access to read Messages).
 
 ## Pending decisions for the owner
 
