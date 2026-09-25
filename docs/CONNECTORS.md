@@ -88,6 +88,7 @@ The catalog in Connections also has native connectors, written in Go with contra
 | Connector | Capabilities |
 |---|---|
 | RSS and Atom | 🟢 `rss.read` (sites declared per routine) |
+| Web search | 🟢 `web.search` (Brave Search API or a SearXNG instance) |
 | GitHub | 🟢 `github.issues` · 🔴 `github.comment` |
 | Todoist | 🟢 `todoist.tasks` · 🟡 `todoist.add`, `todoist.close` |
 | Notion | 🟢 `notion.search` · 🟡 `notion.append` |
