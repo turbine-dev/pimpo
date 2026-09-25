@@ -747,6 +747,23 @@ export const pt = {
   'mcp.remove': 'Desinstalar',
   'mcp.source': 'Origem: {source}',
   'mcp.searching': 'Buscando no registro… ele às vezes leva alguns segundos.',
+  'rs.freq.minutes': 'A cada alguns minutos',
+  'rs.minutes': 'minutos',
+  'rs.minutesLabel': 'Intervalo em minutos',
+  'routines.tabRoutines': 'Rotinas',
+  'routines.tabRuns': 'Execuções',
+  'runs.all': 'Todas',
+  'runs.failed': 'Com falha',
+  'runs.none': 'Nenhuma execução ainda.',
+  'runs.noneFailed': 'Nenhuma falha. Tudo rodou bem.',
+  'runs.more': 'Carregar mais',
+  'runs.ok': 'Deu certo',
+  'runs.skippedLabel': 'Pulada',
+  'runs.failedLabel': 'Falhou',
+  'runs.running': 'Rodando',
+  'runs.calls_one': '{count} chamada',
+  'runs.calls_other': '{count} chamadas',
+  'runs.took': 'levou {s}',
 }
 
 export type Key = keyof typeof pt

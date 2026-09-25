@@ -410,6 +410,36 @@ func (s *Store) Runs(ctx context.Context, routine string, limit int) ([]Run, err
 	return out, rows.Err()
 }
 
+// RecentRun is a run with its routine's name, for the history of all
+// routines.
+type RecentRun struct {
+	Run
+	Name string `json:"name"`
+}
+
+// RecentRuns lists the latest runs of every routine, newest first;
+// outcome filters when not empty, and before pages back from a run id.
+func (s *Store) RecentRuns(ctx context.Context, outcome string, before int64, limit int) ([]RecentRun, error) {
+	q := `SELECT r.id, r.routine, r.version, r.started_at, COALESCE(r.ended_at, ''), r.outcome, COALESCE(r.error, ''), r.cost_usd, r.calls, COALESCE(t.name, r.routine)
+		FROM runs r LEFT JOIN routines t ON t.id = r.routine WHERE (? = '' OR r.outcome = ?) AND (? = 0 OR r.id < ?) ORDER BY r.id DESC LIMIT ?`
+	rows, err := s.db.QueryContext(ctx, q, outcome, outcome, before, before, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []RecentRun{}
+	for rows.Next() {
+		var r RecentRun
+		var started, ended string
+		if err := rows.Scan(&r.ID, &r.Routine, &r.Version, &started, &ended, &r.Outcome, &r.Error, &r.CostUSD, &r.Calls, &r.Name); err != nil {
+			return nil, err
+		}
+		r.StartedAt, r.EndedAt = parse(started), parse(ended)
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
 // CostSince sums routine run costs since t.
 func (s *Store) RunCostSince(ctx context.Context, routine string, t time.Time) (float64, error) {
 	var c sql.NullFloat64

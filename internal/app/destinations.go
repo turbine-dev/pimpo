@@ -294,6 +294,23 @@ var cronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month 
 
 // putRoutineSettings saves when a routine runs and the values of its
 // parameters, checked against the manifest before anything is stored.
+// tooOften reports whether a schedule fires twice within five minutes
+// anywhere in the next day.
+func tooOften(s cron.Schedule) bool {
+	t := s.Next(time.Now())
+	for range 300 {
+		n := s.Next(t)
+		if n.Sub(t) < 5*time.Minute {
+			return true
+		}
+		if n.Sub(time.Now()) > 24*time.Hour {
+			return false
+		}
+		t = n
+	}
+	return false
+}
+
 func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rt, err := a.Store.Routine(ctx, r.PathValue("id"))
@@ -311,8 +328,13 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Schedule = strings.Join(strings.Fields(req.Schedule), " ")
 	if req.Schedule != "" {
-		if _, err := cronParser.Parse(req.Schedule); err != nil {
+		sched, err := cronParser.Parse(req.Schedule)
+		if err != nil {
 			server.WriteError(w, server.StatusError{Status: 400, Msg: "that schedule is not valid: " + err.Error()})
+			return
+		}
+		if tooOften(sched) {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: "a routine can run at most every 5 minutes"})
 			return
 		}
 	}

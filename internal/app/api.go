@@ -36,6 +36,28 @@ func (a *App) routes() {
 	s.Handle("PUT /api/connections/{kind}", a.putConnection)
 	s.Handle("DELETE /api/connections/{kind}", a.deleteConnection)
 	s.Handle("POST /api/open", a.openLink)
+	s.Handle("GET /api/runs", a.recentRuns)
+}
+
+// recentRuns is the run history of every routine.
+func (a *App) recentRuns(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	outcome := q.Get("outcome")
+	if outcome != "" && outcome != store.RunOK && outcome != store.RunFailed && outcome != store.RunSkipped {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "unknown outcome"})
+		return
+	}
+	before, _ := strconv.ParseInt(q.Get("before"), 10, 64)
+	limit, _ := strconv.Atoi(q.Get("limit"))
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	runs, err := a.Store.RecentRuns(r.Context(), outcome, before, limit)
+	if err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	server.WriteJSON(w, 200, runs)
 }
 
 // openLink opens a link in this computer's browser, for the desktop app,

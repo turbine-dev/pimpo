@@ -94,3 +94,26 @@ func TestOldDatabasesGainNewColumns(t *testing.T) {
 		t.Fatalf("reopening an up-to-date database: %v", err)
 	}
 }
+
+func TestRecentRunsAcrossRoutines(t *testing.T) {
+	s := open(t)
+	ctx := context.Background()
+	s.SaveRoutine(ctx, "brief", routine.Routine{Name: "Resumo da manhã", Code: "x"}, "", "owner")
+	s.SaveRoutine(ctx, "tides", routine.Routine{Name: "Marés", Code: "x"}, "", "owner")
+	for i, r := range []struct{ id, outcome string }{{"brief", RunOK}, {"tides", RunFailed}, {"brief", RunOK}, {"tides", RunOK}} {
+		id, _ := s.StartRun(ctx, r.id, 1)
+		s.FinishRun(ctx, id, r.outcome, map[bool]string{true: "timeout"}[r.outcome == RunFailed], float64(i)/100, i)
+	}
+	all, err := s.RecentRuns(ctx, "", 0, 3)
+	if err != nil || len(all) != 3 || all[0].Name != "Marés" || all[1].Name != "Resumo da manhã" {
+		t.Fatalf("%+v %v", all, err)
+	}
+	older, _ := s.RecentRuns(ctx, "", all[2].ID, 10)
+	if len(older) != 1 || older[0].Routine != "brief" {
+		t.Fatalf("paging: %+v", older)
+	}
+	failed, _ := s.RecentRuns(ctx, RunFailed, 0, 10)
+	if len(failed) != 1 || failed[0].Error != "timeout" || failed[0].Routine != "tides" {
+		t.Fatalf("%+v", failed)
+	}
+}
