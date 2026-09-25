@@ -1,5 +1,5 @@
 // Package ocr reads text from photos on this machine with Tesseract, so a
-// photo of a handwritten quote or a receipt never leaves the house.
+// photo of a bill or a receipt never leaves the house.
 package ocr
 
 import (

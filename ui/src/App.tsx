@@ -21,7 +21,6 @@ import { Routines } from './pages/Routines'
 import { Import } from './pages/Import'
 import { People } from './pages/People'
 import { Gallery } from './pages/Gallery'
-import { Business } from './pages/Business'
 import { Settings } from './pages/Settings'
 
 export default function App() {
@@ -68,7 +67,6 @@ export default function App() {
         <Route path="/import" element={<Import />} />
         <Route path="/people" element={<People />} />
         <Route path="/gallery" element={<Gallery />} />
-        <Route path="/business" element={<Business />} />
         <Route path="/design" element={<Design />} />
       </Routes>
       </ErrorBoundary>

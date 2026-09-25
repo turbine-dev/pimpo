@@ -1,6 +1,6 @@
 // Package backup exports everything Vigia keeps into one file and imports
 // it on another machine: the database (routines, history, receipts,
-// people, business), the memory with its history, installed connectors,
+// people), the memory with its history, installed connectors,
 // and the vault's secrets. Secrets are re-encrypted with a passphrase the
 // owner chooses, because the vault's own key never leaves this machine.
 package backup

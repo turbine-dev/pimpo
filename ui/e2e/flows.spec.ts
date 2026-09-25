@@ -99,24 +99,6 @@ test.describe.serial('the story, end to end', () => {
     await expect(page).toHaveURL(/\/routines\/agenda-do-dia/)
   })
 
-  test('a client gets a quote that becomes an invoice with a PDF', async ({ page }) => {
-    await login(page)
-    await page.goto('/business')
-    await page.getByRole('tab', { name: 'Clientes' }).click()
-    await page.getByLabel('Nome do cliente').fill('Ana Obras')
-    await page.getByLabel('E-mail do cliente').fill('ana@obras.com')
-    await page.getByRole('button', { name: 'Adicionar' }).click()
-    await expect(page.getByText('ana@obras.com')).toBeVisible()
-    await page.getByRole('button', { name: 'Orçamento', exact: true }).click()
-    await page.getByLabel('Item 1').fill('Pintura')
-    await page.getByLabel('Preço 1').fill('1500')
-    await page.getByRole('button', { name: 'Criar rascunho' }).click()
-    await page.getByRole('tab', { name: 'Documentos' }).click()
-    await page.getByRole('button', { name: 'Virar fatura' }).click()
-    await expect(page.getByText('Fatura 1')).toBeVisible()
-    const pdf = await page.request.get('/api/business/documents/invoice-1/pdf')
-    expect((await pdf.body()).subarray(0, 4).toString()).toBe('%PDF')
-  })
 
   test('someone is invited to the house', async ({ page }) => {
     await login(page)
@@ -143,8 +125,8 @@ test.describe.serial('the story, end to end', () => {
     const nav = page.getByRole('navigation', { name: 'Principal (celular)' })
     await expect(nav.getByRole('link', { name: 'Aprovar' })).toBeVisible()
     await nav.getByRole('button', { name: 'Mais' }).click()
-    await page.getByRole('link', { name: 'Negócio' }).click()
-    await expect(page.getByRole('heading', { name: 'Negócio' })).toBeVisible()
+    await page.getByRole('link', { name: 'Galeria' }).click()
+    await expect(page.getByRole('heading', { name: 'Galeria' })).toBeVisible()
   })
 })
 
@@ -152,7 +134,7 @@ test.describe.serial('the story, end to end', () => {
 test('every screen is in the sidebar', async ({ page }) => {
   await page.goto('/auth?token=e2e-token')
   const nav = page.getByRole('navigation', { name: 'Principal', exact: true })
-  for (const name of ['Rotinas', 'Precisa de você', 'Galeria', 'Recibos', 'Regras', 'Negócio', 'Custo', 'Memória', 'Conexões', 'Pessoas', 'Ajustes']) {
+  for (const name of ['Rotinas', 'Precisa de você', 'Galeria', 'Recibos', 'Regras', 'Custo', 'Memória', 'Conexões', 'Pessoas', 'Ajustes']) {
     await expect(nav.getByRole('link', { name })).toBeVisible()
   }
 })

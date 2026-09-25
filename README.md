@@ -22,7 +22,6 @@ The first time you ask for something ("every morning, send me my agenda and the 
 - **Routines** you ask for in plain words, with a gallery of signed, audited routines to install.
 - **Email triage**, agenda, bills, weather, news, tasks, notes, smart home, GitHub, and more connectors.
 - **A whole house:** people with roles, their own memory and accounts, and approvals sent to the person responsible.
-- **Small business:** clients, quotes, invoices as PDF, payment links, and reminders that always ask first.
 - **Community protection:** a signed list of exfiltration domains and dangerous patterns, which also guards OpenClaw and Hermes through [Guard plugins](guard/).
 - **Your data, portable:** export everything to one file and import it anywhere; import from OpenClaw or Hermes.
 

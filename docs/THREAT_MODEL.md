@@ -5,7 +5,7 @@ Vigia acts for people: it reads their email, sends messages and changes things. 
 ## Assets
 
 - Accounts: email, calendar, chats, services with their tokens.
-- The house's data: memory, receipts, routines, business documents.
+- The house's data: memory, receipts, routines.
 - The owner's intent: rules, approvals and budget.
 
 ## Attackers
@@ -31,7 +31,7 @@ Vigia acts for people: it reads their email, sends messages and changes things. 
 | A connector doing more than it says | It runs as a separate process with a clean environment, exactly its declared tools, timeouts, and risk-based rules. | `TestConnectorsAreHeldToTheirManifest` |
 | Known exfiltration endpoints and patterns | A signed protection list is checked before every action, including other agents' actions through the Guard. | `TestGuardBlocksListedThings`, `TestGuardForOtherAgents` |
 | Another person in the house | Memory, accounts, chats and approvals are separate per person. Guests' changes always wait for their responsible person. | `TestGateFamilyIsolation` |
-| Messages to clients or third parties | `business.remind`, `whatsapp.send_to` and `ha.critical` always ask, whatever the rules say. | `TestBusinessBackOffice`, `TestWhatsAppToOthersAlwaysAsks` |
+| Messages to third parties and physical actions | `whatsapp.send_to` and `ha.critical` always ask, whatever the rules say. | `TestWhatsAppToOthersAlwaysAsks` |
 | Network exposure | The server listens on loopback. Remote access needs HTTPS or a private network, with a per-device token that can be revoked. | `TestDevicePairingAndRevocation` |
 | Forged webhooks | WhatsApp checks Meta's signature. The generic channel signs what it sends. | `TestWhatsAppChannel`, `TestGenericChannel` |
 | Tampered history | Events are chained by hash and checked on import. | event store tests |

@@ -169,7 +169,6 @@ func Presets() map[string][]Rule {
 var alwaysAsk = map[string]string{
 	"whatsapp.send_to": "messages to other people on WhatsApp always wait for approval",
 	"ha.critical":      "locks, alarms, covers and valves always wait for approval",
-	"business.remind":  "messages to clients always wait for approval",
 }
 
 // strength orders verdicts: when several rules match, the strictest wins.

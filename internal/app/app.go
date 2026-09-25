@@ -14,7 +14,6 @@ import (
 
 	"github.com/denerFernandes/vigia/internal/approval"
 	"github.com/denerFernandes/vigia/internal/budget"
-	"github.com/denerFernandes/vigia/internal/business"
 	"github.com/denerFernandes/vigia/internal/compiler"
 	"github.com/denerFernandes/vigia/internal/connector"
 	"github.com/denerFernandes/vigia/internal/connector/calendar"
@@ -87,7 +86,6 @@ type App struct {
 	Undo      *undo.Undo
 	Memory    *memory.Memory
 	People    *people.Directory
-	Business  *business.Book
 	Protect   *protect.Guard
 	Google    *oauth.Google
 	// LLM and Agent default to Claude Code; tests replace them.
@@ -99,8 +97,6 @@ type App struct {
 	WhatsAppAPI string
 	// VoiceModel is the whisper.cpp model used for voice notes.
 	VoiceModel string
-	// PaymentsAPI replaces the payment provider's API; tests only.
-	PaymentsAPI string
 	// DesktopNotify shows notices as system notifications, for the
 	// desktop app.
 	DesktopNotify bool
@@ -126,11 +122,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	if err != nil {
 		return nil, err
 	}
-	book, err := business.Open(events.DB())
-	if err != nil {
-		return nil, err
-	}
-	a := &App{Events: events, Vault: v, Store: st, Business: book}
+	a := &App{Events: events, Vault: v, Store: st}
 	a.Rules = &policy.Engine{Events: events}
 	a.initProtection(ctx)
 	a.Policy = a.Rules
@@ -183,7 +175,6 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.whatsappRoutes()
 	a.galleryRoutes()
 	a.catalogRoutes()
-	a.businessRoutes()
 	a.backupRoutes()
 	a.guardRoutes()
 	a.channelRoutes()
@@ -296,7 +287,6 @@ func (a *App) router() *connector.Router {
 		&web.Web{},
 		&telegramcap.Owner{Bot: botSender{a}, Chat: a.personChat},
 		whatsappCap{a},
-		businessCap{a},
 	)
 	for _, k := range services.All() {
 		r.Add(k.Connector(a.catalogConfig))

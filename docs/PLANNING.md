@@ -20,7 +20,7 @@
 
 **A interface** (validada com o Jev): **chat para conversar e aprovar, mais uma interface web local para ver e controlar**. A tela principal é **Rotinas**. O momento que faz alguém dizer "uau" é **ver a tarefa que acabou de fazer virar uma rotina, com o custo caindo para zero**.
 
-**O caminho completo (seção 8):** 13 fases, do primeiro commit até um projeto maduro. Primeiro construir o núcleo (F0–F4: compilador, segurança, UI, três usos perfeitos). Depois abrir para o mundo (F5–F8: instalação, migração, família, galeria, conectores). Por fim ampliar e amadurecer (F9–F12: pequeno negócio, apps nativos, rede de proteção, longevidade).
+**O caminho completo (seção 8):** 13 fases, do primeiro commit até um projeto maduro. Primeiro construir o núcleo (F0–F4: compilador, segurança, UI, três usos perfeitos). Depois abrir para o mundo (F5–F8: instalação, migração, família, galeria, conectores). Por fim ampliar e amadurecer (F10–F12: apps nativos, rede de proteção, longevidade; a F9, pequeno negócio, foi removida).
 
 **Primeiro marco:** o resumo matinal roda 30 dias seguidos como rotina compilada, com custo de LLM próximo de zero e nenhuma falha silenciosa.
 
@@ -64,7 +64,6 @@ O Jev apontou "falar com usuários reais" como a maior lacuna em todas as revis�
 | F3 | Teste de usabilidade com roteiro fixo (o gate da fase) | 5 pessoas novas | Se a UI conta a história sozinha |
 | F4 | Diário de uso por 2 semanas | 3 pessoas usando de verdade | Falhas reais, confiança, custo percebido |
 | F5 | Beta fechado de instalação e migração | 10 pessoas, técnicas e não técnicas | Se está pronto para a v1.0 |
-| F9 | Acompanhamento de 3 pequenos negócios | Donos de pequenos negócios | O que o backoffice precisa ter |
 
 Cada rodada termina com um registro curto (o que se aprendeu e o que muda no plano), guardado junto ao código.
 
@@ -426,7 +425,7 @@ F6  Memória com origem + família + WhatsApp ────────▶ v1.1
 F7  Galeria de rotinas e skills com capacidades ────▶ v1.2
 F8  Mais canais e conectores ───────────────────────▶ v1.3
             ┌──────────── Ampliar e amadurecer ──────────┐
-F9  Pequeno negócio completo ───────────────────────▶ v1.4
+F9  (removida: pequeno negócio não é o foco)
 F10 Apps nativos (desktop e celular) ───────────────▶ v1.5
 F11 Rede de proteção compartilhada + Guard ─────────▶ v2.0
 F12 Longevidade: SDK, idiomas, auditoria, LTS ──────▶ v2.x
@@ -565,18 +564,10 @@ F12 Longevidade: SDK, idiomas, auditoria, LTS ──────▶ v2.x
 - **Gate:** 15 conectores com testes de contrato verdes contra a API real em 4 semanas consecutivas.
 - **Métricas:** conectores ativos por usuário; falhas de conector por semana.
 
-### F9 · Pequeno negócio completo → v1.4
-- **Objetivo:** o Carlos (persona 2) roda o backoffice pelo celular.
-- **Produto:**
-  - orçamento a partir de foto ou áudio, fatura em PDF e acompanhamento de clientes (um CRM leve);
-  - lembretes de cobrança (sempre aprovados antes de enviar);
-  - links de pagamento gerados, **nunca** pagamentos executados pelo agente;
-  - exportação contábil (CSV e formatos comuns).
-- **UI:** painel do negócio (clientes, orçamentos, faturas, a receber) e modelos de documento editáveis.
-- **Tecnologia:** geração de PDF local; OCR ou visão para fotos; modelos de documento como rotinas.
-- **Qualidade:** testes com documentos reais anonimizados; nenhuma mensagem para cliente sem aprovação (auditoria).
-- **Gate:** 3 pequenos negócios usando por 30 dias, cada um com pelo menos 20 documentos gerados, e a auditoria mostrando zero mensagens para clientes sem aprovação. *(Precisa do fim do stand by.)*
-- **Métricas:** documentos gerados; tempo economizado declarado; mensagens enviadas sem aprovação (zero).
+### F9 · (removida)
+- **Decisão do Dener em 25/09/2026:** o backoffice de pequeno negócio (clientes, orçamentos, faturas, links de pagamento) saiu do roadmap. É outro produto, um CRM, e misturava conceitos: o Vigia é um agente que transforma pedidos em rotinas confiáveis, não um sistema de gestão.
+- Quem tem um pequeno negócio usa o Vigia como qualquer pessoa: pedindo rotinas ("todo dia 5, me avise quem não pagou") sobre o e-mail, a agenda ou uma planilha.
+- Ficam do trabalho feito só as partes genéricas: ler fotos (Tesseract) e áudios (whisper.cpp) em qualquer canal.
 
 ### F10 · Apps nativos → v1.5
 - **Objetivo:** aprovação e controle em um toque, mesmo sem Telegram.
@@ -630,7 +621,7 @@ Todas as 46 funcionalidades avaliadas pelo Jev, com a fase em que entram. Os nú
 | F6 | Memória com origem (1,69) · Modo família (0,90) · Canal WhatsApp (0,81) |
 | F7 | Galeria de rotinas (nova, derivada da F5) |
 | F8 | Canal e-mail (0,78) · Voz (0,95) · Assinatura do Claude ou do ChatGPT como cérebro (0,75) · SDK de conectores |
-| F9 | Backoffice de pequeno negócio (1,26) |
+| F9 | ~~Backoffice de pequeno negócio (1,26)~~ removido por decisão do Dener |
 | F10 | App desktop (0,83) · App de celular (0,68) |
 | F11 | Rede de proteção compartilhada (1,14) · Plugin Guard (1,08) |
 
@@ -657,9 +648,8 @@ Cada conector declara capacidades com nível de risco: 🟢 leitura, 🟡 escrit
 | F8 | GitHub | 🟢 ler issues e PRs · 🟡 comentar |
 | F8 | RSS e páginas web | 🟢 ler |
 | F8 | Clima, rastreio de encomendas, câmbio | 🟢 ler |
-| F9 | Planilhas (Google Sheets, CSV) | 🟢 ler · 🟡 escrever com histórico |
-| F9 | Geração de PDF e OCR local | 🟢 local |
-| F9 | Links de pagamento (Stripe, Mercado Pago) | 🟡 gerar link · pagamentos **nunca** executados pelo agente |
+| F8 | Planilhas (Google Sheets, CSV) | 🟢 ler · 🟡 escrever com histórico |
+| F8 | OCR local para fotos | 🟢 local |
 
 **Regra permanente:** nenhum conector de banco ou corretora com capacidade de mover dinheiro. Apenas leitura, e só depois da F12, com auditoria.
 
