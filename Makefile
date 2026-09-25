@@ -1,7 +1,7 @@
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build ui test test-go test-ui lint proof check e2e desktop release-snapshot
+.PHONY: dmg build ui test test-go test-ui lint proof check e2e desktop release-snapshot
 
 build: ui
 	go build -ldflags "$(LDFLAGS)" -o bin/zodim ./cmd/zodim
@@ -40,8 +40,13 @@ e2e: build
 desktop: ui
 	mkdir -p desktop/src-tauri/binaries
 	go build -ldflags "$(LDFLAGS)" -o desktop/src-tauri/binaries/zodim-$$(rustc -vV | sed -n 's/host: //p') ./cmd/zodim
+	cd desktop && npm ci --no-audit --no-fund && npx tauri build --bundles app
+
+# dmg builds the macOS installer too; its Finder styling step sometimes
+# fails when run without a desktop session, so it is kept apart.
+dmg: desktop
 	scripts/dmg-cleanup.sh
-	cd desktop && npm ci --no-audit --no-fund && npx tauri build
+	cd desktop && npx tauri build --bundles dmg
 
 release-snapshot:
 	goreleaser release --snapshot --clean --skip=publish
