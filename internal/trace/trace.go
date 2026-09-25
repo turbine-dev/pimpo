@@ -40,6 +40,9 @@ type Scenario struct {
 	Responses []Response                    `json:"responses"`
 	Judgments map[string]map[string]float64 `json:"judgments,omitempty"`
 	Expect    []Expect                      `json:"expect"`
+	// Params sets the routine's parameters for this scenario; the rest keep
+	// their defaults.
+	Params map[string]any `json:"params,omitempty"`
 }
 
 // Response is a canned result for one call to a read capability. Calls to

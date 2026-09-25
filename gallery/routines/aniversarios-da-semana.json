@@ -5,11 +5,26 @@
   "schedule": "0 19 * * 0",
   "capabilities": [
    "calendar.events",
-   "telegram.send"
+   "notify.send"
   ],
-  "locale": "pt-BR"
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "palavras",
+    "label": "Palavras que indicam aniversário",
+    "type": "text",
+    "default": "aniversário, birthday",
+    "help": "separadas por vírgula"
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
  },
- "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 7)});\n  const birthdays = events.filter(e => /anivers[aá]rio|birthday/i.test(e.title));\n  if (!birthdays.length) return;\n  await telegram.send({text: \"🎂 Aniversários da semana:\\n\" + birthdays.map(e => \"• \" + dates.format(e.start, \"EEE dd/MM\") + \": \" + e.title).join(\"\\n\")});\n}",
+ "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 7)});\n  const words = params.palavras.toLowerCase().split(\",\").map(s => s.trim()).filter(Boolean);\n  const birthdays = events.filter(e => words.some(w => e.title.toLowerCase().includes(w)));\n  if (!birthdays.length) return;\n  await notify.send({text: \"🎂 Aniversários da semana:\\n\" + birthdays.map(e => \"• \" + dates.format(e.start, \"EEE dd/MM\") + \": \" + e.title).join(\"\\n\")});\n}",
  "tests": [
   {
    "name": "dois aniversários",
@@ -50,7 +65,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "Aniversário da Ana",
@@ -83,10 +98,64 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 0
     }
    ]
+  },
+  {
+   "name": "só em português",
+   "now": "2026-09-27T19:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "Aniversário da Ana",
+       "title": "Aniversário da Ana",
+       "start": "2026-09-29T00:00:00-03:00",
+       "end": "2026-09-30T00:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      },
+      {
+       "id": "Reunião",
+       "title": "Reunião",
+       "start": "2026-09-29T10:00:00-03:00",
+       "end": "2026-09-29T11:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      },
+      {
+       "id": "Rui's birthday",
+       "title": "Rui's birthday",
+       "start": "2026-10-01T00:00:00-03:00",
+       "end": "2026-10-02T00:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "pessoal"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Aniversário da Ana"
+     ],
+     "not_contains": [
+      "Rui's birthday",
+      "Reunião"
+     ]
+    }
+   ],
+   "params": {
+    "palavras": "aniversário"
+   }
   }
  ]
 }

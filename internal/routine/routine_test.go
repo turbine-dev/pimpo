@@ -177,3 +177,17 @@ func TestReplayAnswersFromEverythingSeen(t *testing.T) {
 		t.Fatalf("%v", out.Problems)
 	}
 }
+
+func TestNotifyMeetsTelegramExpectations(t *testing.T) {
+	r := Routine{Code: `async function run() { await notify.send({text: "Bom dia, " + params.name}) }`,
+		Manifest: runtime.Manifest{Capabilities: []string{"notify.send"}, Params: []runtime.Param{{Name: "name", Type: "text", Default: "Ana"}, {Name: "destinos", Type: "destinations", Default: []any{}}}}}
+	s := trace.Scenario{Expect: []trace.Expect{{Capability: "telegram.send", Contains: []string{"Bom dia, Ana"}}}}
+	if out := Check(context.Background(), r, "x", s); !out.Passed {
+		t.Fatalf("%v", out.Problems)
+	}
+	s.Params = map[string]any{"name": "Rui"}
+	s.Expect[0].Contains = []string{"Rui"}
+	if out := Check(context.Background(), r, "x", s); !out.Passed {
+		t.Fatalf("scenario params: %v", out.Problems)
+	}
+}

@@ -1,15 +1,36 @@
 {
  "name": "Contas que chegaram",
- "description": "Toda sexta, lista boletos e faturas que chegaram na semana, com os valores.",
+ "description": "Toda sexta, lista as contas que chegaram, com os valores. Você escolhe as palavras que indicam uma conta.",
  "manifest": {
   "schedule": "0 9 * * 5",
   "capabilities": [
    "gmail.search",
-   "telegram.send"
+   "notify.send"
   ],
-  "locale": "pt-BR"
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "palavras",
+    "label": "Palavras que indicam uma conta",
+    "type": "text",
+    "default": "boleto, fatura",
+    "help": "separadas por vírgula"
+   },
+   {
+    "name": "dias",
+    "label": "Olhar os últimos (dias)",
+    "type": "number",
+    "default": 7
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
  },
- "code": "async function run() {\n  const found = [];\n  for (const q of [\"boleto\", \"fatura\"]) {\n    for (const m of await gmail.search({query: q, days: 7, max: 30})) {\n      if (!found.some(f => f.id === m.id)) found.push(m);\n    }\n  }\n  if (!found.length) { await telegram.send({text: \"💸 Nenhuma conta nova esta semana.\"}); return; }\n  const lines = found.map(m => {\n    const v = money.parse(money.find(m.subject + \" \" + m.snippet) || \"\");\n    return \"• \" + m.from_name + \": \" + m.subject + (v ? \" — \" + money.format(v, \"BRL\") : \"\");\n  });\n  await telegram.send({text: \"💸 Contas da semana:\\n\" + lines.join(\"\\n\")});\n}",
+ "code": "async function run() {\n  const found = [];\n  for (const q of params.palavras.split(\",\").map(s => s.trim()).filter(Boolean)) {\n    for (const m of await gmail.search({query: q, days: params.dias, max: 30})) {\n      if (!found.some(f => f.id === m.id)) found.push(m);\n    }\n  }\n  if (!found.length) { await notify.send({text: \"💸 Nenhuma conta nova esta semana.\"}); return; }\n  const lines = found.map(m => {\n    const v = money.parse(money.find(m.subject + \" \" + m.snippet) || \"\");\n    return \"• \" + m.from_name + \": \" + m.subject + (v ? \" — \" + money.format(v, \"BRL\") : \"\");\n  });\n  await notify.send({text: \"💸 Contas da semana:\\n\" + lines.join(\"\\n\")});\n}",
  "tests": [
   {
    "name": "duas contas",
@@ -74,7 +95,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "Sua fatura chegou",
@@ -99,7 +120,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "Nenhuma conta"

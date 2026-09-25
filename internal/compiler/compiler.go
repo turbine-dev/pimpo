@@ -145,7 +145,9 @@ Rules for the code:
   dates.parse(text) -> ISO date of the first date found in free text (29/09/2026, 30/09, "5 de outubro", "Oct 3, 2026") or null;
   money.find(text) -> the first amount as written ("R$ 1.482,35") or null; money.parse(text) -> number or null; money.format(number, "BRL"|"USD"|"EUR").
   Calendar all-day events have a plain date (2026-09-25) as start; timed events have a full ISO time.
-- Never copy data from the recording into the code (names, subjects, ids, amounts). Derive everything from capability results at run time. Constants that come from the user's request (a threshold, an email address they named, a city) are fine.
+- Never copy data from the recording into the code (names, subjects, ids, amounts). Derive everything from capability results at run time.
+- Settings the owner may want to change later (a city, a threshold, an email address or sender they named, a list of days, a language, a choice among options) are NEVER written in the code: declare each one in manifest.params and read it as params.<name>. params is read-only.
+- When the routine sends a message to the owner, use notify.send({text}) (not telegram.send) and declare a parameter {"name":"destinos","label":"Onde avisar","type":"destinations","default":[]}; the owner picks one or more bots or channels.
 - Subjective decisions ("is this important?", "is this a newsletter?", "does this need a reply?") must use a judgment: declare it in manifest.judgments as {name: "yes/no question about one item"} and call await judge.<name>(item), which returns {p} (probability of yes). Treat p >= 0.5 as yes. Pass the whole item. You may only declare the judgments the agent made while exploring (listed in the prompt); everything else must be decided by plain code (dates, amounts, keywords, fields like replied or labels).
 - Objective decisions (dates, amounts, senders, keywords the user named) are plain code.
 - Keep messages concise and readable. Send nothing when there is nothing worth sending, unless the user asked for a message every time.
@@ -153,9 +155,10 @@ Rules for the code:
 Rules for the manifest:
 - schedule: a 5-field cron expression matching the request.
 - locale: the language the user wrote the request in, "pt-BR" or "en-US". dates.format uses it for weekday and month names, so write messages and test expectations in that language.
-- capabilities: the minimum set the code calls. Scoped capabilities need the host, e.g. "http.getJSON:api.open-meteo.com".
+- capabilities: the minimum set the code calls. Scoped capabilities need the host, e.g. "http.getJSON:api.open-meteo.com". The host is fixed; values in the URL's query (latitude, longitude, currency) can come from params.
+- params: each {name (JavaScript identifier), label (short, in the request's language), type, default, options, help}. Types: text, number, boolean, date (YYYY-MM-DD), time (HH:MM), location (default {"name","latitude","longitude","timezone"}), select and multiselect (with options), email, destinations. Every param except destinations has a default taken from the request.
 
-Rules for tests: write 2 or 3 scenarios with NEW fictional data (not the recording) covering the normal case and an edge case (nothing to report, several items, an item that must be excluded). Each has now, responses (canned results for read calls, in the order the code makes them), judgments (labels for the new items: judgment name -> {identifying substring of the item: probability}) and expect (checks on write calls: capability, optional count, contains, not_contains). Expectations must follow from the data and the request.`
+Rules for tests: write 2 or 3 scenarios with NEW fictional data (not the recording) covering the normal case and an edge case (nothing to report, several items, an item that must be excluded). Each has now, responses (canned results for read calls, in the order the code makes them), optional params (values for this scenario; at least one test should change a param from its default), judgments (labels for the new items: judgment name -> {identifying substring of the item: probability}) and expect (checks on write calls: capability, optional count, contains, not_contains). Expectations must follow from the data and the request.`
 
 var schema = json.RawMessage(`{
  "type":"object","additionalProperties":false,
@@ -167,11 +170,16 @@ var schema = json.RawMessage(`{
     "schedule":{"type":"string"},
     "capabilities":{"type":"array","items":{"type":"string"}},
     "judgments":{"type":"object","additionalProperties":{"type":"string"}},
-    "locale":{"type":"string","enum":["pt-BR","en-US"]}}},
+    "locale":{"type":"string","enum":["pt-BR","en-US"]},
+    "params":{"type":"array","items":{"type":"object","required":["name","label","type"],"properties":{
+      "name":{"type":"string"},"label":{"type":"string"},
+      "type":{"type":"string","enum":["text","number","boolean","date","time","location","select","multiselect","email","destinations"]},
+      "default":{},"options":{"type":"array","items":{"type":"string"}},"help":{"type":"string"}}}}}},
   "code":{"type":"string"},
   "tests":{"type":"array","items":{"type":"object","required":["name","now","responses","expect"],"properties":{
     "name":{"type":"string"},
     "now":{"type":"string"},
+    "params":{"type":"object"},
     "responses":{"type":"array","items":{"type":"object","required":["capability","result"],"properties":{"capability":{"type":"string"},"result":{}}}},
     "judgments":{"type":"object","additionalProperties":{"type":"object","additionalProperties":{"type":"number"}}},
     "expect":{"type":"array","items":{"type":"object","required":["capability"],"properties":{

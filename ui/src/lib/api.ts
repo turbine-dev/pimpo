@@ -11,7 +11,16 @@ export type RoutineSummary = {
   cost_month_usd: number
   capabilities: string[]
   schedule: string
+  default_schedule?: string
+  params?: RoutineParam[]
+  values?: Record<string, unknown>
 }
+
+export type ParamType = 'text' | 'number' | 'boolean' | 'date' | 'time' | 'location' | 'select' | 'multiselect' | 'email' | 'destinations'
+export type RoutineParam = { name: string; label: string; type: ParamType; default?: unknown; options?: string[]; help?: string }
+export type Place = { name: string; latitude: number; longitude: number; timezone?: string; country?: string }
+export type Destination = { id: string; label: string; kind: string; ready: boolean }
+export type TelegramBot = { id: string; name: string; username: string; chat?: number; chat_name?: string }
 
 export type Scenario = {
   now: string
@@ -188,6 +197,13 @@ export const api = {
   removeCatalog: (id: string) => request<void>('DELETE', `/api/catalog/${id}`),
   checkCatalog: (id: string) => request<{ ok: boolean; detail?: string }>('POST', `/api/catalog/${id}/check`),
   protection: () => request<{ version: number; entries: number; updated: string; fetched?: string; enabled: boolean; blocked: number }>('GET', '/api/protection'),
+  saveRoutineSettings: (id: string, schedule: string, params: Record<string, unknown>) => request<RoutineSummary>('PUT', `/api/routines/${id}/settings`, { schedule, params }),
+  destinations: () => request<Destination[]>('GET', '/api/destinations'),
+  geocode: (q: string) => request<Place[]>('GET', `/api/geocode?q=${encodeURIComponent(q)}`),
+  bots: () => request<TelegramBot[]>('GET', '/api/telegram/bots'),
+  addBot: (name: string, token: string) => request<TelegramBot>('POST', '/api/telegram/bots', { name, token }),
+  detectBot: (id: string) => request<TelegramBot>('POST', `/api/telegram/bots/${id}/detect`),
+  removeBot: (id: string) => request<void>('DELETE', `/api/telegram/bots/${id}`),
   connections: () => request<Connection[]>('GET', '/api/connections'),
   googleStart: (client_id: string, client_secret: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/google/start', { client_id, client_secret }),
   connect: (kind: string, body: Record<string, string>) => request<void>('PUT', `/api/connections/${kind}`, body),

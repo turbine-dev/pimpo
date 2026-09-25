@@ -6,11 +6,25 @@
   "capabilities": [
    "gmail.search",
    "gmail.trash",
-   "telegram.send"
+   "notify.send"
   ],
-  "locale": "pt-BR"
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "dias",
+    "label": "Mandar para a lixeira promoções com mais de (dias)",
+    "type": "number",
+    "default": 30
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
  },
- "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:30d\", max: 50});\n  for (const m of mails) await gmail.trash({id: m.id});\n  await telegram.send({text: mails.length ? \"🗑️ \" + mails.length + \" promoções antigas foram para a lixeira.\" : \"🗑️ Nenhuma promoção antiga esta semana.\"});\n}",
+ "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:\" + params.dias + \"d\", max: 50});\n  for (const m of mails) await gmail.trash({id: m.id});\n  await notify.send({text: mails.length ? \"🗑️ \" + mails.length + \" promoções antigas foram para a lixeira.\" : \"🗑️ Nenhuma promoção antiga esta semana.\"});\n}",
  "tests": [
   {
    "name": "duas antigas",
@@ -62,7 +76,7 @@
      "count": 2
     },
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "2 promoções"
@@ -85,7 +99,7 @@
      "count": 0
     },
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "Nenhuma"

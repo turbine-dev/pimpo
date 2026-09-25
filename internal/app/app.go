@@ -97,6 +97,8 @@ type App struct {
 	WhatsAppAPI string
 	// VoiceModel is the whisper.cpp model used for voice notes.
 	VoiceModel string
+	// GeocodeAPI replaces the place search service; tests only.
+	GeocodeAPI string
 	// DesktopNotify shows notices as system notifications, for the
 	// desktop app.
 	DesktopNotify bool
@@ -178,6 +180,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.backupRoutes()
 	a.guardRoutes()
 	a.channelRoutes()
+	a.destinationRoutes()
 	return a, nil
 }
 
@@ -287,6 +290,7 @@ func (a *App) router() *connector.Router {
 		&web.Web{},
 		&telegramcap.Owner{Bot: botSender{a}, Chat: a.personChat},
 		whatsappCap{a},
+		notifyCap{a},
 	)
 	for _, k := range services.All() {
 		r.Add(k.Connector(a.catalogConfig))

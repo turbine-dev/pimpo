@@ -62,6 +62,7 @@ func init() {
 		{Name: "gmail.send", Risk: Irreversible, Signature: "gmail.send({to, subject, body})", Returns: "{ok}; sends an email to someone else"},
 		{Name: "http.getJSON", Risk: Read, Signature: "http.getJSON(url)", Returns: "the parsed JSON body; only hosts named in the manifest scope are reachable", Scoped: true},
 		{Name: "telegram.send", Risk: Notify, Signature: "telegram.send({text})", Returns: "{ok}; sends a message to the owner only"},
+		{Name: "notify.send", Risk: Notify, Signature: "notify.send({text})", Returns: "{ok, delivered: [destination]}; sends to the destinations the owner chose for this routine (Telegram bots, WhatsApp, Slack, Discord, email), or to the owner's usual channel. Prefer this over telegram.send", Schema: `{"type":"object","required":["text"],"properties":{"text":{"type":"string"}}}`},
 		{Name: "whatsapp.send", Risk: Notify, Signature: "whatsapp.send({text})", Returns: "{ok}; sends a WhatsApp message to the owner only"},
 		{Name: "whatsapp.send_to", Risk: Irreversible, Signature: "whatsapp.send_to({to, text})", Returns: "{ok}; sends a WhatsApp message to someone else (to is a phone number); always needs approval"},
 	} {

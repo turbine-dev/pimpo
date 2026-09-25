@@ -5,11 +5,19 @@
   "schedule": "30 6 * * *",
   "capabilities": [
    "calendar.events",
-   "telegram.send"
+   "notify.send"
   ],
-  "locale": "pt-BR"
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
  },
- "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 1)});\n  let text = \"📅 \" + dates.format(today, \"EEEE, d 'de' MMMM\") + \"\\n\";\n  text += events.length ? events.map(e => \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\") : \"Agenda livre hoje.\";\n  await telegram.send({text});\n}",
+ "code": "async function run() {\n  const today = dates.today();\n  const events = await calendar.events({from: today, to: dates.startOfDay(today, 1)});\n  let text = \"📅 \" + dates.format(today, \"EEEE, d 'de' MMMM\") + \"\\n\";\n  text += events.length ? events.map(e => \"• \" + dates.format(e.start, \"HH:mm\") + \" \" + e.title).join(\"\\n\") : \"Agenda livre hoje.\";\n  await notify.send({text});\n}",
  "tests": [
   {
    "name": "dois compromissos",
@@ -50,7 +58,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "09:00 Dentista",
@@ -73,7 +81,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "Agenda livre"

@@ -54,7 +54,7 @@ func Check(ctx context.Context, r Routine, name string, s trace.Scenario) Outcom
 	h := newScenarioHost(s)
 	h.now = now
 	out := Outcome{Scenario: name}
-	if _, err := runtime.Run(ctx, r.Code, r.Manifest, h, runtime.Options{Now: now, Timeout: 5 * time.Second}); err != nil {
+	if _, err := runtime.Run(ctx, r.Code, r.Manifest, h, runtime.Options{Now: now, Timeout: 5 * time.Second, Params: s.Params}); err != nil {
 		out.Problems = append(out.Problems, "run failed: "+err.Error())
 	}
 	out.Writes = h.writes
@@ -65,11 +65,18 @@ func Check(ctx context.Context, r Routine, name string, s trace.Scenario) Outcom
 	return out
 }
 
+// toOwner are the ways of telling the owner something; an expectation on
+// one is met by any of them, since the explorer may use telegram.send
+// where the routine uses notify.send.
+var toOwner = map[string]bool{"telegram.send": true, "whatsapp.send": true, "notify.send": true}
+
+func sameKind(a, b string) bool { return a == b || (toOwner[a] && toOwner[b]) }
+
 func verify(e trace.Expect, writes []Write) []string {
 	var text []string
 	n := 0
 	for _, w := range writes {
-		if w.Capability == e.Capability {
+		if sameKind(w.Capability, e.Capability) {
 			n++
 			text = append(text, strings.ToLower(flatten(w.Args)))
 		}
@@ -371,7 +378,7 @@ func Audit(ctx context.Context, r Routine) (used []string, problems []string) {
 		}
 		h := &auditHost{scenarioHost: newScenarioHost(t.Scenario), used: seen}
 		h.now = now
-		if _, err := runtime.Run(ctx, r.Code, wide, h, runtime.Options{Now: now, Timeout: 5 * time.Second}); err != nil && strings.Contains(err.Error(), "outside the manifest scope") {
+		if _, err := runtime.Run(ctx, r.Code, wide, h, runtime.Options{Now: now, Timeout: 5 * time.Second, Params: t.Params}); err != nil && strings.Contains(err.Error(), "outside the manifest scope") {
 			problems = append(problems, t.Name+": "+err.Error())
 		}
 	}

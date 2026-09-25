@@ -15,6 +15,16 @@ Want to see it first? Run `vigia serve --demo`: a sample mailbox and calendar, n
 2. **Routine.** If you like the result, tap "Transformar em rotina". Vigia writes code with tests and checks it against what the agent did. You can read the code on the routine's page.
 3. **On its own.** The routine runs on schedule without a model. If a service changes and the routine breaks, you get a notice with "Refazer", and the agent fixes it.
 
+## Changing a routine without code
+
+Every routine page starts with **Ajustes da rotina**:
+
+- **Quando**: every day, weekdays, some days of the week, once a month, every few hours, or a cron expression under "Avançado".
+- **The routine's own choices**: a city (search by name), a limit, a list of words, a currency, whatever the routine was made with. Vigia's compiler turns anything personal in your request into one of these, instead of writing it into the code.
+- **Onde avisar**: one or more destinations. These can be your Telegram, other Telegram bots (a family group, for example), WhatsApp, Slack, Discord or email. With none chosen, Vigia uses your usual channel.
+
+To add more Telegram bots, go to **Conexões › Bots extras do Telegram**. Create the bot with @BotFather, paste its token, send it a message (or add it to a group), and tap **Detectar chat**.
+
 ## Approvals and rules
 
 - **Precisa de você** lists what is waiting for you: approvals, finished explorations, problems. On the phone it is the first tab.

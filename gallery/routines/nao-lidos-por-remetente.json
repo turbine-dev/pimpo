@@ -5,11 +5,25 @@
   "schedule": "15 7 * * *",
   "capabilities": [
    "gmail.search",
-   "telegram.send"
+   "notify.send"
   ],
-  "locale": "pt-BR"
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "quantos",
+    "label": "Quantos remetentes mostrar",
+    "type": "number",
+    "default": 5
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
  },
- "code": "async function run() {\n  const mails = await gmail.search({query: \"is:unread\", days: 1, max: 50});\n  if (!mails.length) { await telegram.send({text: \"📭 Nada novo desde ontem.\"}); return; }\n  const by = {};\n  for (const m of mails) by[m.from_name] = (by[m.from_name] || 0) + 1;\n  const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 5);\n  await telegram.send({text: \"📬 \" + mails.length + \" não lidos. Mais frequentes:\\n\" + top.map(([n, c]) => \"• \" + n + \" (\" + c + \")\").join(\"\\n\")});\n}",
+ "code": "async function run() {\n  const mails = await gmail.search({query: \"is:unread\", days: 1, max: 50});\n  if (!mails.length) { await notify.send({text: \"📭 Nada novo desde ontem.\"}); return; }\n  const by = {};\n  for (const m of mails) by[m.from_name] = (by[m.from_name] || 0) + 1;\n  const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, params.quantos);\n  await notify.send({text: \"📬 \" + mails.length + \" não lidos. Mais frequentes:\\n\" + top.map(([n, c]) => \"• \" + n + \" (\" + c + \")\").join(\"\\n\")});\n}",
  "tests": [
   {
    "name": "vários",
@@ -91,7 +105,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "3 não lidos",
@@ -115,7 +129,7 @@
    ],
    "expect": [
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "Nada novo"

@@ -6,11 +6,25 @@
   "capabilities": [
    "gmail.search",
    "gmail.archive",
-   "telegram.send"
+   "notify.send"
   ],
-  "locale": "pt-BR"
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "dias",
+    "label": "Arquivar promoções com mais de (dias)",
+    "type": "number",
+    "default": 7
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
  },
- "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:7d in:inbox\", max: 50});\n  for (const m of mails) await gmail.archive({id: m.id});\n  if (mails.length) await telegram.send({text: \"🧹 Arquivei \" + mails.length + (mails.length === 1 ? \" promoção antiga.\" : \" promoções antigas.\")});\n}",
+ "code": "async function run() {\n  const mails = await gmail.search({query: \"category:promotions older_than:\" + params.dias + \"d in:inbox\", max: 50});\n  for (const m of mails) await gmail.archive({id: m.id});\n  if (mails.length) await notify.send({text: \"🧹 Arquivei \" + mails.length + (mails.length === 1 ? \" promoção antiga.\" : \" promoções antigas.\")});\n}",
  "tests": [
   {
    "name": "três promoções",
@@ -79,7 +93,7 @@
      "count": 3
     },
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 1,
      "contains": [
       "Arquivei 3 promoções"
@@ -102,7 +116,7 @@
      "count": 0
     },
     {
-     "capability": "telegram.send",
+     "capability": "notify.send",
      "count": 0
     }
    ]

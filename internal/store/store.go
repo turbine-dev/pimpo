@@ -69,6 +69,7 @@ var additions = []string{
 	`ALTER TABLE explorations ADD COLUMN candidate TEXT`,
 	`ALTER TABLE explorations ADD COLUMN person TEXT NOT NULL DEFAULT ''`,
 	`ALTER TABLE routines ADD COLUMN person TEXT NOT NULL DEFAULT ''`,
+	`ALTER TABLE routines ADD COLUMN settings TEXT NOT NULL DEFAULT ''`,
 }
 
 func Open(db *sql.DB) (*Store, error) {
@@ -105,9 +106,26 @@ type Routine struct {
 	State   string          `json:"state"`
 	Body    routine.Routine `json:"routine"`
 	// Person is who the routine works for; empty is the owner.
-	Person    string    `json:"person,omitempty"`
+	Person string `json:"person,omitempty"`
+	// Settings are the owner's choices: parameter values and a schedule
+	// that replaces the manifest's.
+	Settings  Settings  `json:"settings"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type Settings struct {
+	Schedule string         `json:"schedule,omitempty"`
+	Params   map[string]any `json:"params,omitempty"`
+}
+
+// Schedule is when the routine runs: the owner's choice, else the
+// manifest's.
+func (r Routine) Schedule() string {
+	if r.Settings.Schedule != "" {
+		return r.Settings.Schedule
+	}
+	return r.Body.Manifest.Schedule
 }
 
 type Version struct {
@@ -171,7 +189,7 @@ func (s *Store) Routines(ctx context.Context) ([]Routine, error) {
 }
 
 func (s *Store) routines(ctx context.Context, where string, args ...any) ([]Routine, error) {
-	q := `SELECT r.id, r.version, r.state, r.person, r.created_at, r.updated_at, v.body FROM routines r JOIN routine_versions v ON v.routine = r.id AND v.version = r.version ` + where
+	q := `SELECT r.id, r.version, r.state, r.person, r.settings, r.created_at, r.updated_at, v.body FROM routines r JOIN routine_versions v ON v.routine = r.id AND v.version = r.version ` + where
 	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
@@ -181,10 +199,12 @@ func (s *Store) routines(ctx context.Context, where string, args ...any) ([]Rout
 	for rows.Next() {
 		var r Routine
 		var created, updated, body string
-		if err := rows.Scan(&r.ID, &r.Version, &r.State, &r.Person, &created, &updated, &body); err != nil {
+		var settings string
+		if err := rows.Scan(&r.ID, &r.Version, &r.State, &r.Person, &settings, &created, &updated, &body); err != nil {
 			return nil, err
 		}
 		r.CreatedAt, r.UpdatedAt = parse(created), parse(updated)
+		json.Unmarshal([]byte(settings), &r.Settings)
 		if err := json.Unmarshal([]byte(body), &r.Body); err != nil {
 			return nil, err
 		}
@@ -211,6 +231,12 @@ func (s *Store) Versions(ctx context.Context, id string) ([]Version, error) {
 		out = append(out, v)
 	}
 	return out, rows.Err()
+}
+
+// SetRoutineSettings saves the owner's parameter values and schedule.
+func (s *Store) SetRoutineSettings(ctx context.Context, id string, v Settings) error {
+	b, _ := json.Marshal(v)
+	return affected(s.db.ExecContext(ctx, `UPDATE routines SET settings = ?, updated_at = ? WHERE id = ?`, string(b), ts(time.Now()), id))
 }
 
 // SetRoutinePerson records who a routine works for.
