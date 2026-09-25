@@ -114,6 +114,7 @@ test.describe.serial('the story, end to end', () => {
   test('everything exports to one file', async ({ page }) => {
     await login(page)
     await page.goto('/settings')
+    await page.getByRole('button', { name: 'Backup' }).click()
     await page.getByLabel('Senha para exportar').fill('uma senha longa')
     const download = page.waitForEvent('download')
     await page.getByRole('button', { name: 'Exportar' }).click()

@@ -23,10 +23,11 @@ describe('Help and settings', () => {
       '/api/state': { budget: { limit: 2, spent: 0 }, healthy: true }, '/api/pairing': { base: '', devices: [] }, '/api/remote': { tailscale: { state: 'off' }, lan: { on: false } },
       '/api/backup/cloud': { config: { kind: '', every: 'daily', keep: 7 }, has_keys: false, has_passphrase: false, google: { connected: false, drive: false } },
     })
-    wrap(<Settings />)
+    wrap(<Settings />, '/settings#notificacoes')
     expect(await screen.findByRole('switch', { name: 'Pedidos de aprovação' })).toBeDisabled()
     await userEvent.click(screen.getByRole('switch', { name: 'Resultado de tarefas' }))
-    await userEvent.click(screen.getByRole('switch', { name: 'Organizar a memória toda noite' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Laboratório' }))
+    await userEvent.click(await screen.findByRole('switch', { name: 'Organizar a memória toda noite' }))
     await userEvent.click(screen.getAllByRole('button', { name: 'Salvar' }).at(-1)!)
     await waitFor(() => expect(calls.find((c) => c.method === 'PUT' && c.url === '/api/settings')?.body).toMatchObject({ mute: ['task'], labs_off: ['memory_organize'] }))
   })
@@ -41,9 +42,9 @@ describe('Models', () => {
       '/api/backup/cloud': { config: { kind: '', every: 'daily', keep: 7 }, has_keys: false, has_passphrase: false, google: { connected: false, drive: false } },
       '/api/models': { keys: { anthropic: false }, claude_code: false }, 'PUT /api/models/keys/anthropic': { set: true },
     })
-    wrap(<Settings />)
+    wrap(<Settings />, '/settings#modelos')
     expect(await screen.findByText(/O Claude Code não está instalado/)).toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText('Chave da API anthropic'), 'sk-ant-1')
+    await userEvent.type(screen.getByLabelText('Chave da API Anthropic'), 'sk-ant-1')
     await userEvent.click(screen.getAllByRole('button', { name: 'Salvar' })[0])
     await waitFor(() => expect(calls.find((c) => c.url === '/api/models/keys/anthropic')?.body).toEqual({ key: 'sk-ant-1' }))
     const add = screen.getByRole('button', { name: /Adicionar/ })

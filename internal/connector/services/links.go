@@ -47,13 +47,13 @@ func checkLink(kind string) func(ctx context.Context, cfg Config) error {
 
 func init() {
 	register(Kind{
-		ID: "discordchat", Title: "Discord (conversa)", Description: "Converse com o Zodim por mensagem privada no Discord.",
+		ID: "discordchat", Title: "Discord", Description: "Converse com o Zodim por mensagem privada no Discord.",
 		Help:   "Em discord.com/developers/applications, crie um app, vá em Bot, gere o token e convide o bot para um servidor seu. Depois mande para ele, no privado: zodim e o código de pareamento de Conexões.",
 		Fields: []Field{{Name: "token", Label: "Token do bot", Secret: true}},
 		Probe:  checkLink("discordchat"),
 	})
 	register(Kind{
-		ID: "slackchat", Title: "Slack (conversa)", Description: "Converse com o Zodim por mensagem direta no Slack.",
+		ID: "slackchat", Title: "Slack", Description: "Converse com o Zodim por mensagem direta no Slack.",
 		Help: "Em api.slack.com/apps, crie um app, ligue o Socket Mode (gera o token xapp- com connections:write), assine o evento message.im, dê ao bot im:history, im:write e chat:write e instale no workspace. " +
 			"Depois mande para o app, na mensagem direta: zodim e o código de pareamento de Conexões.",
 		Fields: []Field{{Name: "bot_token", Label: "Bot token (xoxb-)", Secret: true}, {Name: "app_token", Label: "App token (xapp-)", Secret: true}},

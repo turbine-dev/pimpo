@@ -8,7 +8,9 @@ import { Button, Card } from './ui'
 const input = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
 
 // Extra bots only send: a routine picks them as destinations.
-export function TelegramBots() {
+// Extra bots matter once Telegram is in use; until then they stay hidden
+// unless some already exist.
+export function TelegramBots({ telegram = true }: { telegram?: boolean }) {
   const t = useT()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['bots'], queryFn: api.bots })
@@ -19,6 +21,7 @@ export function TelegramBots() {
   const detect = useMutation({ mutationFn: api.detectBot, onSuccess: refresh })
   const remove = useMutation({ mutationFn: api.removeBot, onSuccess: refresh })
   const bots = q.data ?? []
+  if (!telegram && bots.length === 0) return null
   return (
     <Card className="p-5">
       <div className="mb-1 flex items-center gap-2 text-[15px] font-medium"><Bot size={17} /> {t('bots.title')}</div>

@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { ArchiveRestore, Download, Upload } from 'lucide-react'
+import { ArchiveRestore, Download, FileUp, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { useT } from '../lib/i18n'
 import { Button, Card } from './ui'
@@ -47,7 +47,11 @@ export function BackupCard() {
       </form>
       {exp.error && <p className="mt-2 text-[13px] text-danger">{exp.error.message}</p>}
       <form className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4" onSubmit={(e) => { e.preventDefault(); imp.mutate() }}>
-        <input type="file" accept=".zodim" aria-label={t('backup.file')} onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="min-w-[200px] flex-1 text-[13px] file:mr-3 file:rounded-lg file:border file:border-line file:bg-surface file:px-3 file:py-1.5" />
+        <label className="flex h-10 min-w-[200px] flex-1 cursor-pointer items-center gap-2 rounded-[10px] border border-dashed border-line bg-bg px-3 text-[13px] text-ink-2 hover:border-line-strong">
+          <FileUp size={15} className="shrink-0 text-ink-3" />
+          <span className="truncate">{file ? file.name : t('backup.pick')}</span>
+          <input type="file" accept=".zodim" aria-label={t('backup.file')} className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        </label>
         <input type="password" value={importPass} onChange={(e) => setImportPass(e.target.value)} placeholder={t('backup.passImportPlaceholder')} aria-label={t('backup.passImport')} className={input} />
         <Button type="submit" disabled={!file || !importPass || imp.isPending}><Upload size={15} /> {t('backup.import')}</Button>
       </form>

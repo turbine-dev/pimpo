@@ -9,6 +9,7 @@ import { Button, Card } from './ui'
 
 const field = 'h-9 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
 const providers = ['anthropic', 'openai', 'openrouter', 'ollama'] as const
+const providerName: Record<string, string> = { anthropic: 'Anthropic', openai: 'OpenAI', openrouter: 'OpenRouter', ollama: 'Ollama' }
 const claudeCode = ['sonnet', 'opus', 'haiku']
 const roles = [['explore_model', 'models.explore'], ['compile_model', 'models.compile'], ['judge_model', 'models.judge']] as const
 
@@ -61,9 +62,9 @@ export function ModelsCard({ s, set }: { s: Settings; set: (s: Settings) => void
         <div className="text-[13px] font-medium text-ink-2">{t('models.keys')}</div>
         {providers.filter((p) => p !== 'ollama').map((p) => (
           <form key={p} className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); saveKey.mutate(p) }}>
-            <span className="w-24 text-[13px] capitalize">{p}</span>
+            <span className="w-24 text-[13px]">{providerName[p]}</span>
             <input type="password" className={cn(field, 'min-w-[200px] flex-1')} value={keys[p] ?? ''} onChange={(e) => setKeys({ ...keys, [p]: e.target.value })}
-              placeholder={info.data?.keys[p] ? t('models.keySaved') : t('models.keyNew')} aria-label={t('models.keyOf', { provider: p })} autoComplete="off" />
+              placeholder={info.data?.keys[p] ? t('models.keySaved') : t('models.keyNew')} aria-label={t('models.keyOf', { provider: providerName[p] })} autoComplete="off" />
             <Button size="sm" type="submit" disabled={!keys[p] || saveKey.isPending}>{t('common.save')}</Button>
             {info.data?.keys[p] && <Check size={14} className="text-read" aria-label={t('models.keySaved')} />}
           </form>
@@ -92,7 +93,7 @@ export function ModelsCard({ s, set }: { s: Settings; set: (s: Settings) => void
         {test.error && <p className="text-[12.5px] text-danger">{test.error.message}</p>}
         <div className="flex flex-wrap items-end gap-2">
           <select className={field} value={draft.provider} onChange={(e) => setDraft({ ...draft, provider: e.target.value })} aria-label={t('models.provider')}>
-            {providers.map((p) => <option key={p} value={p}>{p}</option>)}
+            {providers.map((p) => <option key={p} value={p}>{providerName[p]}</option>)}
           </select>
           <input className={cn(field, 'min-w-[180px] flex-1 font-mono')} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })}
             placeholder={draft.provider === 'ollama' ? 'qwen3:8b' : draft.provider === 'anthropic' ? 'claude-sonnet-5' : 'nome-do-modelo'} aria-label={t('models.name')} />

@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, CalendarDays, Check, Cpu, Mail, MessageCircle, Sparkles } from 'lucide-react'
+import { Bot, CalendarDays, Check, ChevronRight, Cpu, Mail, MessageCircle, Sparkles } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button, Card } from '../components/ui'
-import { Catalog } from '../components/Catalog'
+import { Catalog, KindList, channelKinds } from '../components/Catalog'
 import { TelegramBots } from '../components/TelegramBots'
 import { api, type Connection } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -13,12 +14,30 @@ export function Connections() {
   const q = useQuery({ queryKey: ['connections'], queryFn: api.connections, refetchInterval: (d) => (d.state.data?.some((c) => c.kind === 'telegram' && c.configured && !c.paired) ? 3000 : false) })
   const by = (k: Connection['kind']) => q.data?.find((c) => c.kind === k)
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="mb-1 text-[22px] font-semibold tracking-tight">{t('nav.connections')}</h1>
-      <p className="mb-6 text-sm text-ink-2">{t('conn.subtitle')}</p>
-      <div className="space-y-4">
+    <div className="mx-auto max-w-4xl space-y-10">
+      <div>
+        <h1 className="mb-1 text-[22px] font-semibold tracking-tight">{t('nav.connections')}</h1>
+        <p className="text-sm text-ink-2">{t('conn.subtitle')}</p>
+      </div>
+      <Section title={t('conn.secChat')} text={t('conn.secChatText')}>
         <Telegram c={by('telegram')} />
-        <TelegramBots />
+        <TelegramBots telegram={!!by('telegram')?.configured} />
+        <Setup
+          kind="whatsapp"
+          icon={<MessageCircle size={18} />}
+          title={t('conn.whatsapp')}
+          c={by('whatsapp')}
+          fields={[
+            { name: 'token', label: t('conn.whatsappToken'), placeholder: 'EAAG…', secret: true },
+            { name: 'phone_id', label: t('conn.whatsappPhone'), placeholder: '1234567890' },
+            { name: 'app_secret', label: t('conn.whatsappSecret'), placeholder: t('conn.whatsappSecretPlaceholder'), secret: true },
+          ]}
+          help={fill(t('conn.whatsappHelp'), { link: <a className="underline" href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer">developers.facebook.com</a> })}
+          extra={<WhatsAppSteps c={by('whatsapp')} />}
+        />
+        <KindList include={channelKinds} />
+      </Section>
+      <Section title={t('conn.secAccounts')} text={t('conn.secAccountsText')}>
         <GoogleSignIn connected={!!by('mail')?.detail?.includes('(Google)')} />
         <Setup
           kind="mail"
@@ -40,19 +59,8 @@ export function Connections() {
           fields={[{ name: 'feeds', label: t('conn.calendarFeeds'), placeholder: 'https://calendar.google.com/calendar/ical/…/basic.ics', multiline: true, secret: true }]}
           help={t('conn.calendarHelp')}
         />
-        <Setup
-          kind="whatsapp"
-          icon={<MessageCircle size={18} />}
-          title={t('conn.whatsapp')}
-          c={by('whatsapp')}
-          fields={[
-            { name: 'token', label: t('conn.whatsappToken'), placeholder: 'EAAG…', secret: true },
-            { name: 'phone_id', label: t('conn.whatsappPhone'), placeholder: '1234567890' },
-            { name: 'app_secret', label: t('conn.whatsappSecret'), placeholder: t('conn.whatsappSecretPlaceholder'), secret: true },
-          ]}
-          help={fill(t('conn.whatsappHelp'), { link: <a className="underline" href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer">developers.facebook.com</a> })}
-          extra={<WhatsAppSteps c={by('whatsapp')} />}
-        />
+      </Section>
+      <Section title={t('conn.secBrain')} text={t('conn.secBrainText')}>
         <Setup
           kind="jev"
           icon={<Sparkles size={18} />}
@@ -69,9 +77,12 @@ export function Connections() {
             <div className="text-[15px] font-medium">Claude Code</div>
             <div className="text-[13px] text-ink-3">{by('claude')?.configured ? t('conn.claudeFound') : t('conn.claudeMissing')}</div>
           </div>
+          <Link to="/settings#modelos" className="flex items-center gap-1 text-[12.5px] text-ink-3 hover:text-ink">{t('conn.otherModels')} <ChevronRight size={14} /></Link>
         </Card>
-      </div>
-      <Catalog />
+      </Section>
+      <Section title={t('conn.secServices')} text={t('conn.secServicesText')}>
+        <Catalog />
+      </Section>
     </div>
   )
 }
@@ -237,5 +248,15 @@ function Setup({ kind, icon, title, c, fields, help, extra }: { kind: string; ic
         </form>
       )}
     </Card>
+  )
+}
+
+function Section({ title, text, children }: { title: string; text: string; children: ReactNode }) {
+  return (
+    <section aria-label={title}>
+      <h2 className="text-[16px] font-semibold tracking-tight">{title}</h2>
+      <p className="mb-3 text-[13px] text-ink-3">{text}</p>
+      <div className="space-y-3">{children}</div>
+    </section>
   )
 }

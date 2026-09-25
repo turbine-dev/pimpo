@@ -55,7 +55,7 @@ export function Receipts() {
       <div className="space-y-6">
         {byDay.map(([day, items]) => (
           <section key={day}>
-            <h2 className="mb-2 text-[12.5px] font-medium capitalize text-ink-3">{day}</h2>
+            <h2 className="mb-2 text-[12.5px] font-medium text-ink-3">{day.charAt(0).toUpperCase() + day.slice(1)}</h2>
             <Card className="divide-y divide-line">
               {items.map((r) => (
                 <Row key={r.id} r={r} />
