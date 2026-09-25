@@ -54,6 +54,8 @@
   "msg.photo.ask": "Schau, was damit zu tun ist",
   "msg.photo.failed": "📷 Das Foto konnte nicht gelesen werden: {error}",
   "msg.photo.text": "Text im Foto:",
+  "msg.repo.changes_one": "📦 {count} Routine hat sich in deinem Repository geändert. Die Tests sind schon gelaufen; prüfe und aktiviere sie unter Routinen › Repository.",
+  "msg.repo.changes_other": "📦 {count} Routinen haben sich in deinem Repository geändert. Die Tests sind schon gelaufen; prüfe und aktiviere sie unter Routinen › Repository.",
   "msg.request.started": "Verstanden. Wird jetzt erledigt; das Ergebnis kommt hier an. 🔎",
   "msg.routine.created": "Routine „{name}“ erstellt. Nächste Ausführung: {next}.",
   "msg.routine.failed": "⚠️ {name} wurde nicht ausgeführt.\n{error}\n\nDie Routine bleibt pausiert, bis du entscheidest.",

@@ -9,7 +9,8 @@ import { mockFetch, wrap } from './helpers'
 afterEach(() => vi.unstubAllGlobals())
 
 const now = new Date()
-const later = new Date(now.getTime() + 60 * 60 * 1000)
+// Later today, even when the test runs close to midnight.
+const later = new Date(Math.min(now.getTime() + 60 * 60 * 1000, new Date(now).setHours(23, 59, 59, 0)))
 
 describe('Home', () => {
   it('shows the day and starts a chat', async () => {

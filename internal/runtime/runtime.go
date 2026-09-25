@@ -48,6 +48,10 @@ type Manifest struct {
 	// Watch, when set, runs the routine when a read capability returns
 	// items it has not seen, instead of (or besides) the schedule.
 	Watch *Watch `json:"watch,omitempty"`
+	// Uses are other routines, by id, this one may run as helpers with
+	// routines.run(id, params). Everything they touch must also be in
+	// Capabilities: a helper never widens what the owner approved.
+	Uses []string `json:"uses,omitempty"`
 }
 
 // Watch is what a routine waits for: Zodim calls Capability with Args
@@ -108,12 +112,42 @@ type Options struct {
 	Params map[string]any
 	// Event is what woke a watching routine: {items: [...]}.
 	Event any
+	// State is what the routine kept from earlier runs (state.get/set).
+	State map[string]any
+	// Library finds the routines listed in the manifest's uses.
+	Library func(ctx context.Context, id string) (Helper, error)
+	// ID is the running routine's id, so it cannot end up running itself.
+	ID string
+
+	chain []string
+}
+
+// Helper is a routine another one runs: its code, manifest, parameters
+// and kept state (which it can read but not change when run as a helper).
+type Helper struct {
+	Code     string
+	Manifest Manifest
+	Params   map[string]any
+	State    map[string]any
 }
 
 type Result struct {
 	Logs  []string
 	Calls int
+	// State is the routine's kept state after the run; it is saved only
+	// when the run succeeds, so a failure never leaves half an update.
+	State map[string]any
+	// Changed reports whether state.set or state.delete was called.
+	Changed bool
+	// Return is what run() resolved to, for routines used as helpers.
+	Return any
 }
+
+// MaxState bounds what a routine keeps between runs, as JSON.
+const MaxState = 64 << 10
+
+// MaxDepth bounds routines running routines.
+const MaxDepth = 3
 
 var ErrTimeout = errors.New("routine ran past its time limit")
 
@@ -160,6 +194,11 @@ func (m Manifest) Validate() error {
 			if _, err := time.ParseDuration(w.Every); err != nil {
 				return fmt.Errorf("watch.every %q is not a duration like 10m", w.Every)
 			}
+		}
+	}
+	for _, id := range m.Uses {
+		if strings.TrimSpace(id) == "" {
+			return errors.New("uses lists an empty routine id")
 		}
 	}
 	seen := map[string]bool{}
@@ -307,6 +346,71 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 	}
 	vm.Set("log", func(msg string) { res.Logs = append(res.Logs, msg) })
 
+	// state keeps small values between runs. Values are copied through
+	// JSON, so what is kept is exactly what will come back next time.
+	res.State = map[string]any{}
+	for k, v := range opt.State {
+		res.State[k] = v
+	}
+	st := vm.NewObject()
+	vm.Set("state", st)
+	bind(st, "get", func(call goja.FunctionCall) goja.Value {
+		v, ok := res.State[call.Argument(0).String()]
+		if !ok {
+			return goja.Null()
+		}
+		return toJS(vm, v)
+	})
+	bind(st, "set", func(call goja.FunctionCall) goja.Value {
+		key := call.Argument(0).String()
+		b, err := json.Marshal(call.Argument(1).Export())
+		if err != nil || key == "" {
+			fail(fmt.Errorf("state.set(%q): the value must be plain data", key))
+		}
+		var v any
+		json.Unmarshal(b, &v)
+		next := map[string]any{}
+		for k, old := range res.State {
+			next[k] = old
+		}
+		next[key] = v
+		if all, _ := json.Marshal(next); len(all) > MaxState {
+			fail(fmt.Errorf("state would exceed %d KB; keep less between runs", MaxState>>10))
+		}
+		res.State, res.Changed = next, true
+		return goja.Undefined()
+	})
+	bind(st, "delete", func(call goja.FunctionCall) goja.Value {
+		delete(res.State, call.Argument(0).String())
+		res.Changed = true
+		return goja.Undefined()
+	})
+	bind(st, "keys", func(goja.FunctionCall) goja.Value {
+		keys := make([]any, 0, len(res.State))
+		for k := range res.State {
+			keys = append(keys, k)
+		}
+		return vm.ToValue(keys)
+	})
+
+	if len(m.Uses) > 0 {
+		routines := vm.NewObject()
+		vm.Set("routines", routines)
+		bind(routines, "run", func(call goja.FunctionCall) goja.Value {
+			id := call.Argument(0).String()
+			var params map[string]any
+			if p, ok := call.Argument(1).Export().(map[string]any); ok {
+				params = p
+			}
+			out, calls, err := runHelper(ctx, m, id, params, host, opt, opt.MaxCalls-res.Calls)
+			res.Calls += calls
+			if err != nil {
+				fail(fmt.Errorf("routines.run(%q): %w", id, err))
+			}
+			return toJS(vm, out)
+		})
+	}
+
 	timer := time.AfterFunc(opt.Timeout, func() { vm.Interrupt(ErrTimeout) })
 	defer timer.Stop()
 	stop := context.AfterFunc(ctx, func() { vm.Interrupt(ctx.Err()) })
@@ -323,6 +427,7 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 	if err != nil {
 		return *res, jsError(err)
 	}
+	res.Return = v.Export()
 	if p, ok := v.Export().(*goja.Promise); ok {
 		switch p.State() {
 		case goja.PromiseStateRejected:
@@ -330,8 +435,61 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 		case goja.PromiseStatePending:
 			return *res, errors.New("routine awaited something that never resolved")
 		}
+		res.Return = p.Result().Export()
 	}
 	return *res, nil
+}
+
+// runHelper runs a routine listed in uses, with the caller's host. It may
+// only touch what the caller declares, may not start a cycle, and does not
+// change its own kept state.
+func runHelper(ctx context.Context, caller Manifest, id string, params map[string]any, host Host, opt Options, calls int) (any, int, error) {
+	listed := false
+	for _, u := range caller.Uses {
+		listed = listed || u == id
+	}
+	if !listed {
+		return nil, 0, fmt.Errorf("%s is not in this routine's uses", id)
+	}
+	if opt.Library == nil {
+		return nil, 0, errors.New("no routines are available here")
+	}
+	chain := opt.chain
+	if len(chain) == 0 && opt.ID != "" {
+		chain = []string{opt.ID}
+	}
+	for _, c := range chain {
+		if c == id {
+			return nil, 0, fmt.Errorf("routines would run each other in a loop (%s)", strings.Join(append(chain, id), " → "))
+		}
+	}
+	if len(chain) >= MaxDepth {
+		return nil, 0, fmt.Errorf("routines may run others only %d levels deep", MaxDepth)
+	}
+	h, err := opt.Library(ctx, id)
+	if err != nil {
+		return nil, 0, err
+	}
+	allowed := map[string]bool{}
+	for _, c := range caller.Capabilities {
+		allowed[c] = true
+	}
+	for _, c := range h.Manifest.Capabilities {
+		if !allowed[c] {
+			return nil, 0, fmt.Errorf("%s needs %s, which this routine does not declare", id, c)
+		}
+	}
+	merged := map[string]any{}
+	for k, v := range h.Params {
+		merged[k] = v
+	}
+	for k, v := range params {
+		merged[k] = v
+	}
+	sub := Options{Now: opt.Now, Zone: opt.Zone, Timeout: opt.Timeout, MaxCalls: max(calls, 1), Params: merged,
+		State: h.State, Library: opt.Library, chain: append(append([]string{}, chain...), id)}
+	res, err := Run(ctx, h.Code, h.Manifest, host, sub)
+	return res.Return, res.Calls, err
 }
 
 func exportArgs(call goja.FunctionCall) any {

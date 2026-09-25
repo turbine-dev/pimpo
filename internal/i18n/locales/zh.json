@@ -54,6 +54,8 @@
   "msg.photo.ask": "看看这个该怎么处理",
   "msg.photo.failed": "📷 无法读取照片：{error}",
   "msg.photo.text": "照片中的文字：",
+  "msg.repo.changes_one": "📦 你的仓库中有 {count} 个例程发生了变化。测试已运行；请在 例程 › 仓库 中查看并启用。",
+  "msg.repo.changes_other": "📦 你的仓库中有 {count} 个例程发生了变化。测试已运行；请在 例程 › 仓库 中查看并启用。",
   "msg.request.started": "收到，正在处理，结果会发到这里。🔎",
   "msg.routine.created": "例程“{name}”已创建。下次运行：{next}。",
   "msg.routine.failed": "⚠️ {name} 没有运行。\n{error}\n\n在你做出决定之前，该例程会保持暂停。",

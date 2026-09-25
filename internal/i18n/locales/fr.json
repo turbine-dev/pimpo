@@ -54,6 +54,8 @@
   "msg.photo.ask": "Regarde ce qu’il faut faire avec ceci",
   "msg.photo.failed": "📷 Impossible de lire la photo : {error}",
   "msg.photo.text": "Texte de la photo :",
+  "msg.repo.changes_one": "📦 {count} routine a changé dans votre dépôt. Les tests ont déjà tourné ; vérifiez-la et activez-la dans Routines › Dépôt.",
+  "msg.repo.changes_other": "📦 {count} routines ont changé dans votre dépôt. Les tests ont déjà tourné ; vérifiez-les et activez-les dans Routines › Dépôt.",
   "msg.request.started": "C’est noté. C’est en cours ; le résultat arrivera ici. 🔎",
   "msg.routine.created": "Routine « {name} » créée. Prochaine exécution : {next}.",
   "msg.routine.failed": "⚠️ {name} ne s’est pas exécutée.\n{error}\n\nLa routine reste en pause jusqu’à ce que vous décidiez.",

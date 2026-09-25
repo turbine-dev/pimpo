@@ -54,6 +54,8 @@
   "msg.photo.ask": "これをどうすればいいか見て",
   "msg.photo.failed": "📷 写真を読み取れませんでした：{error}",
   "msg.photo.text": "写真内のテキスト：",
+  "msg.repo.changes_one": "📦 リポジトリでルーティンが {count} 件変更されました。テストは実行済みです。ルーティン › リポジトリ で確認して有効にしてください。",
+  "msg.repo.changes_other": "📦 リポジトリでルーティンが {count} 件変更されました。テストは実行済みです。ルーティン › リポジトリ で確認して有効にしてください。",
   "msg.request.started": "了解しました。今から取りかかります。結果はここに届きます。🔎",
   "msg.routine.created": "ルーティン「{name}」を作成しました。次回の実行：{next}。",
   "msg.routine.failed": "⚠️ {name} が実行されませんでした。\n{error}\n\n判断するまで、このルーティンは一時停止したままです。",

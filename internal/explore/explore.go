@@ -342,6 +342,9 @@ func (s *Service) Approve(ctx context.Context, id, actor string) (store.Routine,
 	if e.State != store.ExplorationReady || e.Trace == nil {
 		return store.Routine{}, fmt.Errorf("exploration is %s, not ready", e.State)
 	}
+	if s.Compiler.Helpers != nil {
+		ctx = routine.WithLibrary(ctx, s.Compiler.Helpers)
+	}
 	if failed := failedReads(e.Trace.Calls); failed != "" && e.Routine == "" {
 		return store.Routine{}, fmt.Errorf("nothing could be read (%s), so a routine would only repeat the error; fix it and ask again", failed)
 	}

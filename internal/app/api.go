@@ -183,7 +183,22 @@ func (a *App) getRoutine(w http.ResponseWriter, r *http.Request) {
 	}
 	versions, _ := a.Store.Versions(ctx, id)
 	runs, _ := a.Store.Runs(ctx, id, 50)
-	server.WriteJSON(w, 200, map[string]any{"summary": a.summary(ctx, rt), "routine": rt.Body, "versions": versions, "runs": runs})
+	server.WriteJSON(w, 200, map[string]any{"summary": a.summary(ctx, rt), "routine": rt.Body, "versions": versions, "runs": runs,
+		"state": a.Scheduler.State(ctx, id), "used_by": a.usedBy(ctx, id)})
+}
+
+// usedBy lists the routines that run this one as a helper.
+func (a *App) usedBy(ctx context.Context, id string) []string {
+	out := []string{}
+	all, _ := a.Store.Routines(ctx)
+	for _, r := range all {
+		for _, u := range r.Body.Manifest.Uses {
+			if u == id {
+				out = append(out, r.ID)
+			}
+		}
+	}
+	return out
 }
 
 func notFound(err error) error {
@@ -208,6 +223,11 @@ func (a *App) routineAction(w http.ResponseWriter, r *http.Request) {
 		run, runErr := a.Scheduler.RunNow(context.WithoutCancel(ctx), id, "owner")
 		server.WriteJSON(w, 200, map[string]any{"run": run, "error": errText(runErr)})
 		return
+	case "forget":
+		err = a.Scheduler.SaveState(ctx, id, nil)
+		if err == nil {
+			a.Events.Append(ctx, "routine.state.forgotten", actor(ctx), map[string]string{"routine": id})
+		}
 	case "pause":
 		err = a.Store.SetRoutineState(ctx, id, store.RoutinePaused)
 	case "resume":

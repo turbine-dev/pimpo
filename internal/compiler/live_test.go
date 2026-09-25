@@ -5,12 +5,15 @@ package compiler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	_ "github.com/denerFernandes/zodim/internal/connector/services"
 	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/runtime"
 	"github.com/denerFernandes/zodim/internal/trace"
 )
 
@@ -98,5 +101,68 @@ func TestLiveRealTraceCompiles(t *testing.T) {
 	t.Logf("code:\n%s\ntests: %s", last.Routine.Code, b)
 	if !last.Accepted() {
 		t.Fatal("rejected")
+	}
+}
+
+// "Only when it changed" compiles to a routine that keeps state.
+func TestLiveStateIsCompiled(t *testing.T) {
+	tr := trace.Trace{
+		ID: "dolar", Request: "Todo dia às 9h me avise no Telegram só se o dólar subiu desde a última vez que você olhou", Now: "2026-09-25T09:00:00-03:00",
+		Calls: []trace.Call{
+			{Capability: "http.getJSON", Args: json.RawMessage(`"https://api.frankfurter.app/latest?from=USD&to=BRL"`), Result: json.RawMessage(`{"amount":1,"base":"USD","date":"2026-09-25","rates":{"BRL":5.41}}`)},
+		},
+		Outcome: "Guardar a cotação de cada dia e mandar mensagem só quando for maior que a anterior; hoje não houve mensagem porque não havia cotação anterior",
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	atts, err := Compiler{Model: llm.ClaudeCLI{}, Attempts: 3}.Compile(ctx, tr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := atts[len(atts)-1]
+	for i, a := range atts {
+		t.Logf("attempt %d ($%.3f): %v %s", i+1, a.CostUSD, a.Problems(), a.Invalid)
+	}
+	t.Logf("code:\n%s", last.Routine.Code)
+	if !last.Accepted() || !strings.Contains(last.Routine.Code, "state.") {
+		t.Fatal("not a stateful routine")
+	}
+}
+
+// A request that builds on an installed routine reuses it.
+func TestLiveUsesAnotherRoutine(t *testing.T) {
+	agenda := runtime.Helper{Manifest: runtime.Manifest{Capabilities: []string{"calendar.events"}},
+		Code: `async function run() { const evs = await calendar.events({from: dates.today(), to: dates.startOfDay(now(), 1)}); return evs.map(e => ({title: e.title, start: e.start})); }`}
+	tr := trace.Trace{
+		ID: "brief", Request: "Todo dia às 7h me manda quantos compromissos tenho hoje e o primeiro deles, usando a minha rotina agenda-hoje", Now: "2026-09-25T07:00:00-03:00",
+		Calls: []trace.Call{
+			{Capability: "calendar.events", Args: json.RawMessage(`{"from":"2026-09-25T00:00:00-03:00","to":"2026-09-26T00:00:00-03:00"}`), Result: json.RawMessage(`[{"title":"Dentista","start":"2026-09-25T10:00:00-03:00"},{"title":"Reunião","start":"2026-09-25T15:00:00-03:00"}]`)},
+			{Capability: "notify.send", Args: json.RawMessage(`{"text":"Hoje: 2 compromissos. Primeiro: Dentista às 10:00"}`), Result: json.RawMessage(`{"ok":true}`)},
+		},
+		Outcome: "Uma mensagem com o total de compromissos de hoje e o primeiro",
+	}
+	c := Compiler{Model: llm.ClaudeCLI{}, Attempts: 3,
+		Installed: func(context.Context) []Installed {
+			return []Installed{{ID: "agenda-hoje", Name: "Agenda de hoje", Description: "Retorna os compromissos de hoje como [{title, start}] (não envia nada)", Capabilities: []string{"calendar.events"}}}
+		},
+		Helpers: func(_ context.Context, id string) (runtime.Helper, error) {
+			if id == "agenda-hoje" {
+				return agenda, nil
+			}
+			return runtime.Helper{}, errors.New("no such routine")
+		}}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	atts, err := c.Compile(ctx, tr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := atts[len(atts)-1]
+	for i, a := range atts {
+		t.Logf("attempt %d ($%.3f): %v %s", i+1, a.CostUSD, a.Problems(), a.Invalid)
+	}
+	t.Logf("uses %v\ncode:\n%s", last.Routine.Manifest.Uses, last.Routine.Code)
+	if !last.Accepted() || len(last.Routine.Manifest.Uses) != 1 || !strings.Contains(last.Routine.Code, "routines.run") {
+		t.Fatal("did not reuse the routine")
 	}
 }

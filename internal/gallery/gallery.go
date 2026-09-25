@@ -120,6 +120,10 @@ func (ix Index) Verify(ctx context.Context, e Entry) Report {
 	} else if sig, err := base64.StdEncoding.DecodeString(e.Signature); err != nil || !ed25519.Verify(ed25519.PublicKey(key), []byte(e.signed()), sig) {
 		fail("the signature does not match")
 	}
+	if len(e.Routine.Manifest.Uses) > 0 {
+		// Another owner's routine ids mean nothing here.
+		fail("it runs other routines (%s), which a gallery routine cannot", strings.Join(e.Routine.Manifest.Uses, ", "))
+	}
 	for _, t := range e.Routine.Tests {
 		if out := routine.Check(ctx, e.Routine, t.Name, t.Scenario); !out.Passed {
 			fail("test %q fails: %s", t.Name, strings.Join(out.Problems, "; "))

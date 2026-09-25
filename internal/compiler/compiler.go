@@ -21,6 +21,19 @@ type Compiler struct {
 	// Attempts is how many times to try, feeding problems back after a
 	// failure. The first attempt is what the proof measures.
 	Attempts int
+	// Installed lists the owner's routines a new one may build on, and
+	// Helpers loads one to run it in the checks.
+	Installed func(ctx context.Context) []Installed
+	Helpers   func(ctx context.Context, id string) (runtime.Helper, error)
+}
+
+// Installed is a routine the compiler may reuse with routines.run.
+type Installed struct {
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	Description  string          `json:"description"`
+	Capabilities []string        `json:"capabilities"`
+	Params       []runtime.Param `json:"params,omitempty"`
 }
 
 type Attempt struct {
@@ -65,8 +78,15 @@ func (c Compiler) Compile(ctx context.Context, t trace.Trace) ([]Attempt, error)
 	var out []Attempt
 	var feedback []string
 	var previous []byte
+	var installed []Installed
+	if c.Installed != nil {
+		installed = c.Installed(ctx)
+	}
+	if c.Helpers != nil {
+		ctx = routine.WithLibrary(ctx, c.Helpers)
+	}
 	for i := 0; i < attempts; i++ {
-		resp, err := generate(ctx, c.Model, llm.Request{System: system, Prompt: prompt(t, previous, feedback), Schema: schema, MaxCostUSD: 2})
+		resp, err := generate(ctx, c.Model, llm.Request{System: system, Prompt: prompt(t, previous, feedback) + installedList(installed), Schema: schema, MaxCostUSD: 2})
 		a := Attempt{CostUSD: resp.CostUSD}
 		if err != nil {
 			return out, fmt.Errorf("compile %s: %w", t.ID, err)
@@ -163,15 +183,18 @@ Rules for the code:
 - Objective decisions (dates, amounts, senders, keywords the user named) are plain code.
 - Text the agent COMPOSED from an item's content (a one-line summary, what an email asks for, a suggested reply) cannot be plain code: declare it in manifest.writes as {name: "instruction in the request's language"} and call await write.<name>(item), which returns {text}. A small model writes it each run, so use writes only for composed text, never for facts plain code can copy (sender, subject, date, amount), and call it only for the items that will be sent. Copying fields is always better than writing.
 - Keep messages concise and readable. Send nothing when there is nothing worth sending, unless the user asked for a message every time.
+- state keeps small plain data between runs (up to 64 KB): state.get(key) -> value or null, state.set(key, value), state.delete(key), state.keys(). Use it only when the request compares with earlier runs or must not repeat itself ("tell me if the price dropped since yesterday", "only when it changed", "a weekly total", "don't send the same item twice"). It is saved only when the run succeeds. Keep it small: latest values, short lists (slice to the last N), not whole API responses.
+- routines.run(id, params) runs another installed routine (listed in the prompt) and returns what its run() returns; most existing routines return nothing and only send messages. Use it when the request builds on a routine the owner already has, and declare the id in manifest.uses. Everything the other routine touches must also be in your capabilities.
 
 Rules for the manifest:
 - schedule: a 5-field cron expression matching the request, or "" when the routine reacts to something new (see watch).
 - watch: when the request is about reacting to something new ("when an email from X arrives", "whenever this feed has a new post", "if the front door opens", "me avise quando chegar…"), declare {capability, args, key, every} instead of a schedule. capability is the read capability you call to find the items (also listed in capabilities); args are its arguments, with {{param}} for values that come from params; key is the field that identifies one item (id, link, entity_id); every is how often to check ("10m"; at least "5m", "30m" or "1h" when minutes do not matter). Zodim calls it without a model and runs the routine only with the items it has not seen, as event.items (each item shaped like that capability's results). Work on event.items and do not call the watched capability again. Tests of such a routine set event: {items: [...]} with new fictional items, and one test should have items that must not produce a message.
-- locale: the language the user wrote the request in, "pt-BR" or "en-US". dates.format uses it for weekday and month names, so write messages and test expectations in that language.
+- locale: the language the user wrote the request in: "pt-BR", "en-US", "es-ES", "fr-FR", "de-DE", "it-IT", "ja-JP", "zh-CN", "ko-KR" or "ru-RU". dates.format uses it for weekday and month names, so write messages and test expectations in that language.
 - capabilities: the minimum set the code calls. Scoped capabilities need the host, e.g. "http.getJSON:api.open-meteo.com". The host is fixed; values in the URL's query (latitude, longitude, currency) can come from params.
+- uses: ids of installed routines this one runs with routines.run (omit when none).
 - params: each {name (JavaScript identifier), label (short, in the request's language), type, default, options, help}. Types: text, number, boolean, date (YYYY-MM-DD), time (HH:MM), location (default {"name","latitude","longitude","timezone"}), select and multiselect (with options), email, destinations. Every param except destinations has a default taken from the request.
 
-Rules for tests: write 2 or 3 scenarios with NEW fictional data (not the recording) covering the normal case and an edge case (nothing to report, several items, an item that must be excluded). Each has now, responses (canned results for read calls, in the order the code makes them), optional writes (canned texts: write name -> identifying substring of the item -> text), optional params (values for this scenario; at least one test should change a param from its default), judgments (labels for the new items: judgment name -> {identifying substring of the item: probability}) and expect (checks on write calls: capability, optional count, contains, not_contains). Expectations must follow from the data and the request. Dates in tests: write now and every timestamp in UTC (ending in Z), and keep items at least 3 hours inside or outside any time window, so an item's side of the line never depends on time-zone arithmetic.`
+Rules for tests: write 2 or 3 scenarios with NEW fictional data (not the recording) covering the normal case and an edge case (nothing to report, several items, an item that must be excluded). Each has now, responses (canned results for read calls, in the order the code makes them), optional writes (canned texts: write name -> identifying substring of the item -> text), optional params (values for this scenario; at least one test should change a param from its default), judgments (labels for the new items: judgment name -> {identifying substring of the item: probability}), optional state (what earlier runs kept) and expect_state (key -> value the run must keep), and expect (checks on write calls: capability, optional count, contains, not_contains). A routine that uses state needs a test with no earlier state and one with state that changes the outcome. The canned responses also feed the routines it uses, in call order. Expectations must follow from the data and the request. Dates in tests: write now and every timestamp in UTC (ending in Z), and keep items at least 3 hours inside or outside any time window, so an item's side of the line never depends on time-zone arithmetic.`
 
 var schema = json.RawMessage(`{
  "type":"object","additionalProperties":false,
@@ -186,7 +209,8 @@ var schema = json.RawMessage(`{
     "capabilities":{"type":"array","items":{"type":"string"}},
     "judgments":{"type":"object","additionalProperties":{"type":"string"}},
     "writes":{"type":"object","additionalProperties":{"type":"string"}},
-    "locale":{"type":"string","enum":["pt-BR","en-US"]},
+    "locale":{"type":"string","enum":["pt-BR","en-US","es-ES","fr-FR","de-DE","it-IT","ja-JP","zh-CN","ko-KR","ru-RU"]},
+    "uses":{"type":"array","items":{"type":"string"}},
     "params":{"type":"array","items":{"type":"object","required":["name","label","type"],"properties":{
       "name":{"type":"string"},"label":{"type":"string"},
       "type":{"type":"string","enum":["text","number","boolean","date","time","location","select","multiselect","email","destinations"]},
@@ -197,6 +221,8 @@ var schema = json.RawMessage(`{
     "now":{"type":"string"},
     "params":{"type":"object"},
     "event":{"type":"object","properties":{"items":{"type":"array"}}},
+    "state":{"type":"object"},
+    "expect_state":{"type":"object"},
     "responses":{"type":"array","items":{"type":"object","required":["capability","result"],"properties":{"capability":{"type":"string"},"result":{}}}},
     "judgments":{"type":"object","additionalProperties":{"type":"object","additionalProperties":{"type":"number"}}},
     "writes":{"type":"object","additionalProperties":{"type":"object","additionalProperties":{"type":"string"}}},
@@ -272,6 +298,27 @@ func prompt(t trace.Trace, previous []byte, feedback []string) string {
 			b.WriteString("- " + f + "\n")
 		}
 		b.WriteString("\nFor each failing test, first work out from its data what the routine should send. If the code is right and the test's expectation is wrong (for example, an item that is really outside the time window), fix the test; otherwise fix the code. Change only what is wrong.\n")
+	}
+	return b.String()
+}
+
+// installedList tells the model which routines it may build on.
+func installedList(list []Installed) string {
+	if len(list) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\nInstalled routines you may run with routines.run(id, params) (declare them in manifest.uses):\n")
+	for _, r := range list {
+		fmt.Fprintf(&b, "- %s: %s — %s; touches %s", r.ID, r.Name, r.Description, strings.Join(r.Capabilities, ", "))
+		if len(r.Params) > 0 {
+			var ps []string
+			for _, p := range r.Params {
+				ps = append(ps, p.Name)
+			}
+			fmt.Fprintf(&b, "; params %s", strings.Join(ps, ", "))
+		}
+		b.WriteString("\n")
 	}
 	return b.String()
 }

@@ -35,6 +35,16 @@ Ask for a reaction instead of a time ("me avise quando chegar e-mail da Ana", "q
 
 A routine can also write a little: "e me diga em uma frase o que ela pede", "sugira uma resposta". The part that must be composed is written by a small model (the one set for judgments) for each item, about a fraction of a cent each; everything that can be copied (sender, subject, date) stays plain code. Each text is checked against the daily limit first, shows up in **Atividade**, and treats the email as data, never as orders. What the routine then does with the text still passes your rules and approvals.
 
+## Routines that remember, and routines built from others
+
+A routine can keep small values between runs: yesterday's price, the items it already sent, a weekly total. Ask naturally ("only tell me if the dollar went up since last time") and the routine keeps what it needs. The routine's **Memória** tab shows what it kept and clears it; nothing is kept from a run that failed, and at most 64 KB.
+
+A new routine can also run a routine you already have and use what it returns ("every morning, count today's appointments using my agenda routine"). The new one must declare everything the other touches, so reusing a routine never widens what the owner approved; if the other routine later needs more, the new one stops and asks to be redone. Routines can use others up to three levels deep and never in a loop. Gallery routines cannot use others, since your routines do not exist on other machines.
+
+## Routines in a repository
+
+**Rotinas › Repositório** keeps your routines as files in a folder you choose, ideally a git repository: `routines/<id>/routine.js` (the code), `routine.json` (name, description, manifest) and `tests.json`. **Enviar rotinas para a pasta** writes them and makes a local commit; **Publicar (git push)** sends them to the remote only when you click it. **Buscar mudanças** runs `git pull --ff-only` (a local edit is never overwritten) and lists every new or changed routine with its tests already run and what it would start being able to touch. Nothing is installed until you click **Instalar** or **Atualizar**, and it is checked again at that moment; a routine that fails its tests, or has none, cannot be installed. Zodim looks at the repository every 15 minutes and tells you once when something changed. Routines there can be reviewed in pull requests like any code.
+
 ## Changing a routine without code
 
 Every routine page starts with **Ajustes da rotina**:

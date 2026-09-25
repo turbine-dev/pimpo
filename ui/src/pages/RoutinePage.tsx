@@ -1,6 +1,6 @@
 import * as Tabs from '@radix-ui/react-tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Pause, Play, RotateCcw, Wrench } from 'lucide-react'
+import { ArrowLeft, Eraser, Pause, Play, RotateCcw, Wrench } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Code } from '../components/Code'
 import { capRisk, capabilityLabel } from '../components/RoutineCard'
@@ -21,7 +21,7 @@ export function RoutinePage() {
   const nav = useNavigate()
   const q = useQuery({ queryKey: ['routine', id], queryFn: () => api.routine(id) })
   const act = useMutation({
-    mutationFn: (a: 'run' | 'pause' | 'resume' | 'repair') => api.routineAction(id, a),
+    mutationFn: (a: 'run' | 'pause' | 'resume' | 'repair' | 'forget') => api.routineAction(id, a),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['routine', id] })
       qc.invalidateQueries({ queryKey: ['routines'] })
@@ -29,8 +29,10 @@ export function RoutinePage() {
     },
   })
   if (!q.data) return q.error ? <div className="mx-auto max-w-5xl text-sm text-danger">{q.error.message}</div> : <PageSkeleton />
-  const { summary: s, routine: r, versions, runs } = q.data
+  const { summary: s, routine: r, versions, runs, state = {}, used_by: usedBy = [] } = q.data
   const lastError = runs.find((x) => x.outcome === 'failed')?.error
+  const kept = Object.keys(state).length > 0
+  const remembers = kept || /\bstate\.(get|set)\(/.test(r.code)
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -87,6 +89,7 @@ export function RoutinePage() {
             ['code', t('routine.tab.code')],
             ['tests', t('routine.tab.tests', { n: r.tests.length })],
             ['caps', t('routine.tab.caps')],
+            ...(remembers ? [['memory', t('routine.tab.memory')]] : []),
             ['history', t('routine.tab.history', { n: versions.length })],
           ].map(([v, l]) => (
             <Tabs.Trigger key={v} value={v} className="-mb-px border-b-2 border-transparent px-3 py-2.5 text-[13.5px] text-ink-3 hover:text-ink data-[state=active]:border-ink data-[state=active]:font-medium data-[state=active]:text-ink">
@@ -160,7 +163,34 @@ export function RoutinePage() {
               <div className="text-[12.5px] text-ink-3">{t('routine.judgmentText', { question: q })}</div>
             </Card>
           ))}
+          {(r.manifest.uses?.length ?? 0) > 0 && (
+            <Card className="p-4">
+              <div className="text-[14px] font-medium">{t('routine.uses')}</div>
+              <div className="mt-1 flex flex-wrap gap-2 text-[13px]">
+                {r.manifest.uses!.map((u) => <Link key={u} to={`/routines/${u}`} className="rounded-md bg-sunken px-2 py-0.5 hover:text-accent">{u}</Link>)}
+              </div>
+              <div className="mt-2 text-[12.5px] text-ink-3">{t('routine.usesNote')}</div>
+            </Card>
+          )}
+          {usedBy.length > 0 && (
+            <Card className="p-4">
+              <div className="text-[14px] font-medium">{t('routine.usedBy')}</div>
+              <div className="mt-1 flex flex-wrap gap-2 text-[13px]">
+                {usedBy.map((u) => <Link key={u} to={`/routines/${u}`} className="rounded-md bg-sunken px-2 py-0.5 hover:text-accent">{u}</Link>)}
+              </div>
+            </Card>
+          )}
           <p className="pt-2 text-[12.5px] text-ink-3">{t('routine.capsNote')}</p>
+        </Tabs.Content>
+
+        <Tabs.Content value="memory" className="space-y-3">
+          <p className="text-[13px] text-ink-2">{t('routine.memoryText')}</p>
+          {kept ? <Code code={JSON.stringify(state, null, 2)} /> : <p className="text-sm text-ink-3">{t('routine.memoryEmpty')}</p>}
+          {kept && (
+            <Button variant="ghost" onClick={() => window.confirm(t('routine.forgetConfirm')) && act.mutate('forget')} disabled={act.isPending}>
+              <Eraser size={15} /> {t('routine.forget')}
+            </Button>
+          )}
         </Tabs.Content>
 
         <Tabs.Content value="history" className="space-y-3">

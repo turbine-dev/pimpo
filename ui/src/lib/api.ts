@@ -72,7 +72,7 @@ export type Scenario = {
 export type Routine = {
   name: string
   description: string
-  manifest: { schedule: string; capabilities: string[]; judgments?: Record<string, string>; locale?: string }
+  manifest: { schedule: string; capabilities: string[]; judgments?: Record<string, string>; locale?: string; uses?: string[] }
   code: string
   tests: ({ name: string } & Scenario)[]
 }
@@ -175,6 +175,9 @@ export class ApiError extends Error {
   }
 }
 
+export type RepoChange = { id: string; name: string; new: boolean; added: string[]; removed: string[]; tests: number; problems: string[]; hash: string }
+export type RepoView = { path: string; git: boolean; remote: boolean; head?: string; changes: RepoChange[]; broken: Record<string, string>; error?: string }
+
 export type Snapshot = { name: string; label: string; when: string; bytes: number }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -215,14 +218,20 @@ export const api = {
   setModelKey: (provider: string, key: string) => request<{ set: boolean }>('PUT', `/api/models/keys/${provider}`, { key }),
   testModel: (id: string) => request<{ ok: boolean; text: string; cost_usd: number }>('POST', '/api/models/test', { id }),
   system: () => request<SystemState>('GET', '/api/system'),
+  repo: () => request<RepoView>('GET', '/api/repo'),
+  setRepo: (path: string) => request<RepoView>('PUT', '/api/repo', { path }),
+  repoExport: () => request<{ written: number; commit?: string; view: RepoView }>('POST', '/api/repo/export'),
+  repoPull: () => request<RepoView>('POST', '/api/repo/pull'),
+  repoPush: () => request<{ pushed: boolean; view: RepoView }>('POST', '/api/repo/push'),
+  repoApply: (id: string) => request<{ applied: boolean; view: RepoView }>('POST', `/api/repo/apply/${id}`),
   snapshots: () => request<{ snapshots: Snapshot[]; staged?: string; available: boolean; version?: string }>('GET', '/api/snapshots'),
   createSnapshot: () => request<Snapshot>('POST', '/api/snapshots'),
   stageRestore: (name: string) => request<{ staged: string }>('POST', '/api/snapshots/restore', { name }),
   cancelRestore: () => request<{ staged: string }>('DELETE', '/api/snapshots/restore'),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
-  routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),
-  routineAction: (id: string, action: 'run' | 'pause' | 'resume' | 'repair') => request<{ run?: Run; error?: string; exploration?: string }>('POST', `/api/routines/${id}/${action}`),
+  routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[]; state: Record<string, unknown>; used_by: string[] }>('GET', `/api/routines/${id}`),
+  routineAction: (id: string, action: 'run' | 'pause' | 'resume' | 'repair' | 'forget') => request<{ run?: Run; error?: string; exploration?: string }>('POST', `/api/routines/${id}/${action}`),
   explorations: (state?: string) => request<Exploration[]>('GET', `/api/explorations${state ? `?state=${state}` : ''}`),
   exploration: (id: string) => request<{ exploration: Exploration; actions: VEvent<ActionRecord>[] }>('GET', `/api/explorations/${id}`),
   explore: (text: string) => request<{ id: string }>('POST', '/api/explorations', { request: text }),

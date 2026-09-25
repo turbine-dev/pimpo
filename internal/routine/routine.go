@@ -44,6 +44,19 @@ type Write struct {
 	Args       any    `json:"args"`
 }
 
+type libraryKey struct{}
+
+// WithLibrary lets checks run the routines a routine uses; without it a
+// routine with uses fails its checks.
+func WithLibrary(ctx context.Context, lib func(context.Context, string) (runtime.Helper, error)) context.Context {
+	return context.WithValue(ctx, libraryKey{}, lib)
+}
+
+func library(ctx context.Context) func(context.Context, string) (runtime.Helper, error) {
+	lib, _ := ctx.Value(libraryKey{}).(func(context.Context, string) (runtime.Helper, error))
+	return lib
+}
+
 // Check runs a routine against a scenario with canned responses and
 // verifies the writes it makes.
 func Check(ctx context.Context, r Routine, name string, s trace.Scenario) Outcome {
@@ -54,10 +67,19 @@ func Check(ctx context.Context, r Routine, name string, s trace.Scenario) Outcom
 	h := newScenarioHost(s)
 	h.now = now
 	out := Outcome{Scenario: name}
-	if _, err := runtime.Run(ctx, r.Code, r.Manifest, h, runtime.Options{Now: now, Timeout: 5 * time.Second, Params: s.Params, Event: s.Event}); err != nil {
+	res, err := runtime.Run(ctx, r.Code, r.Manifest, h, runtime.Options{Now: now, Timeout: 5 * time.Second, Params: s.Params, Event: s.Event, State: s.State, Library: library(ctx)})
+	if err != nil {
 		out.Problems = append(out.Problems, "run failed: "+err.Error())
 	}
 	out.Writes = h.writes
+	for key, want := range s.ExpectState {
+		got, ok := res.State[key]
+		if !ok {
+			out.Problems = append(out.Problems, fmt.Sprintf("state %q was not kept", key))
+		} else if string(mustJSON(got)) != string(mustJSON(Decode(mustJSON(want)))) {
+			out.Problems = append(out.Problems, fmt.Sprintf("state %q is %s, want %s", key, mustJSON(got), mustJSON(want)))
+		}
+	}
 	for _, e := range s.Expect {
 		out.Problems = append(out.Problems, verify(e, h.writes)...)
 	}
@@ -405,7 +427,7 @@ func Audit(ctx context.Context, r Routine) (used []string, problems []string) {
 		}
 		h := &auditHost{scenarioHost: newScenarioHost(t.Scenario), used: seen}
 		h.now = now
-		if _, err := runtime.Run(ctx, r.Code, wide, h, runtime.Options{Now: now, Timeout: 5 * time.Second, Params: t.Params}); err != nil && strings.Contains(err.Error(), "outside the manifest scope") {
+		if _, err := runtime.Run(ctx, r.Code, wide, h, runtime.Options{Now: now, Timeout: 5 * time.Second, Params: t.Params, State: t.State, Library: library(ctx)}); err != nil && strings.Contains(err.Error(), "outside the manifest scope") {
 			problems = append(problems, t.Name+": "+err.Error())
 		}
 	}
