@@ -61,4 +61,13 @@ describe('PhonePairing', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Desconectar Tablet' }))
     await waitFor(() => expect(calls.some((c) => c.method === 'DELETE' && c.url === '/api/devices/d1')).toBe(true))
   })
+  it('shows the one-click link when Tailscale needs HTTPS and Funnel', async () => {
+    const { PhonePairing } = await import('../components/PhonePairing')
+    mockFetch({
+      '/api/pairing': { base: '', devices: [] },
+      '/api/remote': { tailscale: { state: 'needs_funnel', auth_url: 'https://login.tailscale.com/f/funnel?node=n1' }, lan: { on: false } },
+    })
+    wrap(<PhonePairing />)
+    expect(await screen.findByRole('link', { name: 'Ativar HTTPS e Funnel' })).toHaveAttribute('href', 'https://login.tailscale.com/f/funnel?node=n1')
+  })
 })

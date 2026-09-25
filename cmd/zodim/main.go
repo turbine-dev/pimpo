@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/denerFernandes/zodim/internal/app"
+	"github.com/denerFernandes/zodim/internal/desktop"
 	"github.com/denerFernandes/zodim/internal/event"
 	"github.com/denerFernandes/zodim/internal/snapshot"
 	"github.com/denerFernandes/zodim/internal/vault"
@@ -108,6 +109,9 @@ func serve(args []string) error {
 	defer store.Close()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if os.Getenv("ZODIM_DESKTOP_NOTIFY") != "" {
+		go desktop.ShellPath()
+	}
 	if os.Getenv("ZODIM_EXIT_WITH_PARENT") != "" {
 		go exitWithParent(ctx, stop)
 	}

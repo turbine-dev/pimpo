@@ -30,8 +30,9 @@ func (f *tsFake) Login(context.Context) error {
 	f.mu.Unlock()
 	return nil
 }
-func (f *tsFake) ListenFunnel() (net.Listener, error) { return net.Listen("tcp", "127.0.0.1:0") }
-func (f *tsFake) Close() error                        { return nil }
+func (f *tsFake) Funnel(context.Context) (bool, string, error) { return true, "", nil }
+func (f *tsFake) ListenFunnel() (net.Listener, error)          { return net.Listen("tcp", "127.0.0.1:0") }
+func (f *tsFake) Close() error                                 { return nil }
 
 func TestPhoneLinksWithTailscaleAndHome(t *testing.T) {
 	ta := newApp(t, weatherAgent, &llm.Fake{})

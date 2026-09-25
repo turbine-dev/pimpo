@@ -655,4 +655,6 @@ export const en: Record<Key, string> = {
   'phone.other': 'Use another address',
   'phone.needAccess': 'Turn on one of the options above to create the code.',
   'phone.both': 'The phone tries the home address first and, away from home, uses the Tailscale link.',
+  'phone.tsFunnel': 'Turn on HTTPS and Funnel',
+  'phone.tsFunnelHint': 'One step left in your Tailscale account: allow public HTTPS links. It is one click; then come back here.',
 }

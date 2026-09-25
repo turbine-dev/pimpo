@@ -655,6 +655,8 @@ export const pt = {
   'phone.other': 'Usar outro endereço',
   'phone.needAccess': 'Ligue uma das opções acima para gerar o código.',
   'phone.both': 'O celular tenta primeiro o endereço de casa e, fora de casa, usa o link do Tailscale.',
+  'phone.tsFunnel': 'Ativar HTTPS e Funnel',
+  'phone.tsFunnelHint': 'Falta um passo na sua conta Tailscale: permitir links públicos com HTTPS. É um clique; depois volte aqui.',
 }
 
 export type Key = keyof typeof pt
