@@ -25,4 +25,10 @@ describe('Memory search and organizing', () => {
     expect(await screen.findByText(/1 fato repetido juntado/)).toBeInTheDocument()
     expect(screen.getByText('“Alergia a amendoim” → “Tenho alergia a amendoim”')).toBeInTheDocument()
   })
+  it('opens before memory was ever organized', async () => {
+    mockFetch({ '/api/memory': { facts: [fact('1', 'Academia às terças')], history: [] }, '/api/people': [], '/api/memory/organized': { checked: 0, merged: null } })
+    wrap(<Memory />)
+    expect(await screen.findByText('Academia às terças')).toBeInTheDocument()
+    expect(screen.queryByText(/Organizada/)).not.toBeInTheDocument()
+  })
 })

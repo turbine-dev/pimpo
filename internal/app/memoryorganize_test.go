@@ -36,6 +36,9 @@ func TestOrganizeMergesDuplicatesOnly(t *testing.T) {
 	m.Add("Reunião com a Ana dia 19", "agenda", "email", memory.Low)
 	m.Add("Minha irmã se chama Ana", "família", "owner", memory.High)
 	before, _ := m.History(1)
+	if _, never := ta.do(t, "GET", "/api/memory/organized", nil); never["at"] != nil || never["merged"] == nil {
+		t.Fatalf("never organized: %v", never)
+	}
 
 	code, out := ta.do(t, "POST", "/api/memory/organize", nil)
 	if code != 200 || out["checked"] != float64(2) || len(out["merged"].([]any)) != 1 {
