@@ -42,7 +42,7 @@ func TestSignInAndRefresh(t *testing.T) {
 			}
 			claims, _ := json.Marshal(map[string]string{"email": "eu@gmail.com"})
 			id := "h." + base64.RawURLEncoding.EncodeToString(claims) + ".s"
-			w.Write([]byte(`{"access_token":"a1","refresh_token":"r1","expires_in":30,"id_token":"` + id + `"}`))
+			w.Write([]byte(`{"access_token":"a1","refresh_token":"r1","expires_in":30,"scope":"https://mail.google.com/ https://www.googleapis.com/auth/drive.file","id_token":"` + id + `"}`))
 		case "refresh_token":
 			refreshes++
 			w.Write([]byte(`{"access_token":"a2","expires_in":3600}`))
@@ -58,7 +58,7 @@ func TestSignInAndRefresh(t *testing.T) {
 	}
 	u, _ := url.Parse(link)
 	q := u.Query()
-	if q.Get("code_challenge_method") != "S256" || q.Get("access_type") != "offline" || !strings.Contains(q.Get("scope"), "mail.google.com") {
+	if q.Get("code_challenge_method") != "S256" || q.Get("access_type") != "offline" || !strings.Contains(q.Get("scope"), "mail.google.com") || !strings.Contains(q.Get("scope"), DriveScope) {
 		t.Fatalf("auth url %s", link)
 	}
 	if _, err := g.Finish(ctx, "wrong-state", "the-code"); err == nil {
@@ -67,6 +67,9 @@ func TestSignInAndRefresh(t *testing.T) {
 	email, err := g.Finish(ctx, q.Get("state"), "the-code")
 	if err != nil || email != "eu@gmail.com" || store.m["google.refresh"] != "r1" {
 		t.Fatalf("finish %q %v %v", email, err, store.m)
+	}
+	if !g.Granted(ctx, DriveScope) || g.Granted(ctx, "https://www.googleapis.com/auth/drive") {
+		t.Fatal("granted scopes misread")
 	}
 	// The first access token expires in 30s, so Token refreshes it.
 	tok, err := g.Token(ctx)

@@ -18,8 +18,11 @@ import (
 	"time"
 )
 
-// Scopes: full mail access over IMAP/SMTP, and read-only calendars.
-var Scopes = []string{"https://mail.google.com/", "https://www.googleapis.com/auth/calendar.readonly", "openid", "email"}
+// Scopes: full mail access over IMAP/SMTP, read-only calendars, and the
+// Drive files Zodim creates itself (its backups).
+var Scopes = []string{"https://mail.google.com/", "https://www.googleapis.com/auth/calendar.readonly", DriveScope, "openid", "email"}
+
+const DriveScope = "https://www.googleapis.com/auth/drive.file"
 
 type Store interface {
 	Get(ctx context.Context, name string) (string, error)
@@ -95,6 +98,7 @@ type tokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
 	IDToken      string `json:"id_token"`
+	Scope        string `json:"scope"`
 	Error        string `json:"error"`
 	Description  string `json:"error_description"`
 }
@@ -125,11 +129,23 @@ func (g *Google) Finish(ctx context.Context, state, code string) (string, error)
 	g.mu.Lock()
 	g.access, g.expires = tok.AccessToken, time.Now().Add(time.Duration(tok.ExpiresIn)*time.Second)
 	g.mu.Unlock()
+	g.Store.Set(ctx, "google.scopes", tok.Scope)
 	email := emailFromIDToken(tok.IDToken)
 	if email != "" {
 		g.Store.Set(ctx, "google.email", email)
 	}
 	return email, nil
+}
+
+// Granted reports whether the owner allowed scope when signing in.
+func (g *Google) Granted(ctx context.Context, scope string) bool {
+	s, _ := g.Store.Get(ctx, "google.scopes")
+	for _, f := range strings.Fields(s) {
+		if f == scope {
+			return true
+		}
+	}
+	return false
 }
 
 // Token returns a valid access token, refreshing it when it is about to expire.

@@ -129,3 +129,35 @@ func TestImportsBackupsFromBeforeTheRename(t *testing.T) {
 		t.Fatal("the old database name was not mapped")
 	}
 }
+
+func TestSealedBackupsHideEverything(t *testing.T) {
+	ctx := context.Background()
+	home := t.TempDir()
+	ev, _ := event.Open(filepath.Join(home, "zodim.db"))
+	defer ev.Close()
+	v, _ := vault.Open(ev.DB(), vault.FileKey(filepath.Join(home, "key")))
+	v.Set(ctx, "telegram.token", "123:secret")
+	ev.Put(ctx, "mail.user", "eu@exemplo.com")
+	var buf bytes.Buffer
+	if _, err := Export(ctx, ev.DB(), home, v, "correct horse", "1.0", &buf); err != nil {
+		t.Fatal(err)
+	}
+	sealed, err := Seal(buf.Bytes(), "correct horse")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(sealed, []byte("eu@exemplo.com")) || bytes.Contains(sealed, []byte("zodim.db")) {
+		t.Fatal("the sealed file shows its contents")
+	}
+	if _, _, err := Unpack(bytes.NewReader(sealed), t.TempDir(), "wrong horse"); !errors.Is(err, ErrPassphrase) {
+		t.Fatalf("wrong passphrase: %v", err)
+	}
+	dir := t.TempDir()
+	_, secrets, err := Unpack(bytes.NewReader(sealed), dir, "correct horse")
+	if err != nil || secrets["telegram.token"] != "123:secret" {
+		t.Fatalf("%v %v", secrets, err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "zodim.db")); err != nil {
+		t.Fatal("database missing")
+	}
+}

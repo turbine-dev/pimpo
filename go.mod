@@ -29,6 +29,8 @@ require (
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/akutz/memconn v0.1.0 // indirect
 	github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa // indirect
+	github.com/aws/aws-sdk-go-v2 v1.47.1 // indirect
+	github.com/aws/smithy-go v1.28.1 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/creachadair/msync v0.8.1 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
