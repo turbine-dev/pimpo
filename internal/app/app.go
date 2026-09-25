@@ -37,6 +37,7 @@ import (
 	"github.com/denerFernandes/vigia/internal/people"
 	"github.com/denerFernandes/vigia/internal/policy"
 	"github.com/denerFernandes/vigia/internal/protect"
+	"github.com/denerFernandes/vigia/internal/remote"
 	"github.com/denerFernandes/vigia/internal/scheduler"
 	"github.com/denerFernandes/vigia/internal/server"
 	"github.com/denerFernandes/vigia/internal/store"
@@ -87,6 +88,8 @@ type App struct {
 	Memory    *memory.Memory
 	People    *people.Directory
 	Protect   *protect.Guard
+	Remote    *remote.Remote
+	LAN       *remote.LAN
 	Google    *oauth.Google
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
@@ -181,6 +184,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.guardRoutes()
 	a.channelRoutes()
 	a.destinationRoutes()
+	a.remoteRoutes()
 	return a, nil
 }
 
@@ -192,6 +196,7 @@ func (a *App) Start(ctx context.Context) error {
 	go a.Outbox.Run(ctx, 15*time.Second)
 	go a.emailChannel(ctx, time.Minute)
 	go a.refreshProtection(ctx)
+	a.startRemote(ctx)
 	a.restartListener(ctx)
 	return nil
 }

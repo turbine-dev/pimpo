@@ -17,7 +17,7 @@ android {
     compileSdk = 36
     namespace = "app.vigia.companion"
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "false"
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
         applicationId = "app.vigia.companion"
         minSdk = 24
         targetSdk = 36

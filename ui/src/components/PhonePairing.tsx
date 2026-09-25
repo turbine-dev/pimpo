@@ -1,22 +1,42 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Smartphone, Trash2 } from 'lucide-react'
+import { ChevronDown, Globe, Home, Loader2, Smartphone, Trash2 } from 'lucide-react'
 import QRCode from 'qrcode'
-import { useEffect, useState } from 'react'
-import { api } from '../lib/api'
+import { useEffect, useState, type ReactNode } from 'react'
+import { api, type RemoteState } from '../lib/api'
+import { cn } from '../lib/cn'
 import { relative } from '../lib/format'
-import { fill, useT } from '../lib/i18n'
+import { useT } from '../lib/i18n'
 import { Button, Card } from './ui'
 
-// Each phone or computer gets its own link. The link is shown once, as a
-// QR code; revoking a device cuts off only that one.
+const field = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
+
+// How the phone reaches this Vigia (home Wi-Fi, Tailscale built in, or an
+// address of the owner's), and the devices paired to it. Each device gets
+// its own link, shown once as a QR code; revoking one cuts off only it.
 export function PhonePairing() {
   const t = useT()
   const qc = useQueryClient()
   const pairing = useQuery({ queryKey: ['pairing'], queryFn: api.pairing })
-  const [base, setBase] = useState('')
+  const remote = useQuery({
+    queryKey: ['remote'], queryFn: api.remote,
+    refetchInterval: (q) => (['starting', 'needs_login'].includes(q.state.data?.tailscale.state ?? '') ? 2000 : false),
+  })
+  const toggle = useMutation({
+    mutationFn: ({ kind, on }: { kind: 'tailscale' | 'lan'; on: boolean }) => api.switchRemote(kind, on),
+    onSuccess: (d) => { qc.setQueryData(['remote'], d); qc.invalidateQueries({ queryKey: ['pairing'] }) },
+  })
+  const [manual, setManual] = useState('')
+  const [showManual, setShowManual] = useState(false)
   const [name, setName] = useState('')
   const [qr, setQr] = useState('')
-  useEffect(() => { if (pairing.data) setBase(pairing.data.base) }, [pairing.data])
+  useEffect(() => {
+    const b = pairing.data?.base ?? ''
+    if (b && b !== remote.data?.tailscale.url) { setManual(b); setShowManual(true) }
+  }, [pairing.data, remote.data])
+  const r = remote.data
+  const tsURL = r?.tailscale.state === 'running' ? r.tailscale.url : undefined
+  const base = tsURL ?? (showManual ? manual.trim() : '')
+  const reachable = !!base || !!r?.lan.on
   const pair = useMutation({
     mutationFn: () => api.setPairing(base, name.trim() || t('phone.defaultName')),
     onSuccess: async (d) => {
@@ -34,14 +54,35 @@ export function PhonePairing() {
         <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-explore-soft text-explore"><Smartphone size={18} /></div>
         <div className="flex-1">
           <div className="text-[15px] font-medium">{t('phone.title')}</div>
-          <div className="text-[13px] text-ink-3">{fill(t('phone.text'), { cmd: <code className="font-mono">tailscale serve 7788</code> })}</div>
+          <div className="text-[13px] text-ink-3">{t('phone.text')}</div>
         </div>
       </div>
-      <form className="mt-4 grid gap-2 sm:grid-cols-[1.4fr_1fr_auto]" onSubmit={(e) => { e.preventDefault(); pair.mutate() }}>
-        <input value={base} onChange={(e) => setBase(e.target.value)} placeholder={t('phone.basePlaceholder')} aria-label={t('phone.base')} className="h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('phone.name')} aria-label={t('phone.name')} className="h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
-        <Button type="submit" disabled={!base || pair.isPending}>{t('phone.generate')}</Button>
+
+      <div className="mt-4 space-y-2">
+        <Access icon={<Home size={16} />} title={t('phone.homeTitle')} text={t('phone.homeText')} on={!!r?.lan.on} busy={toggle.isPending}
+          onToggle={() => toggle.mutate({ kind: 'lan', on: !r?.lan.on })}>
+          {r?.lan.url && <code className="text-[12px] text-ink-2">{r.lan.url}</code>}
+        </Access>
+        <Access icon={<Globe size={16} />} title={t('phone.tsTitle')} text={t('phone.tsText')} on={!!r && r.tailscale.state !== 'off'} busy={toggle.isPending}
+          onToggle={() => toggle.mutate({ kind: 'tailscale', on: r?.tailscale.state === 'off' })}>
+          <TailscaleState s={r?.tailscale} />
+        </Access>
+        {toggle.error && <p className="text-[13px] text-danger">{toggle.error.message}</p>}
+      </div>
+
+      <button type="button" className="mt-3 flex items-center gap-1 text-[12.5px] text-ink-3 hover:text-ink" aria-expanded={showManual} onClick={() => setShowManual(!showManual)}>
+        <ChevronDown size={14} className={cn('transition', showManual && 'rotate-180')} /> {t('phone.other')}
+      </button>
+      {showManual && (
+        <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder={t('phone.basePlaceholder')} aria-label={t('phone.base')} className={cn(field, 'mt-2 w-full')} />
+      )}
+
+      <form className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4" onSubmit={(e) => { e.preventDefault(); pair.mutate() }}>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('phone.name')} aria-label={t('phone.name')} className={cn(field, 'min-w-[180px] flex-1')} />
+        <Button type="submit" disabled={!reachable || pair.isPending}>{t('phone.generate')}</Button>
       </form>
+      {!reachable && <p className="mt-2 text-[12.5px] text-ink-3">{t('phone.needAccess')}</p>}
+      {base && r?.lan.on && <p className="mt-2 text-[12.5px] text-ink-3">{t('phone.both')}</p>}
       {pair.error && <p className="mt-2 text-[13px] text-danger">{pair.error.message}</p>}
       {qr && (
         <div className="mt-4 flex flex-col items-center gap-3 rounded-xl border border-line bg-white p-4 sm:flex-row sm:items-start">
@@ -67,4 +108,42 @@ export function PhonePairing() {
       )}
     </Card>
   )
+}
+
+function Access({ icon, title, text, on, busy, onToggle, children }: { icon: ReactNode; title: string; text: string; on: boolean; busy: boolean; onToggle: () => void; children?: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-line p-3">
+      <div className={cn('mt-0.5', on ? 'text-read' : 'text-ink-3')}>{icon}</div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[14px] font-medium">{title}</div>
+        <div className="text-[12.5px] text-ink-3">{text}</div>
+        {on && children && <div className="mt-1.5">{children}</div>}
+      </div>
+      <button type="button" role="switch" aria-checked={on} aria-label={title} disabled={busy} onClick={onToggle}
+        className={cn('mt-0.5 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition', on ? 'bg-accent' : 'bg-line-strong')}>
+        <span className={cn('size-5 rounded-full bg-white shadow transition', on && 'translate-x-5')} />
+      </button>
+    </div>
+  )
+}
+
+function TailscaleState({ s }: { s?: RemoteState['tailscale'] }) {
+  const t = useT()
+  if (!s) return null
+  switch (s.state) {
+    case 'starting':
+      return <span className="flex items-center gap-1.5 text-[12.5px] text-ink-2"><Loader2 size={13} className="animate-spin" /> {t('phone.tsStarting')}</span>
+    case 'needs_login':
+      return (
+        <div className="space-y-1">
+          <a href={s.auth_url} target="_blank" rel="noreferrer"><Button size="sm" variant="primary">{t('phone.tsLogin')}</Button></a>
+          <p className="text-[12px] text-ink-3">{t('phone.tsLoginHint')}</p>
+        </div>
+      )
+    case 'running':
+      return <code className="break-all text-[12px] text-read">{s.url}</code>
+    case 'error':
+      return <p className="text-[12.5px] text-danger">{s.error}</p>
+  }
+  return null
 }

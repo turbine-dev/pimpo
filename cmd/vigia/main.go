@@ -135,6 +135,9 @@ func serve(args []string) error {
 	a.AttachConnectors(filepath.Join(home, "connectors"))
 	a.VoiceModel = filepath.Join(home, "models", "ggml-base.bin")
 	a.Home, a.Version = home, version
+	if !*demoMode {
+		a.AttachRemote(home, nil)
+	}
 	a.DesktopNotify = os.Getenv("VIGIA_DESKTOP_NOTIFY") != ""
 	a.TelegramAPI = os.Getenv("VIGIA_TELEGRAM_API")
 	if *demoMode {

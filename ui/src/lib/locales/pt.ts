@@ -134,7 +134,7 @@ export const pt = {
 
   'phone.defaultName': 'Celular',
   'phone.title': 'Abrir no celular',
-  'phone.text': 'O app do celular conversa com este Vigia. Exponha-o com segurança, por exemplo com {cmd}, e cole o endereço.',
+  'phone.text': 'O app do celular conversa com este Vigia. Escolha como ele chega aqui; pode ligar os dois.',
   'phone.base': 'Endereço do Vigia fora deste computador',
   'phone.basePlaceholder': 'https://vigia.sua-rede.ts.net',
   'phone.name': 'Nome do aparelho',
@@ -645,6 +645,16 @@ export const pt = {
   'up.update': 'Atualizar',
   'rs.makeAdjustable': 'Para ganhar ajustes (cidade, limites, destinos), refaça a rotina com o agente.',
   'rs.redo': 'Refazer com o agente',
+  'phone.homeTitle': 'Em casa',
+  'phone.homeText': 'No mesmo Wi-Fi, sem conta nenhuma. Fora de casa não funciona.',
+  'phone.tsTitle': 'De qualquer lugar',
+  'phone.tsText': 'Um link fixo e seguro pelo Tailscale, que já vem dentro do Vigia. Na primeira vez você entra com Google, Apple, GitHub ou Microsoft.',
+  'phone.tsStarting': 'Ligando…',
+  'phone.tsLogin': 'Entrar no Tailscale',
+  'phone.tsLoginHint': 'Depois de entrar, volte aqui: o link aparece sozinho.',
+  'phone.other': 'Usar outro endereço',
+  'phone.needAccess': 'Ligue uma das opções acima para gerar o código.',
+  'phone.both': 'O celular tenta primeiro o endereço de casa e, fora de casa, usa o link do Tailscale.',
 }
 
 export type Key = keyof typeof pt

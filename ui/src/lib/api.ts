@@ -20,6 +20,10 @@ export type RoutineSummary = {
 export type ParamType = 'text' | 'number' | 'boolean' | 'date' | 'time' | 'location' | 'select' | 'multiselect' | 'email' | 'destinations'
 export type RoutineParam = { name: string; label: string; type: ParamType; default?: unknown; options?: string[]; help?: string }
 export type Place = { name: string; latitude: number; longitude: number; timezone?: string; country?: string }
+export type RemoteState = {
+  tailscale: { state: 'off' | 'starting' | 'needs_login' | 'running' | 'error'; auth_url?: string; url?: string; error?: string }
+  lan: { on: boolean; url?: string; error?: string }
+}
 export type Destination = { id: string; label: string; kind: string; ready: boolean }
 export type TelegramBot = { id: string; name: string; username: string; chat?: number; chat_name?: string }
 
@@ -184,6 +188,8 @@ export const api = {
   exploreImported: (id: string) => request<{ id: string }>('POST', `/api/explorations/${id}/explore`),
   pairing: () => request<{ base: string; devices: { id: string; name: string; created: string; last_seen?: string }[] }>('GET', '/api/pairing'),
   setPairing: (base: string, device?: string) => request<{ base: string; link?: string; id?: string }>('POST', '/api/pairing', { base, device }),
+  remote: () => request<RemoteState>('GET', '/api/remote'),
+  switchRemote: (kind: 'tailscale' | 'lan', on: boolean) => request<RemoteState>('POST', `/api/remote/${kind}/${on ? 'on' : 'off'}`),
   revokeDevice: (id: string) => request<void>('DELETE', `/api/devices/${id}`),
   people: () => request<Person[]>('GET', '/api/people'),
   addPerson: (name: string, role: Role, responsible: string) => request<Person>('POST', '/api/people', { name, role, responsible }),

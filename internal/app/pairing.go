@@ -116,7 +116,15 @@ func (a *App) setPairing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out := map[string]string{"base": base}
-	if name := strings.TrimSpace(req.Device); name != "" && base != "" {
+	home := ""
+	if a.LAN != nil {
+		home = a.LAN.URL()
+	}
+	primary := base
+	if primary == "" {
+		primary = home
+	}
+	if name := strings.TrimSpace(req.Device); name != "" && primary != "" {
 		b := make([]byte, 24)
 		rand.Read(b)
 		token := hex.EncodeToString(b)
@@ -130,7 +138,13 @@ func (a *App) setPairing(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a.Events.Append(ctx, "device.paired", "human:owner", map[string]string{"id": id, "name": name})
-		out["id"], out["link"] = id, base+"/auth?token="+url.QueryEscape(token)
+		out["id"], out["link"] = id, primary+"/auth?token="+url.QueryEscape(token)
+		// With both, the phone tries the home address first and falls back
+		// to the public link; the token works on either.
+		if home != "" && home != primary {
+			out["home"] = home + "/auth?token=" + url.QueryEscape(token)
+			out["link"] += "#home=" + url.QueryEscape(home)
+		}
 	}
 	server.WriteJSON(w, 200, out)
 }

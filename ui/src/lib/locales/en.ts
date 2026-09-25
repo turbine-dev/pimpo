@@ -134,7 +134,7 @@ export const en: Record<Key, string> = {
 
   'phone.defaultName': 'Phone',
   'phone.title': 'Open on your phone',
-  'phone.text': 'The phone app talks to this Vigia. Expose it safely, for example with {cmd}, and paste the address.',
+  'phone.text': 'The phone app talks to this Vigia. Choose how it gets here; you can turn on both.',
   'phone.base': 'Address of this Vigia outside this computer',
   'phone.basePlaceholder': 'https://vigia.your-network.ts.net',
   'phone.name': 'Device name',
@@ -645,4 +645,14 @@ export const en: Record<Key, string> = {
   'up.update': 'Update',
   'rs.makeAdjustable': 'To get settings (city, limits, destinations), redo the routine with the agent.',
   'rs.redo': 'Redo with the agent',
+  'phone.homeTitle': 'At home',
+  'phone.homeText': 'On the same Wi-Fi, with no account. Does not work away from home.',
+  'phone.tsTitle': 'From anywhere',
+  'phone.tsText': 'A fixed, secure link through Tailscale, built into Vigia. The first time you sign in with Google, Apple, GitHub or Microsoft.',
+  'phone.tsStarting': 'Starting…',
+  'phone.tsLogin': 'Sign in to Tailscale',
+  'phone.tsLoginHint': 'After signing in, come back here: the link shows up by itself.',
+  'phone.other': 'Use another address',
+  'phone.needAccess': 'Turn on one of the options above to create the code.',
+  'phone.both': 'The phone tries the home address first and, away from home, uses the Tailscale link.',
 }

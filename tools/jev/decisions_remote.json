@@ -1,0 +1,20 @@
+{
+ "model": "jev-1.13.0",
+ "answers": {
+  "remote": {
+   "type": "choice",
+   "choice": "tsnet_funnel",
+   "confidence": 0.99,
+   "probabilities": {
+    "own_relay": 0.0,
+    "cloudflare_quick": 0.0,
+    "lan_only": 0.0,
+    "tsnet_funnel": 1.0
+   }
+  }
+ },
+ "usage": {
+  "input_tokens": 929,
+  "output_tokens": 61
+ }
+}

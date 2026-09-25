@@ -32,7 +32,7 @@ Vigia acts for people: it reads their email, sends messages and changes things. 
 | Known exfiltration endpoints and patterns | A signed protection list is checked before every action, including other agents' actions through the Guard. | `TestGuardBlocksListedThings`, `TestGuardForOtherAgents` |
 | Another person in the house | Memory, accounts, chats and approvals are separate per person. Guests' changes always wait for their responsible person. | `TestGateFamilyIsolation` |
 | Messages to third parties and physical actions | `whatsapp.send_to` and `ha.critical` always ask, whatever the rules say. | `TestWhatsAppToOthersAlwaysAsks` |
-| Network exposure | The server listens on loopback. Remote access needs HTTPS or a private network, with a per-device token that can be revoked. | `TestDevicePairingAndRevocation` |
+| Network exposure | The server listens on loopback. Home mode listens only on a private address (never a public one) and is off by default. Remote access uses the Tailscale built into Vigia: Funnel ends TLS on this machine, so Tailscale never sees the traffic in the clear. Every way in needs a per-device token that can be revoked. | `TestDevicePairingAndRevocation`, `TestLANUsesOnlyHomeAddresses`, `TestPhoneLinksWithTailscaleAndHome` |
 | Forged webhooks | WhatsApp checks Meta's signature. The generic channel signs what it sends. | `TestWhatsAppChannel`, `TestGenericChannel` |
 | Tampered history | Events are chained by hash and checked on import. | event store tests |
 | A lost phone | Revoke the device in Settings; the owner's session is unaffected. | `TestDevicePairingAndRevocation` |

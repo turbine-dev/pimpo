@@ -47,18 +47,36 @@
   if (mobile) {
     document.body.classList.add('mobile')
     document.getElementById('status').textContent = 'Conecte ao Vigia que roda no seu computador.'
-    let saved = null
-    try { saved = localStorage.getItem('vigia.link') } catch {}
-    if (saved) location.replace(saved)
+    // A link may carry the home address after #home=: the phone tries it
+    // first (fast, and works without internet) and falls back to the link.
+    const reach = (base) => new Promise((ok) => {
+      const img = new Image(), t = setTimeout(() => { img.src = ''; ok(false) }, 1500)
+      img.onload = () => { clearTimeout(t); ok(true) }
+      img.onerror = () => { clearTimeout(t); ok(false) }
+      img.src = base + '/favicon.svg?' + Date.now()
+    })
+    const open = async (link, home) => {
+      if (home) {
+        const token = new URL(link).searchParams.get('token')
+        if (await reach(home)) return location.replace(home + '/auth?token=' + encodeURIComponent(token))
+      }
+      location.replace(link)
+    }
+    let saved = null, savedHome = null
+    try { saved = localStorage.getItem('vigia.link'); savedHome = localStorage.getItem('vigia.home') } catch {}
+    if (saved) open(saved, savedHome)
     document.getElementById('pair').addEventListener('submit', (e) => {
       e.preventDefault()
       const err = document.getElementById('error')
       let url
       try { url = new URL(document.getElementById('link').value.trim()) } catch { err.textContent = 'Isso não parece um link.'; return }
-      if (url.protocol !== 'https:' && !/^(localhost|127\.|10\.|192\.168\.|100\.)/.test(url.hostname)) { err.textContent = 'Use https: o token não pode viajar em aberto.'; return }
+      if (url.protocol !== 'https:' && !/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.)/.test(url.hostname)) { err.textContent = 'Use https: o token não pode viajar em aberto.'; return }
       if (!url.searchParams.get('token')) { err.textContent = 'Falta o token no link.'; return }
-      try { localStorage.setItem('vigia.link', url.href) } catch {}
-      location.replace(url.href)
+      let home = new URLSearchParams(url.hash.slice(1)).get('home')
+      if (home && !/^http:\/\/(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)[\d.]+:\d+$/.test(home)) home = null
+      url.hash = ''
+      try { localStorage.setItem('vigia.link', url.href); home ? localStorage.setItem('vigia.home', home) : localStorage.removeItem('vigia.home') } catch {}
+      open(url.href, home)
     })
   }
 </script>

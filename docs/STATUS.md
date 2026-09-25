@@ -22,7 +22,7 @@ What is built, what each phase gate needs, and which gates wait on people or tim
 
 - **Web**: every feature, in Portuguese and English, installable as a PWA.
 - **Desktop**: macOS DMG built and run locally; Windows and Linux bundles are built by the release workflow.
-- **Phone**: iOS build verified in the simulator (pairing screen). The Android APK builds.
+- **Phone**: iOS build verified in the simulator (pairing screen). The Android APK builds. The phone reaches Vigia at home over the Wi-Fi (no account) or from anywhere through the Tailscale built into Vigia; with both, it tries home first. The embedded Tailscale was checked up to the sign-in step; the Funnel link needs an owner's Tailscale account.
 
 ## Export, import and extension
 
