@@ -148,6 +148,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 export const api = {
   state: () => request<AppState>('GET', '/api/state'),
+  openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),
   routineAction: (id: string, action: 'run' | 'pause' | 'resume' | 'repair') => request<{ run?: Run; error?: string; exploration?: string }>('POST', `/api/routines/${id}/${action}`),

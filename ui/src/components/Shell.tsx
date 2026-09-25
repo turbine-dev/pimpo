@@ -78,7 +78,7 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
   return (
     <div className="flex h-full">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface/60 px-3 py-4 backdrop-blur md:flex">
-        <div className="mb-6 flex items-center gap-2.5 px-2">
+        <div className="mb-6 flex items-center gap-2.5 px-2 in-data-[desktop=mac]:mt-7">
           <Logo />
           <span className="text-[15px] font-semibold tracking-tight">Zodim</span>
         </div>
@@ -105,7 +105,7 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-line bg-bg/80 px-4 backdrop-blur md:px-8">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-line bg-bg/80 px-4 backdrop-blur md:px-8 in-data-[desktop=mac]:max-md:pl-20">
           <div className="flex items-center gap-2 md:hidden">
             <Logo size={24} />
           </div>
