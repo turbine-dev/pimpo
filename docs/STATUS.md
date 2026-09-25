@@ -47,6 +47,14 @@ Ordered by Jev (`tools/jev/decisions_gaps.py`), all built and tested:
 
 Checked only against fake servers so far (they need the owner's accounts): Brave and SearXNG, Discord, Slack, signal-cli, the model APIs, S3 and Google Drive. The MCP registry search was checked live.
 
+## Next: what users of other agents miss most
+
+Ordered by Jev (`tools/jev/decisions_next.py`) from complaints about Hermes and OpenClaw:
+
+1. **Routines that react to something new** (a watched read, polled without a model). Built.
+2. **A writing step** in routines: a small model writes one text per item, bounded and billed. Built.
+3. **An alert when a channel stops working**, sent on the others and again when it comes back. Built.
+
 ## Pending decisions for the owner
 
 - **License**: the plan says free and open source; the exact license is not chosen yet.

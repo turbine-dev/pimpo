@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 type fakeAPI struct {
@@ -87,5 +88,24 @@ func TestErrorsNeverContainTheToken(t *testing.T) {
 	_, err = bot.Send(context.Background(), 1, "x")
 	if err == nil || strings.Contains(err.Error(), "secret-token") {
 		t.Fatalf("network error leaks token or is nil: %v", err)
+	}
+}
+
+func TestPollReportsHealth(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, `{"ok":false,"description":"Unauthorized"}`, http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
+	defer cancel()
+	var errs int
+	b := Bot{Token: "x", BaseURL: srv.URL, Health: func(err error) {
+		if err != nil {
+			errs++
+		}
+	}}
+	b.Poll(ctx, 0, func(Update) {})
+	if errs < 1 {
+		t.Fatal("failed polls were not reported")
 	}
 }

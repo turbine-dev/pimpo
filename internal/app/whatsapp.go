@@ -163,6 +163,8 @@ func (a *App) mirrorWhatsApp(ctx context.Context, n explore.Notice) {
 		}
 		buttons = append(buttons, whatsapp.Button{ID: act.Data, Title: act.Label})
 	}
+	// Not a health signal: a failed send is usually about that message
+	// (the 24-hour window, a blocked number), not WhatsApp being down.
 	c.Send(ctx, p.WhatsApp, n.Text, buttons...)
 }
 

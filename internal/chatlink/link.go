@@ -31,17 +31,25 @@ type Link interface {
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
-// Keep runs a link again after it fails, waiting longer each time.
-func Keep(ctx context.Context, l Link, on func(Inbound), failed func(error)) {
+// Keep runs a link again after it fails, waiting longer each time. status
+// hears each failure, and nil once a connection has stayed up for a
+// minute, so the caller can tell a link that came back from one still down.
+func Keep(ctx context.Context, l Link, on func(Inbound), status func(error)) {
 	wait := time.Second
 	for ctx.Err() == nil {
 		start := time.Now()
+		alive := time.AfterFunc(time.Minute, func() {
+			if status != nil && ctx.Err() == nil {
+				status(nil)
+			}
+		})
 		err := l.Run(ctx, on)
+		alive.Stop()
 		if ctx.Err() != nil {
 			return
 		}
-		if failed != nil && err != nil {
-			failed(err)
+		if status != nil && err != nil {
+			status(err)
 		}
 		if time.Since(start) > time.Minute {
 			wait = time.Second
