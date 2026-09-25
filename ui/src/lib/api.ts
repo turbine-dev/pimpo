@@ -43,6 +43,15 @@ export type ChatTurn = { id: string; request: string; state: 'running' | 'ready'
 export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[] }
 export type CapabilitySpec = { name: string; risk: CapRisk; signature: string; returns: string }
 
+export type SysComponent = { id: string; group: 'channel' | 'account' | 'service' | 'access' | 'backup' | 'brain'; name: string; state: 'ok' | 'off' | 'error' | 'waiting'; detail?: string }
+export type SystemState = {
+  process: { cpu_percent: number; heap_bytes: number; sys_bytes: number; goroutines: number; uptime_s: number }
+  host: { cpus: number; load: [number, number, number]; mem_total: number; disk_free: number; disk_size: number }
+  activity: { explorations: number; runs: number; approvals: number; runs_ok_today: number; runs_failed_today: number }
+  components: SysComponent[]
+  version: string
+}
+
 export type RemoteState = {
   tailscale: { state: 'off' | 'starting' | 'needs_login' | 'needs_funnel' | 'running' | 'error'; auth_url?: string; url?: string; error?: string }
   lan: { on: boolean; url?: string; error?: string }
@@ -142,7 +151,7 @@ export type ActionRecord = {
   ms: number
 }
 
-export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; telegram_paired: boolean; log_intact: boolean; claude: boolean }
+export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
 export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string }
 export type ModelOption = { id: string; price_in: number; price_out: number }
@@ -200,6 +209,7 @@ export const api = {
   models: () => request<{ keys: Record<string, boolean>; claude_code: boolean }>('GET', '/api/models'),
   setModelKey: (provider: string, key: string) => request<{ set: boolean }>('PUT', `/api/models/keys/${provider}`, { key }),
   testModel: (id: string) => request<{ ok: boolean; text: string; cost_usd: number }>('POST', '/api/models/test', { id }),
+  system: () => request<SystemState>('GET', '/api/system'),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),

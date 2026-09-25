@@ -17,7 +17,7 @@ export function ExplorationPage() {
   const nav = useNavigate()
   const q = useQuery({ queryKey: ['exploration', id], queryFn: () => api.exploration(id), refetchInterval: (d) => (d.state.data?.exploration.state === 'running' ? 1500 : false) })
   const compile = useMutation({ mutationFn: () => api.compile(id), onSuccess: () => qc.invalidateQueries({ queryKey: ['routines'] }) })
-  const discard = useMutation({ mutationFn: () => api.discard(id), onSuccess: () => nav('/') })
+  const discard = useMutation({ mutationFn: () => api.discard(id), onSuccess: () => nav('/routines') })
 
   if (!q.data) return q.error ? <div className="mx-auto max-w-3xl text-sm text-danger">{q.error.message}</div> : <PageSkeleton />
   const { exploration: e } = q.data
@@ -26,7 +26,7 @@ export function ExplorationPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link to="/" className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink">
+      <Link to="/routines" className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink">
         <ArrowLeft size={14} /> {t('nav.routines')}
       </Link>
       <div className="mb-6">

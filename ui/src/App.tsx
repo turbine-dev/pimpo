@@ -5,7 +5,8 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { NewTask } from './components/NewTask'
 import { Palette } from './components/Palette'
 import { Welcome } from './pages/Welcome'
-import { Shell, nav } from './components/Shell'
+import { Shell } from './components/Shell'
+import { Home } from './pages/Home'
 import { Assistants } from './pages/Assistants'
 import { Chat } from './pages/Chat'
 import { Help } from './pages/Help'
@@ -43,8 +44,7 @@ export default function App() {
   }, [])
   useLiveEvents()
   const state = useQuery({ queryKey: ['state'], queryFn: api.state, refetchInterval: 30_000 })
-  const attention = (state.data?.awaiting ?? 0) + (state.data?.broken ?? 0)
-  const items = nav.map((n) => (n.to === '/inbox' ? { ...n, badge: attention } : n))
+  const attention = (state.data?.awaiting ?? 0) + (state.data?.broken ?? 0) + (state.data?.approvals ?? 0)
   if (location.pathname === '/welcome') {
     return (
       <div className="min-h-full px-4">
@@ -54,10 +54,11 @@ export default function App() {
     )
   }
   return (
-    <Shell items={items} budget={state.data?.budget} healthy={state.data?.healthy ?? true} onSearch={() => setPalette(true)}>
+    <Shell attention={attention} budget={state.data?.budget} healthy={state.data?.healthy ?? true} onSearch={() => setPalette(true)}>
       <ErrorBoundary resetKey={location.pathname}>
       <Routes>
-        <Route path="/" element={setup.data && !setup.data.done ? <Navigate to="/welcome" replace /> : <Routines onNew={() => setNewTask(true)} />} />
+        <Route path="/" element={setup.data && !setup.data.done ? <Navigate to="/welcome" replace /> : <Home />} />
+        <Route path="/routines" element={<Routines onNew={() => setNewTask(true)} />} />
         <Route path="/routines/:id" element={<RoutinePage />} />
         <Route path="/explorations/:id" element={<ExplorationPage />} />
         <Route path="/chat" element={<Chat />} />

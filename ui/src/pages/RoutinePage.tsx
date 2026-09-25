@@ -34,7 +34,7 @@ export function RoutinePage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Link to="/" className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink">
+      <Link to="/routines" className="mb-5 inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink">
         <ArrowLeft size={14} /> {t('nav.routines')}
       </Link>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">

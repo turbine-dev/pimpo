@@ -150,6 +150,7 @@ func (a *App) state(w http.ResponseWriter, r *http.Request) {
 		"healthy":         broken == 0,
 		"broken":          broken,
 		"awaiting":        len(ready),
+		"approvals":       len(a.Approvals.Open()),
 		"telegram_paired": chat != 0,
 		"log_intact":      intact == 0,
 		"claude":          claudeInstalled(),
