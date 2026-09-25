@@ -117,6 +117,7 @@ func serve(args []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if os.Getenv("ZODIM_DESKTOP_NOTIFY") != "" {
+		desktop.KnownPath()
 		go desktop.ShellPath()
 	}
 	if os.Getenv("ZODIM_EXIT_WITH_PARENT") != "" {

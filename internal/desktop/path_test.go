@@ -3,6 +3,7 @@ package desktop
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -34,5 +35,21 @@ func TestShellPathFindsWhatTheShellFinds(t *testing.T) {
 	ShellPath()
 	if got, err := exec.LookPath("go"); err != nil || got == "" {
 		t.Fatalf("go (%s) not found with PATH %s", want, os.Getenv("PATH"))
+	}
+}
+
+// A claude installed with nvm is found at once, without waiting for the
+// shell, as an app opened from the Finder needs.
+func TestKnownPathFindsNvmAtOnce(t *testing.T) {
+	home := t.TempDir()
+	bin := filepath.Join(home, ".nvm", "versions", "node", "v24.1.0", "bin")
+	os.MkdirAll(bin, 0o755)
+	os.WriteFile(filepath.Join(bin, "claude"), []byte("#!/bin/sh\n"), 0o755)
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	t.Setenv("PATH", "/usr/bin:/bin")
+	KnownPath()
+	if got, err := exec.LookPath("claude"); err != nil || got != filepath.Join(bin, "claude") {
+		t.Fatalf("claude not found: %v %s (PATH %s)", err, got, os.Getenv("PATH"))
 	}
 }

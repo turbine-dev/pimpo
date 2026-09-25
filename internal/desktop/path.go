@@ -5,19 +5,72 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
 
 // Apps opened from the Finder or a launcher get a bare PATH, without what
 // the owner's shell adds (nvm, Homebrew, ~/.local/bin), so tools like the
-// claude CLI look missing. ShellPath adds the login shell's PATH, and the
-// usual install folders, to this process.
+// claude CLI look missing. KnownPath adds the usual install folders and the
+// PATH found last time, at once; ShellPath then asks the login shell, which
+// can take seconds on a busy machine, and remembers the answer.
+func KnownPath() {
+	add := knownDirs()
+	add = append(add, cachedPath()...)
+	os.Setenv("PATH", mergePath(strings.Split(os.Getenv("PATH"), string(os.PathListSeparator)), add))
+}
+
 func ShellPath() {
-	parts := strings.Split(os.Getenv("PATH"), string(os.PathListSeparator))
+	KnownPath()
+	found := loginPath()
+	if len(found) == 0 {
+		return
+	}
+	os.Setenv("PATH", mergePath(strings.Split(os.Getenv("PATH"), string(os.PathListSeparator)), found))
+	if f := cacheFile(); f != "" {
+		os.MkdirAll(filepath.Dir(f), 0o700)
+		os.WriteFile(f, []byte(strings.Join(found, string(os.PathListSeparator))), 0o600)
+	}
+}
+
+// knownDirs are the folders installers put the claude CLI and its kin in,
+// those that exist, newest Node version first.
+func knownDirs() []string {
 	home, _ := os.UserHomeDir()
-	extra := append(loginPath(), filepath.Join(home, ".local", "bin"), filepath.Join(home, ".claude", "local"), "/opt/homebrew/bin", "/usr/local/bin")
-	os.Setenv("PATH", mergePath(parts, extra))
+	dirs := []string{filepath.Join(home, ".claude", "local"), filepath.Join(home, ".local", "bin")}
+	nvm, _ := filepath.Glob(filepath.Join(home, ".nvm", "versions", "node", "*", "bin"))
+	sort.Sort(sort.Reverse(sort.StringSlice(nvm)))
+	dirs = append(dirs, nvm...)
+	dirs = append(dirs, filepath.Join(home, ".volta", "bin"), filepath.Join(home, ".bun", "bin"), filepath.Join(home, ".npm-global", "bin"),
+		filepath.Join(home, ".asdf", "shims"), filepath.Join(home, "Library", "pnpm"), "/opt/homebrew/bin", "/usr/local/bin")
+	var out []string
+	for _, d := range dirs {
+		if st, err := os.Stat(d); err == nil && st.IsDir() {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
+func cacheFile() string {
+	dir, err := os.UserCacheDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, "zodim", "shell-path")
+}
+
+func cachedPath() []string {
+	f := cacheFile()
+	if f == "" {
+		return nil
+	}
+	b, err := os.ReadFile(f)
+	if err != nil || len(b) == 0 {
+		return nil
+	}
+	return strings.Split(strings.TrimSpace(string(b)), string(os.PathListSeparator))
 }
 
 func mergePath(have, add []string) string {
@@ -41,7 +94,7 @@ func loginPath() []string {
 	if sh == "" {
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, sh, "-ilc", `printf '`+marker+`%s`+marker+`' "$PATH"`)
 	cmd.Stdin = nil
