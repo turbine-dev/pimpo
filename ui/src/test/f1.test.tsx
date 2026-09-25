@@ -87,7 +87,7 @@ describe('Connections', () => {
   it('shows the pairing command once the bot token is saved', async () => {
     mockFetch({
       '/api/connections': [
-        { kind: 'telegram', configured: true, paired: false, pairing_code: '482913', bot: 'meu_vigia_bot' },
+        { kind: 'telegram', configured: true, paired: false, pairing_code: '482913', bot: 'meu_zodim_bot' },
         { kind: 'mail', configured: false },
         { kind: 'calendar', configured: true, detail: '2 agendas' },
         { kind: 'jev', configured: false },
@@ -97,6 +97,6 @@ describe('Connections', () => {
     wrap(<Connections />)
     expect(await screen.findByText('/start 482913')).toBeInTheDocument()
     expect(screen.getByText('2 agendas')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '@meu_vigia_bot' })).toHaveAttribute('href', 'https://t.me/meu_vigia_bot?start=482913')
+    expect(screen.getByRole('link', { name: '@meu_zodim_bot' })).toHaveAttribute('href', 'https://t.me/meu_zodim_bot?start=482913')
   })
 })

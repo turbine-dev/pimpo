@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/llm"
-	"github.com/denerFernandes/vigia/internal/trace"
+	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/trace"
 )
 
 func one() *int { n := 1; return &n }

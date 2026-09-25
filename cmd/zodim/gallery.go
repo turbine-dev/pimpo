@@ -12,14 +12,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/denerFernandes/vigia/internal/gallery"
-	"github.com/denerFernandes/vigia/internal/routine"
+	"github.com/denerFernandes/zodim/internal/gallery"
+	"github.com/denerFernandes/zodim/internal/routine"
 )
 
 const galleryUsage = `usage:
-  vigia gallery keygen --out KEYFILE
-  vigia gallery build --key KEYFILE --author ID --name "Your Name" DIR   (signs DIR/routines/*.json into DIR/index.json)
-  vigia gallery verify INDEX                                             (file or URL; fails on any problem)`
+  zodim gallery keygen --out KEYFILE
+  zodim gallery build --key KEYFILE --author ID --name "Your Name" DIR   (signs DIR/routines/*.json into DIR/index.json)
+  zodim gallery verify INDEX                                             (file or URL; fails on any problem)`
 
 func galleryCmd(args []string, out io.Writer) error {
 	if len(args) == 0 {

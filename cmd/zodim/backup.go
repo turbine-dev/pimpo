@@ -11,14 +11,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/denerFernandes/vigia/internal/backup"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/vault"
+	"github.com/denerFernandes/zodim/internal/backup"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/vault"
 )
 
-// passphrase comes from VIGIA_BACKUP_PASSPHRASE or is asked on the terminal.
+// passphrase comes from ZODIM_BACKUP_PASSPHRASE or is asked on the terminal.
 func passphrase(in io.Reader, out io.Writer) string {
-	if p := os.Getenv("VIGIA_BACKUP_PASSPHRASE"); p != "" {
+	if p := os.Getenv("ZODIM_BACKUP_PASSPHRASE"); p != "" {
 		return p
 	}
 	fmt.Fprint(out, "Passphrase for the backup's secrets: ")
@@ -28,15 +28,15 @@ func passphrase(in io.Reader, out io.Writer) string {
 
 func exportCmd(args []string, out io.Writer) error {
 	fs := flag.NewFlagSet("export", flag.ContinueOnError)
-	dir := fs.String("data", "", "data directory (default ~/.vigia)")
+	dir := fs.String("data", "", "data directory (default ~/.zodim)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if fs.NArg() != 1 {
-		return errors.New("usage: vigia export FILE.vigia")
+		return errors.New("usage: zodim export FILE.zodim")
 	}
 	home := dataDir(*dir)
-	store, err := event.Open(filepath.Join(home, "vigia.db"))
+	store, err := event.Open(filepath.Join(home, "zodim.db"))
 	if err != nil {
 		return err
 	}
@@ -63,16 +63,16 @@ func exportCmd(args []string, out io.Writer) error {
 
 func importCmd(args []string, out io.Writer) error {
 	fs := flag.NewFlagSet("import", flag.ContinueOnError)
-	dir := fs.String("data", "", "data directory (default ~/.vigia)")
+	dir := fs.String("data", "", "data directory (default ~/.zodim)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if fs.NArg() != 1 {
-		return errors.New("usage: vigia import FILE.vigia")
+		return errors.New("usage: zodim import FILE.zodim")
 	}
 	home := dataDir(*dir)
 	if running(home) {
-		return errors.New("Vigia is running; import from Settings in the web app, or stop it first")
+		return errors.New("Zodim is running; import from Settings in the web app, or stop it first")
 	}
 	f, err := os.Open(fs.Arg(0))
 	if err != nil {

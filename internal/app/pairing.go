@@ -14,10 +14,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/server"
+	"github.com/denerFernandes/zodim/internal/server"
 )
 
-// Phones and other computers open Vigia through an address the owner
+// Phones and other computers open Zodim through an address the owner
 // exposes, such as `tailscale serve`. Each paired device gets its own
 // token, kept only as a hash, so one lost phone can be cut off without
 // touching the others.

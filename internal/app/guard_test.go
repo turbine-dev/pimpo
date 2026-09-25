@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/llm"
 )
 
 func TestGuardForOtherAgents(t *testing.T) {
@@ -105,8 +105,8 @@ func TestGenericChannel(t *testing.T) {
 		body := <-bodies
 		mac := hmac.New(sha256.New, []byte(secret))
 		mac.Write(body)
-		if r.Header.Get("X-Vigia-Signature") != "sha256="+hex.EncodeToString(mac.Sum(nil)) || !strings.Contains(string(body), `"data":"compile:`) {
-			t.Fatalf("webhook %s %s", r.Header.Get("X-Vigia-Signature"), body)
+		if r.Header.Get("X-Zodim-Signature") != "sha256="+hex.EncodeToString(mac.Sum(nil)) || !strings.Contains(string(body), `"data":"compile:`) {
+			t.Fatalf("webhook %s %s", r.Header.Get("X-Zodim-Signature"), body)
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("no notice reached the bridge")

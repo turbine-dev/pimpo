@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/capability"
+	"github.com/denerFernandes/zodim/internal/capability"
 )
 
 type hit struct {
@@ -171,11 +171,11 @@ func TestObsidian(t *testing.T) {
 	if !strings.HasSuffix(string(b), "Ligar para Ana\n- Pagar luz\n") {
 		t.Fatalf("note %q", b)
 	}
-	kept, _ := filepath.Glob(filepath.Join(vault, ".vigia", "history", "Diário", "hoje.md.*"))
+	kept, _ := filepath.Glob(filepath.Join(vault, ".zodim", "history", "Diário", "hoje.md.*"))
 	if len(kept) != 1 {
 		t.Fatal("previous version not kept")
 	}
-	for _, bad := range []string{"../fora.md", "/etc/passwd", ".obsidian/workspace", ".vigia/history/x"} {
+	for _, bad := range []string{"../fora.md", "/etc/passwd", ".obsidian/workspace", ".zodim/history/x"} {
 		if _, err := call(t, "obsidian", c, "obsidian.append", map[string]any{"note": bad, "text": "x"}); err == nil && !strings.HasPrefix(bad, "../") {
 			t.Fatalf("wrote to %s", bad)
 		}

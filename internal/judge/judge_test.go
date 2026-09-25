@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/zodim/internal/llm"
 )
 
 func TestJevSendsANoulQuestion(t *testing.T) {

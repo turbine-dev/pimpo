@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/approval"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/llm"
-	"github.com/denerFernandes/vigia/internal/memory"
-	"github.com/denerFernandes/vigia/internal/people"
+	"github.com/denerFernandes/zodim/internal/approval"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/memory"
+	"github.com/denerFernandes/zodim/internal/people"
 )
 
 // callTool calls an MCP tool and returns its text, or the error text.

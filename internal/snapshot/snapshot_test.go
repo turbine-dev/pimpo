@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/zodim/internal/event"
 )
 
 func TestCreateListRestore(t *testing.T) {
 	home := t.TempDir()
-	ev, _ := event.Open(filepath.Join(home, "vigia.db"))
+	ev, _ := event.Open(filepath.Join(home, "zodim.db"))
 	ctx := context.Background()
 	ev.Put(ctx, "marker", "before")
 	os.MkdirAll(filepath.Join(home, "memory"), 0o700)
@@ -30,7 +30,7 @@ func TestCreateListRestore(t *testing.T) {
 	if err := Restore(home, s.Name, ev.DB()); err != nil {
 		t.Fatal(err)
 	}
-	ev2, err := event.Open(filepath.Join(home, "vigia.db"))
+	ev2, err := event.Open(filepath.Join(home, "zodim.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

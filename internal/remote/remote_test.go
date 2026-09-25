@@ -26,7 +26,7 @@ func (f *fakeNode) Start() error { return nil }
 func (f *fakeNode) State(context.Context) (string, string, string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.state, f.auth, "vigia-dener.tail1234.ts.net.", nil
+	return f.state, f.auth, "zodim-dener.tail1234.ts.net.", nil
 }
 func (f *fakeNode) Login(context.Context) error {
 	f.mu.Lock()
@@ -66,7 +66,7 @@ func TestLoginThenPublish(t *testing.T) {
 	node := &fakeNode{state: "NeedsLogin"}
 	var got string
 	r := &Remote{NewNode: func() Node { return node }, OnURL: func(u string) { got = u },
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "vigia") })}
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { io.WriteString(w, "zodim") })}
 	if r.Status().State != "off" {
 		t.Fatal("should start off")
 	}
@@ -77,7 +77,7 @@ func TestLoginThenPublish(t *testing.T) {
 	}
 	node.login()
 	s = wait(t, r, "running")
-	if s.URL != "https://vigia-dener.tail1234.ts.net" || got != s.URL {
+	if s.URL != "https://zodim-dener.tail1234.ts.net" || got != s.URL {
 		t.Fatalf("%+v %q", s, got)
 	}
 	resp, err := http.Get("http://" + node.ln.Addr().String())
@@ -85,7 +85,7 @@ func TestLoginThenPublish(t *testing.T) {
 		t.Fatal(err)
 	}
 	b, _ := io.ReadAll(resp.Body)
-	if string(b) != "vigia" {
+	if string(b) != "zodim" {
 		t.Fatalf("served %q", b)
 	}
 	r.Stop()

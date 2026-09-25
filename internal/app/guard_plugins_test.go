@@ -8,16 +8,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/zodim/internal/llm"
 )
 
 // The Guard plugins for OpenClaw and Hermes run their own test suites
-// against a real Vigia, with a paired device token.
-func TestGuardPluginsAgainstVigia(t *testing.T) {
+// against a real Zodim, with a paired device token.
+func TestGuardPluginsAgainstZodim(t *testing.T) {
 	ta := newApp(t, weatherAgent, &llm.Fake{})
 	_, pair := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://127.0.0.1:7788", "device": "Guard"})
 	token := strings.TrimPrefix(pair["link"].(string), "http://127.0.0.1:7788/auth?token=")
-	env := append(os.Environ(), "VIGIA_URL="+ta.srv.URL, "VIGIA_TOKEN="+token)
+	env := append(os.Environ(), "ZODIM_URL="+ta.srv.URL, "ZODIM_TOKEN="+token)
 	root, _ := filepath.Abs("../../guard")
 
 	t.Run("hermes", func(t *testing.T) {

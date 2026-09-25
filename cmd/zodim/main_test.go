@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/snapshot"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/snapshot"
 )
 
 func TestNewVersionTakesASnapshotFirst(t *testing.T) {
 	home := t.TempDir()
-	s, _ := event.Open(filepath.Join(home, "vigia.db"))
+	s, _ := event.Open(filepath.Join(home, "zodim.db"))
 	defer s.Close()
 	ctx := context.Background()
 	version = "0.3.0"
@@ -57,8 +57,8 @@ func TestMigrateDryRunTouchesNothing(t *testing.T) {
 	if !strings.Contains(out.String(), "1 memories") || !strings.Contains(out.String(), "Nothing imported") {
 		t.Fatalf("dry run:\n%s", out.String())
 	}
-	if _, err := os.Stat(filepath.Join(data, "vigia.db")); err == nil {
-		t.Fatal("a dry run touched Vigia's data")
+	if _, err := os.Stat(filepath.Join(data, "zodim.db")); err == nil {
+		t.Fatal("a dry run touched Zodim's data")
 	}
 }
 

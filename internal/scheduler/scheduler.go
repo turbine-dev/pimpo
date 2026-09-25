@@ -11,10 +11,10 @@ import (
 
 	"github.com/robfig/cron/v3"
 
-	"github.com/denerFernandes/vigia/internal/explore"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/runtime"
-	"github.com/denerFernandes/vigia/internal/store"
+	"github.com/denerFernandes/zodim/internal/explore"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/runtime"
+	"github.com/denerFernandes/zodim/internal/store"
 )
 
 const (
@@ -56,7 +56,7 @@ func (s *Scheduler) now() time.Time {
 }
 
 // Start schedules every active routine and runs the ones whose last
-// scheduled time passed while Vigia was off.
+// scheduled time passed while Zodim was off.
 func (s *Scheduler) Start(ctx context.Context) error {
 	s.mu.Lock()
 	s.cron = cron.New(cron.WithLocation(s.zone()), cron.WithParser(parser))

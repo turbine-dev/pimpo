@@ -7,14 +7,14 @@ import (
 	"strings"
 
 	"fmt"
-	"github.com/denerFernandes/vigia/internal/connector/external"
+	"github.com/denerFernandes/zodim/internal/connector/external"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/backup"
-	"github.com/denerFernandes/vigia/internal/server"
+	"github.com/denerFernandes/zodim/internal/backup"
+	"github.com/denerFernandes/zodim/internal/server"
 )
 
 func (a *App) backupRoutes() {
@@ -36,7 +36,7 @@ func (a *App) exportBackup(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "choose a passphrase of at least 8 characters"})
 		return
 	}
-	name := "vigia-" + time.Now().Format("2006-01-02") + ".vigia"
+	name := "zodim-" + time.Now().Format("2006-01-02") + ".zodim"
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, name))
 	if _, err := backup.Export(r.Context(), a.Events.DB(), a.Home, a.Vault, req.Passphrase, a.Version, w); err != nil {
@@ -46,7 +46,7 @@ func (a *App) exportBackup(w http.ResponseWriter, r *http.Request) {
 	a.Events.Append(r.Context(), "backup.exported", "human:owner", map[string]string{"file": name})
 }
 
-// importBackup checks and stages a backup; it takes effect when Vigia
+// importBackup checks and stages a backup; it takes effect when Zodim
 // restarts, since the database cannot be swapped while it is open.
 func (a *App) importBackup(w http.ResponseWriter, r *http.Request) {
 	if a.Home == "" {
@@ -78,7 +78,7 @@ func (a *App) importBackup(w http.ResponseWriter, r *http.Request) {
 }
 
 // reloadConnectors picks up connectors copied into the connectors folder
-// without restarting Vigia.
+// without restarting Zodim.
 func (a *App) reloadConnectors(w http.ResponseWriter, r *http.Request) {
 	if a.Home == "" {
 		server.WriteError(w, server.StatusError{Status: 503, Msg: "no connectors folder"})

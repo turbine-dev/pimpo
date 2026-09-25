@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/zodim/internal/event"
 )
 
 func TestSecretsAreEncryptedAndBoundToTheirName(t *testing.T) {
 	dir := t.TempDir()
-	store, err := event.Open(filepath.Join(dir, "vigia.db"))
+	store, err := event.Open(filepath.Join(dir, "zodim.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

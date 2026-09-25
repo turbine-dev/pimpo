@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/explore"
-	"github.com/denerFernandes/vigia/internal/policy"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/explore"
+	"github.com/denerFernandes/zodim/internal/policy"
 )
 
 const (

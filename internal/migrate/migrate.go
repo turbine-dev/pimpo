@@ -1,8 +1,8 @@
 // Package migrate reads an OpenClaw or Hermes home and turns what it finds
-// into things Vigia understands: memories, proposed tasks, standing rules
+// into things Zodim understands: memories, proposed tasks, standing rules
 // and a report of which skills can become routines.
 //
-// Nothing here writes to Vigia. Read returns a Plan; the caller shows it
+// Nothing here writes to Zodim. Read returns a Plan; the caller shows it
 // and applies it.
 package migrate
 
@@ -44,7 +44,7 @@ type Task struct {
 	Enabled  bool   `json:"enabled"`
 }
 
-// Request is what Vigia's explorer is asked to do for this task.
+// Request is what Zodim's explorer is asked to do for this task.
 func (t Task) Request() string {
 	var b strings.Builder
 	b.WriteString(strings.TrimSpace(t.Prompt))

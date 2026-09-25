@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	starter "github.com/denerFernandes/vigia/gallery"
-	"github.com/denerFernandes/vigia/internal/gallery"
-	"github.com/denerFernandes/vigia/internal/server"
-	"github.com/denerFernandes/vigia/internal/store"
-	"github.com/denerFernandes/vigia/internal/vault"
+	starter "github.com/denerFernandes/zodim/gallery"
+	"github.com/denerFernandes/zodim/internal/gallery"
+	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/zodim/internal/vault"
 )
 
 func (a *App) galleryRoutes() {

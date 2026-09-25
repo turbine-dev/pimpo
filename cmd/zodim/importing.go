@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/denerFernandes/vigia/internal/backup"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/vault"
+	"github.com/denerFernandes/zodim/internal/backup"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/vault"
 )
 
 // A staged import is a backup already unpacked (and its passphrase already
@@ -36,7 +36,7 @@ func applyImport(home string) (string, error) {
 		return keep, err
 	}
 	os.RemoveAll(stage)
-	store, err := event.Open(filepath.Join(home, "vigia.db"))
+	store, err := event.Open(filepath.Join(home, "zodim.db"))
 	if err != nil {
 		return keep, err
 	}

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/host"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/host"
 )
 
 const EventUndone = "action.undone"

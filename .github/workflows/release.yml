@@ -48,7 +48,7 @@ jobs:
           cd ui && npm ci --no-audit --no-fund && npx vite build && cd ..
           mkdir -p desktop/src-tauri/binaries
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${GITHUB_REF_NAME#v}" \
-            -o desktop/src-tauri/binaries/vigia-${{ matrix.target }}${{ matrix.ext }} ./cmd/vigia
+            -o desktop/src-tauri/binaries/zodim-${{ matrix.target }}${{ matrix.ext }} ./cmd/zodim
       - run: cd desktop && npm ci --no-audit --no-fund
       - uses: tauri-apps/tauri-action@v0
         env:

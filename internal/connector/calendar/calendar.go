@@ -16,7 +16,7 @@ import (
 	ics "github.com/arran4/golang-ical"
 	"github.com/teambition/rrule-go"
 
-	"github.com/denerFernandes/vigia/internal/connector"
+	"github.com/denerFernandes/zodim/internal/connector"
 )
 
 type Event struct {

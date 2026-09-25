@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/denerFernandes/vigia/internal/remote"
-	"github.com/denerFernandes/vigia/internal/server"
+	"github.com/denerFernandes/zodim/internal/remote"
+	"github.com/denerFernandes/zodim/internal/server"
 )
 
-// Two ways for the phone to reach this Vigia, both remembered across
+// Two ways for the phone to reach this Zodim, both remembered across
 // restarts: Tailscale inside the binary (a stable https link from
 // anywhere) and the home network (no account, same Wi-Fi only).
 
@@ -19,7 +19,7 @@ const lanPort = 7788
 func (a *App) AttachRemote(home string, newNode func() remote.Node) {
 	if newNode == nil {
 		newNode = func() remote.Node {
-			return &remote.Tailscale{Dir: filepath.Join(home, "tailscale"), Hostname: "vigia"}
+			return &remote.Tailscale{Dir: filepath.Join(home, "tailscale"), Hostname: "zodim"}
 		}
 	}
 	a.Remote = &remote.Remote{NewNode: newNode, Handler: a.Server, OnURL: func(url string) {

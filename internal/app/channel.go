@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/explore"
-	"github.com/denerFernandes/vigia/internal/people"
-	"github.com/denerFernandes/vigia/internal/server"
+	"github.com/denerFernandes/zodim/internal/explore"
+	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/zodim/internal/server"
 )
 
-// A generic channel, for bridges nobody built into Vigia (Matrix, Signal,
+// A generic channel, for bridges nobody built into Zodim (Matrix, Signal,
 // SMS, a smart speaker): notices go out as signed webhooks, and requests
 // and button taps come back through the API with a device token.
 
@@ -53,7 +53,7 @@ func (a *App) setChannelWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 // mirrorWebhook posts a notice to the configured bridge, signed with
-// HMAC-SHA256 in X-Vigia-Signature so the bridge can tell it is Vigia.
+// HMAC-SHA256 in X-Zodim-Signature so the bridge can tell it is Zodim.
 func (a *App) mirrorWebhook(ctx context.Context, n explore.Notice) {
 	target, _ := a.Events.Get(ctx, "channel.webhook")
 	secret, _ := a.Vault.Get(ctx, "channel.webhook_secret")
@@ -72,7 +72,7 @@ func (a *App) mirrorWebhook(ctx context.Context, n explore.Notice) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Vigia-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
+	req.Header.Set("X-Zodim-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
 	if resp, err := webhookClient.Do(req); err == nil {
 		resp.Body.Close()
 	}

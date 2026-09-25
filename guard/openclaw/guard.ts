@@ -18,13 +18,13 @@ export async function decide(cfg: GuardConfig, toolName: string, params: Record<
       body: JSON.stringify({ agent: 'openclaw', tool: toolName, params, session }),
       signal: controller.signal,
     })
-    if (!res.ok) throw new Error('Vigia answered ' + res.status)
+    if (!res.ok) throw new Error('Zodim answered ' + res.status)
     const ans = (await res.json()) as { decision: string; reason?: string; capability: string }
-    if (ans.decision === 'block') return { block: true, blockReason: 'Vigia bloqueou: ' + (ans.reason ?? ans.capability) }
+    if (ans.decision === 'block') return { block: true, blockReason: 'Zodim bloqueou: ' + (ans.reason ?? ans.capability) }
     if (ans.decision === 'ask') {
       return {
         requireApproval: {
-          title: `Vigia pede aprovação: ${toolName}`,
+          title: `Zodim pede aprovação: ${toolName}`,
           description: ans.reason ?? `Regra para ${ans.capability}`,
           severity: ans.capability === 'guard.delete' || ans.capability === 'guard.exec' ? 'critical' : 'warning',
           allowedDecisions: ['allow-once', 'deny'],
@@ -34,7 +34,7 @@ export async function decide(cfg: GuardConfig, toolName: string, params: Record<
     return undefined
   } catch (err) {
     if (cfg.failOpen) return undefined
-    return { block: true, blockReason: 'Vigia não respondeu, então não deixo passar: ' + (err as Error).message }
+    return { block: true, blockReason: 'Zodim não respondeu, então não deixo passar: ' + (err as Error).message }
   } finally {
     clearTimeout(timer)
   }

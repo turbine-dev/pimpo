@@ -1,8 +1,8 @@
-# Vigia
+# Zodim
 
 A personal AI agent that turns what you ask into software.
 
-The first time you ask for something ("every morning, send me my agenda and the emails that matter"), Vigia does it with a language model, while you watch, simulating any change. When it works, Vigia compiles the task into a **routine**: readable JavaScript with tests and a list of the only things it may touch. From then on the routine runs on schedule without a language model. A small judgment model answers the few subjective questions ("is this email important?").
+The first time you ask for something ("every morning, send me my agenda and the emails that matter"), Zodim does it with a language model, while you watch, simulating any change. When it works, Zodim compiles the task into a **routine**: readable JavaScript with tests and a list of the only things it may touch. From then on the routine runs on schedule without a language model. A small judgment model answers the few subjective questions ("is this email important?").
 
 - **Reliable:** a routine is code with tests, not a prompt re-interpreted every time.
 - **Cheap:** routines cost cents, not dollars a night.
@@ -28,16 +28,16 @@ The first time you ask for something ("every morning, send me my agenda and the 
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/denerFernandes/vigia/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/denerFernandes/zodim/main/scripts/install.sh | sh
 ```
 
-Or download the desktop app from the releases page. Then run `vigia serve` and open the link it prints. Exploration and compilation use Claude Code (`claude`) with your own subscription; the rest runs locally.
+Or download the desktop app from the releases page. Then run `zodim serve` and open the link it prints. Exploration and compilation use Claude Code (`claude`) with your own subscription; the rest runs locally.
 
 ## Build from source
 
 ```bash
 make build
-./bin/vigia serve --demo
+./bin/zodim serve --demo
 ```
 
 Requires Go 1.25+ (the toolchain pins 1.26.8) and Node 24. `make desktop` builds the desktop app, and `make check` runs every check.
@@ -45,7 +45,7 @@ Requires Go 1.25+ (the toolchain pins 1.26.8) and Node 24. `make desktop` builds
 ## Documentation
 
 - [User guide](docs/USER_GUIDE.md)
-- [Extending Vigia](docs/SDK.md): connectors, channels, judges, routines, and the Guard, none of which needs recompiling
+- [Extending Zodim](docs/SDK.md): connectors, channels, judges, routines, and the Guard, none of which needs recompiling
 - [Threat model](docs/THREAT_MODEL.md) · [Security](SECURITY.md) · [Releases](docs/RELEASES.md)
 - [Contributing](CONTRIBUTING.md) · [Governance](GOVERNANCE.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Plan](docs/PLANNING.md) · [Status](docs/STATUS.md)

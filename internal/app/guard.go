@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/policy"
-	"github.com/denerFernandes/vigia/internal/protect"
-	"github.com/denerFernandes/vigia/internal/server"
-	"github.com/denerFernandes/vigia/protection"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/policy"
+	"github.com/denerFernandes/zodim/internal/protect"
+	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/zodim/protection"
 )
 
-// Guard lets agents that are not Vigia, such as OpenClaw and Hermes, ask
-// Vigia's rules and the shared protection list before they run a tool.
+// Guard lets agents that are not Zodim, such as OpenClaw and Hermes, ask
+// Zodim's rules and the shared protection list before they run a tool.
 // Their tools are sorted into a few guard.* capabilities, so the owner
 // writes rules for them like for anything else.
 

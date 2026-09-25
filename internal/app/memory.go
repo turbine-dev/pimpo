@@ -3,9 +3,9 @@ package app
 import (
 	"net/http"
 
-	"github.com/denerFernandes/vigia/internal/memory"
-	"github.com/denerFernandes/vigia/internal/people"
-	"github.com/denerFernandes/vigia/internal/server"
+	"github.com/denerFernandes/zodim/internal/memory"
+	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/zodim/internal/server"
 )
 
 // AttachMemory gives the app the owner's memory, stored under dir.

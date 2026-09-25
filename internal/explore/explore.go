@@ -14,17 +14,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/budget"
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/compiler"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/llm"
-	"github.com/denerFernandes/vigia/internal/mcp"
-	"github.com/denerFernandes/vigia/internal/memory"
-	"github.com/denerFernandes/vigia/internal/people"
-	"github.com/denerFernandes/vigia/internal/routine"
-	"github.com/denerFernandes/vigia/internal/store"
-	"github.com/denerFernandes/vigia/internal/trace"
+	"github.com/denerFernandes/zodim/internal/budget"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/compiler"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/mcp"
+	"github.com/denerFernandes/zodim/internal/memory"
+	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/zodim/internal/trace"
 )
 
 // Notice is a message to the owner with optional buttons.
@@ -56,7 +56,7 @@ type Service struct {
 	Compiler compiler.Compiler
 	Notify   Notifier
 	Routines Routines
-	// BaseURL is where this Vigia serves MCP, e.g. http://127.0.0.1:7788.
+	// BaseURL is where this Zodim serves MCP, e.g. http://127.0.0.1:7788.
 	BaseURL string
 	Zone    *time.Location
 	Model   string
@@ -158,7 +158,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 	if s.sessions == nil {
 		s.sessions = map[string]session{}
 	}
-	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "vigia", Tools: tools(h, s.Memory)}}
+	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "zodim", Tools: tools(h, s.Memory)}}
 	s.mu.Unlock()
 	defer func() {
 		s.mu.Lock()
@@ -447,8 +447,8 @@ func shorten(s string, n int) string {
 }
 
 func explorerPrompt(now time.Time) string {
-	return fmt.Sprintf(`You are Vigia, the owner's personal agent. Now is %s (owner's time zone).
-Do the owner's request once, right now, using ONLY the vigia tools. This run is recorded and will be turned into an automatic routine, so work the way the routine should work every time.
+	return fmt.Sprintf(`You are Zodim, the owner's personal agent. Now is %s (owner's time zone).
+Do the owner's request once, right now, using ONLY the zodim tools. This run is recorded and will be turned into an automatic routine, so work the way the routine should work every time.
 - Read what you need (calendar_events, gmail_search, http_getJSON). Prefer precise queries.
 - Changes (archive, label) are simulated while exploring: call them exactly as you would for real.
 - telegram_send really sends to the owner: send the final result there, exactly as the owner should receive it every time.

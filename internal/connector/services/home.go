@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/connector"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/connector"
 )
 
 // Critical domains move things in the physical world that matter for

@@ -1,5 +1,5 @@
 // Package oauth signs the owner into Google with their own OAuth client
-// (installed-app flow with PKCE). Tokens stay in the vault; Vigia never
+// (installed-app flow with PKCE). Tokens stay in the vault; Zodim never
 // routes them through any server of its own.
 package oauth
 
@@ -117,7 +117,7 @@ func (g *Google) Finish(ctx context.Context, state, code string) (string, error)
 		return "", err
 	}
 	if tok.RefreshToken == "" {
-		return "", errors.New("Google did not grant offline access; remove Vigia's access in your Google account and try again")
+		return "", errors.New("Google did not grant offline access; remove Zodim's access in your Google account and try again")
 	}
 	if err := g.Store.Set(ctx, "google.refresh", tok.RefreshToken); err != nil {
 		return "", err

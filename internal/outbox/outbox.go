@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/zodim/internal/event"
 )
 
 const (

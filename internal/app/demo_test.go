@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/zodim/internal/llm"
 )
 
 func TestDemoRunsTheWholeStoryOffline(t *testing.T) {

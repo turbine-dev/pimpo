@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/zodim/internal/event"
 )
 
 func TestLimitIsCheckedBeforeEachCall(t *testing.T) {

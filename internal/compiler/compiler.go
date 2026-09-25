@@ -9,10 +9,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/llm"
-	"github.com/denerFernandes/vigia/internal/routine"
-	"github.com/denerFernandes/vigia/internal/trace"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/trace"
 )
 
 type Compiler struct {
@@ -129,7 +129,7 @@ func Verify(ctx context.Context, r routine.Routine, t trace.Trace) Attempt {
 	return a
 }
 
-const system = `You compile a recorded task into a routine for Vigia, a personal agent.
+const system = `You compile a recorded task into a routine for Zodim, a personal agent.
 A routine is plain JavaScript that runs on a schedule WITHOUT a language model. It must do for new data what the agent did in the recording.
 
 Rules for the code:

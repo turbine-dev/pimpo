@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/denerFernandes/vigia/internal/people"
-	"github.com/denerFernandes/vigia/internal/server"
+	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/zodim/internal/server"
 )
 
 func (a *App) peopleRoutes() {

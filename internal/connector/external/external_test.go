@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/capability"
+	"github.com/denerFernandes/zodim/internal/capability"
 )
 
 // TestMain doubles as a fake connector when asked, so tests exercise a
@@ -55,7 +55,7 @@ func serve(mode string) {
 			if mode == "hang" {
 				time.Sleep(time.Hour)
 			}
-			body, _ := json.Marshal([]map[string]any{{"port": p.Arguments["port"], "high": "10:42", "secret_seen": os.Getenv("TIDES_KEY"), "home_seen": os.Getenv("VIGIA_LEAK")}})
+			body, _ := json.Marshal([]map[string]any{{"port": p.Arguments["port"], "high": "10:42", "secret_seen": os.Getenv("TIDES_KEY"), "home_seen": os.Getenv("ZODIM_LEAK")}})
 			result = map[string]any{"content": []map[string]string{{"type": "text", "text": string(body)}}}
 		}
 		b, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": *req.ID, "result": result})
@@ -94,7 +94,7 @@ func as(mode string) Secrets {
 }
 
 func TestConnectorRunsAndPassesItsContract(t *testing.T) {
-	t.Setenv("VIGIA_LEAK", "should-not-pass")
+	t.Setenv("ZODIM_LEAK", "should-not-pass")
 	m, err := Load(manifest(t, "ok", nil))
 	if err != nil {
 		t.Fatal(err)

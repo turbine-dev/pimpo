@@ -17,7 +17,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/zodim/internal/event"
 )
 
 //go:embed all:dist
@@ -33,7 +33,7 @@ type Server struct {
 	api    map[string]http.HandlerFunc
 }
 
-const cookie = "vigia_session"
+const cookie = "zodim_session"
 
 func New(events *event.Store, token string) *Server {
 	s := &Server{Events: events, Token: token, mux: http.NewServeMux()}
@@ -95,7 +95,7 @@ func (s *Server) auth(h http.HandlerFunc) http.Handler {
 			tok = c.Value
 		}
 		if !s.valid(tok) {
-			WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "open the login link Vigia printed at startup"})
+			WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "open the login link Zodim printed at startup"})
 			return
 		}
 		h(w, r)

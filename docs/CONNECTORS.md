@@ -1,6 +1,6 @@
 # Writing a connector
 
-A connector gives Vigia new capabilities: `tides.today`, `bank.balance`, `printer.print`. Routines and explorations can only reach the world through capabilities, so a connector decides what becomes possible. For that reason Vigia holds connectors to what they declare.
+A connector gives Zodim new capabilities: `tides.today`, `bank.balance`, `printer.print`. Routines and explorations can only reach the world through capabilities, so a connector decides what becomes possible. For that reason Zodim holds connectors to what they declare.
 
 A connector is a program in any language that speaks [MCP](https://modelcontextprotocol.io) over stdio: one JSON-RPC message per line on stdin and stdout. Next to it sits a `connector.json`. The smallest complete example is [`examples/connectors/tides`](../examples/connectors/tides): a Python file using only the standard library.
 
@@ -39,29 +39,29 @@ A connector is a program in any language that speaks [MCP](https://modelcontextp
   | `irreversible` | anything else, including messages to other people | asks the owner |
 
 - **signature / returns / schema**: what the explorer and the compiler see. Write them for a reader who has never seen your service.
-- **env**: the only environment variables your process gets, besides `PATH`, `HOME` and `LANG`. The owner fills them in Connections, and they are stored in Vigia's vault. Nothing else from Vigia's environment reaches you.
+- **env**: the only environment variables your process gets, besides `PATH`, `HOME` and `LANG`. The owner fills them in Connections, and they are stored in Zodim's vault. Nothing else from Zodim's environment reaches you.
 - **contract**: test cases. Every `read` capability needs at least one. A case calls the capability and checks the result has these keys, either on the object or on the first item of a list. Cases may only call `read` capabilities.
 
-## What Vigia enforces
+## What Zodim enforces
 
 - The process must offer exactly the declared tools. One extra tool and the connector does not start.
-- Names cannot shadow Vigia's own capabilities.
+- Names cannot shadow Zodim's own capabilities.
 - Calls time out after 30 seconds, and a process that stops answering is restarted on the next call.
 - Every call passes the rules engine and lands in Receipts with its arguments, like any built-in capability.
 
 ## Checking and installing
 
 ```bash
-TIDES_KEY=... vigia connector check ./tides
+TIDES_KEY=... zodim connector check ./tides
 ```
 
-No part of Vigia needs recompiling, and it does not need a restart either. Two ways to install:
+No part of Zodim needs recompiling, and it does not need a restart either. Two ways to install:
 
-- In **Conexões › Instalar conector (.zip)**, send a zip with `connector.json` at its root (or inside one folder). Vigia checks the manifest before anything is installed.
+- In **Conexões › Instalar conector (.zip)**, send a zip with `connector.json` at its root (or inside one folder). Zodim checks the manifest before anything is installed.
 - Or copy the folder yourself and choose **Recarregar a pasta de conectores**:
 
 ```bash
-cp -r ./tides ~/.vigia/connectors/
+cp -r ./tides ~/.zodim/connectors/
 ```
 
 The connector shows up in Connections with its capabilities, their risk, fields for the env vars it declares, and a **Testar** button that runs the contract. Connectors travel with **Exportar tudo**, like everything else.

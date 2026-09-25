@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/runtime"
-	"github.com/denerFernandes/vigia/internal/server"
-	"github.com/denerFernandes/vigia/internal/store"
-	"github.com/denerFernandes/vigia/internal/telegram"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/runtime"
+	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/zodim/internal/telegram"
 )
 
 func (a *App) routes() {

@@ -14,7 +14,7 @@ import (
 
 	"github.com/dop251/goja"
 
-	"github.com/denerFernandes/vigia/internal/capability"
+	"github.com/denerFernandes/zodim/internal/capability"
 )
 
 // Host performs capability calls on behalf of a routine. It is where the

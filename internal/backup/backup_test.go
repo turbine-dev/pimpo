@@ -1,21 +1,24 @@
 package backup
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/vault"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/vault"
 )
 
 func TestExportImportRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	home := t.TempDir()
-	ev, _ := event.Open(filepath.Join(home, "vigia.db"))
+	ev, _ := event.Open(filepath.Join(home, "zodim.db"))
 	defer ev.Close()
 	v, _ := vault.Open(ev.DB(), vault.FileKey(filepath.Join(home, "key-a")))
 	v.Set(ctx, "telegram.token", "123:secret")
@@ -46,7 +49,7 @@ func TestExportImportRoundTrip(t *testing.T) {
 
 	// A new machine, with its own vault key.
 	other := t.TempDir()
-	os.WriteFile(filepath.Join(other, "vigia.db"), []byte("old"), 0o600)
+	os.WriteFile(filepath.Join(other, "zodim.db"), []byte("old"), 0o600)
 	unpacked := t.TempDir()
 	_, secrets, err := Unpack(bytes.NewReader(buf.Bytes()), unpacked, "correct horse")
 	if err != nil || secrets["telegram.token"] != "123:secret" {
@@ -56,10 +59,10 @@ func TestExportImportRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if b, _ := os.ReadFile(filepath.Join(keep, "vigia.db")); string(b) != "old" {
+	if b, _ := os.ReadFile(filepath.Join(keep, "zodim.db")); string(b) != "old" {
 		t.Fatal("the previous data was not kept")
 	}
-	ev2, err := event.Open(filepath.Join(other, "vigia.db"))
+	ev2, err := event.Open(filepath.Join(other, "zodim.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,5 +85,47 @@ func TestExportImportRoundTrip(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(filepath.Join(other, "memory", "facts.json")); !bytes.Contains(b, []byte("Ana")) {
 		t.Fatal("memory lost")
+	}
+}
+
+// Backups made before the rename say vigia-backup-1 and carry vigia.db.
+func TestImportsBackupsFromBeforeTheRename(t *testing.T) {
+	ctx := context.Background()
+	home := t.TempDir()
+	ev, _ := event.Open(filepath.Join(home, "zodim.db"))
+	defer ev.Close()
+	v, _ := vault.Open(ev.DB(), vault.FileKey(filepath.Join(home, "key")))
+	v.Set(ctx, "telegram.token", "123:secret")
+	var buf bytes.Buffer
+	if _, err := Export(ctx, ev.DB(), home, v, "correct horse", "0.5", &buf); err != nil {
+		t.Fatal(err)
+	}
+	var old bytes.Buffer
+	gw := gzip.NewWriter(&old)
+	tw := tar.NewWriter(gw)
+	walk(bytes.NewReader(buf.Bytes()), func(name string, data io.Reader) error {
+		b, _ := io.ReadAll(data)
+		switch name {
+		case "zodim.db":
+			name = "vigia.db"
+		case "manifest.json":
+			b = bytes.Replace(b, []byte(format), []byte(legacyFormat), 1)
+		}
+		tw.WriteHeader(&tar.Header{Name: name, Mode: 0o600, Size: int64(len(b)), Typeflag: tar.TypeReg})
+		tw.Write(b)
+		return nil
+	})
+	tw.Close()
+	gw.Close()
+	if m, err := Inspect(bytes.NewReader(old.Bytes())); err != nil || m.Format != legacyFormat {
+		t.Fatalf("inspect %+v %v", m, err)
+	}
+	dir := t.TempDir()
+	_, secrets, err := Unpack(bytes.NewReader(old.Bytes()), dir, "correct horse")
+	if err != nil || secrets["telegram.token"] != "123:secret" {
+		t.Fatalf("%v %v", secrets, err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "zodim.db")); err != nil {
+		t.Fatal("the old database name was not mapped")
 	}
 }

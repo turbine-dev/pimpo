@@ -1,9 +1,9 @@
 #!/bin/sh
-# Install Vigia on Linux or macOS: curl -fsSL https://raw.githubusercontent.com/denerFernandes/vigia/main/scripts/install.sh | sh
+# Install Zodim on Linux or macOS: curl -fsSL https://raw.githubusercontent.com/denerFernandes/zodim/main/scripts/install.sh | sh
 # Options: --service (run at boot with systemd, Linux), --version vX.Y.Z, --dir DIR
 set -eu
 
-repo="denerFernandes/vigia"
+repo="denerFernandes/zodim"
 version="latest"
 dir="${HOME}/.local/bin"
 service=0
@@ -31,8 +31,8 @@ if [ "$version" = "latest" ]; then
 else
   base="https://github.com/$repo/releases/download/$version"
 fi
-base="${VIGIA_BASE_URL:-$base}"
-archive="vigia_${os}_${arch}.tar.gz"
+base="${ZODIM_BASE_URL:-$base}"
+archive="zodim_${os}_${arch}.tar.gz"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
@@ -48,8 +48,8 @@ fi
 
 tar -xzf "$tmp/$archive" -C "$tmp"
 mkdir -p "$dir"
-install -m 0755 "$tmp/vigia" "$dir/vigia"
-echo "Installed $("$dir/vigia" version) to $dir/vigia"
+install -m 0755 "$tmp/zodim" "$dir/zodim"
+echo "Installed $("$dir/zodim" version) to $dir/zodim"
 case ":$PATH:" in *":$dir:"*) ;; *) echo "Add $dir to your PATH." ;; esac
 
 if [ "$service" = 1 ]; then
@@ -57,15 +57,15 @@ if [ "$service" = 1 ]; then
     echo "--service needs systemd; on macOS use the desktop app, which starts at login" >&2
     exit 1
   fi
-  unit="$HOME/.config/systemd/user/vigia.service"
+  unit="$HOME/.config/systemd/user/zodim.service"
   mkdir -p "$(dirname "$unit")"
   cat > "$unit" <<UNIT
 [Unit]
-Description=Vigia personal agent
+Description=Zodim personal agent
 After=network-online.target
 
 [Service]
-ExecStart=$dir/vigia serve
+ExecStart=$dir/zodim serve
 Restart=on-failure
 RestartSec=5
 
@@ -73,9 +73,9 @@ RestartSec=5
 WantedBy=default.target
 UNIT
   systemctl --user daemon-reload
-  systemctl --user enable --now vigia
+  systemctl --user enable --now zodim
   loginctl enable-linger "$(id -un)" 2>/dev/null || true
-  echo "Vigia runs at boot. Open link: journalctl --user -u vigia | grep auth"
+  echo "Zodim runs at boot. Open link: journalctl --user -u zodim | grep auth"
 else
-  echo "Start it with: vigia serve"
+  echo "Start it with: zodim serve"
 fi

@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/denerFernandes/vigia/internal/connector/external"
-	"github.com/denerFernandes/vigia/internal/connector/services"
-	"github.com/denerFernandes/vigia/internal/server"
-	"github.com/denerFernandes/vigia/internal/vault"
+	"github.com/denerFernandes/zodim/internal/connector/external"
+	"github.com/denerFernandes/zodim/internal/connector/services"
+	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/zodim/internal/vault"
 )
 
 // The catalog: connectors set up from a form in Connections. Secret fields

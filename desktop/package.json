@@ -1,5 +1,5 @@
 {
-  "name": "vigia-desktop",
+  "name": "zodim-desktop",
   "private": true,
   "scripts": {
     "tauri": "tauri"

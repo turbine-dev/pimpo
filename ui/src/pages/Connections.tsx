@@ -126,7 +126,7 @@ function WhatsAppSteps({ c }: { c?: Connection }) {
           field: <b>messages</b>,
         })}
       </li>
-      <li>{fill(t('conn.whatsappStep2'), { code: <code className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[12px]">vigia {c.pairing_code}</code> })}</li>
+      <li>{fill(t('conn.whatsappStep2'), { code: <code className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[12px]">zodim {c.pairing_code}</code> })}</li>
     </ol>
   )
 }

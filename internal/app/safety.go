@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/approval"
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/connector/mail"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/llm"
-	"github.com/denerFernandes/vigia/internal/policy"
-	"github.com/denerFernandes/vigia/internal/server"
-	"github.com/denerFernandes/vigia/internal/undo"
+	"github.com/denerFernandes/zodim/internal/approval"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/connector/mail"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/policy"
+	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/zodim/internal/undo"
 )
 
 // approver adapts the approval manager to the host.
@@ -248,7 +248,7 @@ func (a *App) compileRule(w http.ResponseWriter, r *http.Request) {
 		who = append(who, fmt.Sprintf("%s (%s, %s)", p.ID, p.Name, p.Role))
 	}
 	resp, err := a.LLM.Generate(ctx, llm.Request{
-		System: "You turn an owner's sentence into one rule for Vigia's policy engine. Decisions: allow (just do it), reversible (do it but keep it undoable), ask (ask the owner first), block (never). Match as narrowly as the sentence says; leave fields empty to match everything. source is \"routine:<id>\" or \"exploration\"; risk levels are read < notify < reversible < irreversible. When the sentence is about some people of the house, fill people with their ids, or roles for a whole group.",
+		System: "You turn an owner's sentence into one rule for Zodim's policy engine. Decisions: allow (just do it), reversible (do it but keep it undoable), ask (ask the owner first), block (never). Match as narrowly as the sentence says; leave fields empty to match everything. source is \"routine:<id>\" or \"exploration\"; risk levels are read < notify < reversible < irreversible. When the sentence is about some people of the house, fill people with their ids, or roles for a whole group.",
 		Prompt: "Capabilities:\n" + caps.String() + "\nRoutines: " + strings.Join(names, ", ") + "\nPeople of the house: " + strings.Join(who, ", ") + "\n\nThe owner wrote: " + req.Text,
 		Schema: ruleSchema, Model: a.Settings(ctx).JudgeModel, MaxCostUSD: 0.2,
 	})

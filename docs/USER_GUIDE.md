@@ -1,18 +1,18 @@
-# Vigia user guide
+# Zodim user guide
 
 ## First steps
 
-1. **Install.** Use the desktop app, or run `curl -fsSL https://raw.githubusercontent.com/denerFernandes/vigia/main/scripts/install.sh | sh` and then `vigia serve`. Open the link it prints.
+1. **Install.** Use the desktop app, or run `curl -fsSL https://raw.githubusercontent.com/denerFernandes/zodim/main/scripts/install.sh | sh` and then `zodim serve`. Open the link it prints.
 2. **Pick your safety level.** The welcome screen offers conservative, balanced (recommended) and liberal.
 3. **Connect what you need** in Conexões: Telegram or WhatsApp to talk from your phone, then email and calendar. "Entrar com Google" connects both at once with your own Google client.
 4. **Ask for something you do every week.** Use "Nova tarefa", or send a message on Telegram.
 
-Want to see it first? Run `vigia serve --demo`: a sample mailbox and calendar, no accounts, no costs.
+Want to see it first? Run `zodim serve --demo`: a sample mailbox and calendar, no accounts, no costs.
 
 ## How a task becomes a routine
 
 1. **Exploration.** The agent does the task once. Anything that would change something (archive, send, delete) is only simulated, and you see exactly what would happen.
-2. **Routine.** If you like the result, tap "Transformar em rotina". Vigia writes code with tests and checks it against what the agent did. You can read the code on the routine's page.
+2. **Routine.** If you like the result, tap "Transformar em rotina". Zodim writes code with tests and checks it against what the agent did. You can read the code on the routine's page.
 3. **On its own.** The routine runs on schedule without a model. If a service changes and the routine breaks, you get a notice with "Refazer", and the agent fixes it.
 
 ## Changing a routine without code
@@ -20,8 +20,8 @@ Want to see it first? Run `vigia serve --demo`: a sample mailbox and calendar, n
 Every routine page starts with **Ajustes da rotina**:
 
 - **Quando**: every day, weekdays, some days of the week, once a month, every few hours, or a cron expression under "Avançado".
-- **The routine's own choices**: a city (search by name), a limit, a list of words, a currency, whatever the routine was made with. Vigia's compiler turns anything personal in your request into one of these, instead of writing it into the code.
-- **Onde avisar**: one or more destinations. These can be your Telegram, other Telegram bots (a family group, for example), WhatsApp, Slack, Discord or email. With none chosen, Vigia uses your usual channel.
+- **The routine's own choices**: a city (search by name), a limit, a list of words, a currency, whatever the routine was made with. Zodim's compiler turns anything personal in your request into one of these, instead of writing it into the code.
+- **Onde avisar**: one or more destinations. These can be your Telegram, other Telegram bots (a family group, for example), WhatsApp, Slack, Discord or email. With none chosen, Zodim uses your usual channel.
 
 To add more Telegram bots, go to **Conexões › Bots extras do Telegram**. Create the bot with @BotFather, paste its token, send it a message (or add it to a group), and tap **Detectar chat**.
 
@@ -38,7 +38,7 @@ Every action has a receipt: what was done, with which arguments, under which rul
 
 ## Memory
 
-Vigia remembers what you tell it. Facts it read somewhere are marked "não confirmado" and never guide it until you confirm them. Every change is versioned: **Histórico › Voltar para aqui** undoes any change.
+Zodim remembers what you tell it. Facts it read somewhere are marked "não confirmado" and never guide it until you confirm them. Every change is versioned: **Histórico › Voltar para aqui** undoes any change.
 
 ## People
 
@@ -47,23 +47,23 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 ## On the phone
 
 1. In **Ajustes › Abrir no celular**, turn on one or both ways in:
-   - **Em casa**: the phone reaches Vigia over your Wi-Fi. No account, nothing to install, and it stops working when you leave home.
-   - **De qualquer lugar**: Tailscale runs inside Vigia. The first time, sign in to Tailscale (free) in the browser; Vigia then gets an `https://vigia.<your-network>.ts.net` link that works from anywhere. If Tailscale says Funnel or HTTPS is off, turn them on in its admin console as the message explains.
-   - Already expose Vigia another way? Paste the address under **Usar outro endereço**.
+   - **Em casa**: the phone reaches Zodim over your Wi-Fi. No account, nothing to install, and it stops working when you leave home.
+   - **De qualquer lugar**: Tailscale runs inside Zodim. The first time, sign in to Tailscale (free) in the browser; Zodim then gets an `https://zodim.<your-network>.ts.net` link that works from anywhere. If Tailscale says Funnel or HTTPS is off, turn them on in its admin console as the message explains.
+   - Already expose Zodim another way? Paste the address under **Usar outro endereço**.
 2. Name the phone and tap **Gerar código**. With both ways on, the phone uses the home address when it can and the other one elsewhere.
-3. Scan the QR code with the Vigia app, or paste the link.
+3. Scan the QR code with the Zodim app, or paste the link.
 4. Lost the phone? Tap the trash icon next to it. Only that phone loses access.
 
 ## Gallery
 
-Browse ready-made routines, filtered by what they can touch. Vigia checks the author's signature, runs the routine's tests, and audits what it really calls before installing. To share one of yours, use **Publicar** on its page.
+Browse ready-made routines, filtered by what they can touch. Zodim checks the author's signature, runs the routine's tests, and audits what it really calls before installing. To share one of yours, use **Publicar** on its page.
 
 ## Moving and backups
 
 - **Ajustes › Exportar e importar tudo** creates one file with everything, the keys sealed with a passphrase you choose. Import it on another computer. What was there before is kept aside.
-- `vigia export file.vigia` and `vigia import file.vigia` do the same from the terminal.
-- `vigia snapshots` and `vigia restore` go back to an automatic daily snapshot.
-- Coming from OpenClaw or Hermes? Use **Ajustes › Trazer do OpenClaw ou do Hermes**, or `vigia migrate openclaw`.
+- `zodim export file.zodim` and `zodim import file.zodim` do the same from the terminal.
+- `zodim snapshots` and `zodim restore` go back to an automatic daily snapshot.
+- Coming from OpenClaw or Hermes? Use **Ajustes › Trazer do OpenClaw ou do Hermes**, or `zodim migrate openclaw`.
 
 ## Costs
 

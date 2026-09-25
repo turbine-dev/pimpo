@@ -1,6 +1,6 @@
 # Governance
 
-Vigia is free and open source, and it should outlive any one person.
+Zodim is free and open source, and it should outlive any one person.
 
 ## Roles
 
@@ -20,7 +20,7 @@ The goal is at least three maintainers besides the founder, each reviewing ten o
 
 ## Money
 
-Vigia stays free: no paid tier, no telemetry, no hosted service required. Donations, if any, go to infrastructure and audits, and are reported publicly.
+Zodim stays free: no paid tier, no telemetry, no hosted service required. Donations, if any, go to infrastructure and audits, and are reported publicly.
 
 ## Conduct
 

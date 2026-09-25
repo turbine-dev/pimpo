@@ -1,4 +1,4 @@
-// Package people is the household: who may talk to Vigia, in what role,
+// Package people is the household: who may talk to Zodim, in what role,
 // and who answers for whom. The owner is implicit and always exists.
 package people
 
@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/zodim/internal/event"
 )
 
 type Role string
@@ -276,7 +276,7 @@ func (d *Directory) Update(ctx context.Context, id string, role Role, responsibl
 	return Person{}, ErrUnknown
 }
 
-// Remove forgets a person; their chat can no longer talk to Vigia.
+// Remove forgets a person; their chat can no longer talk to Zodim.
 func (d *Directory) Remove(ctx context.Context, id string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()

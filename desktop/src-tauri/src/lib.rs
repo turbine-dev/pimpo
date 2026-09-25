@@ -1,7 +1,7 @@
-//! The desktop app runs the Vigia server as a sidecar on a free loopback
+//! The desktop app runs the Zodim server as a sidecar on a free loopback
 //! port and shows its web UI. Closing the window keeps the agent running in
 //! the menu bar; only Quit stops it. On mobile there is no sidecar: the
-//! shell page pairs with a Vigia running elsewhere.
+//! shell page pairs with a Zodim running elsewhere.
 
 #[cfg(desktop)]
 mod desktop {
@@ -71,11 +71,11 @@ mod desktop {
         let addr = format!("127.0.0.1:{port}");
         let (mut rx, child) = app
             .shell()
-            .sidecar("vigia")?
+            .sidecar("zodim")?
             .args(["serve", "--addr", &addr])
-            .env("VIGIA_TOKEN", &token)
-            .env("VIGIA_EXIT_WITH_PARENT", "1")
-            .env("VIGIA_DESKTOP_NOTIFY", "1")
+            .env("ZODIM_TOKEN", &token)
+            .env("ZODIM_EXIT_WITH_PARENT", "1")
+            .env("ZODIM_DESKTOP_NOTIFY", "1")
             .spawn()?;
         app.manage(Server(Mutex::new(Some(child))));
 
@@ -90,7 +90,7 @@ mod desktop {
                         }
                     }
                     CommandEvent::Terminated(p) => {
-                        status(&handle, &format!("O Vigia parou (código {:?}). Feche e abra de novo.", p.code));
+                        status(&handle, &format!("O Zodim parou (código {:?}). Feche e abra de novo.", p.code));
                         show(&handle);
                     }
                     _ => {}
@@ -112,7 +112,7 @@ mod desktop {
                 }
                 std::thread::sleep(Duration::from_millis(150));
             }
-            status(&handle, "O Vigia demorou demais para abrir.");
+            status(&handle, "O Zodim demorou demais para abrir.");
         });
         Ok(())
     }
@@ -126,15 +126,15 @@ mod desktop {
     }
 
     pub fn tray(app: &AppHandle) -> tauri::Result<()> {
-        let open = MenuItem::with_id(app, "open", "Abrir o Vigia", true, None::<&str>)?;
+        let open = MenuItem::with_id(app, "open", "Abrir o Zodim", true, None::<&str>)?;
         let at_login = app.autolaunch().is_enabled().unwrap_or(false);
         let login = CheckMenuItem::with_id(app, "login", "Abrir ao iniciar o computador", true, at_login, None::<&str>)?;
-        let quit = MenuItem::with_id(app, "quit", "Sair do Vigia", true, Some("CmdOrCtrl+Q"))?;
+        let quit = MenuItem::with_id(app, "quit", "Sair do Zodim", true, Some("CmdOrCtrl+Q"))?;
         let menu = Menu::with_items(app, &[&open, &login, &PredefinedMenuItem::separator(app)?, &quit])?;
-        TrayIconBuilder::with_id("vigia")
+        TrayIconBuilder::with_id("zodim")
             .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
             .icon_as_template(true)
-            .tooltip("Vigia")
+            .tooltip("Zodim")
             .menu(&menu)
             .show_menu_on_left_click(false)
             .on_menu_event(move |app, ev| match ev.id().as_ref() {
@@ -193,7 +193,7 @@ pub fn run() {
 
     let app = builder
         .build(tauri::generate_context!())
-        .expect("error while building Vigia");
+        .expect("error while building Zodim");
     app.run(|_app, _ev| {
         #[cfg(desktop)]
         match _ev {
