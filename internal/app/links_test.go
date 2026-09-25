@@ -48,7 +48,7 @@ func TestSignalLikeChannelPairsAndAnswersByNumber(t *testing.T) {
 		t.Fatalf("%q", l.last())
 	}
 	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: "zodim " + ta.Channel.PairingCode()})
-	if !strings.Contains(l.last(), "conversa por aqui") {
+	if !strings.Contains(l.last(), "conectado por aqui") {
 		t.Fatalf("%q", l.last())
 	}
 	n := len(l.sent)

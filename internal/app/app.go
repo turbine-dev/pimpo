@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"os/exec"
 	"slices"
 	"strings"
@@ -187,6 +188,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Channel.Transcribe = func(ctx context.Context, audio []byte) (string, error) {
 		return voice.Whisper{Model: a.VoiceModel, Language: strings.SplitN(a.Settings(ctx).Locale, "-", 2)[0]}.Transcribe(ctx, audio)
 	}
+	i18n.Locale = func(ctx context.Context) string { return a.Settings(ctx).Locale }
 	a.Approvals = &approval.Manager{Events: events, Notify: a.Channel, Describe: describeAction, Responsible: func(ctx context.Context, person string) (string, string) {
 		asker, _ := a.People.Get(ctx, person)
 		return a.People.Responsible(ctx, person).ID, asker.Name
@@ -573,7 +575,7 @@ func (h handler) Request(ctx context.Context, text string) (string, error) {
 	if _, err := h.a.Explore.Start(ctx, text, actor(ctx)); err != nil {
 		return "", err
 	}
-	return "Entendi. Vou fazer agora e te mostro o resultado. 🔎", nil
+	return i18n.T(ctx, "msg.request.started"), nil
 }
 
 func (h handler) Button(ctx context.Context, action, id string) (string, error) {
@@ -587,21 +589,21 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("Rotina \"%s\" criada. Próxima execução: %s.", r.Body.Name, h.a.nextText(ctx, r.ID)), nil
+		return i18n.T(ctx, "msg.routine.created", "name", r.Body.Name, "next", h.a.nextText(ctx, r.ID)), nil
 	case "discard":
-		return "Descartado.", h.a.Explore.Discard(ctx, id, who)
+		return i18n.T(ctx, "msg.discarded"), h.a.Explore.Discard(ctx, id, who)
 	case "run":
 		h.a.Store.SetRoutineState(ctx, id, store.RoutineActive)
 		h.a.Scheduler.Changed(ctx, id)
 		if _, err := h.a.Scheduler.RunNow(ctx, id, "owner"); err != nil {
 			return "", err
 		}
-		return "Rodou de novo e deu certo. Rotina reativada.", nil
+		return i18n.T(ctx, "msg.routine.reran"), nil
 	case "repair":
 		if _, err := h.a.Explore.Repair(ctx, id, "", "human:owner"); err != nil {
 			return "", err
 		}
-		return "Vou refazer com o agente e te mostro.", nil
+		return i18n.T(ctx, "msg.routine.redo"), nil
 	case "approve", "always", "deny", "batch":
 		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run}[action]
 		if ans == approval.Always && people.From(ctx) != people.OwnerID {
@@ -609,9 +611,9 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 			ans, action = approval.Once, "approve"
 		}
 		if !h.a.Approvals.Resolve(ctx, id, ans, who) {
-			return "", fmt.Errorf("este pedido já não está esperando")
+			return "", errors.New(i18n.T(ctx, "msg.approval.gone"))
 		}
-		return map[string]string{"approve": "Permitido.", "batch": "Permitido para o resto desta execução.", "always": "Permitido, e não pergunto mais.", "deny": "Negado."}[action], nil
+		return i18n.T(ctx, "msg.approval."+action), nil
 	}
 	return "", fmt.Errorf("unknown action %q", action)
 }
@@ -633,13 +635,13 @@ func (h handler) allowed(ctx context.Context, action, id string) error {
 			return nil
 		}
 	}
-	return errors.New("só o dono da casa pode fazer isso")
+	return errors.New(i18n.T(ctx, "msg.ownerOnly"))
 }
 
 func (a *App) nextText(ctx context.Context, id string) string {
 	n := a.Scheduler.Next(id)
 	if n.IsZero() {
-		return "não agendada"
+		return i18n.T(ctx, "msg.routine.notScheduled")
 	}
 	return n.In(loadZone(a.Settings(ctx).Zone)).Format("02/01 15:04")
 }

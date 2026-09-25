@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"regexp"
 	"strings"
 	"time"
@@ -58,13 +59,13 @@ func (a *App) checkEmailChannel(ctx context.Context) int {
 		text := strings.TrimSpace(zodimSubject.ReplaceAllString(m.Subject, "") + "\n" + m.Snippet)
 		reply, err := handler{a}.Request(ctx, text)
 		if err != nil {
-			reply = "Não consegui começar: " + err.Error()
+			reply = i18n.T(ctx, "msg.start.failed", "error", err)
 		}
 		a.Router.Call(ctx, "gmail.archive", "", map[string]any{"id": m.ID})
 		// Sending needs a known server: one set up, or Gmail's default.
 		smtp, _ := a.Events.Get(ctx, "mail.smtp")
 		if imapAddr, _ := a.Events.Get(ctx, "mail.addr"); smtp != "" || strings.HasPrefix(imapAddr, "imap.gmail.com") {
-			a.Router.Call(ctx, "gmail.send", "", map[string]any{"to": me, "subject": "Re: " + m.Subject, "body": reply + "\n\nO resultado chega no Telegram, no WhatsApp ou em Precisa de você."})
+			a.Router.Call(ctx, "gmail.send", "", map[string]any{"to": me, "subject": "Re: " + m.Subject, "body": reply + "\n\n" + i18n.T(ctx, "msg.email.where")})
 		}
 		n++
 	}

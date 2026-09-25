@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"strings"
 	"sync"
 
@@ -269,7 +270,7 @@ func (e *Engine) hosts(ctx context.Context) map[string]bool {
 func (e *Engine) Decide(ctx context.Context, a Action) Decision {
 	if e.Protect != nil {
 		if hit, ok := e.Protect.Check(a.Capability, a.Scope, a.Args); ok && !e.ignored(ctx, hit.ID) {
-			return Decision{Verdict: Block, Reason: fmt.Sprintf("rede de proteção: %s (marcado por %d pessoas)", hit.Reason, hit.Reports), Rule: "protect:" + hit.ID}
+			return Decision{Verdict: Block, Reason: i18n.T(ctx, "policy.protect", "reason", hit.Reason, "count", hit.Reports), Rule: "protect:" + hit.ID}
 		}
 	}
 	d := e.decide(ctx, a)

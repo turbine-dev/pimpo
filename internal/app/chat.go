@@ -74,7 +74,7 @@ func chatID() string {
 }
 
 // rehearsed lists the changes an exploration only simulated.
-func rehearsed(e store.Exploration) []chatAction {
+func rehearsed(ctx context.Context, e store.Exploration) []chatAction {
 	out := []chatAction{}
 	if e.Trace == nil {
 		return out
@@ -86,7 +86,7 @@ func rehearsed(e store.Exploration) []chatAction {
 		}
 		var args any
 		json.Unmarshal(c.Args, &args)
-		text := actionPhrase(policy.Action{Capability: c.Capability, Args: args, Risk: spec.Risk, Source: "chat"})
+		text := actionPhrase(ctx, policy.Action{Capability: c.Capability, Args: args, Risk: spec.Risk, Source: "chat"})
 		if r := []rune(text); len(r) > 0 {
 			text = strings.ToUpper(string(r[0])) + string(r[1:])
 		}
@@ -102,7 +102,7 @@ func (a *App) turn(ctx context.Context, id string) (chatTurn, error) {
 	if err != nil {
 		return chatTurn{}, err
 	}
-	t := chatTurn{ID: e.ID, Request: e.Request, State: e.State, Summary: e.Summary, Error: e.Error, CostUSD: e.CostUSD, Routine: e.Routine, CreatedAt: e.CreatedAt, Actions: rehearsed(e)}
+	t := chatTurn{ID: e.ID, Request: e.Request, State: e.State, Summary: e.Summary, Error: e.Error, CostUSD: e.CostUSD, Routine: e.Routine, CreatedAt: e.CreatedAt, Actions: rehearsed(ctx, e)}
 	if raw, _ := a.Events.Get(ctx, doneKey(id)); raw != "" {
 		var d chatDone
 		if json.Unmarshal([]byte(raw), &d) == nil {
@@ -299,7 +299,7 @@ func (a *App) chatDo(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 409, Msg: "this answer has nothing to do yet"})
 		return
 	}
-	actions := rehearsed(e)
+	actions := rehearsed(ctx, e)
 	if len(actions) == 0 {
 		server.WriteError(w, server.StatusError{Status: 409, Msg: "this answer has nothing to do"})
 		return

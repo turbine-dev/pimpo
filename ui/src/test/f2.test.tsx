@@ -39,7 +39,7 @@ describe('Rules', () => {
     wrap(<Rules />)
     await userEvent.type(await screen.findByLabelText('Nova regra'), 'Nunca apague e-mail sem me perguntar')
     await userEvent.click(screen.getByRole('button', { name: /Criar/ }))
-    expect(await screen.findByText('Entendi assim — confira antes de salvar:')).toBeInTheDocument()
+    expect(await screen.findByText('Entendido assim — confira antes de salvar:')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /Testar na última semana/ }))
     expect(await screen.findByText(/teria se aplicado a 2 ações/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /Salvar regra/ }))

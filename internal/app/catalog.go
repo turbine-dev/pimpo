@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"net/http"
 	"slices"
 	"sort"
@@ -82,11 +83,35 @@ func (a *App) catalogConfigured(ctx context.Context, k services.Kind) (bool, map
 	return ok, values
 }
 
+// localKind puts a built-in connector's texts in the owner's language.
+func localKind(ctx context.Context, k services.Kind) services.Kind {
+	lang := i18n.Of(ctx)
+	pick := func(key, fallback string) string {
+		if t, ok := i18n.Lookup(lang, "svc."+k.ID+"."+key); ok {
+			return t
+		}
+		return fallback
+	}
+	k.Title, k.Description, k.Help = pick("title", k.Title), pick("description", k.Description), pick("help", k.Help)
+	fields := make([]services.Field, len(k.Fields))
+	for i, f := range k.Fields {
+		f.Label = pick("field."+f.Name+".label", f.Label)
+		if f.Placeholder != "" {
+			f.Placeholder = pick("field."+f.Name+".placeholder", f.Placeholder)
+		}
+		fields[i] = f
+	}
+	if k.Fields != nil {
+		k.Fields = fields
+	}
+	return k
+}
+
 func (a *App) listCatalog(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out := []catalogView{}
 	for _, k := range services.All() {
-		v := catalogView{Kind: k, Capabilities: []catalogCap{}}
+		v := catalogView{Kind: localKind(ctx, k), Capabilities: []catalogCap{}}
 		if k.Fields == nil {
 			v.Fields = []services.Field{}
 		}
@@ -96,7 +121,7 @@ func (a *App) listCatalog(w http.ResponseWriter, r *http.Request) {
 		v.Configured, v.Values = a.catalogConfigured(ctx, k)
 		out = append(out, v)
 	}
-	out = append(out, a.externalKinds()...)
+	out = append(out, a.externalKinds(ctx)...)
 	a.mu.Lock()
 	broken := append([]string{}, a.externalErrs...)
 	a.mu.Unlock()
@@ -239,14 +264,14 @@ func (a *App) AttachConnectors(dir string) {
 	}
 }
 
-func (a *App) externalKinds() []catalogView {
+func (a *App) externalKinds(ctx context.Context) []catalogView {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	var out []catalogView
 	for _, c := range a.external {
-		help := "Conector externo em " + c.Dir + ". Roda como um processo separado e só recebe as variáveis abaixo."
+		help := i18n.T(ctx, "catalog.externalHelp", "dir", c.Dir)
 		if c.URL != "" {
-			help = "Servidor MCP remoto em " + c.URL + ". Recebe só o que o Zodim envia a ele, com os cabeçalhos abaixo."
+			help = i18n.T(ctx, "catalog.remoteHelp", "url", c.URL)
 		}
 		v := catalogView{Kind: services.Kind{ID: c.Name, Title: c.Name, Description: c.Description, Help: help, Fields: []services.Field{}},
 			Capabilities: []catalogCap{}, Values: map[string]string{}, External: true, Configured: true, Source: c.Source}

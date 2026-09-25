@@ -13,6 +13,10 @@
 
 Want to see it first? Run `zodim serve --demo`: a sample mailbox and calendar, no accounts, no costs.
 
+## Language
+
+Zodim speaks Português, English, Español, Français, Deutsch, Italiano, 日本語, 简体中文, 한국어 and Русский. Choose in **Ajustes › Geral**: the app, the messages on Telegram and the other channels, approval requests, connector instructions and the dates routines write all follow it. Tasks are answered in the language you ask in. The phone's pairing screen follows the phone's language. This guide is in English only.
+
 ## Chat
 
 **Conversar** is a conversation with Zodim in the app, with every past conversation on the side. Each message remembers the ones before it. Zodim reads for real (your calendar, your email), but any change it would make is only rehearsed and listed under the answer, with its risk. **Confirmar e fazer** does exactly those changes, once, each still under your rules and approvals; **Transformar em rotina** makes the task repeat on its own.

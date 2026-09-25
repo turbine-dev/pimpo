@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"sync"
 	"time"
 
@@ -120,10 +121,10 @@ func (a *App) announceHealth(ctx context.Context) {
 	for ch, why := range down {
 		a.Events.Append(ctx, "channel.down", "system", map[string]string{"channel": ch, "error": why})
 		a.Channel.Notify(ctx, explore.Notice{Kind: "failure",
-			Text: "⚠️ O " + channelNames[ch] + " parou de funcionar há alguns minutos.\n" + why + "\n\nEnquanto isso, aviso pelos outros canais e em Precisa de você."})
+			Text: i18n.T(ctx, "msg.health.down", "channel", channelNames[ch], "error", why)})
 	}
 	for ch := range back {
 		a.Events.Append(ctx, "channel.back", "system", map[string]string{"channel": ch})
-		a.Channel.Notify(ctx, explore.Notice{Kind: "failure", Text: "✅ O " + channelNames[ch] + " voltou a funcionar."})
+		a.Channel.Notify(ctx, explore.Notice{Kind: "failure", Text: i18n.T(ctx, "msg.health.back", "channel", channelNames[ch])})
 	}
 }

@@ -18,16 +18,34 @@ import (
 var weekdays = map[string][2][]string{
 	"pt": {{"domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"}, {"dom", "seg", "ter", "qua", "qui", "sex", "sáb"}},
 	"en": {{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}},
+	"es": {{"domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"}, {"dom", "lun", "mar", "mié", "jue", "vie", "sáb"}},
+	"fr": {{"dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"}, {"dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."}},
+	"de": {{"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"}, {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"}},
+	"it": {{"domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"}, {"dom", "lun", "mar", "mer", "gio", "ven", "sab"}},
+	"ja": {{"日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"}, {"日", "月", "火", "水", "木", "金", "土"}},
+	"zh": {{"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"}, {"周日", "周一", "周二", "周三", "周四", "周五", "周六"}},
+	"ko": {{"일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"}, {"일", "월", "화", "수", "목", "금", "토"}},
+	"ru": {{"воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"}, {"вс", "пн", "вт", "ср", "чт", "пт", "сб"}},
 }
 
 var months = map[string][2][]string{
 	"pt": {{"janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"}, {"jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"}},
 	"en": {{"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}},
+	"es": {{"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"}},
+	"fr": {{"janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"}, {"janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."}},
+	"de": {{"Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}, {"Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez."}},
+	"it": {{"gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"}, {"gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"}},
+	"ja": {{"1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"}, {"1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"}},
+	"zh": {{"一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"}, {"1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"}},
+	"ko": {{"1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"}, {"1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"}},
+	// Russian dates say "25 сентября", so the full names are the genitive.
+	"ru": {{"января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"}, {"янв.", "февр.", "мар.", "апр.", "мая", "июн.", "июл.", "авг.", "сент.", "окт.", "нояб.", "дек."}},
 }
 
 func lang(locale string) string {
-	if strings.HasPrefix(strings.ToLower(locale), "pt") {
-		return "pt"
+	l := strings.ToLower(strings.SplitN(strings.ReplaceAll(locale, "_", "-"), "-", 2)[0])
+	if _, ok := months[l]; ok {
+		return l
 	}
 	return "en"
 }
@@ -198,7 +216,7 @@ func mkDate(y, mo, d int, zone *time.Location) (time.Time, bool) {
 
 func monthNumber(word string) int {
 	w := strings.ToLower(strings.TrimSuffix(word, "."))
-	for _, l := range []string{"pt", "en"} {
+	for _, l := range []string{"pt", "en", "es", "fr", "it", "de"} {
 		for i, full := range months[l][0] {
 			short := months[l][1][i]
 			if w == strings.ToLower(full) || w == strings.ToLower(short) || (len(w) >= 3 && strings.HasPrefix(strings.ToLower(full), w)) {
@@ -257,7 +275,10 @@ func formatMoney(v float64, currency, l string) string {
 	s := strconv.FormatFloat(math.Abs(v), 'f', 2, 64)
 	intPart, frac, _ := strings.Cut(s, ".")
 	thousands, decimal := ".", ","
-	if l == "en" || strings.ToUpper(currency) == "USD" {
+	if l == "fr" || l == "ru" {
+		thousands = "\u00a0"
+	}
+	if l == "en" || l == "ja" || l == "zh" || l == "ko" || strings.ToUpper(currency) == "USD" {
 		thousands, decimal = ",", "."
 		if strings.ToUpper(currency) == "USD" {
 			symbol = "$"

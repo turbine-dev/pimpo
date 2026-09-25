@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"io"
 	"net/http"
 	"strings"
@@ -113,7 +114,7 @@ func (a *App) whatsappMessage(ctx context.Context, m whatsapp.Inbound) {
 	}
 	out, err := h.Request(pctx, text)
 	if err != nil {
-		out = "Não consegui começar: " + err.Error()
+		out = i18n.T(ctx, "msg.start.failed", "error", err)
 	}
 	reply(out)
 }
@@ -134,15 +135,15 @@ func (a *App) whatsappPair(ctx context.Context, m whatsapp.Inbound, code string,
 		}
 		a.Events.Put(ctx, "whatsapp.owner", m.From)
 		a.Events.Append(ctx, "whatsapp.paired", "human:owner", map[string]string{"person": people.OwnerID})
-		reply("Oi! Estamos conectados pelo WhatsApp também. Me peça algo que você faz toda semana.")
+		reply(i18n.T(ctx, "msg.pair.whatsapp"))
 		return
 	}
 	if p, err := a.People.PairWhatsApp(ctx, code, m.From); err == nil {
 		a.Events.Append(ctx, "whatsapp.paired", "human:"+p.ID, map[string]string{"person": p.ID})
-		reply("Oi, " + p.Name + "! Agora você fala com o Zodim da casa pelo WhatsApp.")
+		reply(i18n.T(ctx, "msg.pair.whatsappPerson", "name", p.Name))
 		return
 	}
-	reply("Esse código não confere. Peça um novo em Conexões ou em Pessoas.")
+	reply(i18n.T(ctx, "msg.pair.whatsappBad"))
 }
 
 // mirrorWhatsApp sends a notice to the person on WhatsApp too. WhatsApp

@@ -5,6 +5,8 @@ import { expect, test, type Page } from '@playwright/test'
 const shell = new URL('../../desktop/shell/index.html', import.meta.url).href
 const link = 'http://127.0.0.1:7790/auth?token=e2e-token'
 
+test.use({ locale: 'pt-BR' })
+
 async function open(page: Page, remote: string[], hash = '') {
   const calls: string[] = []
   await page.exposeFunction('__record', (c: string) => { calls.push(c) })
@@ -29,12 +31,21 @@ test('the desktop connects to a Zodim elsewhere and stops its own', async ({ pag
   expect(calls.some((c) => c.startsWith('["use_remote"') && c.includes('e2e-token'))).toBe(true)
 })
 
+test('the page speaks the device language', async ({ browser }) => {
+  const ctx = await browser.newContext({ locale: 'de-DE' })
+  const page = await ctx.newPage()
+  await open(page, [], '#pair')
+  await expect(page.getByRole('button', { name: 'Verbinden' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Zodim auf diesem Computer verwenden' })).toBeVisible()
+  await ctx.close()
+})
+
 test('a saved remote opens by itself, and one that is off says so', async ({ page, context }) => {
   await open(page, [link, ''])
   await page.waitForURL(/127\.0\.0\.1:7790/)
   const off = await context.newPage()
   const calls = await open(off, ['http://127.0.0.1:7899/auth?token=zz', ''])
-  await expect(off.locator('#status')).toContainText('Não encontrei o Zodim em 127.0.0.1:7899')
+  await expect(off.locator('#status')).toContainText('O Zodim em 127.0.0.1:7899 não respondeu')
   await off.getByRole('button', { name: 'Usar o Zodim deste computador' }).click()
   expect(calls.some((c) => c.startsWith('["use_local"'))).toBe(true)
 })

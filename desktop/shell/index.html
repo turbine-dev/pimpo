@@ -34,22 +34,35 @@
 <main>
   <svg class="mark" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5dfc"/><stop offset=".55" stop-color="#4f46e5"/><stop offset="1" stop-color="#1e1b4b"/></linearGradient></defs><rect width="512" height="512" rx="116" fill="url(#g)"/><path d="M160 178H328L172 334H352" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/><path d="M378 108c5 27 14 36 41 41-27 5-36 14-41 41-5-27-14-36-41-41 27-5 36-14 41-41Z" fill="#fff"/></svg>
   <h1>Zodim</h1>
-  <p id="status">Acordando o seu agente…</p>
+  <p id="status"></p>
   <div class="pulse" aria-hidden="true"><i></i><i></i><i></i></div>
   <form id="pair">
-    <label for="link">Link do seu Zodim</label>
+    <label for="link" id="linkLabel"></label>
     <input id="link" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://zodim.sua-rede.ts.net/auth?token=…">
-    <button type="submit">Conectar</button>
-    <button type="button" id="local" class="secondary">Usar o Zodim deste computador</button>
+    <button type="submit" id="connect"></button>
+    <button type="button" id="local" class="secondary"></button>
     <div class="error" id="error" role="alert"></div>
-    <p class="hint" id="hint">O Zodim roda no seu computador ou servidor. No celular, abra Ajustes › Abrir no celular e cole o link aqui.</p>
+    <p class="hint" id="hint"></p>
   </form>
 </main>
 <script>
+  // The page's own words, in the device's language; the app itself follows
+  // the language chosen in Settings.
+  const T = {"pt": {"waking": "Acordando o seu agente…", "mobile": "Conecte ao Zodim que roda no seu computador.", "label": "Link do seu Zodim", "connect": "Conectar", "local": "Usar o Zodim deste computador", "hintMobile": "O Zodim roda no seu computador ou servidor. Nele, abra Ajustes › Abrir no celular e cole o link aqui.", "hintDesktop": "Para usar um Zodim de outro computador ou servidor, abra nele Ajustes › Abrir no celular e cole o link aqui. O Zodim deste computador para enquanto isso, para o mesmo robô não responder duas vezes.", "notLink": "Isso não parece um link.", "https": "Use https: o token não pode viajar em aberto.", "noToken": "Falta o token no link.", "unreachable": "Não deu para falar com esse Zodim. Confira o link e a rede.", "connecting": "Conectando ao seu Zodim…", "notFound": "O Zodim em {host} não respondeu. Ele está ligado e na mesma rede ou Tailscale?", "using": "Você está usando o Zodim em {host}.", "pairTitle": "Conectar a um Zodim em outro computador ou servidor.", "stopped": "O Zodim parou (código {code}). Feche e abra de novo.", "slow": "O Zodim demorou demais para abrir."}, "en": {"waking": "Waking up your agent…", "mobile": "Connect to the Zodim running on your computer.", "label": "Your Zodim link", "connect": "Connect", "local": "Use the Zodim on this computer", "hintMobile": "Zodim runs on your computer or server. There, open Settings › Open on your phone and paste the link here.", "hintDesktop": "To use a Zodim on another computer or server, open Settings › Open on your phone there and paste the link here. The Zodim on this computer stops meanwhile, so the same bot never answers twice.", "notLink": "That doesn’t look like a link.", "https": "Use https: the token can’t travel in the clear.", "noToken": "The link is missing its token.", "unreachable": "Couldn’t reach that Zodim. Check the link and the network.", "connecting": "Connecting to your Zodim…", "notFound": "The Zodim at {host} didn’t answer. Is it on, and on the same network or Tailscale?", "using": "You’re using the Zodim at {host}.", "pairTitle": "Connect to a Zodim on another computer or server.", "stopped": "Zodim stopped (code {code}). Close and open it again.", "slow": "Zodim took too long to open."}, "es": {"waking": "Despertando a tu agente…", "mobile": "Conéctate al Zodim que se ejecuta en tu computadora.", "label": "Enlace de tu Zodim", "connect": "Conectar", "local": "Usar el Zodim de esta computadora", "hintMobile": "Zodim se ejecuta en tu computadora o servidor. Allí, abre Ajustes › Abrir en el teléfono y pega el enlace aquí.", "hintDesktop": "Para usar un Zodim de otra computadora o servidor, abre allí Ajustes › Abrir en el teléfono y pega el enlace aquí. El Zodim de esta computadora se detiene mientras tanto, para que el mismo bot no responda dos veces.", "notLink": "Eso no parece un enlace.", "https": "Usa https: el token no puede viajar sin cifrar.", "noToken": "Al enlace le falta el token.", "unreachable": "No se pudo contactar con ese Zodim. Revisa el enlace y la red.", "connecting": "Conectando con tu Zodim…", "notFound": "El Zodim en {host} no respondió. ¿Está encendido y en la misma red o Tailscale?", "using": "Estás usando el Zodim en {host}.", "pairTitle": "Conectar a un Zodim en otra computadora o servidor.", "stopped": "Zodim se detuvo (código {code}). Ciérralo y ábrelo de nuevo.", "slow": "Zodim tardó demasiado en abrir."}, "fr": {"waking": "Réveil de votre agent…", "mobile": "Connectez-vous au Zodim qui tourne sur votre ordinateur.", "label": "Lien de votre Zodim", "connect": "Se connecter", "local": "Utiliser le Zodim de cet ordinateur", "hintMobile": "Zodim tourne sur votre ordinateur ou serveur. Là-bas, ouvrez Réglages › Ouvrir sur le téléphone et collez le lien ici.", "hintDesktop": "Pour utiliser un Zodim sur un autre ordinateur ou serveur, ouvrez-y Réglages › Ouvrir sur le téléphone et collez le lien ici. Le Zodim de cet ordinateur s’arrête entre-temps, pour que le même bot ne réponde pas deux fois.", "notLink": "Cela ne ressemble pas à un lien.", "https": "Utilisez https : le token ne peut pas circuler en clair.", "noToken": "Il manque le token dans le lien.", "unreachable": "Impossible de joindre ce Zodim. Vérifiez le lien et le réseau.", "connecting": "Connexion à votre Zodim…", "notFound": "Le Zodim sur {host} n’a pas répondu. Est-il allumé, sur le même réseau ou Tailscale ?", "using": "Vous utilisez le Zodim sur {host}.", "pairTitle": "Se connecter à un Zodim sur un autre ordinateur ou serveur.", "stopped": "Zodim s’est arrêté (code {code}). Fermez-le et rouvrez-le.", "slow": "Zodim a mis trop de temps à s’ouvrir."}, "de": {"waking": "Dein Agent wird geweckt…", "mobile": "Verbinde dich mit dem Zodim auf deinem Computer.", "label": "Link zu deinem Zodim", "connect": "Verbinden", "local": "Zodim auf diesem Computer verwenden", "hintMobile": "Zodim läuft auf deinem Computer oder Server. Öffne dort Einstellungen › Auf dem Handy öffnen und füge den Link hier ein.", "hintDesktop": "Um einen Zodim auf einem anderen Computer oder Server zu nutzen, öffne dort Einstellungen › Auf dem Handy öffnen und füge den Link hier ein. Der Zodim auf diesem Computer pausiert so lange, damit derselbe Bot nie doppelt antwortet.", "notLink": "Das sieht nicht nach einem Link aus.", "https": "Nutze https: Das Token darf nicht unverschlüsselt übertragen werden.", "noToken": "Im Link fehlt das Token.", "unreachable": "Dieser Zodim ist nicht erreichbar. Prüfe den Link und das Netzwerk.", "connecting": "Verbindung zu deinem Zodim…", "notFound": "Der Zodim unter {host} antwortet nicht. Ist er eingeschaltet und im selben Netz oder Tailscale?", "using": "Du nutzt den Zodim unter {host}.", "pairTitle": "Mit einem Zodim auf einem anderen Computer oder Server verbinden.", "stopped": "Zodim wurde beendet (Code {code}). Schließe und öffne ihn erneut.", "slow": "Zodim hat zu lange zum Öffnen gebraucht."}, "it": {"waking": "Risveglio del tuo agente…", "mobile": "Collegati allo Zodim che gira sul tuo computer.", "label": "Link del tuo Zodim", "connect": "Collega", "local": "Usa lo Zodim di questo computer", "hintMobile": "Zodim gira sul tuo computer o server. Lì, apri Impostazioni › Apri sul telefono e incolla qui il link.", "hintDesktop": "Per usare uno Zodim su un altro computer o server, apri lì Impostazioni › Apri sul telefono e incolla qui il link. Lo Zodim di questo computer si ferma nel frattempo, così lo stesso bot non risponde due volte.", "notLink": "Non sembra un link.", "https": "Usa https: il token non può viaggiare in chiaro.", "noToken": "Nel link manca il token.", "unreachable": "Impossibile raggiungere questo Zodim. Controlla il link e la rete.", "connecting": "Connessione al tuo Zodim…", "notFound": "Lo Zodim su {host} non ha risposto. È acceso e sulla stessa rete o Tailscale?", "using": "Stai usando lo Zodim su {host}.", "pairTitle": "Collegati a uno Zodim su un altro computer o server.", "stopped": "Zodim si è fermato (codice {code}). Chiudilo e riaprilo.", "slow": "Zodim ha impiegato troppo ad aprirsi."}, "ja": {"waking": "エージェントを起動しています…", "mobile": "パソコンで動いている Zodim に接続します。", "label": "Zodim のリンク", "connect": "接続", "local": "このパソコンの Zodim を使う", "hintMobile": "Zodim はパソコンまたはサーバーで動きます。そちらで 設定 › スマホで開く を開き、リンクをここに貼り付けてください。", "hintDesktop": "別のパソコンやサーバーの Zodim を使うには、そちらで 設定 › スマホで開く を開き、リンクをここに貼り付けてください。同じボットが二重に返信しないよう、その間このパソコンの Zodim は停止します。", "notLink": "リンクではないようです。", "https": "https を使ってください。token を暗号化なしで送ることはできません。", "noToken": "リンクに token がありません。", "unreachable": "この Zodim に接続できませんでした。リンクとネットワークを確認してください。", "connecting": "Zodim に接続しています…", "notFound": "{host} の Zodim から応答がありません。起動していて、同じネットワークか Tailscale にありますか？", "using": "{host} の Zodim を使っています。", "pairTitle": "別のパソコンやサーバーの Zodim に接続します。", "stopped": "Zodim が停止しました（コード {code}）。閉じてもう一度開いてください。", "slow": "Zodim の起動に時間がかかりすぎました。"}, "zh": {"waking": "正在唤醒你的智能体…", "mobile": "连接到在你电脑上运行的 Zodim。", "label": "你的 Zodim 链接", "connect": "连接", "local": "使用这台电脑上的 Zodim", "hintMobile": "Zodim 运行在你的电脑或服务器上。在那里打开 设置 › 在手机上打开，然后把链接粘贴到这里。", "hintDesktop": "要使用另一台电脑或服务器上的 Zodim，请在那里打开 设置 › 在手机上打开，然后把链接粘贴到这里。期间这台电脑上的 Zodim 会停止，以免同一个机器人回复两次。", "notLink": "这看起来不像链接。", "https": "请使用 https：token 不能明文传输。", "noToken": "链接里缺少 token。", "unreachable": "无法连接到这个 Zodim。请检查链接和网络。", "connecting": "正在连接你的 Zodim…", "notFound": "{host} 上的 Zodim 没有响应。它是否已开启，并在同一网络或 Tailscale 中？", "using": "你正在使用 {host} 上的 Zodim。", "pairTitle": "连接到另一台电脑或服务器上的 Zodim。", "stopped": "Zodim 已停止（代码 {code}）。请关闭后重新打开。", "slow": "Zodim 打开时间过长。"}, "ko": {"waking": "에이전트를 깨우는 중…", "mobile": "컴퓨터에서 실행 중인 Zodim에 연결하세요.", "label": "Zodim 링크", "connect": "연결", "local": "이 컴퓨터의 Zodim 사용", "hintMobile": "Zodim은 컴퓨터나 서버에서 실행돼요. 그곳에서 설정 › 휴대폰에서 열기를 열고 링크를 여기에 붙여 넣으세요.", "hintDesktop": "다른 컴퓨터나 서버의 Zodim을 쓰려면 그곳에서 설정 › 휴대폰에서 열기를 열고 링크를 여기에 붙여 넣으세요. 같은 봇이 두 번 답하지 않도록 그동안 이 컴퓨터의 Zodim은 멈춰요.", "notLink": "링크가 아닌 것 같아요.", "https": "https를 사용하세요. token은 암호화 없이 보낼 수 없어요.", "noToken": "링크에 token이 없어요.", "unreachable": "이 Zodim에 연결할 수 없어요. 링크와 네트워크를 확인하세요.", "connecting": "Zodim에 연결하는 중…", "notFound": "{host}의 Zodim이 응답하지 않아요. 켜져 있고 같은 네트워크나 Tailscale에 있나요?", "using": "{host}의 Zodim을 사용 중이에요.", "pairTitle": "다른 컴퓨터나 서버의 Zodim에 연결해요.", "stopped": "Zodim이 멈췄어요(코드 {code}). 닫았다가 다시 여세요.", "slow": "Zodim을 여는 데 너무 오래 걸렸어요."}, "ru": {"waking": "Будим вашего агента…", "mobile": "Подключитесь к Zodim, который работает на вашем компьютере.", "label": "Ссылка на ваш Zodim", "connect": "Подключить", "local": "Использовать Zodim на этом компьютере", "hintMobile": "Zodim работает на вашем компьютере или сервере. Откройте там Настройки › Открыть на телефоне и вставьте ссылку сюда.", "hintDesktop": "Чтобы пользоваться Zodim на другом компьютере или сервере, откройте там Настройки › Открыть на телефоне и вставьте ссылку сюда. Zodim на этом компьютере пока остановится, чтобы один и тот же бот не отвечал дважды.", "notLink": "Это не похоже на ссылку.", "https": "Используйте https: token нельзя передавать в открытом виде.", "noToken": "В ссылке нет token.", "unreachable": "Не удалось связаться с этим Zodim. Проверьте ссылку и сеть.", "connecting": "Подключение к вашему Zodim…", "notFound": "Zodim на {host} не отвечает. Он включён и в той же сети или Tailscale?", "using": "Вы используете Zodim на {host}.", "pairTitle": "Подключиться к Zodim на другом компьютере или сервере.", "stopped": "Zodim остановился (код {code}). Закройте и откройте его снова.", "slow": "Zodim слишком долго открывался."}}
+  const lang = (navigator.language || 'en').toLowerCase().split('-')[0]
+  const L = T[lang] || T.en
+  const t = (k, v = {}) => (L[k] || T.en[k]).replace(/\{(\w+)\}/g, (m, n) => (n in v ? v[n] : m))
+  document.documentElement.lang = navigator.language || 'en'
+  window.__zodimStatus = (key, arg) => { const el = document.getElementById('status'); if (el) el.textContent = T.en[key] ? t(key, { code: arg }) : key }
   const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
   const tauri = window.__TAURI__ && window.__TAURI__.core
   const desktop = !mobile && !!tauri && !!window.__ZODIM_DESKTOP__
   const $ = (id) => document.getElementById(id)
+  $('status').textContent = t('waking')
+  $('linkLabel').textContent = t('label')
+  $('connect').textContent = t('connect')
+  $('local').textContent = t('local')
+  $('hint').textContent = t('hintMobile')
   // A link may carry the home address after #home=: it is tried first
   // (fast, and works without internet) and the link is the fallback.
   const reach = (base) => new Promise((ok) => {
@@ -68,9 +81,9 @@
   // parse checks a pasted link the same way on the phone and the desktop.
   const parse = (text) => {
     let url
-    try { url = new URL(text.trim()) } catch { throw new Error('Isso não parece um link.') }
-    if (url.protocol !== 'https:' && !/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.)/.test(url.hostname)) throw new Error('Use https: o token não pode viajar em aberto.')
-    if (!url.searchParams.get('token')) throw new Error('Falta o token no link.')
+    try { url = new URL(text.trim()) } catch { throw new Error(t('notLink')) }
+    if (url.protocol !== 'https:' && !/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.)/.test(url.hostname)) throw new Error(t('https'))
+    if (!url.searchParams.get('token')) throw new Error(t('noToken'))
     let home = new URLSearchParams(url.hash.slice(1)).get('home')
     if (home && !/^http:\/\/(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)[\d.]+:\d+$/.test(home)) home = null
     url.hash = ''
@@ -83,7 +96,7 @@
 
   if (mobile) {
     document.body.classList.add('mobile')
-    $('status').textContent = 'Conecte ao Zodim que roda no seu computador.'
+    $('status').textContent = t('mobile')
     let saved = null, savedHome = null
     try { saved = localStorage.getItem('zodim.link'); savedHome = localStorage.getItem('zodim.home') } catch {}
     if (saved) open(saved, savedHome)
@@ -91,22 +104,22 @@
 
   if (desktop) {
     document.body.classList.add('desktop')
-    $('hint').textContent = 'Para usar um Zodim de outro computador ou servidor, abra nele Ajustes › Abrir no celular e cole o link aqui. O Zodim deste computador para enquanto isso, para o mesmo robô não responder duas vezes.'
+    $('hint').textContent = t('hintDesktop')
     const connect = async (link, home) => {
-      $('status').textContent = 'Conectando ao seu Zodim…'
+      $('status').textContent = t('connecting')
       const origin = new URL(link).origin
       if ((home && await reach(home)) || await reach(origin)) return open(link, home)
       $('link').value = link
-      pairing('Não encontrei o Zodim em ' + new URL(link).host + '. Ele está ligado e na mesma rede ou Tailscale?')
+      pairing(t('notFound', { host: new URL(link).host }))
     }
     tauri.invoke('remote').then(([link, home]) => {
-      if (location.hash === '#pair') pairing(link ? 'Você está usando o Zodim em ' + new URL(link).host + '.' : 'Conectar a um Zodim em outro computador ou servidor.')
+      if (location.hash === '#pair') pairing(link ? t('using', { host: new URL(link).host }) : t('pairTitle'))
       else if (link) connect(link, home)
     })
     $('local').addEventListener('click', () => {
       document.body.classList.remove('pairing')
       history.replaceState(null, '', location.pathname)
-      $('status').textContent = 'Acordando o seu agente…'
+      $('status').textContent = t('waking')
       tauri.invoke('use_local').catch((e) => { $('error').textContent = String(e) })
     })
   }
@@ -118,7 +131,7 @@
     let p
     try { p = parse($('link').value) } catch (x) { err.textContent = x.message; return }
     if (desktop) {
-      if (!(p.home && await reach(p.home)) && !(await reach(new URL(p.link).origin))) { err.textContent = 'Não consegui falar com esse Zodim. Confira o link e a rede.'; return }
+      if (!(p.home && await reach(p.home)) && !(await reach(new URL(p.link).origin))) { err.textContent = t('unreachable'); return }
       try { await tauri.invoke('use_remote', { link: p.link, home: p.home }) } catch (x) { err.textContent = String(x); return }
     } else {
       try { localStorage.setItem('zodim.link', p.link); p.home ? localStorage.setItem('zodim.home', p.home) : localStorage.removeItem('zodim.home') } catch {}

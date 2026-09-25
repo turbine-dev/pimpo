@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"strings"
 	"sync"
 	"time"
@@ -52,7 +53,7 @@ type Manager struct {
 	// Timeout is how long a run waits; the Jev-backed decision was 30 minutes.
 	Timeout time.Duration
 	// Describe turns an action into the sentence shown to the owner.
-	Describe func(policy.Action) string
+	Describe func(context.Context, policy.Action) string
 	// Responsible names who answers for a person's requests; nil means
 	// the owner answers everything.
 	Responsible func(ctx context.Context, person string) (id, name string)
@@ -95,7 +96,7 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 	id := newID()
 	text := fmt.Sprintf("%s (%s)", a.Capability, a.Source)
 	if m.Describe != nil {
-		text = m.Describe(a)
+		text = m.Describe(ctx, a)
 	}
 	req := Request{ID: id, Action: a, Text: text, Reason: reason, Created: time.Now()}
 	asker := ""
@@ -123,17 +124,17 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 	if a.Risk >= 3 {
 		icon = "🔴"
 	}
-	body := fmt.Sprintf("%s Posso fazer isto?\n%s\n\nRegra: %s", icon, text, reason)
+	body := i18n.T(ctx, "approval.ask", "icon", icon, "text", text, "reason", reason)
 	if asker != "" {
-		body = fmt.Sprintf("%s Pedido de %s. Posso fazer isto?\n%s\n\nRegra: %s", icon, asker, text, reason)
+		body = i18n.T(ctx, "approval.askFor", "icon", icon, "who", asker, "text", text, "reason", reason)
 	}
 	if suggest {
-		body += "\n\nVocê já permitiu isto 3 vezes. Quer que eu não pergunte mais?"
+		body += "\n\n" + i18n.T(ctx, "approval.suggest")
 	}
 	m.Notify.Notify(ctx, explore.Notice{
 		Text: body,
-		Actions: []explore.Action{{Label: "Permitir", Data: "approve:" + id}, {Label: "Todos desta vez", Data: "batch:" + id},
-			{Label: "Sempre", Data: "always:" + id}, {Label: "Negar", Data: "deny:" + id}},
+		Actions: []explore.Action{{Label: i18n.T(ctx, "btn.approve"), Data: "approve:" + id}, {Label: i18n.T(ctx, "btn.batch"), Data: "batch:" + id},
+			{Label: i18n.T(ctx, "btn.always"), Data: "always:" + id}, {Label: i18n.T(ctx, "btn.deny"), Data: "deny:" + id}},
 		To: req.Responsible,
 	})
 	timeout := m.Timeout

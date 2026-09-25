@@ -151,7 +151,7 @@ func TestVoiceNotesBecomeRequests(t *testing.T) {
 	}
 	c.Transcribe = nil
 	c.handle(ctx, bot, voice(42))
-	if len(h.requests) != 1 || !strings.Contains(bot.sent[len(bot.sent)-1], "Não consegui ouvir") {
+	if len(h.requests) != 1 || !strings.Contains(bot.sent[len(bot.sent)-1], "Não deu para entender o áudio") {
 		t.Fatalf("without transcription: %v", bot.sent)
 	}
 }

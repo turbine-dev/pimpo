@@ -161,7 +161,7 @@ func TestExploreRecordsAndApprovalCompiles(t *testing.T) {
 	if tr.Questions["newsletter"] != "Is this a newsletter?" {
 		t.Fatalf("questions %+v", tr.Questions)
 	}
-	if len(n.list) != 1 || !strings.Contains(n.list[0].Text, "simuladas") || n.list[0].Actions[0].Data != "compile:"+id {
+	if len(n.list) != 1 || !strings.Contains(n.list[0].Text, "simulada") || n.list[0].Actions[0].Data != "compile:"+id {
 		t.Fatalf("notice %+v", n.list)
 	}
 	if e.CostUSD != 0.2 {

@@ -33,7 +33,7 @@ func manager(t *testing.T, timeout time.Duration) (*Manager, *notes) {
 	ev, _ := event.Open(filepath.Join(t.TempDir(), "v.db"))
 	t.Cleanup(func() { ev.Close() })
 	n := &notes{got: make(chan struct{}, 4)}
-	return &Manager{Events: ev, Notify: n, Timeout: timeout, Describe: func(a policy.Action) string { return "Enviar e-mail para cliente@acme.com" }}, n
+	return &Manager{Events: ev, Notify: n, Timeout: timeout, Describe: func(_ context.Context, a policy.Action) string { return "Enviar e-mail para cliente@acme.com" }}, n
 }
 
 func idOf(n explore.Notice) string { return strings.TrimPrefix(n.Actions[0].Data, "approve:") }
