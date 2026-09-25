@@ -143,6 +143,7 @@ type App struct {
 	// Router is shared by every run; the demo swaps connectors in it.
 	Router *connector.Router
 	links  map[string]*linkRun
+	health channelHealth
 	// DemoJudge replaces the judgment backends in demo mode.
 	DemoJudge judge.Judge
 
@@ -243,6 +244,7 @@ func (a *App) Start(ctx context.Context) error {
 	go a.cloudLoop(ctx, 15*time.Minute)
 	go a.organizeLoop(ctx, 30*time.Minute)
 	a.startLinks(ctx)
+	go a.healthLoop(ctx, time.Minute)
 	a.restartListener(ctx)
 	return nil
 }
@@ -255,6 +257,7 @@ func (a *App) restartListener(ctx context.Context) {
 	}
 	lctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	a.listenFn = cancel
+	a.health.forget("telegram")
 	if a.bot(ctx) == nil {
 		return
 	}
@@ -334,7 +337,7 @@ func (a *App) bot(ctx context.Context) owner.Bot {
 	if err != nil || tok == "" {
 		return nil
 	}
-	return telegram.Bot{Token: tok, BaseURL: a.TelegramAPI}
+	return telegram.Bot{Token: tok, BaseURL: a.TelegramAPI, Health: func(err error) { a.health.report("telegram", err) }}
 }
 
 type botSender struct{ a *App }

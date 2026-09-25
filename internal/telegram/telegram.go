@@ -18,6 +18,9 @@ type Bot struct {
 	// BaseURL defaults to https://api.telegram.org and is replaced in tests.
 	BaseURL string
 	HTTP    *http.Client
+	// Health hears how each poll went (nil when it worked), so a bot that
+	// keeps failing does not go unnoticed.
+	Health func(err error)
 }
 
 type Button struct {
@@ -179,6 +182,9 @@ func (b Bot) Poll(ctx context.Context, offset int64, handle func(Update)) error 
 	for ctx.Err() == nil {
 		var updates []Update
 		err := b.call(ctx, "getUpdates", map[string]any{"offset": offset, "timeout": 50, "allowed_updates": []string{"message", "callback_query"}}, &updates)
+		if b.Health != nil && ctx.Err() == nil {
+			b.Health(err)
+		}
 		if err != nil {
 			if ctx.Err() != nil {
 				break

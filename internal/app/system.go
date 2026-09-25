@@ -76,6 +76,9 @@ func (a *App) components(ctx context.Context) []component {
 	if has("telegram.token") && chat == 0 {
 		tg.State, tg.Detail = "waiting", "waiting for pairing"
 	}
+	if down, why := a.health.down("telegram"); down {
+		tg.State, tg.Detail = "error", why
+	}
 	out = append(out, tg)
 	wa, _ := a.Events.Get(ctx, "whatsapp.owner")
 	out = append(out, component{ID: "whatsapp", Group: "channel", Name: "WhatsApp", State: state(has("whatsapp.token") && wa != "")})
@@ -93,8 +96,8 @@ func (a *App) components(ctx context.Context) []component {
 			if owner, _ := a.Events.Get(ctx, linkOwnerKey(k)); owner == "" {
 				c.State, c.Detail = "waiting", "waiting for pairing"
 			}
-			if e := a.lastEvent(ctx, "channel.failed", k); e != "" {
-				c.State, c.Detail = "error", e
+			if down, why := a.health.down(k); down {
+				c.State, c.Detail = "error", why
 			}
 		}
 		out = append(out, c)

@@ -47,6 +47,7 @@ func (a *App) restartLink(ctx context.Context, kind string) {
 	if old := a.links[kind]; old != nil {
 		old.cancel()
 		delete(a.links, kind)
+		a.health.forget(kind)
 	}
 	k, _ := services.Get(kind)
 	if ok, _ := a.catalogConfigured(ctx, k); !ok {
@@ -60,6 +61,10 @@ func (a *App) restartLink(ctx context.Context, kind string) {
 	run := &linkRun{link: l, cancel: cancel}
 	a.links[kind] = run
 	go chatlink.Keep(lctx, l, func(in chatlink.Inbound) { a.linkMessage(lctx, kind, run, in) }, func(err error) {
+		a.health.report(kind, err)
+		if err == nil {
+			return
+		}
 		a.Events.Append(lctx, "channel.failed", "system", map[string]string{"channel": kind, "error": err.Error()})
 	})
 }
@@ -132,6 +137,8 @@ func (a *App) mirrorLinks(ctx context.Context, n explore.Notice) {
 			run.pending = slices.Clone(n.Actions)
 			run.mu.Unlock()
 		}
-		go run.link.Send(context.WithoutCancel(ctx), owner, text)
+		go func(kind string, run *linkRun) {
+			a.health.report(kind, run.link.Send(context.WithoutCancel(ctx), owner, text))
+		}(kind, run)
 	}
 }
