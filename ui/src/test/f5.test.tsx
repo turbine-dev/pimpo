@@ -36,19 +36,27 @@ describe('Import', () => {
 })
 
 describe('PhonePairing', () => {
-  it('pairs a named device, shows its code once and revokes it', async () => {
+  it('turns on home and anywhere access, pairs a device and revokes another', async () => {
     const { PhonePairing } = await import('../components/PhonePairing')
+    let remote: Record<string, unknown> = { tailscale: { state: 'off' }, lan: { on: false } }
     const calls = mockFetch({
-      '/api/pairing': { base: 'https://v.ts.net', devices: [{ id: 'd1', name: 'Tablet', created: new Date().toISOString() }] },
-      'POST /api/pairing': { base: 'https://v.ts.net', id: 'd2', link: 'https://v.ts.net/auth?token=t' },
+      '/api/pairing': { base: '', devices: [{ id: 'd1', name: 'Tablet', created: new Date().toISOString() }] },
+      '/api/remote': () => remote,
+      'POST /api/remote/lan/on': () => (remote = { ...remote, lan: { on: true, url: 'http://192.168.1.20:7788' } }),
+      'POST /api/remote/tailscale/on': () => (remote = { ...remote, tailscale: { state: 'needs_login', auth_url: 'https://login.tailscale.com/a/x' } }),
+      'POST /api/pairing': { base: '', id: 'd2', link: 'http://192.168.1.20:7788/auth?token=t' },
       'DELETE /api/devices/d1': {},
     })
     wrap(<PhonePairing />)
-    expect(await screen.findByDisplayValue('https://v.ts.net')).toBeInTheDocument()
-    expect(screen.queryByAltText(/Código QR/)).not.toBeInTheDocument()
+    expect(await screen.findByText('Ligue uma das opções acima para gerar o código.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gerar código' })).toBeDisabled()
+    await userEvent.click(screen.getByRole('switch', { name: 'Em casa' }))
+    expect(await screen.findByText('http://192.168.1.20:7788')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('switch', { name: 'De qualquer lugar' }))
+    expect((await screen.findByRole('button', { name: 'Entrar no Tailscale' })).closest('a')).toHaveAttribute('href', 'https://login.tailscale.com/a/x')
     await userEvent.type(screen.getByLabelText('Nome do aparelho'), 'Celular')
     await userEvent.click(screen.getByRole('button', { name: 'Gerar código' }))
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ base: 'https://v.ts.net', device: 'Celular' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.url === '/api/pairing')?.body).toEqual({ base: '', device: 'Celular' }))
     expect(await screen.findByAltText(/Código QR/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Desconectar Tablet' }))
     await waitFor(() => expect(calls.some((c) => c.method === 'DELETE' && c.url === '/api/devices/d1')).toBe(true))

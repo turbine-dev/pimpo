@@ -46,9 +46,13 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 
 ## On the phone
 
-1. In **Ajustes › Abrir no celular**, expose Vigia safely (for example `tailscale serve 7788`), paste the address and name the phone.
-2. Scan the QR code with the Vigia app, or paste the link.
-3. Lost the phone? Tap the trash icon next to it. Only that phone loses access.
+1. In **Ajustes › Abrir no celular**, turn on one or both ways in:
+   - **Em casa**: the phone reaches Vigia over your Wi-Fi. No account, nothing to install, and it stops working when you leave home.
+   - **De qualquer lugar**: Tailscale runs inside Vigia. The first time, sign in to Tailscale (free) in the browser; Vigia then gets an `https://vigia.<your-network>.ts.net` link that works from anywhere. If Tailscale says Funnel or HTTPS is off, turn them on in its admin console as the message explains.
+   - Already expose Vigia another way? Paste the address under **Usar outro endereço**.
+2. Name the phone and tap **Gerar código**. With both ways on, the phone uses the home address when it can and the other one elsewhere.
+3. Scan the QR code with the Vigia app, or paste the link.
+4. Lost the phone? Tap the trash icon next to it. Only that phone loses access.
 
 ## Gallery
 
