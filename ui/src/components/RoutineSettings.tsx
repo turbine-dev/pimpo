@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Clock, MapPin, Search, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, type Place, type RoutineParam, type RoutineSummary } from '../lib/api'
+import { capabilityLabel } from './RoutineCard'
+import { api, type Place, type RoutineParam, type RoutineSummary, type Watch } from '../lib/api'
 import { cn } from '../lib/cn'
 import { cronText, when } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
@@ -57,10 +58,12 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
   const [sched, setSched] = useState(() => parseCron(s.schedule))
   const [values, setValues] = useState<Record<string, unknown>>(s.values ?? {})
   useEffect(() => { setSched(parseCron(s.schedule)); setValues(s.values ?? {}) }, [s.schedule, s.values])
-  const cron = toCron(sched)
-  const dirty = cron !== s.schedule || JSON.stringify(values) !== JSON.stringify(s.values ?? {})
+  const [every, setEvery] = useState(s.watch?.every || '10m')
+  useEffect(() => { setEvery(s.watch?.every || '10m') }, [s.watch?.every])
+  const cron = s.watch && !s.schedule ? '' : toCron(sched)
+  const dirty = cron !== s.schedule || JSON.stringify(values) !== JSON.stringify(s.values ?? {}) || (!!s.watch && every !== (s.watch.every || '10m'))
   const save = useMutation({
-    mutationFn: () => api.saveRoutineSettings(s.id, cron, values),
+    mutationFn: () => api.saveRoutineSettings(s.id, cron, values, s.watch ? every : ''),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['routine', s.id] }); qc.invalidateQueries({ queryKey: ['routines'] }) },
   })
 
@@ -76,7 +79,7 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
         </div>
       </div>
       <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); save.mutate() }}>
-        <ScheduleEditor value={sched} onChange={setSched} />
+        {s.watch && !s.schedule ? <WatchEditor watch={s.watch} every={every} onChange={setEvery} /> : <ScheduleEditor value={sched} onChange={setSched} />}
         {s.default_schedule && cron !== s.default_schedule && (
           <button type="button" className="-mt-3 text-[12.5px] text-ink-3 underline" onClick={() => setSched(parseCron(s.default_schedule!))}>{t('rs.reset')} ({cronText(s.default_schedule)})</button>
         )}
@@ -119,6 +122,24 @@ function UpdateBanner({ s }: { s: RoutineSummary }) {
       </div>
       <Button variant="primary" onClick={() => apply.mutate()} disabled={apply.isPending}>{t('up.update')}</Button>
     </Card>
+  )
+}
+
+const intervals = ['5m', '10m', '15m', '30m', '1h', '3h', '24h']
+
+function WatchEditor({ watch, every, onChange }: { watch: Watch; every: string; onChange: (e: string) => void }) {
+  const t = useT()
+  return (
+    <fieldset>
+      <legend className="mb-1.5 flex items-center gap-1.5 text-[13px] font-medium text-ink-2"><Clock size={14} /> {t('rs.when')}</legend>
+      <p className="mb-2 text-[13px] text-ink-2">{t('rs.watchText', { what: capabilityLabel(watch.capability).toLowerCase() })}</p>
+      <label className="flex items-center gap-2 text-[13px] text-ink-2">{t('rs.checkEvery')}
+        <select value={every} onChange={(e) => onChange(e.target.value)} className={cn(field, 'w-auto')} aria-label={t('rs.checkEvery')}>
+          {intervals.map((i) => <option key={i} value={i}>{t(`rs.every.${i}` as TKey)}</option>)}
+        </select>
+      </label>
+      <p className="mt-1.5 text-[12px] text-ink-3">{t('rs.watchHint')}</p>
+    </fieldset>
   )
 }
 

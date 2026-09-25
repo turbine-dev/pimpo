@@ -987,6 +987,129 @@
    "published": "2026-09-25T09:43:50Z"
   },
   {
+   "id": "email-importante",
+   "author": "dener",
+   "routine": {
+    "name": "E-mail de alguém importante",
+    "description": "Avisa na hora quando chega e-mail de quem você escolher, com o assunto e o começo da mensagem.",
+    "manifest": {
+     "schedule": "",
+     "capabilities": [
+      "gmail.search",
+      "notify.send"
+     ],
+     "locale": "pt-BR",
+     "params": [
+      {
+       "name": "remetente",
+       "label": "De quem",
+       "type": "email",
+       "default": "chefe@empresa.com",
+       "help": "O endereço de e-mail que merece aviso imediato."
+      },
+      {
+       "name": "destinos",
+       "label": "Onde avisar",
+       "type": "destinations",
+       "default": []
+      }
+     ],
+     "watch": {
+      "capability": "gmail.search",
+      "args": {
+       "days": 2,
+       "query": "from:{{remetente}}"
+      },
+      "key": "id",
+      "every": "10m"
+     }
+    },
+    "code": "async function run() {\n  for (const m of event.items) {\n    const quem = m.from_name || m.from;\n    let text = \"📬 E-mail de \" + quem + \": \" + (m.subject || \"(sem assunto)\");\n    if (m.snippet) text += \"\\n\" + m.snippet.slice(0, 160);\n    await notify.send({text});\n  }\n}",
+    "tests": [
+     {
+      "name": "dois e-mails novos",
+      "now": "2026-10-01T10:00:00-03:00",
+      "responses": [],
+      "expect": [
+       {
+        "capability": "notify.send",
+        "count": 2,
+        "contains": [
+         "Marina Costa",
+         "Reunião com o cliente",
+         "amanhã às 9h",
+         "(sem assunto)"
+        ]
+       }
+      ],
+      "event": {
+       "items": [
+        {
+         "from": "chefe@empresa.com",
+         "from_name": "Marina Costa",
+         "id": "a1",
+         "snippet": "Consegue apresentar os números amanhã às 9h?",
+         "subject": "Reunião com o cliente"
+        },
+        {
+         "from": "chefe@empresa.com",
+         "id": "a2",
+         "snippet": "",
+         "subject": ""
+        }
+       ]
+      }
+     },
+     {
+      "name": "nada novo",
+      "now": "2026-10-01T10:10:00-03:00",
+      "responses": [],
+      "expect": [
+       {
+        "capability": "notify.send",
+        "count": 0
+       }
+      ],
+      "event": {
+       "items": []
+      }
+     },
+     {
+      "name": "outro remetente escolhido",
+      "now": "2026-10-02T08:00:00-03:00",
+      "responses": [],
+      "expect": [
+       {
+        "capability": "notify.send",
+        "count": 1,
+        "contains": [
+         "Banco",
+         "Fatura fechada"
+        ]
+       }
+      ],
+      "params": {
+       "remetente": "banco@exemplo.com"
+      },
+      "event": {
+       "items": [
+        {
+         "from": "banco@exemplo.com",
+         "from_name": "Banco",
+         "id": "b1",
+         "snippet": "Sua fatura de outubro está disponível.",
+         "subject": "Fatura fechada"
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "hash": "ab4df2ba25d28e2d6eb6b1d0cf24da4d6e5222cf4873b387f5bcd09ab8a35f45",
+   "signature": "RiadYGqxI9Ew3aitQar+MfCapGWyJft81tnhJVcr/E1ULV7oUJN4SHOoIBZKXrSmwAbU1QKRHIKl8S4vP10pAg==",
+   "published": "2026-09-25T15:38:33Z"
+  },
+  {
    "id": "lixeira-promocoes-antigas",
    "author": "dener",
    "routine": {

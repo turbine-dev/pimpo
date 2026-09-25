@@ -36,6 +36,7 @@ type Scheduler struct {
 	cron    *cron.Cron
 	entries map[string]cron.EntryID
 	running map[string]bool
+	polled  map[string]time.Time
 	wg      sync.WaitGroup
 }
 
@@ -72,6 +73,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 		s.catchUp(ctx, r)
 	}
 	s.cron.Start()
+	go s.watchLoop(ctx, time.Minute)
 	go func() {
 		<-ctx.Done()
 		<-s.cron.Stop().Done()
@@ -93,6 +95,9 @@ func (s *Scheduler) Changed(ctx context.Context, id string) {
 	}
 	r, err := s.Store.Routine(ctx, id)
 	if err != nil || r.State != store.RoutineActive {
+		return
+	}
+	if r.Schedule() == "" && r.Body.Manifest.Watch != nil {
 		return
 	}
 	sched, err := parser.Parse(r.Schedule())
@@ -153,6 +158,10 @@ func (s *Scheduler) Wait() { s.wg.Wait() }
 
 // RunNow runs a routine once. A routine never runs twice at the same time.
 func (s *Scheduler) RunNow(ctx context.Context, id, trigger string) (store.Run, error) {
+	return s.run(ctx, id, trigger, nil)
+}
+
+func (s *Scheduler) run(ctx context.Context, id, trigger string, event any) (store.Run, error) {
 	s.mu.Lock()
 	if s.running == nil {
 		s.running = map[string]bool{}
@@ -185,7 +194,7 @@ func (s *Scheduler) RunNow(ctx context.Context, id, trigger string) (store.Run, 
 	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
-	res, runErr := runtime.Run(ctx, r.Body.Code, r.Body.Manifest, h, runtime.Options{Now: s.now(), Zone: s.zone(), Timeout: 90 * time.Second, Params: r.Settings.Params})
+	res, runErr := runtime.Run(ctx, r.Body.Code, r.Body.Manifest, h, runtime.Options{Now: s.now(), Zone: s.zone(), Timeout: 90 * time.Second, Params: r.Settings.Params, Event: event})
 	outcome, errText := store.RunOK, ""
 	if runErr != nil {
 		outcome, errText = store.RunFailed, runErr.Error()

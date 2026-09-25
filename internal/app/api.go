@@ -101,6 +101,8 @@ type routineSummary struct {
 	Values map[string]any `json:"values"`
 	// Update is a newer version in the gallery the routine came from.
 	Update *galleryUpdate `json:"gallery_update,omitempty"`
+	// Watch is what wakes the routine instead of a clock, if anything.
+	Watch *runtime.Watch `json:"watch,omitempty"`
 }
 
 func (a *App) summary(ctx context.Context, r store.Routine) routineSummary {
@@ -119,6 +121,7 @@ func (a *App) summary(ctx context.Context, r store.Routine) routineSummary {
 		sum.NextRun = n.Format(time.RFC3339)
 	}
 	sum.Update = a.pendingUpdate(ctx, r)
+	sum.Watch = r.Watch()
 	runs, _ := a.Store.Runs(ctx, r.ID, 14)
 	for i := len(runs) - 1; i >= 0; i-- {
 		o := runs[i].Outcome

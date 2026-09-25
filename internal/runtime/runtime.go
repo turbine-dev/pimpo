@@ -33,6 +33,53 @@ type Manifest struct {
 	Locale string `json:"locale,omitempty"`
 	// Params are the settings the owner can change without code.
 	Params []Param `json:"params,omitempty"`
+	// Watch, when set, runs the routine when a read capability returns
+	// items it has not seen, instead of (or besides) the schedule.
+	Watch *Watch `json:"watch,omitempty"`
+}
+
+// Watch is what a routine waits for: Zodim calls Capability with Args
+// every Every, without a model, and runs the routine with the items whose
+// Key it has not seen before, as event.items.
+type Watch struct {
+	Capability string         `json:"capability"`
+	Args       map[string]any `json:"args,omitempty"`
+	Key        string         `json:"key"`
+	Every      string         `json:"every,omitempty"`
+}
+
+// Starts reports whether something starts the routine: a schedule or a
+// watch. Routines are saved only when it does.
+func (m Manifest) Starts() error {
+	if m.Watch == nil && strings.TrimSpace(m.Schedule) == "" {
+		return errors.New("a routine needs a schedule or something to watch")
+	}
+	return nil
+}
+
+// Interval is how often the watch polls, between 5 minutes and a day.
+func (w Watch) Interval() time.Duration {
+	d, err := time.ParseDuration(w.Every)
+	if err != nil || d == 0 {
+		return 10 * time.Minute
+	}
+	return min(max(d, 5*time.Minute), 24*time.Hour)
+}
+
+// ArgsWith fills {{name}} in string arguments with parameter values, so
+// a watched query can follow a setting the owner changes.
+func (w Watch) ArgsWith(params map[string]any) map[string]any {
+	out := map[string]any{}
+	for k, v := range w.Args {
+		if s, ok := v.(string); ok {
+			for name, pv := range params {
+				s = strings.ReplaceAll(s, "{{"+name+"}}", fmt.Sprint(pv))
+			}
+			v = s
+		}
+		out[k] = v
+	}
+	return out
 }
 
 type Options struct {
@@ -47,6 +94,8 @@ type Options struct {
 	// Params are the owner's values for the manifest's parameters; missing
 	// ones take their defaults.
 	Params map[string]any
+	// Event is what woke a watching routine: {items: [...]}.
+	Event any
 }
 
 type Result struct {
@@ -69,6 +118,28 @@ func (m Manifest) Validate() error {
 	for name := range m.Judgments {
 		if !isIdent(name) {
 			return fmt.Errorf("judgment name %q must be a JavaScript identifier", name)
+		}
+	}
+	if w := m.Watch; w != nil {
+		name := strings.SplitN(w.Capability, ":", 2)[0]
+		spec, ok := capability.Catalog[name]
+		if !ok || spec.Risk != capability.Read {
+			return fmt.Errorf("a routine can only watch a read capability, not %q", w.Capability)
+		}
+		declared := false
+		for _, c := range m.Capabilities {
+			declared = declared || strings.SplitN(c, ":", 2)[0] == name
+		}
+		if !declared {
+			return fmt.Errorf("the watched capability %s must be in capabilities", name)
+		}
+		if strings.TrimSpace(w.Key) == "" {
+			return errors.New("a watch needs the key that identifies an item, e.g. id")
+		}
+		if w.Every != "" {
+			if _, err := time.ParseDuration(w.Every); err != nil {
+				return fmt.Errorf("watch.every %q is not a duration like 10m", w.Every)
+			}
 		}
 	}
 	seen := map[string]bool{}
@@ -180,6 +251,15 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 	raw, _ := json.Marshal(params)
 	vm.Set("__params", string(raw))
 	if _, err := vm.RunString(`var params = (function f(o) { Object.values(o).forEach(v => v && typeof v === "object" && f(v)); return Object.freeze(o) })(JSON.parse(__params)); delete globalThis.__params;`); err != nil {
+		return Result{}, err
+	}
+	event := opt.Event
+	if event == nil {
+		event = map[string]any{"items": []any{}}
+	}
+	rawEvent, _ := json.Marshal(event)
+	vm.Set("__event", string(rawEvent))
+	if _, err := vm.RunString(`var event = (function f(o) { Object.values(o).forEach(v => v && typeof v === "object" && f(v)); return Object.freeze(o) })(JSON.parse(__event)); delete globalThis.__event;`); err != nil {
 		return Result{}, err
 	}
 	vm.Set("log", func(msg string) { res.Logs = append(res.Logs, msg) })

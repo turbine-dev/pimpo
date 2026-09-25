@@ -54,7 +54,7 @@ func Check(ctx context.Context, r Routine, name string, s trace.Scenario) Outcom
 	h := newScenarioHost(s)
 	h.now = now
 	out := Outcome{Scenario: name}
-	if _, err := runtime.Run(ctx, r.Code, r.Manifest, h, runtime.Options{Now: now, Timeout: 5 * time.Second, Params: s.Params}); err != nil {
+	if _, err := runtime.Run(ctx, r.Code, r.Manifest, h, runtime.Options{Now: now, Timeout: 5 * time.Second, Params: s.Params, Event: s.Event}); err != nil {
 		out.Problems = append(out.Problems, "run failed: "+err.Error())
 	}
 	out.Writes = h.writes

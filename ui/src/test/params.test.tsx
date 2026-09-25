@@ -44,7 +44,7 @@ describe('RoutineSettings', () => {
     await userEvent.click(await screen.findByRole('button', { name: /familia_bot/ }))
     await userEvent.click(screen.getByRole('button', { name: /zodim_bot/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Salvar ajustes' }))
-    await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({
+    await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({
       schedule: '30 6 * * 1-5',
       params: { cidade: { name: 'Lisboa', latitude: 38.72, longitude: -9.14, country: 'Portugal' }, chuva: 50, destinos: ['bot:ab', 'telegram'] },
     }))
@@ -61,5 +61,20 @@ describe('gallery updates', () => {
     expect(screen.queryByRole('button', { name: 'Refazer com o agente' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Atualizar' }))
     await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url === '/api/routines/clima/update')).toBe(true))
+  })
+})
+
+describe('watching routines', () => {
+  it('shows what it watches and saves how often to check', async () => {
+    const { RoutineSettings } = await import('../components/RoutineSettings')
+    const calls = mockFetch({ 'PUT /api/routines/chefe/settings': (b: unknown) => b, '/api/destinations': [] })
+    const s = { id: 'chefe', name: 'E-mail do chefe', description: '', state: 'active', version: 1, runs: [], cost_month_usd: 0, capabilities: ['gmail.search', 'notify.send'], published: '', installed: true,
+      report: { verified: true, uses: [], sends: true, risk: 'notify' }, schedule: '', default_schedule: '', params: [], values: {},
+      watch: { capability: 'gmail.search', key: 'id', every: '10m' } } as never
+    wrap(<RoutineSettings s={s} />)
+    expect(screen.getByText(/ela lê e-mails e só age com o que ainda não viu/)).toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByLabelText('Verificar a cada'), '30m')
+    await userEvent.click(screen.getByRole('button', { name: /Salvar/ }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({ schedule: '', watch_every: '30m' }))
   })
 })

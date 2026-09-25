@@ -1,0 +1,28 @@
+{
+ "name": "E-mail de alguém importante",
+ "description": "Avisa na hora quando chega e-mail de quem você escolher, com o assunto e o começo da mensagem.",
+ "manifest": {
+  "schedule": "",
+  "capabilities": ["gmail.search", "notify.send"],
+  "locale": "pt-BR",
+  "params": [
+   {"name": "remetente", "label": "De quem", "type": "email", "default": "chefe@empresa.com", "help": "O endereço de e-mail que merece aviso imediato."},
+   {"name": "destinos", "label": "Onde avisar", "type": "destinations", "default": []}
+  ],
+  "watch": {"capability": "gmail.search", "args": {"query": "from:{{remetente}}", "days": 2}, "key": "id", "every": "10m"}
+ },
+ "code": "async function run() {\n  for (const m of event.items) {\n    const quem = m.from_name || m.from;\n    let text = \"📬 E-mail de \" + quem + \": \" + (m.subject || \"(sem assunto)\");\n    if (m.snippet) text += \"\\n\" + m.snippet.slice(0, 160);\n    await notify.send({text});\n  }\n}",
+ "tests": [
+  {"name": "dois e-mails novos", "now": "2026-10-01T10:00:00-03:00", "responses": [],
+   "event": {"items": [
+    {"id": "a1", "from": "chefe@empresa.com", "from_name": "Marina Costa", "subject": "Reunião com o cliente", "snippet": "Consegue apresentar os números amanhã às 9h?"},
+    {"id": "a2", "from": "chefe@empresa.com", "subject": "", "snippet": ""}
+   ]},
+   "expect": [{"capability": "notify.send", "count": 2, "contains": ["Marina Costa", "Reunião com o cliente", "amanhã às 9h", "(sem assunto)"]}]},
+  {"name": "nada novo", "now": "2026-10-01T10:10:00-03:00", "responses": [], "event": {"items": []},
+   "expect": [{"capability": "notify.send", "count": 0}]},
+  {"name": "outro remetente escolhido", "now": "2026-10-02T08:00:00-03:00", "responses": [], "params": {"remetente": "banco@exemplo.com"},
+   "event": {"items": [{"id": "b1", "from": "banco@exemplo.com", "from_name": "Banco", "subject": "Fatura fechada", "snippet": "Sua fatura de outubro está disponível."}]},
+   "expect": [{"capability": "notify.send", "count": 1, "contains": ["Banco", "Fatura fechada"]}]}
+ ]
+}
