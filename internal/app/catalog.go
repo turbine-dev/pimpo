@@ -61,15 +61,22 @@ type catalogView struct {
 func (a *App) catalogConfigured(ctx context.Context, k services.Kind) (bool, map[string]string) {
 	cfg := a.catalogConfig(k.ID)
 	values := map[string]string{}
-	ok := true
+	ok, required, filled := true, false, false
 	for _, f := range k.Fields {
 		v, err := cfg(ctx, f.Name)
-		if (err != nil || v == "") && !f.Optional {
+		set := err == nil && v != ""
+		required = required || !f.Optional
+		filled = filled || set
+		if !set && !f.Optional {
 			ok = false
 		}
 		if !f.Secret && v != "" {
 			values[f.Name] = v
 		}
+	}
+	// When every field is optional, as with web search, one must be set.
+	if len(k.Fields) > 0 && !required {
+		ok = filled
 	}
 	return ok, values
 }

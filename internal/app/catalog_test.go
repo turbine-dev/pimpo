@@ -28,7 +28,7 @@ func TestCatalogConnectors(t *testing.T) {
 	defer delete(services.BaseURL, "todoist")
 
 	_, out := ta.do(t, "GET", "/api/catalog", nil)
-	if len(out["connectors"].([]any)) != 8 {
+	if len(out["connectors"].([]any)) != 9 {
 		t.Fatalf("catalog %v", out)
 	}
 	if code, _ := ta.do(t, "PUT", "/api/catalog/homeassistant", map[string]string{"url": "http://ha.local:8123"}); code != 400 {

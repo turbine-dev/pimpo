@@ -170,6 +170,7 @@ export const en: Record<Key, string> = {
   'cap.gmail.search': 'Reads email',
   'cap.gmail.archive': 'Archives email',
   'cap.gmail.label': 'Labels email',
+  'cap.web.search': 'Searches the web',
   'cap.http.getJSON': 'Looks up',
   'cap.telegram.send': 'Notifies you',
   'cap.gmail.trash': 'Moves email to the trash',

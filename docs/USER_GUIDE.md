@@ -68,6 +68,8 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 
 ## More connectors
 
+**Busca na web** in Connections lets Zodim search the internet, with a Brave Search API key (free for 2,000 searches a month) or the address of a SearXNG instance you trust. DuckDuckGo has no official API for web results; a SearXNG instance can include it among its sources.
+
 **Conexões › Explorar** searches the official MCP registry: hundreds of servers for files, GitHub, databases, notes, maps and more. Choose one, fill in what it asks for, and **Ver as ferramentas** shows what it offers. Check which tools Zodim may use and how risky each one is (irreversible ones always ask you first), then install. **Adicionar manualmente** takes a command or an https address you already have. See [CONNECTORS.md](CONNECTORS.md) to write your own.
 
 ## Gallery

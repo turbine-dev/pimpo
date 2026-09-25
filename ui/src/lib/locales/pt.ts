@@ -170,6 +170,7 @@ export const pt = {
   'cap.gmail.search': 'Lê e-mails',
   'cap.gmail.archive': 'Arquiva e-mails',
   'cap.gmail.label': 'Marca e-mails',
+  'cap.web.search': 'Pesquisa na web',
   'cap.http.getJSON': 'Consulta',
   'cap.telegram.send': 'Avisa você',
   'cap.gmail.trash': 'Manda e-mails para a lixeira',

@@ -65,7 +65,7 @@ func TestEveryCapabilityIsDocumented(t *testing.T) {
 			}
 		}
 	}
-	if len(All()) != 8 {
+	if len(All()) != 9 {
 		t.Fatalf("catalog has %d kinds", len(All()))
 	}
 }
