@@ -29,6 +29,24 @@ What is built, what each phase gate needs, and which gates wait on people or tim
 - `zodim export` / `zodim import`, and **Ajustes › Exportar e importar tudo**, move everything (database, memory, connectors, secrets sealed with a passphrase) between machines.
 - Connectors, channels, judges and Guard clients plug in without recompiling ([SDK](SDK.md), [connectors](CONNECTORS.md)).
 
+## After the roadmap: closing the gaps with OpenClaw
+
+Ordered by Jev (`tools/jev/decisions_gaps.py`), all built and tested:
+
+1. **Connectors from the MCP registry** or by command or URL, with each tool's risk reviewed before installing (stdio and streamable HTTP).
+2. **Run history** of all routines, and schedules every 5 to 30 minutes.
+3. **Memory** organized every night (question and threshold calibrated with Jev) and searched by meaning.
+4. **Chat** in the app: changes are rehearsed, then confirmed exactly as shown.
+5. **Assistants**: named roles limited to their tools by the host.
+6. **Help** that reads the user guide, **notification** settings by kind, and **Labs**.
+7. **Voice**: dictation in the chat and answers read aloud.
+8. **Web search** with Brave or SearXNG.
+9. **Channels**: Discord, Slack and Signal, besides Telegram and WhatsApp.
+10. **Models**: Anthropic, OpenAI, OpenRouter or Ollama per job, each with its price for the budget.
+11. **Cloud backups** to S3-compatible storage or Google Drive, encrypted before upload.
+
+Checked only against fake servers so far (they need the owner's accounts): Brave and SearXNG, Discord, Slack, signal-cli, the model APIs, S3 and Google Drive. The MCP registry search was checked live.
+
 ## Pending decisions for the owner
 
 - **License**: the plan says free and open source; the exact license is not chosen yet.
