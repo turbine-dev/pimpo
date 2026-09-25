@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowUp, Check, Loader2, Mic, Plus, Repeat, Square, Trash2, Volume2, X } from 'lucide-react'
+import { ArrowUp, Check, Loader2, Mic, Repeat, Square, Trash2, Volume2, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Logo } from '../components/Shell'
 import { Button, RiskBadge } from '../components/ui'
 import { api, type ChatTurn } from '../lib/api'
@@ -33,7 +33,8 @@ export function Chat() {
   const turns = chat.data?.turns ?? []
   const busy = turns.some((x) => x.state === 'running')
   const refresh = () => { qc.invalidateQueries({ queryKey: ['chat', id] }); qc.invalidateQueries({ queryKey: ['chats'] }) }
-  const [readAloud, setReadAloud] = useState('')
+  const location = useLocation()
+  const [readAloud, setReadAloud] = useState<string>((location.state as { readAloud?: string } | null)?.readAloud ?? '')
   const send = useMutation({
     mutationFn: ({ text }: { text: string; spoken: boolean }) => (id ? api.sendChat(id, text) : api.newChat(text, who)),
     onSuccess: (r, v) => { if (v.spoken) setReadAloud(r.turn); if (!id) nav(`/chat/${r.chat}`); refresh() },
@@ -50,69 +51,85 @@ export function Chat() {
   useEffect(() => { end.current?.scrollIntoView?.({ block: 'end' }) }, [turns.length, turns.at(-1)?.state])
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-8rem)] max-w-6xl gap-6 md:h-[calc(100dvh-7.5rem)]">
-      <aside className="hidden w-60 shrink-0 flex-col lg:flex" aria-label={t('chat.list')}>
-        <Button variant="primary" className="mb-3" onClick={() => nav('/chat')}><Plus size={15} /> {t('chat.new')}</Button>
-
-        <ul className="-mx-1 flex-1 space-y-0.5 overflow-y-auto">
-          {(chats.data ?? []).length === 0 && <li className="px-2 text-[12.5px] text-ink-3">{t('chat.empty')}</li>}
-          {(chats.data ?? []).map((c) => (
-            <li key={c.id} className="group flex items-center">
-              <Link to={`/chat/${c.id}`} className={cn('min-w-0 flex-1 rounded-[10px] px-2.5 py-2 text-[13px]', c.id === id ? 'bg-sunken font-medium text-ink' : 'text-ink-2 hover:bg-sunken/70')}>
-                <span className="block truncate">{emojiOf(c.assistant) && <span className="mr-1" aria-hidden>{emojiOf(c.assistant)}</span>}{c.title}</span>
-                <span className="block text-[11.5px] text-ink-3">{relative(c.updated_at)}</span>
-              </Link>
-              <button type="button" aria-label={t('chat.delete', { title: c.title })} onClick={() => remove.mutate(c.id)}
-                className="ml-1 grid size-7 place-items-center rounded-lg text-ink-3 opacity-0 hover:bg-sunken hover:text-ink focus:opacity-100 group-hover:opacity-100">
-                <Trash2 size={13} />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </aside>
-
-      <section className="flex min-w-0 flex-1 flex-col">
-        <div className="flex-1 overflow-y-auto pb-4">
-          {!id ? (
+    <div className="mx-auto flex h-[calc(100dvh-8rem)] max-w-4xl flex-col md:h-[calc(100dvh-7.5rem)]">
+      <div className="flex-1 overflow-y-auto pb-4">
+        {!id ? (
+          (chats.data ?? []).length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center px-4 text-center">
               <Logo size={52} />
               <h1 className="mt-4 text-[22px] font-semibold tracking-tight">{t('chat.hello')}</h1>
               <p className="mt-1 max-w-md text-[13.5px] text-ink-2">{t('chat.helloText')}</p>
-              {(assistants.data?.length ?? 0) > 0 && (
-                <div role="radiogroup" aria-label={t('as.pick')} className="mt-5 flex flex-wrap justify-center gap-1.5">
-                  {[{ id: '', name: t('as.default'), emoji: '✨' }, ...assistants.data!].map((a) => (
-                    <button key={a.id} type="button" role="radio" aria-checked={who === a.id} onClick={() => setWho(a.id)}
-                      className={cn('rounded-full border px-3 py-1.5 text-[12.5px] transition', who === a.id ? 'border-ink bg-ink text-bg' : 'border-line text-ink-2 hover:border-line-strong')}>
-                      <span aria-hidden className="mr-1">{a.emoji}</span>{a.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="mt-6 grid w-full max-w-xl gap-2 sm:grid-cols-2">
-                {suggestions.map((s) => (
-                  <button key={s} type="button" onClick={() => send.mutate({ text: t(s), spoken: false })} disabled={send.isPending}
-                    className="rounded-xl border border-line bg-surface px-4 py-3 text-left text-[13px] text-ink-2 transition hover:border-line-strong hover:text-ink">
-                    {t(s)}
-                  </button>
-                ))}
-              </div>
+              <AssistantPicker value={who} onChange={setWho} className="mt-5 justify-center" />
+              <Suggestions onPick={(text) => send.mutate({ text, spoken: false })} disabled={send.isPending} className="mt-6 max-w-xl" />
             </div>
           ) : (
-            <div className="mx-auto max-w-3xl space-y-6 px-1">
-              {current && <p className="text-center text-[12.5px] text-ink-3"><span aria-hidden>{current.emoji}</span> {current.name}</p>}
-              {turns.map((x) => <Turn key={x.id} chat={id} turn={x} onChange={refresh} />)}
-              <div ref={end} />
-            </div>
-          )}
-        </div>
-        {send.error && <p className="mb-2 text-center text-[13px] text-danger">{send.error.message}</p>}
-        <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} />
-      </section>
+            <section aria-label={t('chat.list')}>
+              <div className="mb-4 flex items-end justify-between gap-4">
+                <h1 className="text-[22px] font-semibold tracking-tight">{t('chat.list')}</h1>
+                <AssistantPicker value={who} onChange={setWho} />
+              </div>
+              <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
+                {(chats.data ?? []).map((c) => (
+                  <li key={c.id} className="group flex items-center gap-3 px-4 py-3">
+                    <Link to={`/chat/${c.id}`} className="min-w-0 flex-1">
+                      <span className="block truncate text-[14px] font-medium">{emojiOf(c.assistant) && <span className="mr-1.5" aria-hidden>{emojiOf(c.assistant)}</span>}{c.title}</span>
+                      <span className="block text-[12px] text-ink-3">{relative(c.updated_at)} · {t('chat.turns', { count: c.turns })}</span>
+                    </Link>
+                    <button type="button" aria-label={t('chat.delete', { title: c.title })} onClick={() => remove.mutate(c.id)}
+                      className="grid size-8 place-items-center rounded-lg text-ink-3 opacity-60 hover:bg-sunken hover:text-ink hover:opacity-100 focus:opacity-100">
+                      <Trash2 size={14} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        ) : (
+          <div className="mx-auto max-w-3xl space-y-6 px-1">
+            {current && <p className="text-center text-[12.5px] text-ink-3"><span aria-hidden>{current.emoji}</span> {current.name}</p>}
+            {turns.map((x) => <Turn key={x.id} chat={id} turn={x} onChange={refresh} />)}
+            <div ref={end} />
+          </div>
+        )}
+      </div>
+      {send.error && <p className="mb-2 text-center text-[13px] text-danger">{send.error.message}</p>}
+      <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} />
     </div>
   )
 }
 
-function Composer({ disabled, onSend }: { disabled: boolean; onSend: (text: string, spoken: boolean) => void }) {
+// AssistantPicker chooses who a new conversation is with.
+export function AssistantPicker({ value, onChange, className }: { value: string; onChange: (id: string) => void; className?: string }) {
+  const t = useT()
+  const assistants = useQuery({ queryKey: ['assistants'], queryFn: api.assistants })
+  if ((assistants.data?.length ?? 0) === 0) return null
+  return (
+    <div role="radiogroup" aria-label={t('as.pick')} className={cn('flex flex-wrap gap-1.5', className)}>
+      {[{ id: '', name: t('as.default'), emoji: '✨' }, ...assistants.data!].map((a) => (
+        <button key={a.id} type="button" role="radio" aria-checked={value === a.id} onClick={() => onChange(a.id)}
+          className={cn('rounded-full border px-3 py-1.5 text-[12.5px] transition', value === a.id ? 'border-ink bg-ink text-bg' : 'border-line text-ink-2 hover:border-line-strong')}>
+          <span aria-hidden className="mr-1">{a.emoji}</span>{a.name}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function Suggestions({ onPick, disabled, className }: { onPick: (text: string) => void; disabled?: boolean; className?: string }) {
+  const t = useT()
+  return (
+    <div className={cn('grid w-full gap-2 sm:grid-cols-2', className)}>
+      {suggestions.map((s) => (
+        <button key={s} type="button" onClick={() => onPick(t(s))} disabled={disabled}
+          className="rounded-xl border border-line bg-surface px-4 py-3 text-left text-[13px] text-ink-2 transition hover:border-line-strong hover:text-ink">
+          {t(s)}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function Composer({ disabled, onSend }: { disabled: boolean; onSend: (text: string, spoken: boolean) => void }) {
   const t = useT()
   const [text, setText] = useState('')
   const [spoken, setSpoken] = useState(false)

@@ -21,6 +21,7 @@ test.describe.serial('the story, end to end', () => {
 
   test('a task is explored, then compiled into a routine', async ({ page }) => {
     await login(page)
+    await page.goto('/routines')
     await page.getByRole('button', { name: 'Nova tarefa' }).click()
     await page.getByLabel('Pedido').fill('Todo dia às 7h me manda a agenda e os e-mails importantes.')
     await page.getByRole('button', { name: /Fazer agora/ }).click()
@@ -37,26 +38,28 @@ test.describe.serial('the story, end to end', () => {
 
   test('a routine runs and its receipts can be read', async ({ page }) => {
     await login(page)
+    await page.goto('/routines')
     await page.getByRole('button', { name: 'Rotina Resumo matinal' }).click()
     await page.getByRole('button', { name: 'Rodar agora' }).click()
     await page.getByRole('tab', { name: 'Execuções' }).click()
     await expect(page.getByText(/ações/).first()).toBeVisible()
-    await page.getByRole('link', { name: 'Recibos' }).click()
+    await page.getByRole('link', { name: 'Atividade' }).click()
     await expect(page.getByText(/Te mandou: “☀️ Bom dia!/).first()).toBeVisible()
   })
 
   test('archiving can be undone from the receipts', async ({ page }) => {
     await login(page)
+    await page.goto('/routines')
     await page.getByRole('button', { name: 'Nova tarefa' }).click()
     await page.getByLabel('Pedido').fill('Às 18h arquiva as newsletters e promoções não lidas.')
     await page.getByRole('button', { name: /Fazer agora/ }).click()
     await expect(page.getByRole('button', { name: 'Transformar em rotina' })).toBeVisible({ timeout: 20_000 })
     await page.getByRole('button', { name: 'Transformar em rotina' }).click()
     await expect(page.getByText('Virou rotina. A partir de agora eu faço sozinho.')).toBeVisible()
-    await page.goto('/')
+    await page.goto('/routines')
     await page.getByRole('button', { name: 'Rotina Triagem de newsletters' }).click()
     await page.getByRole('button', { name: 'Rodar agora' }).click()
-    await page.getByRole('link', { name: 'Recibos' }).click()
+    await page.getByRole('link', { name: 'Atividade' }).click()
     const undo = page.getByRole('button', { name: 'Desfazer' }).first()
     await expect(undo).toBeVisible()
     await undo.click()
@@ -65,7 +68,7 @@ test.describe.serial('the story, end to end', () => {
 
   test('a rule is written in words, checked and saved', async ({ page }) => {
     await login(page)
-    await page.getByRole('link', { name: 'Regras' }).click()
+    await page.goto('/rules')
     await page.getByLabel('Nova regra').fill('Nunca apague e-mail sem me perguntar')
     await page.getByRole('button', { name: /Criar/ }).click()
     await expect(page.getByText('Entendi assim — confira antes de salvar:')).toBeVisible()
@@ -85,7 +88,7 @@ test.describe.serial('the story, end to end', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await login(page)
     await expect(page.getByRole('navigation', { name: 'Principal (celular)' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Rotinas' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     const width = await page.evaluate(() => document.documentElement.scrollWidth)
     expect(width).toBeLessThanOrEqual(390)
   })
@@ -125,7 +128,7 @@ test.describe.serial('the story, end to end', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await login(page)
     const nav = page.getByRole('navigation', { name: 'Principal (celular)' })
-    await expect(nav.getByRole('link', { name: 'Aprovar' })).toBeVisible()
+    await expect(nav.getByRole('link', { name: 'Conversar' })).toBeVisible()
     await nav.getByRole('button', { name: 'Mais' }).click()
     await page.getByRole('link', { name: 'Galeria' }).click()
     await expect(page.getByRole('heading', { name: 'Galeria' })).toBeVisible()
@@ -153,9 +156,17 @@ test('a chat rehearses, then does exactly what it showed', async ({ page }) => {
 test('every screen is in the sidebar', async ({ page }) => {
   await page.goto('/auth?token=e2e-token')
   const nav = page.getByRole('navigation', { name: 'Principal', exact: true })
-  for (const name of ['Rotinas', 'Precisa de você', 'Galeria', 'Recibos', 'Regras', 'Custo', 'Memória', 'Conexões', 'Pessoas', 'Ajustes']) {
+  for (const name of ['Início', 'Rotinas', 'Atividade', 'Assistentes']) {
     await expect(nav.getByRole('link', { name })).toBeVisible()
   }
+  if ((await nav.getByRole('link', { name: 'Galeria' }).count()) === 0) await nav.getByRole('button', { name: 'Mais' }).click()
+  for (const name of ['Galeria', 'Conexões', 'Pessoas', 'Memória', 'Regras', 'Custo']) {
+    await expect(nav.getByRole('link', { name })).toBeVisible()
+  }
+  await page.getByRole('button', { name: 'Menu do Zodim' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Ajustes' })).toBeVisible()
+  await page.getByRole('menuitem', { name: /Ocupação do sistema/ }).click()
+  await expect(page.getByRole('heading', { name: 'Ocupação do sistema' })).toBeVisible()
 })
 
 test('a routine\'s schedule and settings change without code', async ({ page }) => {

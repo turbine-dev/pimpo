@@ -8,7 +8,7 @@ import (
 )
 
 func TestSearchGuideFindsTheRightSection(t *testing.T) {
-	got := searchGuide(docs.Guide, "phone pairing tailscale")
+	got := searchGuide(docs.Guide, "tailscale QR code phone")
 	if !strings.HasPrefix(got, "## On the phone") {
 		t.Fatalf("%.200s", got)
 	}

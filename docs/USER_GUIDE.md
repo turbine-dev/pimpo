@@ -1,5 +1,9 @@
 # Zodim user guide
 
+## Getting around
+
+**Início** is where the day starts: ask for anything, and see what needs you, what ran and what is next today, what you spent, and your recent chats. The side menu keeps what you use daily on top (Início, Rotinas, Atividade, Assistentes) and the rest under **Mais**; your conversations are listed below it. At the bottom, the bell opens what waits for you (approvals, stopped routines, tasks ready, parts with errors) so you can answer in place, and the Zodim menu has Ajustes, cost, **Ocupação do sistema** (⌘⇧D: how busy the computer and Zodim are, what is running now and the state of every channel, account and service), pairing a phone, the theme and help.
+
 ## First steps
 
 1. **Install.** Use the desktop app, or run `curl -fsSL https://raw.githubusercontent.com/denerFernandes/zodim/main/scripts/install.sh | sh` and then `zodim serve`. Open the link it prints.

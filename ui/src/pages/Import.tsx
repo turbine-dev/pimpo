@@ -48,7 +48,7 @@ export function Import() {
               </p>
               <div className="mt-6 flex justify-center gap-2">
                 {!opts.trust && apply.data.memories > 0 && <Button onClick={() => nav('/memory')}>{t('import.reviewMemories')}</Button>}
-                <Button variant="primary" onClick={() => nav('/')}>{t('import.seeTasks')} <ArrowRight size={15} /></Button>
+                <Button variant="primary" onClick={() => nav('/routines')}>{t('import.seeTasks')} <ArrowRight size={15} /></Button>
               </div>
             </Card>
           </motion.div>
