@@ -124,6 +124,19 @@ test.describe.serial('the story, end to end', () => {
     expect((await download).suggestedFilename()).toMatch(/\.zodim$/)
   })
 
+  test('a local copy can be put back on the next start', async ({ page }) => {
+    await login(page)
+    await page.goto('/settings#backup')
+    await page.getByRole('button', { name: 'Guardar cópia agora' }).click()
+    const row = page.getByRole('listitem').filter({ hasText: 'Guardada por você' }).first()
+    await expect(row).toBeVisible()
+    page.once('dialog', (d) => d.accept())
+    await row.getByRole('button', { name: /Voltar a esta/ }).click()
+    await expect(page.getByText(/Ao fechar e abrir o Zodim/)).toBeVisible()
+    await page.getByRole('button', { name: 'Cancelar' }).click()
+    await expect(page.getByText(/Ao fechar e abrir o Zodim/)).toHaveCount(0)
+  })
+
   test('the phone menu reaches every screen', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await login(page)

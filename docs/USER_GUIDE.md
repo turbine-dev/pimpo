@@ -105,6 +105,8 @@ Browse ready-made routines, filtered by what they can touch. Zodim checks the au
 - `zodim snapshots` and `zodim restore` go back to an automatic daily snapshot.
 - Coming from OpenClaw or Hermes? Use **Ajustes › Trazer do OpenClaw ou do Hermes**, or `zodim migrate openclaw`.
 
+**Local copies** (Ajustes › Backup): Zodim copies everything on this computer every day, before each update and before an import, and keeps the last ten. Pick one and choose **Voltar a esta**; it takes effect when Zodim is closed and reopened, and the current state is copied first, so it can be undone. After an update Zodim tells you once that the copy from before is there. Going back to a copy restores data, not the previous version of the app.
+
 ## Help, notifications and labs
 
 **Ajuda** (at the bottom of the menu) answers questions about Zodim itself: it starts a chat, and the agent reads this guide to answer. In **Ajustes › Notificações** choose what reaches you outside the app: task results, failed routines and backup problems can be silenced (they stay in **Precisa de você**); approval requests always arrive. **Ajustes › Laboratório** turns off newer features: organizing memory every night, searching memory by meaning, and exploring the MCP registry.

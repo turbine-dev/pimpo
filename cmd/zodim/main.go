@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -101,6 +102,12 @@ func serve(args []string) error {
 			return fmt.Errorf("finishing the import: %w", err)
 		}
 		fmt.Printf("Imported the backup. What was here before is in %s.\n", keep)
+	}
+	if name := snapshot.Staged(home); name != "" {
+		if err := applyRestore(home, name); err != nil {
+			return fmt.Errorf("restoring %s: %w", name, err)
+		}
+		fmt.Printf("Restored %s. What was here before is a snapshot too.\n", name)
 	}
 	store, err := event.Open(filepath.Join(home, "zodim.db"))
 	if err != nil {
@@ -199,8 +206,22 @@ func guardVersion(ctx context.Context, s *event.Store, home string) error {
 			return fmt.Errorf("could not snapshot before updating from %s: %w", last, err)
 		}
 		fmt.Printf("Updated from %s to %s. Snapshot %s keeps the old data; `zodim restore %s` brings it back.\n", last, version, snap.Name, snap.Name)
+		b, _ := json.Marshal(map[string]string{"from": last, "to": version, "snapshot": snap.Name})
+		s.Put(ctx, app.UpgradeKey, string(b))
 	}
 	return s.Put(ctx, "last_version", version)
+}
+
+// applyRestore puts back a snapshot the app staged, before anything opens
+// the database.
+func applyRestore(home, name string) error {
+	store, err := event.Open(filepath.Join(home, "zodim.db"))
+	if err != nil {
+		return err
+	}
+	defer store.Close()
+	defer snapshot.Unstage(home)
+	return snapshot.Restore(home, name, store.DB())
 }
 
 func dailySnapshots(ctx context.Context, s *event.Store, home string) {

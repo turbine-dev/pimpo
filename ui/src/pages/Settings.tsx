@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { BackupCard } from '../components/BackupCard'
 import { CloudBackup } from '../components/CloudBackup'
+import { SnapshotsCard } from '../components/SnapshotsCard'
 import { ModelsCard } from '../components/ModelsCard'
 import { ProtectionCard } from '../components/ProtectionCard'
 import { PhonePairing } from '../components/PhonePairing'
@@ -135,6 +136,7 @@ export function Settings() {
           </>}
 
           {section === 'backup' && <>
+            <SnapshotsCard />
             <BackupCard />
             <CloudBackup />
           </>}

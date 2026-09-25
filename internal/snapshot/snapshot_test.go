@@ -49,3 +49,25 @@ func TestCreateListRestore(t *testing.T) {
 		t.Fatal("restored a missing snapshot")
 	}
 }
+
+func TestStage(t *testing.T) {
+	home := t.TempDir()
+	ev, _ := event.Open(filepath.Join(home, "zodim.db"))
+	defer ev.Close()
+	s, err := Create(ev.DB(), home, "before-2.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{"", "../x", "nope", s.Name + "/.."} {
+		if Stage(home, bad) == nil {
+			t.Fatalf("staged %q", bad)
+		}
+	}
+	if err := Stage(home, s.Name); err != nil || Staged(home) != s.Name {
+		t.Fatalf("stage: %v %q", err, Staged(home))
+	}
+	Unstage(home)
+	if Staged(home) != "" {
+		t.Fatal("still staged")
+	}
+}
