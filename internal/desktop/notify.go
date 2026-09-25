@@ -5,6 +5,8 @@ package desktop
 
 import (
 	"context"
+	"errors"
+	"net/url"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -32,6 +34,24 @@ func Notify(ctx context.Context, title, body string) error {
 		return Run(ctx, "powershell", "-NoProfile", "-Command", script)
 	default:
 		return Run(ctx, "notify-send", "--app-name=Zodim", title, body)
+	}
+}
+
+// Open shows a web link in the default browser of this computer.
+func Open(ctx context.Context, link string) error {
+	u, err := url.Parse(link)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http" && u.Scheme != "mailto") {
+		return errors.New("only web and mail links open")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	switch runtime.GOOS {
+	case "darwin":
+		return Run(ctx, "open", u.String())
+	case "windows":
+		return Run(ctx, "rundll32", "url.dll,FileProtocolHandler", u.String())
+	default:
+		return Run(ctx, "xdg-open", u.String())
 	}
 }
 

@@ -26,3 +26,19 @@ func TestNotifyEscapes(t *testing.T) {
 		}
 	}
 }
+
+func TestOpenOnlyWebAndMailLinks(t *testing.T) {
+	var got []string
+	Run = func(_ context.Context, name string, args ...string) error {
+		got = append([]string{name}, args...)
+		return nil
+	}
+	for _, bad := range []string{"file:///etc/passwd", "javascript:alert(1)", "/Applications/Calculator.app", "smb://host/share"} {
+		if err := Open(context.Background(), bad); err == nil {
+			t.Errorf("opened %s", bad)
+		}
+	}
+	if err := Open(context.Background(), "https://login.tailscale.com/a/abc"); err != nil || got[len(got)-1] != "https://login.tailscale.com/a/abc" {
+		t.Fatalf("%v %v", got, err)
+	}
+}

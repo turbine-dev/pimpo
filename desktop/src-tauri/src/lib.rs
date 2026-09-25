@@ -20,13 +20,15 @@ mod desktop {
 
     pub struct Server(pub Mutex<Option<CommandChild>>);
 
-    // The window is built here rather than from the config so links that
-    // ask for a new window (target=_blank) open in the system browser; the
-    // webview would otherwise swallow them.
+    // The window is built here rather than from the config so the page
+    // knows it is in the desktop app (room for the window buttons, links sent
+    // to the browser) and so new-window requests do not vanish.
     pub fn window(app: &AppHandle) -> tauri::Result<()> {
         let conf = app.config().app.windows.iter().find(|w| w.label == "main").expect("main window config").clone();
         let handle = app.clone();
+        let platform = if cfg!(target_os = "macos") { "mac" } else { "on" };
         WebviewWindowBuilder::from_config(app, &conf)?
+            .initialization_script(format!("window.__ZODIM_DESKTOP__ = {platform:?}"))
             .on_new_window(move |url, _| {
                 if matches!(url.scheme(), "http" | "https" | "mailto") {
                     let _ = handle.opener().open_url(url.as_str(), None::<&str>);

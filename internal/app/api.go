@@ -3,12 +3,14 @@ package app
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/denerFernandes/zodim/internal/desktop"
 	"github.com/denerFernandes/zodim/internal/event"
 	"github.com/denerFernandes/zodim/internal/runtime"
 	"github.com/denerFernandes/zodim/internal/server"
@@ -33,6 +35,30 @@ func (a *App) routes() {
 	s.Handle("GET /api/connections", a.connections)
 	s.Handle("PUT /api/connections/{kind}", a.putConnection)
 	s.Handle("DELETE /api/connections/{kind}", a.deleteConnection)
+	s.Handle("POST /api/open", a.openLink)
+}
+
+// openLink opens a link in this computer's browser, for the desktop app,
+// whose window cannot open one itself. Only the window on this machine may
+// ask; a paired phone cannot open pages on the computer.
+func (a *App) openLink(w http.ResponseWriter, r *http.Request) {
+	host, _, _ := net.SplitHostPort(r.RemoteAddr)
+	if ip := net.ParseIP(host); !a.DesktopNotify || ip == nil || !ip.IsLoopback() {
+		server.WriteError(w, server.StatusError{Status: 403, Msg: "links open only in the desktop app"})
+		return
+	}
+	var req struct {
+		URL string `json:"url"`
+	}
+	if err := server.Decode(r, &req); err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	if err := desktop.Open(r.Context(), req.URL); err != nil {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+		return
+	}
+	server.WriteJSON(w, 200, map[string]bool{"opened": true})
 }
 
 type routineSummary struct {
