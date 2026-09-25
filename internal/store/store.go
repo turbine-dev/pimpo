@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS chats (
   id         TEXT PRIMARY KEY,
   title      TEXT NOT NULL,
   person     TEXT NOT NULL DEFAULT '',
+  assistant  TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -428,6 +429,7 @@ type Chat struct {
 	ID        string    `json:"id"`
 	Title     string    `json:"title"`
 	Person    string    `json:"person,omitempty"`
+	Assistant string    `json:"assistant,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Turns     int       `json:"turns"`
@@ -435,7 +437,7 @@ type Chat struct {
 
 func (s *Store) CreateChat(ctx context.Context, c Chat) error {
 	now := ts(time.Now())
-	_, err := s.db.ExecContext(ctx, `INSERT INTO chats (id, title, person, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`, c.ID, c.Title, c.Person, now, now)
+	_, err := s.db.ExecContext(ctx, `INSERT INTO chats (id, title, person, assistant, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`, c.ID, c.Title, c.Person, c.Assistant, now, now)
 	return err
 }
 
@@ -450,7 +452,7 @@ func (s *Store) AddTurn(ctx context.Context, chat, exploration string) error {
 
 // Chats lists a person's chats, most recent first.
 func (s *Store) Chats(ctx context.Context, person string) ([]Chat, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT c.id, c.title, c.person, c.created_at, c.updated_at, (SELECT COUNT(*) FROM chat_turns t WHERE t.chat = c.id)
+	rows, err := s.db.QueryContext(ctx, `SELECT c.id, c.title, c.person, c.assistant, c.created_at, c.updated_at, (SELECT COUNT(*) FROM chat_turns t WHERE t.chat = c.id)
 		FROM chats c WHERE c.person = ? ORDER BY c.updated_at DESC LIMIT 200`, person)
 	if err != nil {
 		return nil, err
@@ -460,7 +462,7 @@ func (s *Store) Chats(ctx context.Context, person string) ([]Chat, error) {
 	for rows.Next() {
 		var c Chat
 		var created, updated string
-		if err := rows.Scan(&c.ID, &c.Title, &c.Person, &created, &updated, &c.Turns); err != nil {
+		if err := rows.Scan(&c.ID, &c.Title, &c.Person, &c.Assistant, &created, &updated, &c.Turns); err != nil {
 			return nil, err
 		}
 		c.CreatedAt, c.UpdatedAt = parse(created), parse(updated)
@@ -473,7 +475,7 @@ func (s *Store) Chats(ctx context.Context, person string) ([]Chat, error) {
 func (s *Store) Chat(ctx context.Context, id string) (Chat, []string, error) {
 	var c Chat
 	var created, updated string
-	err := s.db.QueryRowContext(ctx, `SELECT id, title, person, created_at, updated_at FROM chats WHERE id = ?`, id).Scan(&c.ID, &c.Title, &c.Person, &created, &updated)
+	err := s.db.QueryRowContext(ctx, `SELECT id, title, person, assistant, created_at, updated_at FROM chats WHERE id = ?`, id).Scan(&c.ID, &c.Title, &c.Person, &c.Assistant, &created, &updated)
 	if err != nil {
 		return c, nil, err
 	}

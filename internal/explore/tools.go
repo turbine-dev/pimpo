@@ -39,6 +39,9 @@ type Recall func(ctx context.Context, query, person string) ([]memory.Fact, erro
 func tools(h *host.Host, mem *memory.Memory, recall Recall) []mcp.Tool {
 	var out []mcp.Tool
 	for _, name := range capability.Names() {
+		if h.Allowed != nil && !h.Allowed[name] {
+			continue
+		}
 		spec := capability.Catalog[name]
 		name := name
 		desc := fmt.Sprintf("%s -> %s. Risk: %s.", spec.Signature, spec.Returns, spec.Risk)

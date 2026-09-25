@@ -153,40 +153,62 @@ func (a *App) getChat(w http.ResponseWriter, r *http.Request) {
 	server.WriteJSON(w, 200, map[string]any{"chat": c, "turns": turns})
 }
 
-func messageText(r *http.Request) (string, error) {
-	var req struct {
-		Text string `json:"text"`
+type chatMessageBody struct {
+	Text      string `json:"text"`
+	Assistant string `json:"assistant"`
+}
+
+func readMessage(r *http.Request) (chatMessageBody, error) {
+	var m chatMessageBody
+	if err := server.Decode(r, &m); err != nil {
+		return m, err
 	}
-	if err := server.Decode(r, &req); err != nil {
-		return "", err
+	m.Text = strings.TrimSpace(m.Text)
+	if m.Text == "" {
+		return m, server.StatusError{Status: 400, Msg: "write something first"}
 	}
-	text := strings.TrimSpace(req.Text)
-	if text == "" {
-		return "", server.StatusError{Status: 400, Msg: "write something first"}
+	if len(m.Text) > 8000 {
+		return m, server.StatusError{Status: 400, Msg: "that message is too long"}
 	}
-	if len(text) > 8000 {
-		return "", server.StatusError{Status: 400, Msg: "that message is too long"}
+	return m, nil
+}
+
+// options builds an exploration's options for a chat's assistant.
+func (a *App) chatOptions(ctx context.Context, assistant, history string) (explore.Options, error) {
+	o := explore.Options{Context: history, Quiet: true}
+	if assistant != "" {
+		as, ok := a.assistant(ctx, assistant)
+		if !ok {
+			return o, server.StatusError{Status: 400, Msg: "that assistant no longer exists"}
+		}
+		o.Assistant = as.role()
 	}
-	return text, nil
+	return o, nil
 }
 
 func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	text, err := messageText(r)
+	m, err := readMessage(r)
 	if err != nil {
 		server.WriteError(w, err)
 		return
 	}
+	o, err := a.chatOptions(ctx, m.Assistant, "")
+	if err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	text := m.Text
 	title := text
 	if runes := []rune(title); len(runes) > 60 {
 		title = string(runes[:59]) + "…"
 	}
-	c := store.Chat{ID: chatID(), Title: title, Person: chatPerson(people.From(ctx))}
+	c := store.Chat{ID: chatID(), Title: title, Person: chatPerson(people.From(ctx)), Assistant: m.Assistant}
 	if err := a.Store.CreateChat(ctx, c); err != nil {
 		server.WriteError(w, err)
 		return
 	}
-	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), text, actor(ctx), explore.Options{Quiet: true})
+	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), text, actor(ctx), o)
 	if err != nil {
 		a.Store.DeleteChat(ctx, c.ID)
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
@@ -229,7 +251,7 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	text, err := messageText(r)
+	m, err := readMessage(r)
 	if err != nil {
 		server.WriteError(w, err)
 		return
@@ -240,7 +262,12 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), text, actor(ctx), explore.Options{Context: a.history(ctx, ids), Quiet: true})
+	o, err := a.chatOptions(ctx, c.Assistant, a.history(ctx, ids))
+	if err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), m.Text, actor(ctx), o)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return

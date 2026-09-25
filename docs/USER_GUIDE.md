@@ -13,6 +13,8 @@ Want to see it first? Run `zodim serve --demo`: a sample mailbox and calendar, n
 
 **Conversar** is a conversation with Zodim in the app, with every past conversation on the side. Each message remembers the ones before it. Zodim reads for real (your calendar, your email), but any change it would make is only rehearsed and listed under the answer, with its risk. **Confirmar e fazer** does exactly those changes, once, each still under your rules and approvals; **Transformar em rotina** makes the task repeat on its own.
 
+**Assistentes** (from the chat's side panel) are roles for the agent: a name, what its job is, and the tools it may use. Pick one when starting a conversation. The limit is enforced by Zodim itself: the assistant only sees its tools, and any other call is blocked, whatever the text says. A routine made from that conversation uses only those tools too.
+
 ## How a task becomes a routine
 
 1. **Exploration.** The agent does the task once. Anything that would change something (archive, send, delete) is only simulated, and you see exactly what would happen.
