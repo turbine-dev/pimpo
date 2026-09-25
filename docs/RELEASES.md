@@ -2,7 +2,7 @@
 
 ## Versions
 
-Vigia uses semantic versioning. From v1.0 on, the event log, routine and backup formats are stable: newer versions read older data, and every upgrade takes a snapshot first (`vigia restore` brings it back).
+Zodim uses semantic versioning. From v1.0 on, the event log, routine and backup formats are stable: newer versions read older data, and every upgrade takes a snapshot first (`zodim restore` brings it back).
 
 | Channel | What | Support |
 |---|---|---|

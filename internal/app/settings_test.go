@@ -9,9 +9,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/llm"
-	"github.com/denerFernandes/vigia/internal/routine"
-	"github.com/denerFernandes/vigia/internal/runtime"
+	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/runtime"
 )
 
 func TestRoutineSettingsAndDestinations(t *testing.T) {
@@ -27,7 +27,7 @@ func TestRoutineSettingsAndDestinations(t *testing.T) {
 		tok := strings.Split(strings.TrimPrefix(r.URL.Path, "/bot"), "/")[0]
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/getMe"):
-			name := map[string]string{"owner-tok": "vigia_bot", "family-tok": "familia_bot"}[tok]
+			name := map[string]string{"owner-tok": "zodim_bot", "family-tok": "familia_bot"}[tok]
 			if name == "" {
 				w.WriteHeader(401)
 				w.Write([]byte(`{"ok":false,"description":"Unauthorized"}`))

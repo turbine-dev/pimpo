@@ -15,10 +15,10 @@ val tauriProperties = Properties().apply {
 
 android {
     compileSdk = 36
-    namespace = "app.vigia.companion"
+    namespace = "app.zodim.companion"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "true"
-        applicationId = "app.vigia.companion"
+        applicationId = "app.zodim.companion"
         minSdk = 24
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()

@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F460A782AAA229826058FFCC"
-               BuildableName = "vigia-desktop_iOS.app"
-               BlueprintName = "vigia-desktop_iOS"
-               ReferencedContainer = "container:vigia-desktop.xcodeproj">
+               BuildableName = "zodim-desktop_iOS.app"
+               BlueprintName = "zodim-desktop_iOS"
+               ReferencedContainer = "container:zodim-desktop.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F460A782AAA229826058FFCC"
-            BuildableName = "vigia-desktop_iOS.app"
-            BlueprintName = "vigia-desktop_iOS"
-            ReferencedContainer = "container:vigia-desktop.xcodeproj">
+            BuildableName = "zodim-desktop_iOS.app"
+            BlueprintName = "zodim-desktop_iOS"
+            ReferencedContainer = "container:zodim-desktop.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -70,9 +70,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F460A782AAA229826058FFCC"
-            BuildableName = "vigia-desktop_iOS.app"
-            BlueprintName = "vigia-desktop_iOS"
-            ReferencedContainer = "container:vigia-desktop.xcodeproj">
+            BuildableName = "zodim-desktop_iOS.app"
+            BlueprintName = "zodim-desktop_iOS"
+            ReferencedContainer = "container:zodim-desktop.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -101,9 +101,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F460A782AAA229826058FFCC"
-            BuildableName = "vigia-desktop_iOS.app"
-            BlueprintName = "vigia-desktop_iOS"
-            ReferencedContainer = "container:vigia-desktop.xcodeproj">
+            BuildableName = "zodim-desktop_iOS.app"
+            BlueprintName = "zodim-desktop_iOS"
+            ReferencedContainer = "container:zodim-desktop.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>

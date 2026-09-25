@@ -1,6 +1,6 @@
 # Threat model
 
-Vigia acts for people: it reads their email, sends messages and changes things. This page says what it defends against, how, and what it does not promise. Each defense has a test that fails if it breaks.
+Zodim acts for people: it reads their email, sends messages and changes things. This page says what it defends against, how, and what it does not promise. Each defense has a test that fails if it breaks.
 
 ## Assets
 
@@ -12,10 +12,10 @@ Vigia acts for people: it reads their email, sends messages and changes things. 
 
 | Attacker | Can |
 |---|---|
-| A stranger who writes to you | put text in an email, page, calendar invite or photo that Vigia reads |
+| A stranger who writes to you | put text in an email, page, calendar invite or photo that Zodim reads |
 | A malicious routine or connector author | publish to the gallery, or offer a connector |
 | Someone on your network | reach ports on your machine |
-| Another person in the house | use Vigia with their own role |
+| Another person in the house | use Zodim with their own role |
 | A thief with your phone | open the paired app |
 
 ## Defenses
@@ -32,14 +32,14 @@ Vigia acts for people: it reads their email, sends messages and changes things. 
 | Known exfiltration endpoints and patterns | A signed protection list is checked before every action, including other agents' actions through the Guard. | `TestGuardBlocksListedThings`, `TestGuardForOtherAgents` |
 | Another person in the house | Memory, accounts, chats and approvals are separate per person. Guests' changes always wait for their responsible person. | `TestGateFamilyIsolation` |
 | Messages to third parties and physical actions | `whatsapp.send_to` and `ha.critical` always ask, whatever the rules say. | `TestWhatsAppToOthersAlwaysAsks` |
-| Network exposure | The server listens on loopback. Home mode listens only on a private address (never a public one) and is off by default. Remote access uses the Tailscale built into Vigia: Funnel ends TLS on this machine, so Tailscale never sees the traffic in the clear. Every way in needs a per-device token that can be revoked. | `TestDevicePairingAndRevocation`, `TestLANUsesOnlyHomeAddresses`, `TestPhoneLinksWithTailscaleAndHome` |
+| Network exposure | The server listens on loopback. Home mode listens only on a private address (never a public one) and is off by default. Remote access uses the Tailscale built into Zodim: Funnel ends TLS on this machine, so Tailscale never sees the traffic in the clear. Every way in needs a per-device token that can be revoked. | `TestDevicePairingAndRevocation`, `TestLANUsesOnlyHomeAddresses`, `TestPhoneLinksWithTailscaleAndHome` |
 | Forged webhooks | WhatsApp checks Meta's signature. The generic channel signs what it sends. | `TestWhatsAppChannel`, `TestGenericChannel` |
 | Tampered history | Events are chained by hash and checked on import. | event store tests |
 | A lost phone | Revoke the device in Settings; the owner's session is unaffected. | `TestDevicePairingAndRevocation` |
 
 ## Not promised
 
-- A compromised computer. Anyone who controls the machine Vigia runs on controls Vigia.
+- A compromised computer. Anyone who controls the machine Zodim runs on controls Zodim.
 - A model's judgment. Judgments are probabilities; anything irreversible waits for a person.
 - A person who approves something harmful. The receipts show it, and undo works where the service allows.
 - Services' own security (Google, Meta, Telegram).

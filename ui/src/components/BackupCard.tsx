@@ -23,7 +23,7 @@ export function BackupCard() {
       const url = URL.createObjectURL(await res.blob())
       const a = document.createElement('a')
       a.href = url
-      a.download = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'vigia.vigia'
+      a.download = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'zodim.zodim'
       a.click()
       URL.revokeObjectURL(url)
     },
@@ -47,7 +47,7 @@ export function BackupCard() {
       </form>
       {exp.error && <p className="mt-2 text-[13px] text-danger">{exp.error.message}</p>}
       <form className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4" onSubmit={(e) => { e.preventDefault(); imp.mutate() }}>
-        <input type="file" accept=".vigia" aria-label={t('backup.file')} onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="min-w-[200px] flex-1 text-[13px] file:mr-3 file:rounded-lg file:border file:border-line file:bg-surface file:px-3 file:py-1.5" />
+        <input type="file" accept=".zodim" aria-label={t('backup.file')} onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="min-w-[200px] flex-1 text-[13px] file:mr-3 file:rounded-lg file:border file:border-line file:bg-surface file:px-3 file:py-1.5" />
         <input type="password" value={importPass} onChange={(e) => setImportPass(e.target.value)} placeholder={t('backup.passImportPlaceholder')} aria-label={t('backup.passImport')} className={input} />
         <Button type="submit" disabled={!file || !importPass || imp.isPending}><Upload size={15} /> {t('backup.import')}</Button>
       </form>

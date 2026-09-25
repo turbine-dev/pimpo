@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/connector/services"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/zodim/internal/connector/services"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/llm"
 )
 
 func TestCatalogConnectors(t *testing.T) {

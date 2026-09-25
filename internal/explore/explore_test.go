@@ -12,16 +12,16 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/budget"
-	"github.com/denerFernandes/vigia/internal/compiler"
-	"github.com/denerFernandes/vigia/internal/connector"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/llm"
-	"github.com/denerFernandes/vigia/internal/memory"
-	"github.com/denerFernandes/vigia/internal/routine"
-	"github.com/denerFernandes/vigia/internal/store"
-	"github.com/denerFernandes/vigia/internal/trace"
+	"github.com/denerFernandes/zodim/internal/budget"
+	"github.com/denerFernandes/zodim/internal/compiler"
+	"github.com/denerFernandes/zodim/internal/connector"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/memory"
+	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/zodim/internal/trace"
 )
 
 type inbox struct {

@@ -1,4 +1,4 @@
-// Package app wires Vigia together: storage, connectors, the policy, the
+// Package app wires Zodim together: storage, connectors, the policy, the
 // explorer, the scheduler, the Telegram channel and the web API.
 package app
 
@@ -12,39 +12,39 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/approval"
-	"github.com/denerFernandes/vigia/internal/budget"
-	"github.com/denerFernandes/vigia/internal/compiler"
-	"github.com/denerFernandes/vigia/internal/connector"
-	"github.com/denerFernandes/vigia/internal/connector/calendar"
-	"github.com/denerFernandes/vigia/internal/connector/external"
-	"github.com/denerFernandes/vigia/internal/connector/mail"
-	"github.com/denerFernandes/vigia/internal/connector/services"
-	"github.com/denerFernandes/vigia/internal/connector/telegramcap"
-	"github.com/denerFernandes/vigia/internal/connector/web"
-	"github.com/denerFernandes/vigia/internal/desktop"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/explore"
-	"github.com/denerFernandes/vigia/internal/gallery"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/judge"
-	"github.com/denerFernandes/vigia/internal/llm"
-	"github.com/denerFernandes/vigia/internal/memory"
-	"github.com/denerFernandes/vigia/internal/oauth"
-	"github.com/denerFernandes/vigia/internal/ocr"
-	"github.com/denerFernandes/vigia/internal/outbox"
-	"github.com/denerFernandes/vigia/internal/owner"
-	"github.com/denerFernandes/vigia/internal/people"
-	"github.com/denerFernandes/vigia/internal/policy"
-	"github.com/denerFernandes/vigia/internal/protect"
-	"github.com/denerFernandes/vigia/internal/remote"
-	"github.com/denerFernandes/vigia/internal/scheduler"
-	"github.com/denerFernandes/vigia/internal/server"
-	"github.com/denerFernandes/vigia/internal/store"
-	"github.com/denerFernandes/vigia/internal/telegram"
-	"github.com/denerFernandes/vigia/internal/undo"
-	"github.com/denerFernandes/vigia/internal/vault"
-	"github.com/denerFernandes/vigia/internal/voice"
+	"github.com/denerFernandes/zodim/internal/approval"
+	"github.com/denerFernandes/zodim/internal/budget"
+	"github.com/denerFernandes/zodim/internal/compiler"
+	"github.com/denerFernandes/zodim/internal/connector"
+	"github.com/denerFernandes/zodim/internal/connector/calendar"
+	"github.com/denerFernandes/zodim/internal/connector/external"
+	"github.com/denerFernandes/zodim/internal/connector/mail"
+	"github.com/denerFernandes/zodim/internal/connector/services"
+	"github.com/denerFernandes/zodim/internal/connector/telegramcap"
+	"github.com/denerFernandes/zodim/internal/connector/web"
+	"github.com/denerFernandes/zodim/internal/desktop"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/explore"
+	"github.com/denerFernandes/zodim/internal/gallery"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/judge"
+	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/memory"
+	"github.com/denerFernandes/zodim/internal/oauth"
+	"github.com/denerFernandes/zodim/internal/ocr"
+	"github.com/denerFernandes/zodim/internal/outbox"
+	"github.com/denerFernandes/zodim/internal/owner"
+	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/zodim/internal/policy"
+	"github.com/denerFernandes/zodim/internal/protect"
+	"github.com/denerFernandes/zodim/internal/remote"
+	"github.com/denerFernandes/zodim/internal/scheduler"
+	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/zodim/internal/telegram"
+	"github.com/denerFernandes/zodim/internal/undo"
+	"github.com/denerFernandes/zodim/internal/vault"
+	"github.com/denerFernandes/zodim/internal/voice"
 )
 
 type Settings struct {
@@ -52,7 +52,7 @@ type Settings struct {
 	Locale       string `json:"locale"`
 	JudgeBackend string `json:"judge_backend"` // local, jev, llm
 	OllamaModel  string `json:"ollama_model"`
-	// LocalJudgeURL is Vigia's own small judgment model (tools/judge/serve.py).
+	// LocalJudgeURL is Zodim's own small judgment model (tools/judge/serve.py).
 	LocalJudgeURL string `json:"local_judge_url"`
 	ExploreModel  string `json:"explore_model"`
 	CompileModel  string `json:"compile_model"`
@@ -60,7 +60,7 @@ type Settings struct {
 	// GalleryURL is the routine gallery index; a local path works too.
 	GalleryURL string `json:"gallery_url"`
 	// EmailChannel lets the owner ask by writing to themselves with
-	// "Vigia:" in the subject.
+	// "Zodim:" in the subject.
 	EmailChannel bool `json:"email_channel"`
 	// ProtectionNetwork downloads the shared protection list daily.
 	ProtectionNetwork bool   `json:"protection_network"`
@@ -144,7 +144,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		go a.mirrorWebhook(context.WithoutCancel(ctx), n)
 		if a.DesktopNotify && (n.To == "" || n.To == people.OwnerID) {
 			title, body, _ := strings.Cut(n.Text, "\n")
-			go desktop.Notify(context.WithoutCancel(ctx), "Vigia", strings.TrimSpace(title+" "+body))
+			go desktop.Notify(context.WithoutCancel(ctx), "Zodim", strings.TrimSpace(title+" "+body))
 		}
 	}
 	a.Channel.ReadPhoto = ocr.Tesseract{}.Read

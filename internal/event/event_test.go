@@ -9,7 +9,7 @@ import (
 
 func open(t *testing.T) *Store {
 	t.Helper()
-	s, err := Open(filepath.Join(t.TempDir(), "vigia.db"))
+	s, err := Open(filepath.Join(t.TempDir(), "zodim.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

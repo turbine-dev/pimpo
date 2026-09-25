@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/protect"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/protect"
 )
 
 // Rule is one decision the owner made, in a form the engine can check

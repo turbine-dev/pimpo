@@ -1,5 +1,5 @@
 {
-  "identifier": "app.vigia.companion",
+  "identifier": "app.zodim.companion",
   "bundle": { "externalBin": [] },
-  "app": { "windows": [{ "label": "main", "title": "Vigia" }] }
+  "app": { "windows": [{ "label": "main", "title": "Zodim" }] }
 }

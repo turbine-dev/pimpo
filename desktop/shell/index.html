@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vigia</title>
+<title>Zodim</title>
 <style>
   :root { --bg: #fafaf7; --surface: #fff; --ink: #17181b; --ink-2: #4a4d55; --ink-3: #62656c; --line: #e6e6e0; --accent: #4c3ee0; --danger: #b8243c; }
   @media (prefers-color-scheme: dark) { :root { --bg: #0e0f12; --surface: #16181c; --ink: #f2f2ef; --ink-2: #b9bcc4; --ink-3: #8a8f99; --line: #262930; --accent: #8b80ff; --danger: #ff6b81; } }
@@ -30,23 +30,23 @@
 </head>
 <body>
 <main>
-  <svg class="mark" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b7dff"/><stop offset="1" stop-color="#5b8cff"/></linearGradient></defs><rect width="512" height="512" rx="120" fill="url(#g)"/><path d="M112 272c38-67 86-101 144-101s106 34 144 101c-38 67-86 101-144 101s-106-34-144-101Z" fill="none" stroke="#fff" stroke-width="30" stroke-linejoin="round"/><circle cx="256" cy="272" r="42" fill="#fff"/></svg>
-  <h1>Vigia</h1>
+  <svg class="mark" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5dfc"/><stop offset=".55" stop-color="#4f46e5"/><stop offset="1" stop-color="#1e1b4b"/></linearGradient></defs><rect width="512" height="512" rx="116" fill="url(#g)"/><path d="M160 178H328L172 334H352" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/><path d="M378 108c5 27 14 36 41 41-27 5-36 14-41 41-5-27-14-36-41-41 27-5 36-14 41-41Z" fill="#fff"/></svg>
+  <h1>Zodim</h1>
   <p id="status">Acordando o seu agente…</p>
   <div class="pulse" aria-hidden="true"><i></i><i></i><i></i></div>
   <form id="pair">
-    <label for="link">Link do seu Vigia</label>
-    <input id="link" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://vigia.sua-rede.ts.net/auth?token=…">
+    <label for="link">Link do seu Zodim</label>
+    <input id="link" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://zodim.sua-rede.ts.net/auth?token=…">
     <button type="submit">Conectar</button>
     <div class="error" id="error" role="alert"></div>
-    <p class="hint">O Vigia roda no seu computador ou servidor. No celular, abra Ajustes › Abrir no celular e cole o link aqui.</p>
+    <p class="hint">O Zodim roda no seu computador ou servidor. No celular, abra Ajustes › Abrir no celular e cole o link aqui.</p>
   </form>
 </main>
 <script>
   const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
   if (mobile) {
     document.body.classList.add('mobile')
-    document.getElementById('status').textContent = 'Conecte ao Vigia que roda no seu computador.'
+    document.getElementById('status').textContent = 'Conecte ao Zodim que roda no seu computador.'
     // A link may carry the home address after #home=: the phone tries it
     // first (fast, and works without internet) and falls back to the link.
     const reach = (base) => new Promise((ok) => {
@@ -63,7 +63,7 @@
       location.replace(link)
     }
     let saved = null, savedHome = null
-    try { saved = localStorage.getItem('vigia.link'); savedHome = localStorage.getItem('vigia.home') } catch {}
+    try { saved = localStorage.getItem('zodim.link'); savedHome = localStorage.getItem('zodim.home') } catch {}
     if (saved) open(saved, savedHome)
     document.getElementById('pair').addEventListener('submit', (e) => {
       e.preventDefault()
@@ -75,7 +75,7 @@
       let home = new URLSearchParams(url.hash.slice(1)).get('home')
       if (home && !/^http:\/\/(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)[\d.]+:\d+$/.test(home)) home = null
       url.hash = ''
-      try { localStorage.setItem('vigia.link', url.href); home ? localStorage.setItem('vigia.home', home) : localStorage.removeItem('vigia.home') } catch {}
+      try { localStorage.setItem('zodim.link', url.href); home ? localStorage.setItem('zodim.home', home) : localStorage.removeItem('zodim.home') } catch {}
       open(url.href, home)
     })
   }

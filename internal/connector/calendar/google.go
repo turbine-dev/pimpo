@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/connector"
+	"github.com/denerFernandes/zodim/internal/connector"
 )
 
 // Google reads calendars through the Google Calendar API with an OAuth token.

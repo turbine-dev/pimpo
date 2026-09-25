@@ -46,6 +46,6 @@
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Para falar com o Vigia do seu computador pela rede de casa.</string>
+	<string>Para falar com o Zodim do seu computador pela rede de casa.</string>
 </dict>
 </plist>

@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/denerFernandes/vigia/internal/connector"
-	"github.com/denerFernandes/vigia/internal/explore"
-	"github.com/denerFernandes/vigia/internal/people"
-	"github.com/denerFernandes/vigia/internal/server"
-	"github.com/denerFernandes/vigia/internal/whatsapp"
+	"github.com/denerFernandes/zodim/internal/connector"
+	"github.com/denerFernandes/zodim/internal/explore"
+	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/zodim/internal/whatsapp"
 )
 
 // WhatsApp is a second channel through the official Cloud API: the owner
@@ -119,7 +119,7 @@ func (a *App) whatsappMessage(ctx context.Context, m whatsapp.Inbound) {
 }
 
 func pairingCode(text string) (string, bool) {
-	for _, prefix := range []string{"/start ", "vigia ", "Vigia "} {
+	for _, prefix := range []string{"/start ", "zodim ", "Zodim "} {
 		if code, ok := strings.CutPrefix(text, prefix); ok {
 			return strings.TrimSpace(code), true
 		}
@@ -139,7 +139,7 @@ func (a *App) whatsappPair(ctx context.Context, m whatsapp.Inbound, code string,
 	}
 	if p, err := a.People.PairWhatsApp(ctx, code, m.From); err == nil {
 		a.Events.Append(ctx, "whatsapp.paired", "human:"+p.ID, map[string]string{"person": p.ID})
-		reply("Oi, " + p.Name + "! Agora você fala com o Vigia da casa pelo WhatsApp.")
+		reply("Oi, " + p.Name + "! Agora você fala com o Zodim da casa pelo WhatsApp.")
 		return
 	}
 	reply("Esse código não confere. Peça um novo em Conexões ou em Pessoas.")

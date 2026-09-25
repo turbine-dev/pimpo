@@ -8,15 +8,15 @@ import (
 	"os"
 	"strings"
 
-	"github.com/denerFernandes/vigia/internal/connector/external"
+	"github.com/denerFernandes/zodim/internal/connector/external"
 )
 
 // connectorCmd checks an external connector's contract before it is
-// installed: `vigia connector check DIR`. Secrets for the check come from
+// installed: `zodim connector check DIR`. Secrets for the check come from
 // the environment, under the names the connector declares.
 func connectorCmd(args []string, out io.Writer) error {
 	if len(args) != 2 || args[0] != "check" {
-		return errors.New("usage: vigia connector check DIR   (then copy DIR into ~/.vigia/connectors/)")
+		return errors.New("usage: zodim connector check DIR   (then copy DIR into ~/.zodim/connectors/)")
 	}
 	m, err := external.Load(args[1])
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 )
 
 // Skill is a skill from the other agent and what it would take to run it
-// as a Vigia routine.
+// as a Zodim routine.
 type Skill struct {
 	Name         string   `json:"name"`
 	Description  string   `json:"description"`

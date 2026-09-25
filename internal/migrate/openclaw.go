@@ -117,7 +117,7 @@ func readOpenClaw(p *Plan) error {
 			t.Deliver = j.Delivery.Channel
 		}
 		if t.Prompt == "" {
-			p.Warnings = append(p.Warnings, fmt.Sprintf("tarefa %q roda um %s, não um pedido; rotinas do Vigia não executam programas", j.Name, j.Payload.Kind))
+			p.Warnings = append(p.Warnings, fmt.Sprintf("tarefa %q roda um %s, não um pedido; rotinas do Zodim não executam programas", j.Name, j.Payload.Kind))
 			continue
 		}
 		p.Tasks = append(p.Tasks, t)

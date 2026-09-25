@@ -36,8 +36,13 @@ type KeySource func() ([]byte, error)
 // when no keychain is available (headless Linux, CI).
 func OSKey(dir string) KeySource {
 	return func() ([]byte, error) {
-		const service, user = "vigia", "data-key"
+		const service, user = "zodim", "data-key"
 		if s, err := keyring.Get(service, user); err == nil {
+			return base64.StdEncoding.DecodeString(s)
+		}
+		// Before the rename the key lived under "vigia"; carry it over.
+		if s, err := keyring.Get("vigia", user); err == nil {
+			keyring.Set(service, user, s)
 			return base64.StdEncoding.DecodeString(s)
 		}
 		key := make([]byte, 32)

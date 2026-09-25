@@ -17,15 +17,15 @@ import (
 	"github.com/emersion/go-imap/v2/imapserver"
 	"github.com/emersion/go-imap/v2/imapserver/imapmemserver"
 
-	"github.com/denerFernandes/vigia/internal/approval"
-	"github.com/denerFernandes/vigia/internal/connector/mail"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/judge"
-	"github.com/denerFernandes/vigia/internal/llm"
-	"github.com/denerFernandes/vigia/internal/policy"
-	"github.com/denerFernandes/vigia/internal/routine"
-	"github.com/denerFernandes/vigia/internal/runtime"
+	"github.com/denerFernandes/zodim/internal/approval"
+	"github.com/denerFernandes/zodim/internal/connector/mail"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/judge"
+	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/policy"
+	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/runtime"
 )
 
 type lit struct {

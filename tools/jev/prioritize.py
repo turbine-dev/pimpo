@@ -18,7 +18,7 @@ MODEL = "jev-latest"
 HERE = Path(__file__).parent
 
 PRODUCT = {
-    "name": "Vigia (working name)",
+    "name": "Zodim (working name)",
     "what": "A free, open-source, local-first personal AI agent that competes with OpenClaw and Hermes Agent. "
     "Users talk to it on Telegram/WhatsApp and a web/desktop UI. Its core idea: the first time it does a task it uses an LLM "
     "(with approvals for irreversible actions); when that works, it compiles the task into a tested code routine with declared "

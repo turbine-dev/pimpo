@@ -1,4 +1,4 @@
-package app.vigia.companion
+package app.zodim.companion
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

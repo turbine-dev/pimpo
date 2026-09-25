@@ -89,7 +89,7 @@ func hermesJobs(p *Plan) error {
 			t.Prompt += "\n(usava as skills: " + strings.Join(j.Skills, ", ") + ")"
 		}
 		if t.Prompt == "" && j.Script != "" {
-			p.Warnings = append(p.Warnings, fmt.Sprintf("tarefa %q só roda um script (%s); rotinas do Vigia não executam programas", j.Name, j.Script))
+			p.Warnings = append(p.Warnings, fmt.Sprintf("tarefa %q só roda um script (%s); rotinas do Zodim não executam programas", j.Name, j.Script))
 			continue
 		}
 		p.Tasks = append(p.Tasks, t)

@@ -1,4 +1,4 @@
-// Package event is Vigia's append-only log. Every action, decision and
+// Package event is Zodim's append-only log. Every action, decision and
 // message is an event, and each event carries the hash of the one before
 // it, so any edit to history is detectable.
 package event

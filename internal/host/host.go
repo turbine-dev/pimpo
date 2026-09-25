@@ -11,14 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/budget"
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/connector"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/judge"
-	"github.com/denerFernandes/vigia/internal/people"
-	"github.com/denerFernandes/vigia/internal/policy"
-	"github.com/denerFernandes/vigia/internal/trace"
+	"github.com/denerFernandes/zodim/internal/budget"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/connector"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/judge"
+	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/zodim/internal/policy"
+	"github.com/denerFernandes/zodim/internal/trace"
 )
 
 const (

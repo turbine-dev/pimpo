@@ -6,7 +6,7 @@ package policy
 import (
 	"context"
 
-	"github.com/denerFernandes/vigia/internal/capability"
+	"github.com/denerFernandes/zodim/internal/capability"
 )
 
 type Verdict string

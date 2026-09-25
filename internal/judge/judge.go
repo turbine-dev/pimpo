@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/llm"
+	"github.com/denerFernandes/zodim/internal/llm"
 )
 
 type Answer struct {
@@ -189,7 +189,7 @@ func (o Ollama) Ask(ctx context.Context, question string, item any) (Answer, err
 	return Answer{P: 0.2, Backend: "local"}, nil
 }
 
-// Local asks Vigia's own small judgment model (tools/judge/serve.py), which
+// Local asks Zodim's own small judgment model (tools/judge/serve.py), which
 // reads the model's probability of "yes" directly.
 type Local struct {
 	URL  string

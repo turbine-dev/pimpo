@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/event"
 )
 
 func engine(t *testing.T) *Engine {

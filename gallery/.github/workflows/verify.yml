@@ -10,5 +10,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: stable }
-      - run: go install github.com/denerFernandes/vigia/cmd/vigia@latest
-      - run: vigia gallery verify index.json
+      - run: go install github.com/denerFernandes/zodim/cmd/zodim@latest
+      - run: zodim gallery verify index.json

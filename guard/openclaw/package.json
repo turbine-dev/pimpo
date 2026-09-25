@@ -1,7 +1,7 @@
 {
-  "name": "@vigia/openclaw-guard",
+  "name": "@zodim/openclaw-guard",
   "version": "1.0.0",
-  "description": "Ask Vigia's rules and the shared protection list before OpenClaw runs a tool.",
+  "description": "Ask Zodim's rules and the shared protection list before OpenClaw runs a tool.",
   "type": "module",
   "openclaw": { "extensions": ["./index.ts"] },
   "scripts": { "test": "node --test guard.test.ts" }

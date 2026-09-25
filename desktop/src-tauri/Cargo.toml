@@ -1,11 +1,11 @@
 [package]
-name = "vigia-desktop"
+name = "zodim-desktop"
 version = "0.5.0"
 edition = "2021"
 publish = false
 
 [lib]
-name = "vigia_desktop_lib"
+name = "zodim_desktop_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

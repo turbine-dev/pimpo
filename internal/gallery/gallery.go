@@ -25,12 +25,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/routine"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/routine"
 )
 
 // DefaultIndex is the community index.
-const DefaultIndex = "https://raw.githubusercontent.com/denerFernandes/vigia-gallery/main/index.json"
+const DefaultIndex = "https://raw.githubusercontent.com/denerFernandes/zodim-gallery/main/index.json"
 
 type Entry struct {
 	ID      string          `json:"id"`
@@ -86,7 +86,7 @@ func Sign(id, author string, r routine.Routine, private string) (Entry, error) {
 
 // signed is what the signature covers: which entry, by whom, and exactly
 // which content.
-func (e Entry) signed() string { return "vigia-gallery-v1\n" + e.ID + "\n" + e.Author + "\n" + e.Hash }
+func (e Entry) signed() string { return "zodim-gallery-v1\n" + e.ID + "\n" + e.Author + "\n" + e.Hash }
 
 // Report is what verification found out about one entry.
 type Report struct {

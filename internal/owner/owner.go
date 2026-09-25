@@ -13,10 +13,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/explore"
-	"github.com/denerFernandes/vigia/internal/people"
-	"github.com/denerFernandes/vigia/internal/telegram"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/explore"
+	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/zodim/internal/telegram"
 )
 
 const (
@@ -45,7 +45,7 @@ type Channel struct {
 	// Bot returns the current bot, or nil when Telegram is not set up.
 	Bot     func(ctx context.Context) Bot
 	Handler Handler
-	// People lets household members talk to Vigia; nil means only the owner.
+	// People lets household members talk to Zodim; nil means only the owner.
 	People *people.Directory
 	// Mirror also delivers every notice on another channel, such as WhatsApp.
 	Mirror func(ctx context.Context, n explore.Notice)
@@ -142,7 +142,7 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 		}
 		person, ok := c.who(ctx, m.Chat.ID)
 		if !ok {
-			// Only people of the house can talk to Vigia; others get nothing.
+			// Only people of the house can talk to Zodim; others get nothing.
 			return
 		}
 		if text == "" && len(m.Photo) > 0 {
@@ -231,7 +231,7 @@ func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code s
 	if c.People != nil && code != "" && chat != m.Chat.ID {
 		if p, err := c.People.Pair(ctx, code, m.Chat.ID); err == nil {
 			c.Events.Append(ctx, EventPaired, "human:"+p.ID, map[string]any{"chat": m.Chat.ID, "person": p.ID})
-			bot.Send(ctx, m.Chat.ID, fmt.Sprintf("Oi, %s! Agora você fala com o Vigia da casa. Me peça algo que você faz toda semana.", p.Name))
+			bot.Send(ctx, m.Chat.ID, fmt.Sprintf("Oi, %s! Agora você fala com o Zodim da casa. Me peça algo que você faz toda semana.", p.Name))
 			return
 		}
 	}
@@ -243,7 +243,7 @@ func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code s
 		return
 	}
 	if code == "" || code != c.PairingCode() {
-		bot.Send(ctx, m.Chat.ID, "Esse código não confere. Abra Conexões no Vigia e use o código mostrado lá.")
+		bot.Send(ctx, m.Chat.ID, "Esse código não confere. Abra Conexões no Zodim e use o código mostrado lá.")
 		return
 	}
 	c.Events.Put(ctx, chatKey, strconv.FormatInt(m.Chat.ID, 10))

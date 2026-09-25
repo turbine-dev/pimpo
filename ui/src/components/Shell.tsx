@@ -24,14 +24,15 @@ export function Logo({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
       <defs>
-        <linearGradient id="vg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="var(--color-accent)" />
-          <stop offset="1" stopColor="var(--color-explore)" />
+        <linearGradient id="zg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#6d5dfc" />
+          <stop offset=".55" stopColor="#4f46e5" />
+          <stop offset="1" stopColor="#1e1b4b" />
         </linearGradient>
       </defs>
-      <rect width="32" height="32" rx="9" fill="url(#vg)" />
-      <path d="M8 17c2.4-4.2 5-6.3 8-6.3s5.6 2.1 8 6.3c-2.4 4.2-5 6.3-8 6.3S10.4 21.2 8 17Z" fill="none" stroke="white" strokeWidth="2" strokeLinejoin="round" />
-      <circle cx="16" cy="17" r="2.6" fill="white" />
+      <rect width="32" height="32" rx="7.5" fill="url(#zg)" />
+      <path d="M10 11.1h10.5l-9.75 9.75H22" fill="none" stroke="white" strokeWidth="2.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M23.6 6.75c.3 1.7.9 2.25 2.55 2.55-1.65.3-2.25.9-2.55 2.55-.3-1.65-.9-2.25-2.55-2.55 1.65-.3 2.25-.85 2.55-2.55Z" fill="white" />
     </svg>
   )
 }
@@ -39,7 +40,7 @@ export function Logo({ size = 28 }: { size?: number }) {
 function useTheme() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
-      return (localStorage.getItem('vigia.theme') as 'light' | 'dark') || 'dark'
+      return (localStorage.getItem('zodim.theme') as 'light' | 'dark') || 'dark'
     } catch {
       return 'dark'
     }
@@ -47,7 +48,7 @@ function useTheme() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     try {
-      localStorage.setItem('vigia.theme', theme)
+      localStorage.setItem('zodim.theme', theme)
     } catch {
       /* private mode: the theme just is not remembered */
     }
@@ -79,7 +80,7 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
       <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-surface/60 px-3 py-4 backdrop-blur md:flex">
         <div className="mb-6 flex items-center gap-2.5 px-2">
           <Logo />
-          <span className="text-[15px] font-semibold tracking-tight">Vigia</span>
+          <span className="text-[15px] font-semibold tracking-tight">Zodim</span>
         </div>
         <nav className="flex flex-col gap-0.5" aria-label={t('shell.main')}>
           {items.map((it) => (

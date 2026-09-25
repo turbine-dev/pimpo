@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/runtime"
-	"github.com/denerFernandes/vigia/internal/trace"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/runtime"
+	"github.com/denerFernandes/zodim/internal/trace"
 )
 
 type Routine struct {

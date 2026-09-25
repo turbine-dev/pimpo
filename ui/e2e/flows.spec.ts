@@ -9,7 +9,7 @@ test.describe.serial('the story, end to end', () => {
   test('first run guide leads to the first task', async ({ page }) => {
     await login(page)
     await expect(page).toHaveURL(/\/welcome/)
-    await expect(page.getByRole('heading', { name: 'Oi, eu sou o Vigia.' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Oi, eu sou o Zodim.' })).toBeVisible()
     for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Continuar' }).click()
     await page.getByRole('button', { name: /Conservador/ }).click()
     await page.getByRole('button', { name: /Equilibrado/ }).click()
@@ -117,7 +117,7 @@ test.describe.serial('the story, end to end', () => {
     await page.getByLabel('Senha para exportar').fill('uma senha longa')
     const download = page.waitForEvent('download')
     await page.getByRole('button', { name: 'Exportar' }).click()
-    expect((await download).suggestedFilename()).toMatch(/\.vigia$/)
+    expect((await download).suggestedFilename()).toMatch(/\.zodim$/)
   })
 
   test('the phone menu reaches every screen', async ({ page }) => {
@@ -156,7 +156,7 @@ test('a routine\'s schedule and settings change without code', async ({ page }) 
   await expect(page.getByLabel('Avisar guarda-chuva a partir de (% de chuva)')).toHaveValue('80')
   await expect(page.getByText(/dias úteis às 06:30/i).first()).toBeVisible()
   for (const theme of ['dark', 'light']) {
-    await page.evaluate((t) => localStorage.setItem('vigia.theme', t), theme)
+    await page.evaluate((t) => localStorage.setItem('zodim.theme', t), theme)
     await page.reload()
     await page.waitForLoadState('networkidle')
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()

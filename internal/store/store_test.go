@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/routine"
-	"github.com/denerFernandes/vigia/internal/runtime"
-	"github.com/denerFernandes/vigia/internal/trace"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/runtime"
+	"github.com/denerFernandes/zodim/internal/trace"
 )
 
 func open(t *testing.T) *Store {

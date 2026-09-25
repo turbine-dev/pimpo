@@ -1,16 +1,16 @@
 {
-  "id": "vigia-guard",
-  "name": "Vigia Guard",
-  "description": "Every tool call passes Vigia's rules and the shared protection list first.",
+  "id": "zodim-guard",
+  "name": "Zodim Guard",
+  "description": "Every tool call passes Zodim's rules and the shared protection list first.",
   "activation": { "onStartup": true },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "required": ["url", "token"],
     "properties": {
-      "url": { "type": "string", "description": "Vigia's address, e.g. http://127.0.0.1:7788" },
-      "token": { "type": "string", "description": "A device token from Vigia › Ajustes › Abrir no celular" },
-      "failOpen": { "type": "boolean", "default": false, "description": "Let tools run when Vigia does not answer (default: block)" }
+      "url": { "type": "string", "description": "Zodim's address, e.g. http://127.0.0.1:7788" },
+      "token": { "type": "string", "description": "A device token from Zodim › Ajustes › Abrir no celular" },
+      "failOpen": { "type": "boolean", "default": false, "description": "Let tools run when Zodim does not answer (default: block)" }
     }
   }
 }

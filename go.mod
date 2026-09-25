@@ -1,4 +1,4 @@
-module github.com/denerFernandes/vigia
+module github.com/denerFernandes/zodim
 
 go 1.26.6
 

@@ -1,4 +1,4 @@
-// Package desktop shows system notifications on the computer Vigia runs
+// Package desktop shows system notifications on the computer Zodim runs
 // on, for the desktop app: approvals reach the owner even with the window
 // closed.
 package desktop
@@ -28,10 +28,10 @@ func Notify(ctx context.Context, title, body string) error {
 		script := "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null;" +
 			"$t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02);" +
 			"$x = $t.GetElementsByTagName('text'); $x.Item(0).AppendChild($t.CreateTextNode(" + psQuote(title) + ")) > $null; $x.Item(1).AppendChild($t.CreateTextNode(" + psQuote(body) + ")) > $null;" +
-			"[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Vigia').Show([Windows.UI.Notifications.ToastNotification]::new($t))"
+			"[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Zodim').Show([Windows.UI.Notifications.ToastNotification]::new($t))"
 		return Run(ctx, "powershell", "-NoProfile", "-Command", script)
 	default:
-		return Run(ctx, "notify-send", "--app-name=Vigia", title, body)
+		return Run(ctx, "notify-send", "--app-name=Zodim", title, body)
 	}
 }
 

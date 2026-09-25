@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/event"
+	"github.com/denerFernandes/zodim/internal/event"
 )
 
 func dir(t *testing.T) *Directory {

@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test'
 for (const theme of ['dark', 'light']) {
   test(`main pages meet WCAG AA (${theme})`, async ({ page }) => {
     await page.goto('/auth?token=e2e-token')
-    await page.evaluate((t) => localStorage.setItem('vigia.theme', t), theme)
+    await page.evaluate((t) => localStorage.setItem('zodim.theme', t), theme)
     for (const path of ['/', '/inbox', '/receipts', '/rules', '/cost', '/connections', '/settings', '/welcome', '/memory', '/people', '/gallery', '/import']) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')

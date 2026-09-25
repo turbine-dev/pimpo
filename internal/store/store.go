@@ -1,4 +1,4 @@
-// Package store keeps Vigia's working state: routines and their versions,
+// Package store keeps Zodim's working state: routines and their versions,
 // explorations waiting for approval, and runs. The event log remains the
 // record of what happened; these tables are the current picture.
 package store
@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/routine"
-	"github.com/denerFernandes/vigia/internal/trace"
+	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/trace"
 )
 
 var ErrNotFound = errors.New("not found")

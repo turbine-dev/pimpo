@@ -72,7 +72,7 @@ func (o *Outgoing) UnmarshalJSON(b []byte) error {
 func (m *Mail) compose(o Outgoing) ([]byte, string) {
 	b := make([]byte, 12)
 	rand.Read(b)
-	host := "vigia.local"
+	host := "zodim.local"
 	if i := strings.LastIndex(m.Account.Username, "@"); i >= 0 {
 		host = m.Account.Username[i+1:]
 	}

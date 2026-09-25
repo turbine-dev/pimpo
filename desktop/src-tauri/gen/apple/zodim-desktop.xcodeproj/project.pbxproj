@@ -28,13 +28,13 @@
 		4DED1EE3503A20D5C70C9DE2 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
 		68D289D58D66083C019AEE74 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		82302A0BF2D4B7C50B4C7F12 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
-		93C8965B97A810BE52E44448 /* vigia-desktop_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "vigia-desktop_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		93C8965B97A810BE52E44448 /* zodim-desktop_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "zodim-desktop_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		94A094474E2D00CA519B3D01 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		9790408F4F6E2D43E907ED7C /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
 		C039DF18E4503843DFC7C9F0 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C0A8424F7A2C46E21CD99411 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
 		C30289C88C2EF1FD3E868402 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		C79B7C11029CA765AD94DD3E /* vigia-desktop_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "vigia-desktop_iOS.entitlements"; sourceTree = "<group>"; };
+		C79B7C11029CA765AD94DD3E /* zodim-desktop_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "zodim-desktop_iOS.entitlements"; sourceTree = "<group>"; };
 		C994D01E0F667544842A5302 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D48F11B3FD1098F637414BA0 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		D982651E6AD620869A54FC77 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
@@ -89,7 +89,7 @@
 		562C86DBE64056A9921113A0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				93C8965B97A810BE52E44448 /* vigia-desktop_iOS.app */,
+				93C8965B97A810BE52E44448 /* zodim-desktop_iOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -109,13 +109,13 @@
 			path = bindings;
 			sourceTree = "<group>";
 		};
-		6607F2D961A0DE65D6C905B4 /* vigia-desktop */ = {
+		6607F2D961A0DE65D6C905B4 /* zodim-desktop */ = {
 			isa = PBXGroup;
 			children = (
 				E9F299C2DCBB43CAD81C34AA /* main.mm */,
 				5EC2479054644F3682F77460 /* bindings */,
 			);
-			path = "vigia-desktop";
+			path = "zodim-desktop";
 			sourceTree = "<group>";
 		};
 		86A37AF969133B03818414CD = {
@@ -127,25 +127,25 @@
 				56EB7C30A732C0CB4D4470FC /* Externals */,
 				9A0EEE2DD63AB470F0C4B27D /* Sources */,
 				15DFB83D29570872A5D28EC4 /* src */,
-				935EF2E67C008ADA41DD0A8B /* vigia-desktop_iOS */,
+				935EF2E67C008ADA41DD0A8B /* zodim-desktop_iOS */,
 				3871C57259879A3CE6625AEE /* Frameworks */,
 				562C86DBE64056A9921113A0 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		935EF2E67C008ADA41DD0A8B /* vigia-desktop_iOS */ = {
+		935EF2E67C008ADA41DD0A8B /* zodim-desktop_iOS */ = {
 			isa = PBXGroup;
 			children = (
 				36885F368CBA7C157BBA9CF8 /* Info.plist */,
-				C79B7C11029CA765AD94DD3E /* vigia-desktop_iOS.entitlements */,
+				C79B7C11029CA765AD94DD3E /* zodim-desktop_iOS.entitlements */,
 			);
-			path = "vigia-desktop_iOS";
+			path = "zodim-desktop_iOS";
 			sourceTree = "<group>";
 		};
 		9A0EEE2DD63AB470F0C4B27D /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				6607F2D961A0DE65D6C905B4 /* vigia-desktop */,
+				6607F2D961A0DE65D6C905B4 /* zodim-desktop */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -153,9 +153,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		F460A782AAA229826058FFCC /* vigia-desktop_iOS */ = {
+		F460A782AAA229826058FFCC /* zodim-desktop_iOS */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 251C30F23BAAA1C565E8B988 /* Build configuration list for PBXNativeTarget "vigia-desktop_iOS" */;
+			buildConfigurationList = 251C30F23BAAA1C565E8B988 /* Build configuration list for PBXNativeTarget "zodim-desktop_iOS" */;
 			buildPhases = (
 				D359D7463FA16D0209670F50 /* Build Rust Code */,
 				C475CA90315B5E6E04B944A9 /* Sources */,
@@ -166,11 +166,11 @@
 			);
 			dependencies = (
 			);
-			name = "vigia-desktop_iOS";
+			name = "zodim-desktop_iOS";
 			packageProductDependencies = (
 			);
-			productName = "vigia-desktop_iOS";
-			productReference = 93C8965B97A810BE52E44448 /* vigia-desktop_iOS.app */;
+			productName = "zodim-desktop_iOS";
+			productReference = 93C8965B97A810BE52E44448 /* zodim-desktop_iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -184,7 +184,7 @@
 				TargetAttributes = {
 				};
 			};
-			buildConfigurationList = 0284F99EEAA44D59C253580B /* Build configuration list for PBXProject "vigia-desktop" */;
+			buildConfigurationList = 0284F99EEAA44D59C253580B /* Build configuration list for PBXProject "zodim-desktop" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -198,7 +198,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				F460A782AAA229826058FFCC /* vigia-desktop_iOS */,
+				F460A782AAA229826058FFCC /* zodim-desktop_iOS */,
 			);
 		};
 /* End PBXProject section */
@@ -379,7 +379,7 @@
 					arm64,
 				);
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "vigia-desktop_iOS/vigia-desktop_iOS.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "zodim-desktop_iOS/zodim-desktop_iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
@@ -387,15 +387,15 @@
 					"$(inherited)",
 					"\".\"",
 				);
-				INFOPLIST_FILE = "vigia-desktop_iOS/Info.plist";
+				INFOPLIST_FILE = "zodim-desktop_iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = app.vigia.companion;
-				PRODUCT_NAME = "Vigia";
+				PRODUCT_BUNDLE_IDENTIFIER = app.zodim.companion;
+				PRODUCT_NAME = "Zodim";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -410,7 +410,7 @@
 					arm64,
 				);
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "vigia-desktop_iOS/vigia-desktop_iOS.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "zodim-desktop_iOS/zodim-desktop_iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
@@ -418,15 +418,15 @@
 					"$(inherited)",
 					"\".\"",
 				);
-				INFOPLIST_FILE = "vigia-desktop_iOS/Info.plist";
+				INFOPLIST_FILE = "zodim-desktop_iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
-				PRODUCT_BUNDLE_IDENTIFIER = app.vigia.companion;
-				PRODUCT_NAME = "Vigia";
+				PRODUCT_BUNDLE_IDENTIFIER = app.zodim.companion;
+				PRODUCT_NAME = "Zodim";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -436,7 +436,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0284F99EEAA44D59C253580B /* Build configuration list for PBXProject "vigia-desktop" */ = {
+		0284F99EEAA44D59C253580B /* Build configuration list for PBXProject "zodim-desktop" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1AE402D9B61C130C780554D3 /* debug */,
@@ -445,7 +445,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = debug;
 		};
-		251C30F23BAAA1C565E8B988 /* Build configuration list for PBXNativeTarget "vigia-desktop_iOS" */ = {
+		251C30F23BAAA1C565E8B988 /* Build configuration list for PBXNativeTarget "zodim-desktop_iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A5E9C2EA8735D0FF301B0DF7 /* debug */,

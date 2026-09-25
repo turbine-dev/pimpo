@@ -1,4 +1,4 @@
-// Package backup exports everything Vigia keeps into one file and imports
+// Package backup exports everything Zodim keeps into one file and imports
 // it on another machine: the database (routines, history, receipts,
 // people), the memory with its history, installed connectors,
 // and the vault's secrets. Secrets are re-encrypted with a passphrase the
@@ -27,7 +27,12 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const format = "vigia-backup-1"
+const format = "zodim-backup-1"
+
+// legacyFormat is what backups made before the rename say.
+const legacyFormat = "vigia-backup-1"
+
+func known(f string) bool { return f == format || f == legacyFormat }
 
 type Manifest struct {
 	Format  string    `json:"format"`
@@ -81,12 +86,12 @@ func Export(ctx context.Context, db *sql.DB, home string, vault Secrets, passphr
 	if len(passphrase) < 8 {
 		return Manifest{}, errors.New("choose a passphrase of at least 8 characters")
 	}
-	tmp, err := os.MkdirTemp("", "vigia-export-")
+	tmp, err := os.MkdirTemp("", "zodim-export-")
 	if err != nil {
 		return Manifest{}, err
 	}
 	defer os.RemoveAll(tmp)
-	dbCopy := filepath.Join(tmp, "vigia.db")
+	dbCopy := filepath.Join(tmp, "zodim.db")
 	if _, err := db.ExecContext(ctx, `VACUUM INTO ?`, dbCopy); err != nil {
 		return Manifest{}, fmt.Errorf("copy database: %w", err)
 	}
@@ -133,7 +138,7 @@ func Export(ctx context.Context, db *sql.DB, home string, vault Secrets, passphr
 	if err != nil {
 		return m, err
 	}
-	if err := add("vigia.db", raw); err != nil {
+	if err := add("zodim.db", raw); err != nil {
 		return m, err
 	}
 	if err := add("secrets.enc", sealed); err != nil {
@@ -177,8 +182,8 @@ func Inspect(r io.Reader) (Manifest, error) {
 		}
 		return nil
 	})
-	if err == nil && m.Format != format {
-		err = errors.New("not a Vigia backup")
+	if err == nil && !known(m.Format) {
+		err = errors.New("not a Zodim backup")
 	}
 	return m, err
 }
@@ -186,7 +191,7 @@ func Inspect(r io.Reader) (Manifest, error) {
 func walk(r io.Reader, fn func(name string, data io.Reader) error) error {
 	gz, err := gzip.NewReader(r)
 	if err != nil {
-		return errors.New("not a Vigia backup")
+		return errors.New("not a Zodim backup")
 	}
 	tr := tar.NewReader(gz)
 	for {
@@ -227,7 +232,10 @@ func Unpack(r io.Reader, dir, passphrase string) (Manifest, map[string]string, e
 			var err error
 			sealed, err = io.ReadAll(data)
 			return err
-		case name == "vigia.db", strings.HasPrefix(clean, "memory"+string(filepath.Separator)), strings.HasPrefix(clean, "connectors"+string(filepath.Separator)):
+		case name == "vigia.db":
+			clean = "zodim.db"
+			fallthrough
+		case name == "zodim.db", strings.HasPrefix(clean, "memory"+string(filepath.Separator)), strings.HasPrefix(clean, "connectors"+string(filepath.Separator)):
 			p := filepath.Join(dir, clean)
 			if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 				return err
@@ -245,8 +253,8 @@ func Unpack(r io.Reader, dir, passphrase string) (Manifest, map[string]string, e
 	if err != nil {
 		return m, nil, err
 	}
-	if m.Format != format {
-		return m, nil, errors.New("not a Vigia backup")
+	if !known(m.Format) {
+		return m, nil, errors.New("not a Zodim backup")
 	}
 	plain, err := open(sealed, passphrase)
 	if err != nil {
@@ -263,7 +271,7 @@ func Place(unpacked, home string) (string, error) {
 	if err := os.MkdirAll(keep, 0o700); err != nil {
 		return "", err
 	}
-	for _, name := range []string{"vigia.db", "vigia.db-wal", "vigia.db-shm", "memory", "connectors"} {
+	for _, name := range []string{"zodim.db", "zodim.db-wal", "zodim.db-shm", "memory", "connectors"} {
 		src := filepath.Join(home, name)
 		if _, err := os.Stat(src); err == nil {
 			if err := os.Rename(src, filepath.Join(keep, name)); err != nil {
@@ -271,7 +279,7 @@ func Place(unpacked, home string) (string, error) {
 			}
 		}
 	}
-	for _, name := range []string{"vigia.db", "memory", "connectors"} {
+	for _, name := range []string{"zodim.db", "memory", "connectors"} {
 		src := filepath.Join(unpacked, name)
 		if _, err := os.Stat(src); err == nil {
 			if err := os.Rename(src, filepath.Join(home, name)); err != nil {

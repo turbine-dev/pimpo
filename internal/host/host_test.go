@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/vigia/internal/budget"
-	"github.com/denerFernandes/vigia/internal/connector"
-	"github.com/denerFernandes/vigia/internal/event"
-	"github.com/denerFernandes/vigia/internal/judge"
-	"github.com/denerFernandes/vigia/internal/policy"
+	"github.com/denerFernandes/zodim/internal/budget"
+	"github.com/denerFernandes/zodim/internal/connector"
+	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/zodim/internal/judge"
+	"github.com/denerFernandes/zodim/internal/policy"
 )
 
 type fakeMail struct{ archived []string }

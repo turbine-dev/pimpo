@@ -1,4 +1,4 @@
-// Package memory is what Vigia knows about its owner: readable Markdown
+// Package memory is what Zodim knows about its owner: readable Markdown
 // files, one per topic, versioned with git so any change can be seen and
 // undone. Every fact records where it came from and how far to trust it;
 // only facts from the owner ever reach an agent as instructions.
@@ -126,7 +126,7 @@ func (m *Memory) save(facts []Fact, message string) error {
 	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
 		return err
 	}
-	_, err = wt.Commit(message, &git.CommitOptions{AllowEmptyCommits: false, Author: &object.Signature{Name: "Vigia", Email: "vigia@localhost", When: time.Now()}})
+	_, err = wt.Commit(message, &git.CommitOptions{AllowEmptyCommits: false, Author: &object.Signature{Name: "Zodim", Email: "zodim@localhost", When: time.Now()}})
 	if errors.Is(err, git.ErrEmptyCommit) {
 		return nil
 	}

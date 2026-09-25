@@ -1,6 +1,6 @@
-name: vigia-desktop
+name: zodim-desktop
 options:
-  bundleIdPrefix: app.vigia.companion
+  bundleIdPrefix: app.zodim.companion
   deploymentTarget:
     iOS: 14.0
 fileGroups: [../../src]
@@ -10,8 +10,8 @@ configs:
 settingGroups:
   app:
     base:
-      PRODUCT_NAME: Vigia
-      PRODUCT_BUNDLE_IDENTIFIER: app.vigia.companion
+      PRODUCT_NAME: Zodim
+      PRODUCT_BUNDLE_IDENTIFIER: app.zodim.companion
 targetTemplates:
   app:
     type: application
@@ -24,20 +24,20 @@ targetTemplates:
     settings:
       groups: [app]
 targets:
-  vigia-desktop_iOS:
+  zodim-desktop_iOS:
     type: application
     platform: iOS
     sources:
       - path: Sources
       - path: Assets.xcassets
       - path: Externals
-      - path: vigia-desktop_iOS
+      - path: zodim-desktop_iOS
       - path: assets
         buildPhase: resources
         type: folder
       - path: LaunchScreen.storyboard
     info:
-      path: vigia-desktop_iOS/Info.plist
+      path: zodim-desktop_iOS/Info.plist
       properties:
         LSRequiresIPhoneOS: true
         UILaunchStoryboardName: LaunchScreen
@@ -54,7 +54,7 @@ targets:
         CFBundleShortVersionString: 0.5.0
         CFBundleVersion: "0.5.0"
     entitlements:
-      path: vigia-desktop_iOS/vigia-desktop_iOS.entitlements
+      path: zodim-desktop_iOS/zodim-desktop_iOS.entitlements
     scheme:
       environmentVariables:
         RUST_BACKTRACE: full

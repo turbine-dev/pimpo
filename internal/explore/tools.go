@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/host"
-	"github.com/denerFernandes/vigia/internal/mcp"
-	"github.com/denerFernandes/vigia/internal/memory"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/zodim/internal/mcp"
+	"github.com/denerFernandes/zodim/internal/memory"
 )
 
 // toolName maps "gmail.search" to "gmail_search"; MCP tool names cannot

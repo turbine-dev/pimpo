@@ -1,6 +1,6 @@
 // Package external runs connectors written by anyone, in any language, as
 // separate processes speaking MCP over stdio. A connector ships a
-// connector.json that declares every capability with its risk; Vigia only
+// connector.json that declares every capability with its risk; Zodim only
 // exposes what is declared, checks that the process offers exactly that,
 // and gives it no secrets but the ones it names.
 package external
@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/capability"
+	"github.com/denerFernandes/zodim/internal/capability"
 )
 
 type Manifest struct {
@@ -84,7 +84,7 @@ func Load(dir string) (Manifest, error) {
 			return man, fmt.Errorf("capability %q must be named %s.<method>", c.Name, man.Name)
 		}
 		if _, builtin := capability.Catalog[c.Name]; builtin && !external[c.Name] {
-			return man, fmt.Errorf("capability %q is already provided by Vigia", c.Name)
+			return man, fmt.Errorf("capability %q is already provided by Zodim", c.Name)
 		}
 		if _, ok := risks[c.Risk]; !ok {
 			return man, fmt.Errorf("capability %q: risk must be read, notify, reversible or irreversible", c.Name)
@@ -107,7 +107,7 @@ func Load(dir string) (Manifest, error) {
 var risks = map[string]capability.Risk{"read": capability.Read, "notify": capability.Notify, "reversible": capability.Reversible, "irreversible": capability.Irreversible}
 
 // external remembers capabilities registered from connectors, so reloading
-// one does not look like a clash with Vigia's own.
+// one does not look like a clash with Zodim's own.
 var external = map[string]bool{}
 
 // Register adds the manifest's capabilities to the catalog.
@@ -180,7 +180,7 @@ func (c *Connector) start(ctx context.Context) error {
 	c.cmd, c.stdin = cmd, in
 	c.lines = bufio.NewScanner(out)
 	c.lines.Buffer(make([]byte, 1<<20), 16<<20)
-	if _, err := c.rpc(ctx, "initialize", map[string]any{"protocolVersion": "2025-06-18", "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "vigia", "version": "1"}}); err != nil {
+	if _, err := c.rpc(ctx, "initialize", map[string]any{"protocolVersion": "2025-06-18", "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "zodim", "version": "1"}}); err != nil {
 		c.stop()
 		return fmt.Errorf("%s did not initialize: %w", c.Name, err)
 	}

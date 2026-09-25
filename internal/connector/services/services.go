@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/vigia/internal/capability"
-	"github.com/denerFernandes/vigia/internal/connector"
+	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/zodim/internal/connector"
 )
 
 type Field struct {

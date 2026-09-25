@@ -49,7 +49,7 @@ func (w Whisper) Transcribe(ctx context.Context, audio []byte) (string, error) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
-	dir, err := os.MkdirTemp("", "vigia-voice-")
+	dir, err := os.MkdirTemp("", "zodim-voice-")
 	if err != nil {
 		return "", err
 	}
