@@ -136,7 +136,7 @@ function TailscaleState({ s }: { s?: RemoteState['tailscale'] }) {
     case 'needs_login':
       return (
         <div className="space-y-1">
-          <a href={s.auth_url} target="_blank" rel="noreferrer"><Button size="sm" variant="primary">{t('phone.tsLogin')}</Button></a>
+          <a href={s.auth_url} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center rounded-[10px] bg-ink px-3 text-[13px] font-medium text-bg shadow-[var(--shadow-card)] hover:opacity-90">{t('phone.tsLogin')}</a>
           <p className="text-[12px] text-ink-3">{t('phone.tsLoginHint')}</p>
         </div>
       )
