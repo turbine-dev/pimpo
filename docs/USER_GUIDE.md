@@ -76,6 +76,10 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 3. Scan the QR code with the Zodim app, or paste the link.
 4. Lost the phone? Tap the trash icon next to it. Only that phone loses access.
 
+## A Zodim on another computer or server
+
+Zodim can run on a machine that is always on (a home server, a VPS) while the desktop app just opens it. On that machine, generate a link in **Ajustes › Abrir no celular** as for a phone. On your computer, click the Zodim icon in the menu bar, choose **Conectar a outro Zodim…** and paste the link. The Zodim on your computer then stops, so the same Telegram bot and the same routines never run twice; its data stays where it was. **Usar o Zodim deste computador** in the same menu brings it back. While connected elsewhere, notifications come from that Zodim's channels (Telegram and others), not from this computer.
+
 ## Other chat channels
 
 Besides Telegram and WhatsApp, you can talk to Zodim in private messages on **Discord**, **Slack** or **Signal**. Set one up in **Conexões** (each card says what to create and which token to paste), then send it `zodim` followed by the pairing code shown in Conexões. Only you are answered; strangers get nothing. These services have no buttons, so choices arrive numbered: answer `1`, `2`… Signal goes through a signal-cli daemon on your computer, so messages stay end-to-end encrypted up to it. iMessage and SMS are not supported: iMessage needs full disk access to read Messages, and SMS needs a paid service.

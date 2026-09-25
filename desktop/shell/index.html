@@ -25,7 +25,9 @@
   button { width: 100%; height: 46px; margin-top: 12px; border: 0; border-radius: 12px; background: var(--ink); color: var(--bg); font-size: 15px; font-weight: 500; }
   .hint { margin-top: 14px; font-size: 12.5px; color: var(--ink-3); }
   .error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 1em; }
-  body.mobile .pulse { display: none; } body.mobile form { display: block; }
+  body.mobile .pulse, body.pairing .pulse { display: none; } body.mobile form, body.pairing form { display: block; }
+  .secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  #local { display: none; } body.desktop #local { display: block; }
 </style>
 </head>
 <body>
@@ -38,47 +40,91 @@
     <label for="link">Link do seu Zodim</label>
     <input id="link" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://zodim.sua-rede.ts.net/auth?token=…">
     <button type="submit">Conectar</button>
+    <button type="button" id="local" class="secondary">Usar o Zodim deste computador</button>
     <div class="error" id="error" role="alert"></div>
-    <p class="hint">O Zodim roda no seu computador ou servidor. No celular, abra Ajustes › Abrir no celular e cole o link aqui.</p>
+    <p class="hint" id="hint">O Zodim roda no seu computador ou servidor. No celular, abra Ajustes › Abrir no celular e cole o link aqui.</p>
   </form>
 </main>
 <script>
   const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  const tauri = window.__TAURI__ && window.__TAURI__.core
+  const desktop = !mobile && !!tauri && !!window.__ZODIM_DESKTOP__
+  const $ = (id) => document.getElementById(id)
+  // A link may carry the home address after #home=: it is tried first
+  // (fast, and works without internet) and the link is the fallback.
+  const reach = (base) => new Promise((ok) => {
+    const img = new Image(), t = setTimeout(() => { img.src = ''; ok(false) }, 2500)
+    img.onload = () => { clearTimeout(t); ok(true) }
+    img.onerror = () => { clearTimeout(t); ok(false) }
+    img.src = base + '/favicon.svg?' + Date.now()
+  })
+  const open = async (link, home) => {
+    if (home) {
+      const token = new URL(link).searchParams.get('token')
+      if (await reach(home)) return location.replace(home + '/auth?token=' + encodeURIComponent(token))
+    }
+    location.replace(link)
+  }
+  // parse checks a pasted link the same way on the phone and the desktop.
+  const parse = (text) => {
+    let url
+    try { url = new URL(text.trim()) } catch { throw new Error('Isso não parece um link.') }
+    if (url.protocol !== 'https:' && !/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.)/.test(url.hostname)) throw new Error('Use https: o token não pode viajar em aberto.')
+    if (!url.searchParams.get('token')) throw new Error('Falta o token no link.')
+    let home = new URLSearchParams(url.hash.slice(1)).get('home')
+    if (home && !/^http:\/\/(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)[\d.]+:\d+$/.test(home)) home = null
+    url.hash = ''
+    return { link: url.href, home: home || '' }
+  }
+  const pairing = (text) => {
+    document.body.classList.add('pairing')
+    $('status').textContent = text
+  }
+
   if (mobile) {
     document.body.classList.add('mobile')
-    document.getElementById('status').textContent = 'Conecte ao Zodim que roda no seu computador.'
-    // A link may carry the home address after #home=: the phone tries it
-    // first (fast, and works without internet) and falls back to the link.
-    const reach = (base) => new Promise((ok) => {
-      const img = new Image(), t = setTimeout(() => { img.src = ''; ok(false) }, 1500)
-      img.onload = () => { clearTimeout(t); ok(true) }
-      img.onerror = () => { clearTimeout(t); ok(false) }
-      img.src = base + '/favicon.svg?' + Date.now()
-    })
-    const open = async (link, home) => {
-      if (home) {
-        const token = new URL(link).searchParams.get('token')
-        if (await reach(home)) return location.replace(home + '/auth?token=' + encodeURIComponent(token))
-      }
-      location.replace(link)
-    }
+    $('status').textContent = 'Conecte ao Zodim que roda no seu computador.'
     let saved = null, savedHome = null
     try { saved = localStorage.getItem('zodim.link'); savedHome = localStorage.getItem('zodim.home') } catch {}
     if (saved) open(saved, savedHome)
-    document.getElementById('pair').addEventListener('submit', (e) => {
-      e.preventDefault()
-      const err = document.getElementById('error')
-      let url
-      try { url = new URL(document.getElementById('link').value.trim()) } catch { err.textContent = 'Isso não parece um link.'; return }
-      if (url.protocol !== 'https:' && !/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.)/.test(url.hostname)) { err.textContent = 'Use https: o token não pode viajar em aberto.'; return }
-      if (!url.searchParams.get('token')) { err.textContent = 'Falta o token no link.'; return }
-      let home = new URLSearchParams(url.hash.slice(1)).get('home')
-      if (home && !/^http:\/\/(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)[\d.]+:\d+$/.test(home)) home = null
-      url.hash = ''
-      try { localStorage.setItem('zodim.link', url.href); home ? localStorage.setItem('zodim.home', home) : localStorage.removeItem('zodim.home') } catch {}
-      open(url.href, home)
+  }
+
+  if (desktop) {
+    document.body.classList.add('desktop')
+    $('hint').textContent = 'Para usar um Zodim de outro computador ou servidor, abra nele Ajustes › Abrir no celular e cole o link aqui. O Zodim deste computador para enquanto isso, para o mesmo robô não responder duas vezes.'
+    const connect = async (link, home) => {
+      $('status').textContent = 'Conectando ao seu Zodim…'
+      const origin = new URL(link).origin
+      if ((home && await reach(home)) || await reach(origin)) return open(link, home)
+      $('link').value = link
+      pairing('Não encontrei o Zodim em ' + new URL(link).host + '. Ele está ligado e na mesma rede ou Tailscale?')
+    }
+    tauri.invoke('remote').then(([link, home]) => {
+      if (location.hash === '#pair') pairing(link ? 'Você está usando o Zodim em ' + new URL(link).host + '.' : 'Conectar a um Zodim em outro computador ou servidor.')
+      else if (link) connect(link, home)
+    })
+    $('local').addEventListener('click', () => {
+      document.body.classList.remove('pairing')
+      history.replaceState(null, '', location.pathname)
+      $('status').textContent = 'Acordando o seu agente…'
+      tauri.invoke('use_local').catch((e) => { $('error').textContent = String(e) })
     })
   }
+
+  $('pair').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const err = $('error')
+    err.textContent = ''
+    let p
+    try { p = parse($('link').value) } catch (x) { err.textContent = x.message; return }
+    if (desktop) {
+      if (!(p.home && await reach(p.home)) && !(await reach(new URL(p.link).origin))) { err.textContent = 'Não consegui falar com esse Zodim. Confira o link e a rede.'; return }
+      try { await tauri.invoke('use_remote', { link: p.link, home: p.home }) } catch (x) { err.textContent = String(x); return }
+    } else {
+      try { localStorage.setItem('zodim.link', p.link); p.home ? localStorage.setItem('zodim.home', p.home) : localStorage.removeItem('zodim.home') } catch {}
+    }
+    open(p.link, p.home)
+  })
 </script>
 </body>
 </html>
