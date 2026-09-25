@@ -96,12 +96,12 @@ export function RoutinePage() {
         </Tabs.List>
 
         <Tabs.Content value="overview">
-          <Card className="mb-4 flex items-center justify-between p-5">
+          {s.runs.length > 0 && <Card className="mb-4 flex items-center justify-between p-5">
             <RunDots runs={s.runs.map((o) => (o === 'ok' ? 'ok' : 'failed')) as ('ok' | 'failed')[]} />
             <span className="text-[13px] text-ink-3">
               {t('routine.recentOk', { ok: s.runs.filter((o) => o === 'ok').length, total: s.runs.length })}
             </span>
-          </Card>
+          </Card>}
           <Card className="divide-y divide-line">
             {runs.length === 0 && <div className="px-5 py-6 text-sm text-ink-3">{t('routine.notYet')} {s.next_run ? t('routine.firstRun', { when: when(s.next_run) }) : ''}</div>}
             {runs.map((run) => (

@@ -8,7 +8,7 @@ export function Button({ variant = 'secondary', size = 'md', className, ...p }: 
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-[10px] font-medium transition-[background,transform,box-shadow] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] font-medium transition-[background,transform,box-shadow] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50',
         size === 'sm' ? 'h-8 px-3 text-[13px]' : 'h-9 px-4 text-sm',
         variant === 'primary' && 'bg-ink text-bg shadow-[var(--shadow-card)] hover:opacity-90',
         variant === 'secondary' && 'border border-line bg-surface text-ink shadow-[var(--shadow-card)] hover:border-line-strong',

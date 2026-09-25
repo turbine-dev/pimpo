@@ -15,7 +15,7 @@ export function Help() {
   const [text, setText] = useState('')
   const ask = useMutation({ mutationFn: (q: string) => api.newChat(q), onSuccess: (r) => nav(`/chat/${r.chat}`) })
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center gap-3">
         <div className="grid size-10 place-items-center rounded-xl bg-explore-soft text-explore"><CircleHelp size={19} /></div>
         <div>

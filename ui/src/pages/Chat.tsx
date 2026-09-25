@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowUp, Bot, Check, Loader2, Mic, Plus, Repeat, Square, Trash2, Volume2, X } from 'lucide-react'
+import { ArrowUp, Check, Loader2, Mic, Plus, Repeat, Square, Trash2, Volume2, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Logo } from '../components/Shell'
@@ -52,8 +52,8 @@ export function Chat() {
   return (
     <div className="mx-auto flex h-[calc(100dvh-8rem)] max-w-6xl gap-6 md:h-[calc(100dvh-7.5rem)]">
       <aside className="hidden w-60 shrink-0 flex-col lg:flex" aria-label={t('chat.list')}>
-        <Button variant="primary" className="mb-2" onClick={() => nav('/chat')}><Plus size={15} /> {t('chat.new')}</Button>
-        <Link to="/assistants" className="mb-3 flex items-center gap-1.5 px-2 text-[12.5px] text-ink-3 hover:text-ink"><Bot size={13} /> {t('as.manage')}</Link>
+        <Button variant="primary" className="mb-3" onClick={() => nav('/chat')}><Plus size={15} /> {t('chat.new')}</Button>
+
         <ul className="-mx-1 flex-1 space-y-0.5 overflow-y-auto">
           {(chats.data ?? []).length === 0 && <li className="px-2 text-[12.5px] text-ink-3">{t('chat.empty')}</li>}
           {(chats.data ?? []).map((c) => (

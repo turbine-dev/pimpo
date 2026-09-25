@@ -30,7 +30,7 @@ export function Assistants() {
         <Button variant="primary" onClick={() => setEditing({ id: '', name: '', emoji: '🤖', instructions: '', capabilities: [] })}><Plus size={15} /> {t('as.new')}</Button>
       </div>
       {list.isSuccess && items.length === 0 ? (
-        <EmptyState icon={<Bot size={22} />} title={t('as.title')}>{t('as.empty')}</EmptyState>
+        <EmptyState icon={<Bot size={22} />} title={t('as.emptyTitle')} action={<Button variant="primary" onClick={() => setEditing({ id: '', name: '', emoji: '🤖', instructions: '', capabilities: [] })}><Plus size={15} /> {t('as.new')}</Button>}>{t('as.empty')}</EmptyState>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {items.map((as) => (

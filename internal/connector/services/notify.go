@@ -13,7 +13,7 @@ import (
 // own private channel: messages to the owner, nobody else.
 func init() {
 	register(Kind{
-		ID: "slack", Title: "Slack", Description: "Avisos num canal seu do Slack.",
+		ID: "slack", Title: "Slack — avisos num canal", Description: "Avisos num canal seu do Slack.",
 		Help:   "Crie um app em api.slack.com/apps com Incoming Webhooks para um canal só seu e cole o endereço do webhook.",
 		Fields: []Field{{Name: "webhook", Label: "Webhook", Placeholder: "https://hooks.slack.com/services/…", Secret: true}},
 		Specs: []capability.Spec{{Name: "slack.send", Risk: capability.Notify, Signature: "slack.send({text})", Returns: "{ok}; posts to the owner's own Slack channel",
@@ -23,7 +23,7 @@ func init() {
 		},
 	})
 	register(Kind{
-		ID: "discord", Title: "Discord", Description: "Avisos num canal seu do Discord.",
+		ID: "discord", Title: "Discord — avisos num canal", Description: "Avisos num canal seu do Discord.",
 		Help:   "No canal, Editar canal › Integrações › Webhooks › Novo webhook, e copie o endereço.",
 		Fields: []Field{{Name: "webhook", Label: "Webhook", Placeholder: "https://discord.com/api/webhooks/…", Secret: true}},
 		Specs: []capability.Spec{{Name: "discord.send", Risk: capability.Notify, Signature: "discord.send({text})", Returns: "{ok}; posts to the owner's own Discord channel",

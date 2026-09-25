@@ -1,4 +1,4 @@
-import { Archive, BellOff, CalendarDays, Clock, FilePen, Globe, Mail, MailPlus, MessageCircle, Send, Tag, Trash2 } from 'lucide-react'
+import { Archive, Bell, BellOff, CalendarDays, CheckSquare, Clock, FilePen, GitPullRequest, Globe, House, KeyRound, ListTodo, Mail, MailPlus, MessageCircle, MessagesSquare, NotebookPen, Rss, Search, Send, Tag, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { type ReactNode } from 'react'
 import type { RoutineSummary } from '../lib/api'
@@ -21,6 +21,23 @@ const capIcon: Record<string, ReactNode> = {
   'gmail.unsubscribe': <BellOff size={13} />,
   'whatsapp.send': <MessageCircle size={13} />,
   'whatsapp.send_to': <MessageCircle size={13} />,
+  'notify.send': <Bell size={13} />,
+  'discord.send': <MessagesSquare size={13} />,
+  'slack.send': <MessagesSquare size={13} />,
+  'github.issues': <GitPullRequest size={13} />,
+  'github.comment': <GitPullRequest size={13} />,
+  'ha.states': <House size={13} />,
+  'ha.call': <House size={13} />,
+  'ha.critical': <KeyRound size={13} />,
+  'notion.search': <NotebookPen size={13} />,
+  'notion.append': <NotebookPen size={13} />,
+  'obsidian.search': <NotebookPen size={13} />,
+  'obsidian.append': <NotebookPen size={13} />,
+  'rss.read': <Rss size={13} />,
+  'todoist.tasks': <ListTodo size={13} />,
+  'todoist.add': <ListTodo size={13} />,
+  'todoist.close': <CheckSquare size={13} />,
+  'web.search': <Search size={13} />,
 }
 
 export const capRisk: Record<string, 'read' | 'notify' | 'reversible' | 'irreversible'> = {
@@ -37,6 +54,23 @@ export const capRisk: Record<string, 'read' | 'notify' | 'reversible' | 'irrever
   'gmail.unsubscribe': 'irreversible',
   'whatsapp.send': 'notify',
   'whatsapp.send_to': 'irreversible',
+  'notify.send': 'notify',
+  'discord.send': 'notify',
+  'slack.send': 'notify',
+  'github.issues': 'read',
+  'github.comment': 'irreversible',
+  'ha.states': 'read',
+  'ha.call': 'reversible',
+  'ha.critical': 'irreversible',
+  'notion.search': 'read',
+  'notion.append': 'reversible',
+  'obsidian.search': 'read',
+  'obsidian.append': 'reversible',
+  'rss.read': 'read',
+  'todoist.tasks': 'read',
+  'todoist.add': 'reversible',
+  'todoist.close': 'reversible',
+  'web.search': 'read',
 }
 
 export function capabilityLabel(entry: string) {
@@ -94,7 +128,7 @@ export function RoutineCard({ r, onOpen }: { r: RoutineSummary; onOpen?: () => v
         </div>
         <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-3.5">
           <div className="space-y-1.5">
-            <RunDots runs={runs.length ? runs : ['skipped']} />
+            {runs.length ? <RunDots runs={runs} /> : <span className="text-[12px] text-ink-3">{t('routine.noRunsYet')}</span>}
             <div className="flex items-center gap-1 text-[12px] text-ink-3">
               <Clock size={12} /> {r.state === 'active' && r.next_run ? when(r.next_run) : cronText(r.schedule)}
             </div>

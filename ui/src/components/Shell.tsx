@@ -1,4 +1,4 @@
-import { Bell, Brain, CircleHelp, Menu, MessageSquare, Coins, Moon, Plug, ReceiptText, Repeat, Search, Settings, ShieldCheck, Sun, Users, LibraryBig } from 'lucide-react'
+import { Bell, Bot, Brain, CircleHelp, Menu, MessageSquare, Coins, Moon, Plug, ReceiptText, Repeat, Search, Settings, ShieldCheck, Sun, Users, LibraryBig } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '../lib/cn'
@@ -9,6 +9,7 @@ export type NavItem = { to: string; label: TKey; icon: ReactNode; badge?: number
 
 export const nav: NavItem[] = [
   { to: '/chat', label: 'nav.chat', icon: <MessageSquare size={17} /> },
+  { to: '/assistants', label: 'nav.assistants', icon: <Bot size={17} /> },
   { to: '/', label: 'nav.routines', icon: <Repeat size={17} /> },
   { to: '/inbox', label: 'nav.inbox', icon: <Bell size={17} /> },
   { to: '/gallery', label: 'nav.gallery', icon: <LibraryBig size={17} /> },
@@ -115,7 +116,7 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
           </div>
           <button onClick={onSearch} className="flex h-9 max-w-md flex-1 items-center gap-2 rounded-[10px] border border-line bg-surface px-3 text-left text-[13px] text-ink-3 hover:border-line-strong">
             <Search size={15} />
-            <span className="flex-1">{t('shell.search')}</span>
+            <span className="flex-1 truncate">{t('shell.search')}</span>
             <Kbd>⌘K</Kbd>
           </button>
           <div className="ml-auto flex items-center gap-2">

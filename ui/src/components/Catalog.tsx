@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, Check, ChevronDown, Plug, Puzzle } from 'lucide-react'
+import { AlertTriangle, Check, ChevronDown, GitPullRequest, House, ListTodo, MessageSquareLock, MessagesSquare, NotebookPen, Plug, Puzzle, Rss, Search } from 'lucide-react'
+import { type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { api, type CatalogKind } from '../lib/api'
@@ -8,12 +9,30 @@ import { useT } from '../lib/i18n'
 import { McpExplore, McpManual } from './McpServers'
 import { Button, Card, RiskBadge } from './ui'
 
+export const channelKinds = ['discordchat', 'slackchat', 'signal']
+
+const kindIcon: Record<string, ReactNode> = {
+  websearch: <Search size={17} />, github: <GitPullRequest size={17} />, todoist: <ListTodo size={17} />, notion: <NotebookPen size={17} />,
+  obsidian: <NotebookPen size={17} />, homeassistant: <House size={17} />, rss: <Rss size={17} />, slack: <MessagesSquare size={17} />,
+  discord: <MessagesSquare size={17} />, discordchat: <MessagesSquare size={17} />, slackchat: <MessagesSquare size={17} />, signal: <MessageSquareLock size={17} />,
+}
+
+// KindList shows some of the catalog's connectors as cards.
+export function KindList({ include, exclude = [] }: { include?: string[]; exclude?: string[] }) {
+  const q = useQuery({ queryKey: ['catalog'], queryFn: api.catalog })
+  const list = (q.data?.connectors ?? []).filter((k) => (!include || include.includes(k.id)) && !exclude.includes(k.id))
+  return (
+    <div className="grid gap-3 lg:grid-cols-2">
+      {list.map((k) => <KindCard key={k.id} k={k} />)}
+    </div>
+  )
+}
+
 export function Catalog() {
   const t = useT()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['catalog'], queryFn: api.catalog })
   const [tab, setTab] = useState<'installed' | 'explore' | 'manual'>('installed')
-  const list = q.data?.connectors ?? []
   const refresh = () => qc.invalidateQueries({ queryKey: ['catalog'] })
   const reload = useMutation({ mutationFn: () => fetch('/api/connectors/reload', { method: 'POST', credentials: 'same-origin' }), onSuccess: refresh })
   const install = useMutation({
@@ -26,9 +45,7 @@ export function Catalog() {
     onSuccess: refresh,
   })
   return (
-    <section aria-label={t('catalog.title')} className="mt-8">
-      <h2 className="mb-1 text-[17px] font-semibold tracking-tight">{t('catalog.title')}</h2>
-      <p className="mb-3 text-[13px] text-ink-2">{t('catalog.text')}</p>
+    <section aria-label={t('catalog.title')}>
       <div role="tablist" aria-label={t('catalog.title')} className="mb-4 flex gap-1 border-b border-line">
         {(['installed', 'explore', 'manual'] as const).map((k) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
@@ -52,9 +69,7 @@ export function Catalog() {
       {(q.data?.broken ?? []).map((b) => (
         <p key={b} className="mb-2 flex gap-2 rounded-xl bg-danger-soft px-3 py-2 text-[13px] text-danger"><AlertTriangle size={15} className="mt-0.5 shrink-0" /> {t('catalog.broken', { name: b })}</p>
       ))}
-      <div className="grid gap-3 lg:grid-cols-2">
-        {list.map((k) => <KindCard key={k.id} k={k} />)}
-      </div>
+      <KindList exclude={channelKinds} />
       </>}
     </section>
   )
@@ -76,7 +91,7 @@ function KindCard({ k }: { k: CatalogKind }) {
     <Card className="p-4">
       <button type="button" className="flex w-full items-center gap-3 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
         <div className={cn('grid size-9 shrink-0 place-items-center rounded-xl', k.configured ? 'bg-read-soft text-read' : 'bg-sunken text-ink-3')}>
-          {k.external ? <Puzzle size={17} /> : <Plug size={17} />}
+          {k.external ? <Puzzle size={17} /> : kindIcon[k.id] ?? <Plug size={17} />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-[14.5px] font-medium">

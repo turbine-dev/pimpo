@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
@@ -58,10 +59,13 @@ describe('English', () => {
     wrapIn(<Settings />, 'en')
     expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument()
     expect(screen.getByText('Daily spending limit')).toBeInTheDocument()
-    expect(screen.getByText('Community protection')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Privacy' })).toBeInTheDocument()
     expect(screen.getByLabelText('Daily limit in dollars')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Language for the app and messages' })).toHaveValue('en-US')
-    expect(screen.getAllByRole('button', { name: 'Save' }).length).toBeGreaterThan(0)
+    await userEvent.clear(screen.getByLabelText('Daily limit in dollars'))
+    await userEvent.type(screen.getByLabelText('Daily limit in dollars'), '5')
+    expect(screen.getByText('You have unsaved changes.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
   })
 
   it('prefers the saved locale over the browser and sets <html lang>', async () => {
