@@ -50,3 +50,16 @@ describe('RoutineSettings', () => {
     }))
   })
 })
+
+describe('gallery updates', () => {
+  it('offers the new version and what it lets you change', async () => {
+    const old: RoutineSummary = { ...routine, params: [], values: {}, gallery_update: { name: 'Clima da manhã', description: 'Previsão do dia na cidade que você escolher.', settings: ['Cidade', 'Onde avisar'] } }
+    const calls = mockFetch({ 'POST /api/routines/clima/update': routine })
+    wrap(<RoutineSettings s={old} onRedo={() => {}} />)
+    expect(screen.getByText(/Nova versão na galeria/)).toBeInTheDocument()
+    expect(screen.getByText('Agora dá para ajustar: Cidade, Onde avisar.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Refazer com o agente' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Atualizar' }))
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url === '/api/routines/clima/update')).toBe(true))
+  })
+})

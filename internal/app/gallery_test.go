@@ -72,3 +72,54 @@ func TestGalleryInstallAndPublish(t *testing.T) {
 		t.Fatal("the author key changed between publications")
 	}
 }
+
+func TestGalleryUpdateKeepsTheOwnersSettings(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ctx := context.Background()
+	pub, priv, _ := gallery.Keygen()
+	old := routine.Routine{Name: "Clima", Description: "Previsão em São Paulo.",
+		Manifest: runtime.Manifest{Schedule: "0 7 * * *", Capabilities: []string{"telegram.send"}},
+		Code:     `async function run() { await telegram.send({text: "Clima em São Paulo"}) }`,
+		Tests:    []routine.Test{{Name: "t", Scenario: trace.Scenario{Expect: []trace.Expect{{Capability: "telegram.send", Contains: []string{"São Paulo"}}}}}}}
+	updated := routine.Routine{Name: "Clima", Description: "Previsão na cidade que você escolher.",
+		Manifest: runtime.Manifest{Schedule: "0 7 * * *", Capabilities: []string{"notify.send"}, Params: []runtime.Param{
+			{Name: "cidade", Label: "Cidade", Type: "location", Default: map[string]any{"name": "São Paulo", "latitude": -23.55, "longitude": -46.63}},
+			{Name: "destinos", Label: "Onde avisar", Type: "destinations", Default: []any{}}}},
+		Code:  `async function run() { await notify.send({text: "Clima em " + params.cidade.name}) }`,
+		Tests: []routine.Test{{Name: "t", Scenario: trace.Scenario{Params: map[string]any{"cidade": map[string]any{"name": "Porto", "latitude": 41.1, "longitude": -8.6}}, Expect: []trace.Expect{{Capability: "notify.send", Contains: []string{"Porto"}}}}}}}
+	path := filepath.Join(t.TempDir(), "index.json")
+	publish := func(r routine.Routine) {
+		e, _ := gallery.Sign("clima", "dener", r, priv)
+		b, _ := json.Marshal(gallery.Index{Authors: map[string]gallery.Author{"dener": {Name: "Dener", Key: pub}}, Entries: []gallery.Entry{e}})
+		os.WriteFile(path, b, 0o644)
+		ta.galleryIndex(ctx, true)
+	}
+	s := ta.Settings(ctx)
+	s.GalleryURL = path
+	ta.SaveSettings(ctx, s, "test")
+	publish(old)
+	ta.do(t, "POST", "/api/gallery/clima/install", nil)
+	ta.do(t, "PUT", "/api/routines/clima/settings", map[string]any{"schedule": "22 10 * * *"})
+	if _, out := ta.do(t, "GET", "/api/routines/clima", nil); out["summary"].(map[string]any)["gallery_update"] != nil {
+		t.Fatal("offered an update with nothing new")
+	}
+
+	publish(updated)
+	_, out := ta.do(t, "GET", "/api/routines/clima", nil)
+	up, _ := out["summary"].(map[string]any)["gallery_update"].(map[string]any)
+	if up == nil || up["settings"].([]any)[0] != "Cidade" {
+		t.Fatalf("update not offered: %v", out["summary"])
+	}
+	code, sum := ta.do(t, "POST", "/api/routines/clima/update", nil)
+	if code != 200 || sum["version"] != 2.0 || sum["schedule"] != "22 10 * * *" || len(sum["params"].([]any)) != 2 || sum["gallery_update"] != nil {
+		t.Fatalf("update %d %v", code, sum)
+	}
+	if code, _ := ta.do(t, "PUT", "/api/routines/clima/settings", map[string]any{"schedule": "22 10 * * *", "params": map[string]any{"cidade": map[string]any{"name": "Lisboa", "latitude": 38.7, "longitude": -9.1}}}); code != 200 {
+		t.Fatal("could not change the city after updating")
+	}
+
+	ta.Store.SaveRoutine(ctx, "mine", old, "compiled from exploration x", "human:owner")
+	if code, _ := ta.do(t, "POST", "/api/routines/mine/update", nil); code != 400 {
+		t.Fatalf("updated a routine that did not come from the gallery: %d", code)
+	}
+}

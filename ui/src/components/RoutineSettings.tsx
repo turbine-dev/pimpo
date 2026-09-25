@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Clock, MapPin, Search, SlidersHorizontal } from 'lucide-react'
+import { Check, Clock, MapPin, Search, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type Place, type RoutineParam, type RoutineSummary } from '../lib/api'
@@ -46,7 +46,7 @@ export function toCron(s: Sched): string {
   }
 }
 
-export function RoutineSettings({ s }: { s: RoutineSummary }) {
+export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () => void }) {
   const t = useT()
   const qc = useQueryClient()
   const params = s.params ?? []
@@ -61,6 +61,8 @@ export function RoutineSettings({ s }: { s: RoutineSummary }) {
   })
 
   return (
+    <>
+    {s.gallery_update && <UpdateBanner s={s} />}
     <Card className="mb-6 p-5">
       <div className="mb-4 flex items-start gap-3">
         <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-explore-soft text-explore"><SlidersHorizontal size={17} /></div>
@@ -77,7 +79,11 @@ export function RoutineSettings({ s }: { s: RoutineSummary }) {
         {params.map((p) => (
           <Field key={p.name} p={p} value={values[p.name]} onChange={(v) => setValues({ ...values, [p.name]: v })} />
         ))}
-        {params.length === 0 && <p className="text-[13px] text-ink-3">{t('rs.onlySchedule')}</p>}
+        {params.length === 0 && (
+          <p className="text-[13px] text-ink-3">
+            {t('rs.onlySchedule')}{!s.gallery_update && onRedo && <> {t('rs.makeAdjustable')} <button type="button" className="underline" onClick={onRedo}>{t('rs.redo')}</button></>}
+          </p>
+        )}
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         <div className="flex flex-wrap items-center justify-end gap-3">
           {save.isSuccess && !dirty && <span className="flex items-center gap-1 text-[13px] text-read"><Check size={14} /> {t('rs.saved')} {s.next_run && when(s.next_run)}</span>}
@@ -85,6 +91,29 @@ export function RoutineSettings({ s }: { s: RoutineSummary }) {
           <Button variant="primary" type="submit" disabled={!dirty || save.isPending}>{t('rs.save')}</Button>
         </div>
       </form>
+    </Card>
+    </>
+  )
+}
+
+function UpdateBanner({ s }: { s: RoutineSummary }) {
+  const t = useT()
+  const qc = useQueryClient()
+  const up = s.gallery_update!
+  const apply = useMutation({
+    mutationFn: () => api.updateFromGallery(s.id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['routine', s.id] }); qc.invalidateQueries({ queryKey: ['routines'] }) },
+  })
+  return (
+    <Card className="mb-4 flex flex-wrap items-center gap-4 border-explore/40 bg-explore-soft/40 p-4">
+      <Sparkles size={18} className="shrink-0 text-explore" />
+      <div className="min-w-0 flex-1 text-[13.5px]">
+        <div className="font-medium">{t('up.title')}: {up.description}</div>
+        {up.settings.length > 0 && <div className="text-ink-2">{t('up.adds', { list: up.settings.join(', ') })}</div>}
+        <div className="text-[12.5px] text-ink-3">{t('up.keeps')}</div>
+        {apply.error && <div className="text-danger">{apply.error.message}</div>}
+      </div>
+      <Button variant="primary" onClick={() => apply.mutate()} disabled={apply.isPending}>{t('up.update')}</Button>
     </Card>
   )
 }
