@@ -54,6 +54,10 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 3. Scan the QR code with the Zodim app, or paste the link.
 4. Lost the phone? Tap the trash icon next to it. Only that phone loses access.
 
+## More connectors
+
+**Conexões › Explorar** searches the official MCP registry: hundreds of servers for files, GitHub, databases, notes, maps and more. Choose one, fill in what it asks for, and **Ver as ferramentas** shows what it offers. Check which tools Zodim may use and how risky each one is (irreversible ones always ask you first), then install. **Adicionar manualmente** takes a command or an https address you already have. See [CONNECTORS.md](CONNECTORS.md) to write your own.
+
 ## Gallery
 
 Browse ready-made routines, filtered by what they can touch. Zodim checks the author's signature, runs the routine's tests, and audits what it really calls before installing. To share one of yours, use **Publicar** on its page.

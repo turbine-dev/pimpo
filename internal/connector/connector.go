@@ -32,6 +32,13 @@ func (r *Router) Add(c Connector) {
 	}
 }
 
+// Remove drops capabilities, for a connector that was uninstalled.
+func (r *Router) Remove(names ...string) {
+	for _, n := range names {
+		delete(r.owners, n)
+	}
+}
+
 func (r *Router) Has(capability string) bool { _, ok := r.owners[capability]; return ok }
 
 func (r *Router) Call(ctx context.Context, capability, scope string, args any) (any, error) {

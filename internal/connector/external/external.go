@@ -6,14 +6,11 @@
 package external
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -25,11 +22,20 @@ import (
 )
 
 type Manifest struct {
-	Name         string       `json:"name"`
-	Description  string       `json:"description"`
-	Command      string       `json:"command"`
-	Args         []string     `json:"args,omitempty"`
-	Env          []string     `json:"env,omitempty"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Command     string   `json:"command,omitempty"`
+	Args        []string `json:"args,omitempty"`
+	Env         []string `json:"env,omitempty"`
+	// URL reaches a remote MCP server instead of starting a command;
+	// Headers names the request headers whose values come from the vault.
+	URL     string   `json:"url,omitempty"`
+	Headers []string `json:"headers,omitempty"`
+	// Imported marks a third-party MCP server added from the registry or
+	// by hand: the owner set each tool's risk, it has no contract tests,
+	// and tools it adds later stay hidden instead of failing.
+	Imported     bool         `json:"imported,omitempty"`
+	Source       string       `json:"source,omitempty"`
 	Capabilities []Capability `json:"capabilities"`
 	Contract     []Case       `json:"contract"`
 	// Dir is where the manifest was found; the command runs there.
@@ -37,7 +43,9 @@ type Manifest struct {
 }
 
 type Capability struct {
-	Name      string          `json:"name"`
+	Name string `json:"name"`
+	// Tool is the MCP tool name when it is not <connector>_<method>.
+	Tool      string          `json:"tool,omitempty"`
 	Risk      string          `json:"risk"`
 	Signature string          `json:"signature"`
 	Returns   string          `json:"returns"`
@@ -69,8 +77,11 @@ func Load(dir string) (Manifest, error) {
 	if !nameRe.MatchString(man.Name) {
 		return man, fmt.Errorf("connector name %q must be lowercase letters and digits", man.Name)
 	}
-	if man.Command == "" {
-		return man, errors.New("connector.json needs a command")
+	if (man.Command == "") == (man.URL == "") {
+		return man, errors.New("connector.json needs a command or a url")
+	}
+	if man.URL != "" && !strings.HasPrefix(man.URL, "https://") && !strings.HasPrefix(man.URL, "http://127.0.0.1") && !strings.HasPrefix(man.URL, "http://localhost") {
+		return man, errors.New("a remote connector needs an https url")
 	}
 	if len(man.Capabilities) == 0 {
 		return man, errors.New("a connector must declare at least one capability")
@@ -92,13 +103,18 @@ func Load(dir string) (Manifest, error) {
 		if c.Signature == "" || c.Returns == "" {
 			return man, fmt.Errorf("capability %q needs a signature and what it returns", c.Name)
 		}
-		if risks[c.Risk] == capability.Read && !covered[c.Name] {
+		if risks[c.Risk] == capability.Read && !covered[c.Name] && !man.Imported {
 			return man, fmt.Errorf("capability %q has no contract test", c.Name)
 		}
 	}
 	for _, e := range man.Env {
 		if !regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`).MatchString(e) {
 			return man, fmt.Errorf("env %q must be an upper-case variable name", e)
+		}
+	}
+	for _, h := range man.Headers {
+		if !regexp.MustCompile(`^[A-Za-z][A-Za-z0-9-]*$`).MatchString(h) {
+			return man, fmt.Errorf("header %q is not a header name", h)
 		}
 	}
 	return man, nil
@@ -118,6 +134,14 @@ func (m Manifest) Register() {
 	}
 }
 
+// Unregister removes the manifest's capabilities from the catalog.
+func (m Manifest) Unregister() {
+	for _, c := range m.Capabilities {
+		delete(external, c.Name)
+		capability.Unregister(c.Name)
+	}
+}
+
 // Secrets supplies the values of the env vars a connector declares.
 type Secrets func(ctx context.Context, name string) (string, error)
 
@@ -127,11 +151,8 @@ type Connector struct {
 	Secrets Secrets
 	Timeout time.Duration
 
-	mu     sync.Mutex
-	cmd    *exec.Cmd
-	stdin  io.WriteCloser
-	lines  *bufio.Scanner
-	nextID int
+	mu   sync.Mutex
+	conn transport
 }
 
 func (c *Connector) Capabilities() []string {
@@ -144,156 +165,101 @@ func (c *Connector) Capabilities() []string {
 
 func tool(capName string) string { return strings.Replace(capName, ".", "_", 1) }
 
-type rpcResponse struct {
-	ID     int             `json:"id"`
-	Result json.RawMessage `json:"result"`
-	Error  *struct {
-		Message string `json:"message"`
-	} `json:"error"`
+func (c Capability) tool() string {
+	if c.Tool != "" {
+		return c.Tool
+	}
+	return tool(c.Name)
 }
 
-// start launches the process with a clean environment and checks it
-// offers exactly the declared tools.
-func (c *Connector) start(ctx context.Context) error {
-	cmd := exec.Command(c.Command, c.Args...)
-	cmd.Dir = c.Dir
-	cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME"), "LANG=C.UTF-8"}
-	for _, e := range c.Env {
+func (m Manifest) toolFor(capName string) string {
+	for _, c := range m.Capabilities {
+		if c.Name == capName {
+			return c.tool()
+		}
+	}
+	return tool(capName)
+}
+
+// values resolves the declared env vars and headers from the vault.
+func (c *Connector) values(ctx context.Context, names []string) map[string]string {
+	out := map[string]string{}
+	for _, n := range names {
 		v := ""
 		if c.Secrets != nil {
-			v, _ = c.Secrets(ctx, e)
+			v, _ = c.Secrets(ctx, n)
 		}
-		cmd.Env = append(cmd.Env, e+"="+v)
+		out[n] = v
 	}
-	cmd.Stderr = io.Discard
-	in, err := cmd.StdinPipe()
+	return out
+}
+
+// start connects, initializes and checks the tools on offer: exactly the
+// declared ones, or for imported servers at least those.
+func (c *Connector) start(ctx context.Context) error {
+	conn, err := dial(ctx, Endpoint{Name: c.Name, Dir: c.Dir, Command: c.Command, Args: c.Args, Env: c.values(ctx, c.Env), URL: c.URL, Headers: c.values(ctx, c.Headers)}, c.Timeout)
 	if err != nil {
 		return err
 	}
-	out, err := cmd.StdoutPipe()
+	tools, err := listTools(ctx, conn)
 	if err != nil {
+		conn.close()
 		return err
 	}
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("%s: %w", c.Name, err)
-	}
-	c.cmd, c.stdin = cmd, in
-	c.lines = bufio.NewScanner(out)
-	c.lines.Buffer(make([]byte, 1<<20), 16<<20)
-	if _, err := c.rpc(ctx, "initialize", map[string]any{"protocolVersion": "2025-06-18", "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "zodim", "version": "1"}}); err != nil {
-		c.stop()
-		return fmt.Errorf("%s did not initialize: %w", c.Name, err)
-	}
-	c.notify("notifications/initialized")
-	raw, err := c.rpc(ctx, "tools/list", map[string]any{})
-	if err != nil {
-		c.stop()
-		return err
-	}
-	var list struct {
-		Tools []struct {
-			Name string `json:"name"`
-		} `json:"tools"`
-	}
-	json.Unmarshal(raw, &list)
 	var offered, declared []string
-	for _, t := range list.Tools {
+	have := map[string]bool{}
+	for _, t := range tools {
 		offered = append(offered, t.Name)
+		have[t.Name] = true
 	}
 	for _, cap := range c.Manifest.Capabilities {
-		declared = append(declared, tool(cap.Name))
+		declared = append(declared, cap.tool())
 	}
 	sort.Strings(offered)
 	sort.Strings(declared)
-	if strings.Join(offered, ",") != strings.Join(declared, ",") {
-		c.stop()
+	if c.Imported {
+		for _, d := range declared {
+			if !have[d] {
+				conn.close()
+				return fmt.Errorf("%s no longer offers the tool %s; add it again to review what changed", c.Name, d)
+			}
+		}
+	} else if strings.Join(offered, ",") != strings.Join(declared, ",") {
+		conn.close()
 		return fmt.Errorf("%s offers tools %v but declares %v", c.Name, offered, declared)
 	}
+	c.conn = conn
 	return nil
 }
 
 func (c *Connector) stop() {
-	if c.cmd != nil && c.cmd.Process != nil {
-		c.stdin.Close()
-		c.cmd.Process.Kill()
-		c.cmd.Wait()
+	if c.conn != nil {
+		c.conn.close()
 	}
-	c.cmd = nil
+	c.conn = nil
 }
 
-// Close stops the process.
+// Close stops the process or ends the remote session.
 func (c *Connector) Close() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.stop()
 }
 
-func (c *Connector) notify(method string) {
-	b, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "method": method})
-	c.stdin.Write(append(b, '\n'))
-}
-
-func (c *Connector) rpc(ctx context.Context, method string, params any) (json.RawMessage, error) {
-	c.nextID++
-	id := c.nextID
-	b, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": id, "method": method, "params": params})
-	if _, err := c.stdin.Write(append(b, '\n')); err != nil {
-		return nil, err
-	}
-	timeout := c.Timeout
-	if timeout == 0 {
-		timeout = 30 * time.Second
-	}
-	type line struct {
-		b   []byte
-		err error
-	}
-	got := make(chan line, 1)
-	go func() {
-		for c.lines.Scan() {
-			var r rpcResponse
-			if json.Unmarshal(c.lines.Bytes(), &r) == nil && r.ID == id {
-				got <- line{b: append([]byte{}, c.lines.Bytes()...)}
-				return
-			}
-		}
-		err := c.lines.Err()
-		if err == nil {
-			err = io.EOF
-		}
-		got <- line{err: err}
-	}()
-	select {
-	case l := <-got:
-		if l.err != nil {
-			return nil, fmt.Errorf("%s stopped: %w", c.Name, l.err)
-		}
-		var r rpcResponse
-		json.Unmarshal(l.b, &r)
-		if r.Error != nil {
-			return nil, errors.New(r.Error.Message)
-		}
-		return r.Result, nil
-	case <-time.After(timeout):
-		c.stop()
-		return nil, fmt.Errorf("%s did not answer in %s", c.Name, timeout)
-	case <-ctx.Done():
-		c.stop()
-		return nil, ctx.Err()
-	}
-}
-
 // Call runs one capability, starting the process if needed.
 func (c *Connector) Call(ctx context.Context, name, _ string, args any) (any, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.cmd == nil {
+	if c.conn == nil {
 		if err := c.start(ctx); err != nil {
 			return nil, err
 		}
 	}
-	raw, err := c.rpc(ctx, "tools/call", map[string]any{"name": tool(name), "arguments": args})
+	raw, err := c.conn.rpc(ctx, "tools/call", map[string]any{"name": c.toolFor(name), "arguments": args})
 	if err != nil {
+		if errors.Is(err, errBroken) {
+			c.stop()
+		}
 		return nil, err
 	}
 	var res struct {
@@ -348,7 +314,7 @@ func Check(ctx context.Context, m Manifest, secrets Secrets) []string {
 		out, err := c.Call(ctx, cs.Capability, "", cs.Args)
 		if err != nil {
 			problems = append(problems, err.Error())
-			if c.cmd == nil {
+			if c.conn == nil {
 				break
 			}
 			continue

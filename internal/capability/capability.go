@@ -49,6 +49,8 @@ var Catalog = map[string]Spec{}
 
 func Register(s Spec) { Catalog[s.Name] = s }
 
+func Unregister(name string) { delete(Catalog, name) }
+
 func init() {
 	for _, s := range []Spec{
 		{Name: "calendar.events", Risk: Read, Signature: "calendar.events({from, to})", Returns: "[{id, title, start, end, location, attendees: [email], calendar}] with ISO 8601 times"},

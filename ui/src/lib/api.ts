@@ -25,6 +25,12 @@ export type CloudRun = { at: string; ok: boolean; name?: string; size?: number; 
 export type CloudState = { config: CloudConfig; has_keys: boolean; has_passphrase: boolean; google: { connected: boolean; drive: boolean }; last?: CloudRun; next?: string }
 export type CloudFile = { name: string; size: number; modified: string }
 
+export type CapRisk = 'read' | 'notify' | 'reversible' | 'irreversible'
+export type McpInput = { kind: 'env' | 'header' | 'arg'; name: string; description?: string; secret?: boolean; required?: boolean; default?: string }
+export type McpListing = { id: string; name: string; title: string; description: string; version: string; repository?: string; kind: 'npm' | 'pypi' | 'remote' | 'unsupported'; command?: string; args?: string[]; url?: string; inputs: McpInput[] }
+export type McpSource = { name: string; command?: string; args?: string[]; url?: string; env?: Record<string, string>; headers?: Record<string, string>; arg_values?: Record<string, string> }
+export type McpTool = { tool: string; capability: string; title?: string; description: string; risk: CapRisk }
+
 export type RemoteState = {
   tailscale: { state: 'off' | 'starting' | 'needs_login' | 'needs_funnel' | 'running' | 'error'; auth_url?: string; url?: string; error?: string }
   lan: { on: boolean; url?: string; error?: string }
@@ -72,6 +78,7 @@ export type CatalogKind = {
   fields: { name: string; label: string; placeholder?: string; secret?: boolean; optional?: boolean }[]
   capabilities: { name: string; risk: 'read' | 'notify' | 'reversible' | 'irreversible'; signature: string; returns: string }[]
   configured: boolean
+  source?: string
   values: Record<string, string>
   external?: boolean
 }
@@ -159,6 +166,10 @@ export const api = {
   cloudRun: () => request<CloudRun>('POST', '/api/backup/cloud/run'),
   cloudFiles: () => request<CloudFile[]>('GET', '/api/backup/cloud/files'),
   cloudRestore: (name: string, passphrase?: string) => request<{ secrets: number }>('POST', '/api/backup/cloud/restore', { name, passphrase }),
+  mcpSearch: (q: string, cursor = '') => request<{ servers: McpListing[]; next: string }>('GET', `/api/connectors/registry?q=${encodeURIComponent(q)}&cursor=${encodeURIComponent(cursor)}`),
+  mcpProbe: (s: McpSource) => request<{ tools: McpTool[] }>('POST', '/api/connectors/probe', s),
+  mcpAdd: (s: McpSource & { description?: string; source?: string; tools: Record<string, CapRisk> }) => request<{ loaded: number }>('POST', '/api/connectors/add', s),
+  mcpRemove: (name: string) => request<{ loaded: number }>('DELETE', `/api/connectors/${name}`),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),
