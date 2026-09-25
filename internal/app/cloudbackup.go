@@ -175,7 +175,7 @@ func (a *App) cloudLoop(ctx context.Context, every time.Duration) {
 		if a.cloudDue(ctx, time.Now()) {
 			before, _ := a.lastCloudRun(ctx)
 			if run := a.backupToCloud(ctx); !run.OK && (before.OK || before.At.IsZero()) {
-				a.Channel.Notify(ctx, explore.Notice{Text: "O backup na nuvem falhou\n" + run.Error})
+				a.Channel.Notify(ctx, explore.Notice{Text: "O backup na nuvem falhou\n" + run.Error, Kind: "backup"})
 			}
 		}
 		select {

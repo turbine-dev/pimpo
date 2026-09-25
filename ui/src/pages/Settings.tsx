@@ -90,6 +90,13 @@ export function Settings() {
           </label>
         )}
       </Card>
+      <Toggles title={t('notif.title')} text={t('notif.text')} items={[
+        { key: 'approval', label: t('notif.approval'), hint: t('notif.approvalHint'), on: true, locked: true },
+        ...(['task', 'failure', 'backup'] as const).map((k) => ({ key: k, label: t(`notif.${k}`), on: !(s.mute ?? []).includes(k) })),
+      ]} onToggle={(k, on) => setS({ ...s, mute: on ? (s.mute ?? []).filter((x) => x !== k) : [...(s.mute ?? []), k] })} />
+      <Toggles title={t('labs.title')} text={t('labs.text')} items={(['memory_organize', 'meaning_search', 'mcp_registry'] as const).map((k) => ({
+        key: k, label: t(`labs.${k}`), hint: t(`labs.${k}Hint`), on: !(s.labs_off ?? []).includes(k),
+      }))} onToggle={(k, on) => setS({ ...s, labs_off: on ? (s.labs_off ?? []).filter((x) => x !== k) : [...(s.labs_off ?? []), k] })} />
       <Card className="grid gap-4 p-5 sm:grid-cols-2">
         <label>
           <span className="mb-1 block text-[12.5px] font-medium text-ink-2">{t('settings.zone')}</span>
@@ -106,5 +113,30 @@ export function Settings() {
       {save.error && <p className="text-sm text-danger">{save.error.message}</p>}
       <Button variant="primary" onClick={() => save.mutate()} disabled={save.isPending}>{save.isSuccess ? t('common.saved') : t('common.save')}</Button>
     </div>
+  )
+}
+
+type Toggle = { key: string; label: string; hint?: string; on: boolean; locked?: boolean }
+
+function Toggles({ title, text, items, onToggle }: { title: string; text: string; items: Toggle[]; onToggle: (key: string, on: boolean) => void }) {
+  return (
+    <Card className="p-5">
+      <div className="text-[15px] font-medium">{title}</div>
+      <p className="mb-3 text-[13px] text-ink-3">{text}</p>
+      <ul className="divide-y divide-line">
+        {items.map((it) => (
+          <li key={it.key} className="flex items-start gap-3 py-2.5">
+            <div className="flex-1">
+              <div className="text-[13.5px]">{it.label}</div>
+              {it.hint && <div className="text-[12px] text-ink-3">{it.hint}</div>}
+            </div>
+            <button type="button" role="switch" aria-checked={it.on} aria-label={it.label} disabled={it.locked} onClick={() => onToggle(it.key, !it.on)}
+              className={cn('mt-0.5 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition disabled:opacity-60', it.on ? 'bg-accent' : 'bg-line-strong')}>
+              <span className={cn('size-5 rounded-full bg-white shadow transition', it.on && 'translate-x-5')} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }

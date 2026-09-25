@@ -8,6 +8,7 @@ import { Welcome } from './pages/Welcome'
 import { Shell, nav } from './components/Shell'
 import { Assistants } from './pages/Assistants'
 import { Chat } from './pages/Chat'
+import { Help } from './pages/Help'
 import { api } from './lib/api'
 import { useLiveEvents } from './lib/live'
 import { Connections } from './pages/Connections'
@@ -62,6 +63,7 @@ export default function App() {
         <Route path="/chat" element={<Chat />} />
         <Route path="/chat/:id" element={<Chat />} />
         <Route path="/assistants" element={<Assistants />} />
+        <Route path="/help" element={<Help />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/receipts" element={<Receipts />} />
         <Route path="/rules" element={<Rules />} />

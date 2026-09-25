@@ -36,7 +36,7 @@ var schemas = map[string]string{
 // Recall finds facts related to a query, by meaning when it can.
 type Recall func(ctx context.Context, query, person string) ([]memory.Fact, error)
 
-func tools(h *host.Host, mem *memory.Memory, recall Recall) []mcp.Tool {
+func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string) []mcp.Tool {
 	var out []mcp.Tool
 	for _, name := range capability.Names() {
 		if h.Allowed != nil && !h.Allowed[name] {
@@ -108,6 +108,20 @@ func tools(h *host.Host, mem *memory.Memory, recall Recall) []mcp.Tool {
 			return map[string]bool{"recorded": true}, nil
 		},
 	})
+	if guide != "" {
+		out = append(out, mcp.Tool{
+			Name:        "zodim_guide",
+			Description: "Search Zodim's user guide, for questions about Zodim itself (what it can do, where a setting is, how routines, approvals, the phone app, backups or connectors work). The guide is in English: search with English words, answer in the owner's language. An empty query lists the sections.",
+			InputSchema: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}}}`),
+			Handle: func(_ context.Context, raw json.RawMessage) (any, error) {
+				var a struct {
+					Query string `json:"query"`
+				}
+				json.Unmarshal(raw, &a)
+				return map[string]string{"guide": searchGuide(guide, a.Query)}, nil
+			},
+		})
+	}
 	if mem != nil {
 		out = append(out, mcp.Tool{
 			Name:        "memory_search",

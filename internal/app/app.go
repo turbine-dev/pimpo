@@ -8,10 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/denerFernandes/zodim/docs"
 	"github.com/denerFernandes/zodim/internal/approval"
 	"github.com/denerFernandes/zodim/internal/budget"
 	"github.com/denerFernandes/zodim/internal/compiler"
@@ -65,6 +67,22 @@ type Settings struct {
 	// ProtectionNetwork downloads the shared protection list daily.
 	ProtectionNetwork bool   `json:"protection_network"`
 	ProtectionURL     string `json:"protection_url"`
+	// Mute silences kinds of notices outside the app: task, failure,
+	// backup. Approvals are never silenced.
+	Mute []string `json:"mute,omitempty"`
+	// LabsOff turns off newer features: memory_organize, meaning_search,
+	// mcp_registry.
+	LabsOff []string `json:"labs_off,omitempty"`
+}
+
+var (
+	mutable = map[string]bool{"task": true, "failure": true, "backup": true}
+	labs    = map[string]bool{"memory_organize": true, "meaning_search": true, "mcp_registry": true}
+)
+
+// lab reports whether a newer feature is on.
+func (a *App) lab(ctx context.Context, name string) bool {
+	return !slices.Contains(a.Settings(ctx).LabsOff, name)
 }
 
 func defaultSettings() Settings {
@@ -147,6 +165,9 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 			go desktop.Notify(context.WithoutCancel(ctx), "Zodim", strings.TrimSpace(title+" "+body))
 		}
 	}
+	a.Channel.Muted = func(ctx context.Context, kind string) bool {
+		return mutable[kind] && slices.Contains(a.Settings(ctx).Mute, kind)
+	}
 	a.Channel.ReadPhoto = ocr.Tesseract{}.Read
 	a.Channel.Transcribe = func(ctx context.Context, audio []byte) (string, error) {
 		return voice.Whisper{Model: a.VoiceModel, Language: strings.SplitN(a.Settings(ctx).Locale, "-", 2)[0]}.Transcribe(ctx, audio)
@@ -167,7 +188,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		Approver: approver{a.Approvals}, Remember: a.remember,
 		RoleOf: func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) }}
 	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone}
-	a.Explore = &explore.Service{Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 2},
+	a.Explore = &explore.Service{Guide: docs.Guide, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 2},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
 	a.Server = server.New(events, token)
 	a.googleRoutes()
@@ -245,6 +266,16 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 	case "local", "jev", "llm":
 	default:
 		return server.StatusError{Status: 400, Msg: "judge backend must be local, jev or llm"}
+	}
+	for _, k := range s.Mute {
+		if !mutable[k] {
+			return server.StatusError{Status: 400, Msg: "only task, failure and backup notices can be silenced"}
+		}
+	}
+	for _, k := range s.LabsOff {
+		if !labs[k] {
+			return server.StatusError{Status: 400, Msg: "unknown feature " + k}
+		}
 	}
 	b, _ := json.Marshal(s)
 	if err := a.Events.Put(ctx, "settings", string(b)); err != nil {

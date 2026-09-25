@@ -47,6 +47,10 @@ var (
 )
 
 func (a *App) searchRegistry(w http.ResponseWriter, r *http.Request) {
+	if !a.lab(r.Context(), "mcp_registry") {
+		server.WriteError(w, server.StatusError{Status: 403, Msg: "the MCP registry is turned off in Settings › Labs"})
+		return
+	}
 	q, cursor := strings.TrimSpace(r.URL.Query().Get("q")), r.URL.Query().Get("cursor")
 	key := registryBase + "\x00" + strings.ToLower(q) + "\x00" + cursor
 	registryMu.Lock()

@@ -1,4 +1,4 @@
-import { Bell, Brain, Menu, MessageSquare, Coins, Moon, Plug, ReceiptText, Repeat, Search, Settings, ShieldCheck, Sun, Users, LibraryBig } from 'lucide-react'
+import { Bell, Brain, CircleHelp, Menu, MessageSquare, Coins, Moon, Plug, ReceiptText, Repeat, Search, Settings, ShieldCheck, Sun, Users, LibraryBig } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '../lib/cn'
@@ -99,7 +99,10 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
             </NavLink>
           ))}
         </nav>
-        <div className="mt-auto flex items-center gap-2 px-2 text-[12px] text-ink-3">
+        <NavLink to="/help" className={({ isActive }) => cn('mt-auto mb-2 flex items-center gap-3 rounded-[10px] px-2.5 py-2 text-[13px] transition-colors', isActive ? 'bg-sunken text-ink' : 'text-ink-3 hover:bg-sunken/70 hover:text-ink')}>
+          <CircleHelp size={16} /> {t('nav.help')}
+        </NavLink>
+        <div className="flex items-center gap-2 px-2 text-[12px] text-ink-3">
           <span className={cn('size-2 rounded-full', healthy ? 'bg-read' : 'animate-pulse-soft bg-danger')} />
           {healthy ? t('shell.healthy') : t('shell.unhealthy')}
         </div>
@@ -147,6 +150,10 @@ export function Shell({ children, items = nav, budget, healthy = true, onSearch 
                 {t(it.label)}
               </NavLink>
             ))}
+            <NavLink to="/help" onClick={() => setMore(false)} className={({ isActive }) => cn('flex flex-col items-center gap-1 rounded-xl py-3 text-[11.5px]', isActive ? 'bg-sunken text-ink' : 'text-ink-2')}>
+              <CircleHelp size={17} />
+              {t('nav.help')}
+            </NavLink>
           </div>
         </div>
       )}

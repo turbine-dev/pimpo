@@ -87,6 +87,10 @@ Browse ready-made routines, filtered by what they can touch. Zodim checks the au
 - `zodim snapshots` and `zodim restore` go back to an automatic daily snapshot.
 - Coming from OpenClaw or Hermes? Use **Ajustes › Trazer do OpenClaw ou do Hermes**, or `zodim migrate openclaw`.
 
+## Help, notifications and labs
+
+**Ajuda** (at the bottom of the menu) answers questions about Zodim itself: it starts a chat, and the agent reads this guide to answer. In **Ajustes › Notificações** choose what reaches you outside the app: task results, failed routines and backup problems can be silenced (they stay in **Precisa de você**); approval requests always arrive. **Ajustes › Laboratório** turns off newer features: organizing memory every night, searching memory by meaning, and exploring the MCP registry.
+
 ## Costs
 
 **Custo** shows what you spent today, this month and on what. The daily limit (Ajustes) is checked before every model call; routines barely spend anything.
