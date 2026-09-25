@@ -40,6 +40,7 @@ e2e: build
 desktop: ui
 	mkdir -p desktop/src-tauri/binaries
 	go build -ldflags "$(LDFLAGS)" -o desktop/src-tauri/binaries/zodim-$$(rustc -vV | sed -n 's/host: //p') ./cmd/zodim
+	scripts/dmg-cleanup.sh
 	cd desktop && npm ci --no-audit --no-fund && npx tauri build
 
 release-snapshot:
