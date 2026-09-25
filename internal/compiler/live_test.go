@@ -5,9 +5,11 @@ package compiler
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
+	_ "github.com/denerFernandes/zodim/internal/connector/services"
 	"github.com/denerFernandes/zodim/internal/llm"
 	"github.com/denerFernandes/zodim/internal/trace"
 )
@@ -64,5 +66,37 @@ func TestLiveWriteIsCompiled(t *testing.T) {
 	}
 	if len(last.Routine.Manifest.Writes) == 0 || last.Routine.Manifest.Watch == nil {
 		t.Fatal("expected a watch with a write step")
+	}
+}
+
+// A real trace that failed on a wrong test (an item 25 hours old expected
+// in a 24-hour window) compiles, and retries see what was sent.
+func TestLiveRealTraceCompiles(t *testing.T) {
+	path := os.Getenv("ZODIM_TRACE")
+	if path == "" {
+		t.Skip("set ZODIM_TRACE to a recorded trace")
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tr trace.Trace
+	if err := json.Unmarshal(raw, &tr); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
+	defer cancel()
+	atts, err := Compiler{Model: llm.ClaudeCLI{}, Attempts: 3}.Compile(ctx, tr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, a := range atts {
+		t.Logf("attempt %d ($%.3f): %v %s", i+1, a.CostUSD, a.Problems(), a.Invalid)
+	}
+	last := atts[len(atts)-1]
+	b, _ := json.MarshalIndent(last.Routine.Tests, "", " ")
+	t.Logf("code:\n%s\ntests: %s", last.Routine.Code, b)
+	if !last.Accepted() {
+		t.Fatal("rejected")
 	}
 }

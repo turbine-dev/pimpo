@@ -32,6 +32,8 @@ type Call struct {
 	Capability string          `json:"capability"`
 	Args       json.RawMessage `json:"args"`
 	Result     json.RawMessage `json:"result"`
+	// Error is why the call failed, such as a service not connected.
+	Error string `json:"error,omitempty"`
 }
 
 // Scenario is a set of inputs and the calls a correct routine makes with them.

@@ -83,20 +83,33 @@ func verify(e trace.Expect, writes []Write) []string {
 	}
 	joined := strings.Join(text, "\n")
 	var problems []string
+	// What was actually sent goes with each miss, so whoever fixes it can
+	// tell a wrong routine from a wrong test.
+	sent := "; it sent nothing"
+	if joined != "" {
+		sent = fmt.Sprintf("; it sent %q", clip(joined, 400))
+	}
 	if e.Count != nil && n != *e.Count {
 		problems = append(problems, fmt.Sprintf("%s called %d times, want %d", e.Capability, n, *e.Count))
 	}
 	for _, want := range e.Contains {
 		if !strings.Contains(joined, strings.ToLower(want)) {
-			problems = append(problems, fmt.Sprintf("%s never mentions %q", e.Capability, want))
+			problems = append(problems, fmt.Sprintf("%s never mentions %q%s", e.Capability, want, sent))
 		}
 	}
 	for _, bad := range e.NotContains {
 		if strings.Contains(joined, strings.ToLower(bad)) {
-			problems = append(problems, fmt.Sprintf("%s mentions %q, which it should leave out", e.Capability, bad))
+			problems = append(problems, fmt.Sprintf("%s mentions %q, which it should leave out%s", e.Capability, bad, sent))
 		}
 	}
 	return problems
+}
+
+func clip(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n]) + "…"
+	}
+	return s
 }
 
 // Flatten is flatten for other packages.
