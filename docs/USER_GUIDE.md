@@ -113,7 +113,7 @@ Browse ready-made routines, filtered by what they can touch. Zodim checks the au
 
 ## Models
 
-By default Zodim uses Claude Code with your own subscription. In **Ajustes › Modelos** you can pick another model for each job (tasks and chat, writing routines, judgments): Anthropic, OpenAI or OpenRouter with your API key, or a local model through Ollama. An API model needs its price per million tokens before it runs, because the daily spending limit counts every call with it; **Testar** checks the key with a call capped at one cent. Rules and approvals do not change with the model: every tool call still goes through Zodim.
+By default Zodim uses Claude Code with your own subscription. In **Ajustes › Modelos** you can pick another model for each job (tasks and chat, writing routines, judgments): Anthropic, OpenAI or OpenRouter with your API key, or a local model through Ollama. An API model needs its price per million tokens before it runs, because the daily spending limit counts every call with it; **Testar** checks the key with a call capped at one cent. Rules and approvals do not change with the model: every tool call still goes through Zodim. With Anthropic, the instructions, tool list and conversation so far are kept in the provider's prompt cache between turns, so a long task pays about a tenth for what it already sent; the cost shown includes the cache's own prices.
 
 ## Costs
 

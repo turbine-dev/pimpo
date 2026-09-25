@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -51,14 +52,15 @@ func TestAnthropicAgentLoop(t *testing.T) {
 		json.NewDecoder(r.Body).Decode(&body)
 		step++
 		if step == 1 {
-			if body["model"] == "claude-sonnet-5" && (body["system"] != "Be brief." || len(body["tools"].([]any)) != 1) {
+			sys, _ := body["system"].([]any)
+			if body["model"] == "claude-sonnet-5" && (len(sys) != 1 || sys[0].(map[string]any)["text"] != "Be brief." || sys[0].(map[string]any)["cache_control"] == nil || len(body["tools"].([]any)) != 1) {
 				t.Errorf("first request %v", body)
 			}
 			io.WriteString(w, `{"content":[{"type":"text","text":"Vou ver."},{"type":"tool_use","id":"tu1","name":"weather_today","input":{"city":"Lisboa"}}],"usage":{"input_tokens":1000,"output_tokens":100}}`)
 			return
 		}
 		second = body
-		io.WriteString(w, `{"content":[{"type":"text","text":"Faz 24 graus em Lisboa."}],"usage":{"input_tokens":1200,"output_tokens":50}}`)
+		io.WriteString(w, `{"content":[{"type":"text","text":"Faz 24 graus em Lisboa."}],"usage":{"input_tokens":200,"output_tokens":50,"cache_creation_input_tokens":100,"cache_read_input_tokens":1000}}`)
 	}))
 	defer api.Close()
 	a := API{Provider: "anthropic", Key: "ak", Base: api.URL, Model: "claude-sonnet-5", PriceIn: 3, PriceOut: 15}
@@ -66,7 +68,7 @@ func TestAnthropicAgentLoop(t *testing.T) {
 	if err != nil || resp.Text != "Faz 24 graus em Lisboa." {
 		t.Fatalf("%+v %v", resp, err)
 	}
-	if want := (2200*3.0 + 150*15.0) / 1e6; resp.CostUSD != want {
+	if want := (1200*3.0+150*15.0)/1e6 + (100*1.25+1000*0.1)*3.0/1e6; math.Abs(resp.CostUSD-want) > 1e-12 {
 		t.Fatalf("cost %v, want %v", resp.CostUSD, want)
 	}
 	if len(calls) != 1 || !strings.Contains(calls[0], `"city":"Lisboa"`) {
@@ -74,8 +76,13 @@ func TestAnthropicAgentLoop(t *testing.T) {
 	}
 	msgs := second["messages"].([]any)
 	last := msgs[len(msgs)-1].(map[string]any)["content"].([]any)[0].(map[string]any)
-	if last["type"] != "tool_result" || last["tool_use_id"] != "tu1" || last["content"] != `{"temp":24}` {
+	if last["type"] != "tool_result" || last["tool_use_id"] != "tu1" || last["content"] != `{"temp":24}` || last["cache_control"] == nil {
 		t.Fatalf("tool result %v", last)
+	}
+	// Only the newest message carries a breakpoint; the first prompt,
+	// cached on the previous turn, is sent as it was kept.
+	if first := msgs[0].(map[string]any); first["content"] != "Tempo em Lisboa?" {
+		t.Fatalf("older message changed: %v", first)
 	}
 
 	step = 0

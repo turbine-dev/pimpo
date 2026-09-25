@@ -54,6 +54,12 @@ func (a API) cost(in, out int) float64 {
 	return (float64(in)*a.PriceIn + float64(out)*a.PriceOut) / 1e6
 }
 
+// turnCost prices a turn; Anthropic bills writing the prompt cache at 1.25
+// times the input price and reading it at a tenth.
+func (a API) turnCost(t turn) float64 {
+	return a.cost(t.In, t.Out) + (float64(t.CacheWrite)*1.25+float64(t.CacheRead)*0.1)*a.PriceIn/1e6
+}
+
 func (a API) post(ctx context.Context, path string, body, out any) error {
 	b, _ := json.Marshal(body)
 	req, err := http.NewRequestWithContext(ctx, "POST", a.base()+path, bytes.NewReader(b))
@@ -115,6 +121,9 @@ type turn struct {
 	Text    string
 	Calls   []toolCall
 	In, Out int
+	// CacheWrite and CacheRead are input tokens written to and read from
+	// the provider's prompt cache, apart from In.
+	CacheWrite, CacheRead int
 }
 
 // chat keeps a conversation in the provider's own message format.
@@ -138,9 +147,13 @@ func (c *chat) send(ctx context.Context) (turn, error) {
 }
 
 func (c *chat) sendAnthropic(ctx context.Context) (turn, error) {
-	body := map[string]any{"model": c.a.Model, "max_tokens": 8192, "messages": c.messages}
+	// The tools and system prompt repeat on every turn and every call, and
+	// the conversation grows by a turn at a time, so both are cached: one
+	// breakpoint after the system prompt (which covers the tools before
+	// it) and one on the newest message.
+	body := map[string]any{"model": c.a.Model, "max_tokens": 8192, "messages": cachedTail(c.messages)}
 	if c.system != "" {
-		body["system"] = c.system
+		body["system"] = []map[string]any{{"type": "text", "text": c.system, "cache_control": ephemeral}}
 	}
 	if len(c.tools) > 0 {
 		var ts []map[string]any
@@ -161,14 +174,16 @@ func (c *chat) sendAnthropic(ctx context.Context) (turn, error) {
 			Input json.RawMessage `json:"input"`
 		} `json:"content"`
 		Usage struct {
-			In  int `json:"input_tokens"`
-			Out int `json:"output_tokens"`
+			In         int `json:"input_tokens"`
+			Out        int `json:"output_tokens"`
+			CacheWrite int `json:"cache_creation_input_tokens"`
+			CacheRead  int `json:"cache_read_input_tokens"`
 		} `json:"usage"`
 	}
 	if err := c.a.post(ctx, "/messages", body, &r); err != nil {
 		return turn{}, err
 	}
-	t := turn{In: r.Usage.In, Out: r.Usage.Out}
+	t := turn{In: r.Usage.In, Out: r.Usage.Out, CacheWrite: r.Usage.CacheWrite, CacheRead: r.Usage.CacheRead}
 	var content []map[string]any
 	for _, b := range r.Content {
 		switch b.Type {
@@ -243,6 +258,43 @@ func (c *chat) sendOpenAI(ctx context.Context) (turn, error) {
 	return t, nil
 }
 
+var ephemeral = map[string]string{"type": "ephemeral"}
+
+// cachedTail copies the messages with a cache breakpoint on the last block
+// of the newest one, leaving the kept conversation untouched so old
+// breakpoints do not pile up past the provider's limit of four.
+func cachedTail(msgs []map[string]any) []map[string]any {
+	if len(msgs) == 0 {
+		return msgs
+	}
+	out := append([]map[string]any(nil), msgs...)
+	last := map[string]any{}
+	for k, v := range out[len(out)-1] {
+		last[k] = v
+	}
+	var blocks []map[string]any
+	switch c := last["content"].(type) {
+	case string:
+		blocks = []map[string]any{{"type": "text", "text": c}}
+	case []map[string]any:
+		blocks = append([]map[string]any(nil), c...)
+	default:
+		return out
+	}
+	if len(blocks) == 0 {
+		return out
+	}
+	tail := map[string]any{}
+	for k, v := range blocks[len(blocks)-1] {
+		tail[k] = v
+	}
+	tail["cache_control"] = ephemeral
+	blocks[len(blocks)-1] = tail
+	last["content"] = blocks
+	out[len(out)-1] = last
+	return out
+}
+
 // results answers the tool calls of the last turn.
 func (c *chat) results(calls []toolCall, outputs []string, failed []bool) {
 	if c.a.Provider == "anthropic" {
@@ -271,7 +323,7 @@ func (a API) Generate(ctx context.Context, r Request) (Response, error) {
 	if err != nil {
 		return Response{}, err
 	}
-	resp := Response{Text: t.Text, CostUSD: a.cost(t.In, t.Out)}
+	resp := Response{Text: t.Text, CostUSD: a.turnCost(t)}
 	if len(r.Schema) > 0 {
 		if len(t.Calls) == 0 {
 			return resp, fmt.Errorf("%s gave no structured answer", a.Provider)
@@ -347,7 +399,7 @@ func (a API) Run(ctx context.Context, r AgentRequest) (Response, error) {
 		if err != nil {
 			return Response{CostUSD: cost}, err
 		}
-		cost += a.cost(t.In, t.Out)
+		cost += a.turnCost(t)
 		if r.MaxCostUSD > 0 && cost > r.MaxCostUSD {
 			return Response{Text: t.Text, CostUSD: cost}, ErrCostLimit
 		}
