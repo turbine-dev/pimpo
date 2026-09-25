@@ -47,5 +47,9 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Para falar com o Zodim do seu computador pela rede de casa.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Para você falar com o Zodim em vez de digitar.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Para transformar o que você fala em texto.</string>
 </dict>
 </plist>

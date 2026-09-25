@@ -845,6 +845,9 @@ export const pt = {
   'help.q6': 'Como desfaço algo que o Zodim fez?',
   'help.guide': 'Guia completo (em inglês)',
   'nav.help': 'Ajuda',
+  'voice.speak': 'Falar',
+  'voice.stop': 'Parar de ouvir',
+  'voice.listen': 'Ouvir',
 }
 
 export type Key = keyof typeof pt

@@ -845,4 +845,7 @@ export const en: Record<Key, string> = {
   'help.q6': 'How do I undo something Zodim did?',
   'help.guide': 'Full guide',
   'nav.help': 'Help',
+  'voice.speak': 'Speak',
+  'voice.stop': 'Stop listening',
+  'voice.listen': 'Listen',
 }

@@ -2,12 +2,15 @@ package app
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/denerFernandes/zodim/internal/capability"
 	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/voice"
 )
 
 func TestAssistantOnlyUsesItsCapabilities(t *testing.T) {
@@ -84,5 +87,27 @@ func TestSettingsMuteOnlyWhatMayBeMuted(t *testing.T) {
 	}
 	if code, _ := ta.do(t, "GET", "/api/connectors/registry?q=x", nil); code != 403 {
 		t.Fatal("the registry answered while turned off")
+	}
+}
+
+func TestDictationUsesLocalTranscription(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	var got []byte
+	ta.Channel.Transcribe = func(_ context.Context, audio []byte) (string, error) { got = audio; return "o que tenho amanhã", nil }
+	req, _ := http.NewRequest("POST", ta.srv.URL+"/api/voice/transcribe", strings.NewReader("webm-bytes"))
+	req.Header.Set("Authorization", "Bearer tok")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out map[string]string
+	json.NewDecoder(resp.Body).Decode(&out)
+	resp.Body.Close()
+	if resp.StatusCode != 200 || out["text"] != "o que tenho amanhã" || string(got) != "webm-bytes" {
+		t.Fatalf("%d %v %q", resp.StatusCode, out, got)
+	}
+	ta.Channel.Transcribe = func(context.Context, []byte) (string, error) { return "", voice.ErrNotInstalled }
+	if code, _ := ta.do(t, "POST", "/api/voice/transcribe", "x"); code != 501 {
+		t.Fatalf("missing whisper: %d", code)
 	}
 }
