@@ -50,6 +50,10 @@ type Scenario struct {
 	// Writes are canned texts for the routine's writes: name -> identifying
 	// substring of the input -> text.
 	Writes map[string]map[string]string `json:"writes,omitempty"`
+	// State is what the routine kept from earlier runs, and ExpectState
+	// the values it must have kept after this one (key -> value).
+	State       map[string]any `json:"state,omitempty"`
+	ExpectState map[string]any `json:"expect_state,omitempty"`
 }
 
 // Response is a canned result for one call to a read capability. Calls to

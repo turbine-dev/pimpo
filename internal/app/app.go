@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/zodim/internal/runtime"
 	"os/exec"
 	"slices"
 	"strings"
@@ -205,7 +206,8 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
 		RoleOf: func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) }}
 	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone}
-	a.Explore = &explore.Service{Guide: docs.Guide, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 3},
+	a.Explore = &explore.Service{Guide: docs.Guide, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 3, Installed: a.installedRoutines,
+		Helpers: func(ctx context.Context, id string) (runtime.Helper, error) { return a.Scheduler.Library(ctx, id) }},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
 	a.Server = server.New(events, token)
 	a.googleRoutes()
@@ -225,6 +227,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.remoteRoutes()
 	a.cloudRoutes()
 	a.snapshotRoutes()
+	a.repoRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
@@ -249,6 +252,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.startLinks(ctx)
 	go a.healthLoop(ctx, time.Minute)
 	a.announceUpgrade(ctx)
+	go a.repoLoop(ctx, 15*time.Minute)
 	a.restartListener(ctx)
 	return nil
 }
@@ -541,6 +545,19 @@ func (a *App) apiModel(ctx context.Context, model string) (llm.API, bool, error)
 
 // modelBase lets tests point providers at fakes.
 var modelBase = map[string]string{}
+
+// installedRoutines are what a new routine may build on: the active ones.
+func (a *App) installedRoutines(ctx context.Context) []compiler.Installed {
+	list, _ := a.Store.Routines(ctx)
+	var out []compiler.Installed
+	for _, r := range list {
+		if r.State != store.RoutineActive {
+			continue
+		}
+		out = append(out, compiler.Installed{ID: r.ID, Name: r.Body.Name, Description: r.Body.Description, Capabilities: r.Body.Manifest.Capabilities, Params: r.Body.Manifest.Params})
+	}
+	return out
+}
 
 func claudeInstalled() bool { _, err := exec.LookPath("claude"); return err == nil }
 

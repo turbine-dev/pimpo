@@ -54,6 +54,8 @@
   "msg.photo.ask": "Mira qué hacer con esto",
   "msg.photo.failed": "📷 No se pudo leer la foto: {error}",
   "msg.photo.text": "Texto de la foto:",
+  "msg.repo.changes_one": "📦 {count} rutina cambió en tu repositorio. Las pruebas ya se ejecutaron; revísala y actívala en Rutinas › Repositorio.",
+  "msg.repo.changes_other": "📦 {count} rutinas cambiaron en tu repositorio. Las pruebas ya se ejecutaron; revísalas y actívalas en Rutinas › Repositorio.",
   "msg.request.started": "Entendido. Trabajando en ello; el resultado llegará aquí. 🔎",
   "msg.routine.created": "Rutina “{name}” creada. Próxima ejecución: {next}.",
   "msg.routine.failed": "⚠️ {name} no se ejecutó.\n{error}\n\nLa rutina queda en pausa hasta que decidas.",

@@ -168,3 +168,58 @@ func TestWriteStep(t *testing.T) {
 		t.Fatal("accepted a write without instruction")
 	}
 }
+
+func TestStateIsKeptBetweenRuns(t *testing.T) {
+	m := Manifest{Schedule: "0 7 * * *", Capabilities: []string{"telegram.send"}}
+	code := `async function run() {
+  const last = state.get("price");
+  const now = 120;
+  if (last !== null && now > last) await telegram.send({text: "subiu de " + last + " para " + now});
+  state.set("price", now);
+  state.set("history", (state.get("history") || []).concat([now]).slice(-3));
+}`
+	h := &writingHost{}
+	res, err := Run(context.Background(), code, m, h, Options{})
+	if err != nil || !res.Changed || res.State["price"] != float64(120) || len(h.sent) != 0 {
+		t.Fatalf("first run %+v %v %v", res, err, h.sent)
+	}
+	res, err = Run(context.Background(), code, m, h, Options{State: map[string]any{"price": 100.0}})
+	if err != nil || len(h.sent) != 1 || h.sent[0] != "subiu de 100 para 120" {
+		t.Fatalf("second run %v %v", err, h.sent)
+	}
+	big := `async function run() { state.set("x", "a".repeat(70000)); }`
+	if _, err := Run(context.Background(), big, m, h, Options{}); err == nil || !strings.Contains(err.Error(), "64 KB") {
+		t.Fatalf("no state limit: %v", err)
+	}
+}
+
+func TestRoutinesUseOthersWithinTheirCapabilities(t *testing.T) {
+	agenda := Helper{Code: `async function run() { const e = await calendar.events({}); return {count: e.length, first: params.label + e[0].title}; }`,
+		Manifest: Manifest{Capabilities: []string{"calendar.events"}, Params: []Param{{Name: "label", Type: "text", Default: "→ "}}}}
+	lib := func(_ context.Context, id string) (Helper, error) {
+		switch id {
+		case "agenda":
+			return agenda, nil
+		case "wide":
+			return Helper{Code: `async function run() {}`, Manifest: Manifest{Capabilities: []string{"gmail.send"}}}, nil
+		case "loop":
+			return Helper{Code: `async function run() { await routines.run("brief") }`, Manifest: Manifest{Capabilities: []string{"telegram.send"}, Uses: []string{"brief"}}}, nil
+		}
+		return Helper{}, errors.New("no such routine")
+	}
+	h := &writingHost{recordingHost: recordingHost{result: map[string]any{"calendar.events": []map[string]any{{"title": "Dentista"}}}}}
+	m := Manifest{Schedule: "0 7 * * *", Capabilities: []string{"calendar.events", "telegram.send"}, Uses: []string{"agenda", "wide", "loop"}}
+	code := `async function run() { const a = await routines.run("agenda", {label: "* "}); await telegram.send({text: a.count + " " + a.first}); }`
+	if _, err := Run(context.Background(), code, m, h, Options{Library: lib, ID: "brief"}); err != nil || len(h.sent) != 1 || h.sent[0] != "1 * Dentista" {
+		t.Fatalf("helper: %v %v", err, h.sent)
+	}
+	for name, c := range map[string]string{
+		"not in uses":       `async function run() { await routines.run("other") }`,
+		"wider than caller": `async function run() { await routines.run("wide") }`,
+		"loop":              `async function run() { await routines.run("loop") }`,
+	} {
+		if _, err := Run(context.Background(), c, m, h, Options{Library: lib, ID: "brief"}); err == nil {
+			t.Errorf("%s: ran", name)
+		}
+	}
+}

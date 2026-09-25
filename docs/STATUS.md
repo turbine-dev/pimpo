@@ -59,6 +59,14 @@ Ordered by Jev (`tools/jev/decisions_next.py`) from complaints about Hermes and 
 6. **Desktop as a client of a remote Zodim**: the menu bar switches between the local server and one elsewhere, paired with the phone's link; the local server stops meanwhile. The connection page was checked in the browser against a real server with the native calls stood in for; the native switch itself was built but not clicked through, since the owner's app was running.
 7. **iMessage**: cut (needs full disk access to read Messages).
 
+## Complex routines, Zodim's way
+
+Asked for after comparing with OpenClaw and Hermes skills (folders of scripts run by the agent), built without running arbitrary code:
+
+1. **State between runs** (`state.get/set`, 64 KB, saved only when a run succeeds), tested with `state`/`expect_state` in scenarios. Checked live: Claude compiled "only if the dollar went up" into a stateful routine on the first attempt.
+2. **Routines in a repository**: one folder per routine, export with a local commit, push on click, pull fast-forward only, every change checked (tests, audit, capability diff) and applied only by the owner. Tested end to end with real git repositories.
+3. **Routines using routines** (`routines.run`, `manifest.uses`): the caller must declare everything the helper touches, three levels at most, no loops, helpers' state read-only. Checked live: Claude reused an installed routine when asked.
+
 ## Languages
 
 The app, server messages (channels, approvals, notices), built-in connector texts, routine dates and money, and the phone/desktop shell page are in ten languages: pt, en, es, fr, de, it, ja, zh, ko, ru, with each language's plural rules. Portuguese is the source; the translations were written by a model and checked for keys, {slots} and plural forms, not reviewed by native speakers yet. Texts speak about Zodim in the third person; first person is kept only for the owner's own words (example requests, preset rules). The user guide is English only.

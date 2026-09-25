@@ -4,6 +4,7 @@ package scheduler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/denerFernandes/zodim/internal/i18n"
 	"strings"
@@ -154,6 +155,41 @@ func (s *Scheduler) catchUp(ctx context.Context, r store.Routine) {
 	}
 }
 
+func stateKey(id string) string { return "routine.state." + id }
+
+// State is what a routine kept from its earlier runs.
+func (s *Scheduler) State(ctx context.Context, id string) map[string]any {
+	out := map[string]any{}
+	if raw, _ := s.Env.Events.Get(ctx, stateKey(id)); raw != "" {
+		json.Unmarshal([]byte(raw), &out)
+	}
+	return out
+}
+
+// SaveState keeps a routine's state; an empty one is forgotten.
+func (s *Scheduler) SaveState(ctx context.Context, id string, state map[string]any) error {
+	if len(state) == 0 {
+		return s.Env.Events.Put(ctx, stateKey(id), "")
+	}
+	b, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	return s.Env.Events.Put(ctx, stateKey(id), string(b))
+}
+
+// Library finds a routine another one uses, with its settings and state.
+func (s *Scheduler) Library(ctx context.Context, id string) (runtime.Helper, error) {
+	r, err := s.Store.Routine(ctx, id)
+	if err != nil {
+		return runtime.Helper{}, fmt.Errorf("routine %s is not installed", id)
+	}
+	if r.State == store.RoutineBroken {
+		return runtime.Helper{}, fmt.Errorf("routine %s is stopped after a failure", id)
+	}
+	return runtime.Helper{Code: r.Body.Code, Manifest: r.Body.Manifest, Params: r.Settings.Params, State: s.State(ctx, id)}, nil
+}
+
 // Wait blocks until catch-up runs finish.
 func (s *Scheduler) Wait() { s.wg.Wait() }
 
@@ -195,7 +231,13 @@ func (s *Scheduler) run(ctx context.Context, id, trigger string, event any) (sto
 	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
-	res, runErr := runtime.Run(ctx, r.Body.Code, r.Body.Manifest, h, runtime.Options{Now: s.now(), Zone: s.zone(), Timeout: 90 * time.Second, Params: r.Settings.Params, Event: event})
+	res, runErr := runtime.Run(ctx, r.Body.Code, r.Body.Manifest, h, runtime.Options{Now: s.now(), Zone: s.zone(), Timeout: 90 * time.Second,
+		Params: r.Settings.Params, Event: event, State: s.State(ctx, id), Library: s.Library, ID: id})
+	if runErr == nil && res.Changed {
+		if err := s.SaveState(context.WithoutCancel(ctx), id, res.State); err != nil {
+			runErr = fmt.Errorf("could not keep the routine's state: %w", err)
+		}
+	}
 	outcome, errText := store.RunOK, ""
 	if runErr != nil {
 		outcome, errText = store.RunFailed, runErr.Error()
