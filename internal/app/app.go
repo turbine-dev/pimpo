@@ -211,6 +211,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()
+	a.voiceRoutes()
 	return a, nil
 }
 

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowUp, Bot, Check, Loader2, Plus, Repeat, Trash2, X } from 'lucide-react'
+import { ArrowUp, Bot, Check, Loader2, Mic, Plus, Repeat, Square, Trash2, Volume2, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Logo } from '../components/Shell'
@@ -8,6 +8,7 @@ import { api, type ChatTurn } from '../lib/api'
 import { cn } from '../lib/cn'
 import { relative, usd } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
+import { canSpeak, speak, useDictation } from '../lib/voice'
 
 const suggestions: TKey[] = ['chat.s1', 'chat.s2', 'chat.s3', 'chat.s4']
 
@@ -32,10 +33,18 @@ export function Chat() {
   const turns = chat.data?.turns ?? []
   const busy = turns.some((x) => x.state === 'running')
   const refresh = () => { qc.invalidateQueries({ queryKey: ['chat', id] }); qc.invalidateQueries({ queryKey: ['chats'] }) }
+  const [readAloud, setReadAloud] = useState('')
   const send = useMutation({
-    mutationFn: (text: string) => (id ? api.sendChat(id, text) : api.newChat(text, who)),
-    onSuccess: (r) => { if (!id) nav(`/chat/${r.chat}`); refresh() },
+    mutationFn: ({ text }: { text: string; spoken: boolean }) => (id ? api.sendChat(id, text) : api.newChat(text, who)),
+    onSuccess: (r, v) => { if (v.spoken) setReadAloud(r.turn); if (!id) nav(`/chat/${r.chat}`); refresh() },
   })
+  useEffect(() => {
+    const done = turns.find((x) => x.id === readAloud && x.state !== 'running')
+    if (done) {
+      speak(done.summary || done.error || '')
+      setReadAloud('')
+    }
+  }, [turns, readAloud])
   const remove = useMutation({ mutationFn: api.deleteChat, onSuccess: (_, gone) => { if (gone === id) nav('/chat'); qc.invalidateQueries({ queryKey: ['chats'] }) } })
   const end = useRef<HTMLDivElement>(null)
   useEffect(() => { end.current?.scrollIntoView?.({ block: 'end' }) }, [turns.length, turns.at(-1)?.state])
@@ -81,7 +90,7 @@ export function Chat() {
               )}
               <div className="mt-6 grid w-full max-w-xl gap-2 sm:grid-cols-2">
                 {suggestions.map((s) => (
-                  <button key={s} type="button" onClick={() => send.mutate(t(s))} disabled={send.isPending}
+                  <button key={s} type="button" onClick={() => send.mutate({ text: t(s), spoken: false })} disabled={send.isPending}
                     className="rounded-xl border border-line bg-surface px-4 py-3 text-left text-[13px] text-ink-2 transition hover:border-line-strong hover:text-ink">
                     {t(s)}
                   </button>
@@ -97,19 +106,30 @@ export function Chat() {
           )}
         </div>
         {send.error && <p className="mb-2 text-center text-[13px] text-danger">{send.error.message}</p>}
-        <Composer disabled={busy || send.isPending} onSend={(text) => send.mutate(text)} />
+        <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} />
       </section>
     </div>
   )
 }
 
-function Composer({ disabled, onSend }: { disabled: boolean; onSend: (text: string) => void }) {
+function Composer({ disabled, onSend }: { disabled: boolean; onSend: (text: string, spoken: boolean) => void }) {
   const t = useT()
   const [text, setText] = useState('')
+  const [spoken, setSpoken] = useState(false)
+  const dictation = useDictation((heard, final) => {
+    setText(heard)
+    setSpoken(true)
+    if (final && heard.trim() && !disabled) {
+      onSend(heard.trim(), true)
+      setText('')
+      setSpoken(false)
+    }
+  })
   const go = () => {
     if (!text.trim() || disabled) return
-    onSend(text.trim())
+    onSend(text.trim(), spoken)
     setText('')
+    setSpoken(false)
   }
   const key = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -120,7 +140,14 @@ function Composer({ disabled, onSend }: { disabled: boolean; onSend: (text: stri
   return (
     <form className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-2xl border border-line bg-surface p-2 shadow-[var(--shadow-card)] focus-within:border-accent"
       onSubmit={(e) => { e.preventDefault(); go() }}>
-      <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={key} rows={1} placeholder={t('chat.placeholder')} aria-label={t('chat.placeholder')}
+      {dictation.supported && (
+        <button type="button" onClick={() => (dictation.listening ? dictation.stop() : dictation.start())} aria-label={t(dictation.listening ? 'voice.stop' : 'voice.speak')}
+          title={dictation.error || undefined}
+          className={cn('grid size-9 shrink-0 place-items-center rounded-xl transition', dictation.listening ? 'animate-pulse-soft bg-danger text-white' : dictation.error ? 'text-danger hover:bg-sunken' : 'text-ink-3 hover:bg-sunken hover:text-ink')}>
+          {dictation.listening ? <Square size={14} /> : <Mic size={16} />}
+        </button>
+      )}
+      <textarea value={text} onChange={(e) => { setText(e.target.value); setSpoken(false) }} onKeyDown={key} rows={1} placeholder={t('chat.placeholder')} aria-label={t('chat.placeholder')}
         className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[14px] outline-none [field-sizing:content]" />
       <button type="submit" aria-label={t('chat.send')} disabled={!text.trim() || disabled}
         className="grid size-9 shrink-0 place-items-center rounded-xl bg-ink text-bg transition disabled:opacity-30">
@@ -188,6 +215,9 @@ function Turn({ chat, turn: x, onChange }: { chat: string; turn: ChatTurn; onCha
                 </Button>
               )}
               {x.state === 'compiling' && <Loader2 size={13} className="animate-spin" />}
+              {canSpeak() && x.summary && (
+                <Button size="sm" variant="ghost" onClick={() => speak(x.summary!)} aria-label={t('voice.listen')}><Volume2 size={13} /> {t('voice.listen')}</Button>
+              )}
               <span>{t('chat.cost', { cost: usd(x.cost_usd) })}</span>
               {compile.error && <span className="text-danger">{compile.error.message}</span>}
             </div>
