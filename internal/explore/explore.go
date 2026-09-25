@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"net/http"
 	"slices"
 	"sort"
@@ -235,7 +236,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		s.Store.SaveExploration(ctx, e)
 		s.Env.Events.Append(ctx, EventFailed, "system", map[string]string{"exploration": e.ID, "error": err.Error()})
 		if !o.Quiet {
-			s.Notify.Notify(ctx, Notice{Text: "⚠️ Não consegui terminar: " + e.Request + "\n" + err.Error(), To: e.Person, Kind: "task"})
+			s.Notify.Notify(ctx, Notice{Text: i18n.T(ctx, "msg.explore.failed", "request", e.Request, "error", err), To: e.Person, Kind: "task"})
 		}
 		return
 	}
@@ -249,16 +250,16 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	}
 	text := "✅ " + shorten(t.Outcome, 1500)
 	if n := dryRuns(t.Calls); n > 0 {
-		text += fmt.Sprintf("\n\n(%d ações foram só simuladas; nada foi alterado.)", n)
+		text += "\n\n" + i18n.N(ctx, "msg.explore.simulated", n)
 	}
 	if failed := failedReads(t.Calls); failed != "" {
 		// Nothing real was read, so a routine would only repeat the error.
-		text += "\n\nNão ofereço transformar isso em rotina porque não consegui ler os dados de que precisava (" + failed + "). Resolva isso e peça de novo."
+		text += "\n\n" + i18n.T(ctx, "msg.explore.noRoutine", "what", failed)
 		s.Notify.Notify(ctx, Notice{Text: text, To: e.Person, Kind: "task"})
 		return
 	}
-	text += "\n\nQuer que eu faça isso sozinho, sem gastar com modelo a cada vez?"
-	s.Notify.Notify(ctx, Notice{Text: text, Actions: []Action{{"Transformar em rotina", "compile:" + e.ID}, {"Descartar", "discard:" + e.ID}}, To: e.Person, Kind: "task"})
+	text += "\n\n" + i18n.T(ctx, "msg.explore.offer")
+	s.Notify.Notify(ctx, Notice{Text: text, Actions: []Action{{i18n.T(ctx, "btn.compile"), "compile:" + e.ID}, {i18n.T(ctx, "btn.discard"), "discard:" + e.ID}}, To: e.Person, Kind: "task"})
 }
 
 // failedReads names the capabilities read when every read failed, or ""

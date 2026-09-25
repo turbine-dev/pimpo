@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"net/http"
 	"strconv"
 	"strings"
@@ -46,42 +47,25 @@ func (a *App) remember(ctx context.Context, act policy.Action) {
 }
 
 // describeAction is the sentence shown in approval requests.
-func describeAction(act policy.Action) string {
+func describeAction(ctx context.Context, act policy.Action) string {
 	who := strings.TrimPrefix(strings.SplitN(act.Source, "#", 2)[0], "routine:")
-	return who + " quer " + actionPhrase(act)
+	return i18n.T(ctx, "action.wants", "who", who, "what", actionPhrase(ctx, act))
 }
 
 // actionPhrase says what an action does, starting with the verb.
-func actionPhrase(act policy.Action) string {
+func actionPhrase(ctx context.Context, act policy.Action) string {
 	args, _ := act.Args.(map[string]any)
 	str := func(k string) string { s, _ := args[k].(string); return s }
+	vars := []any{"to", fmt.Sprint(args["to"]), "subject", str("subject"), "id", str("id"), "label", str("label"),
+		"content", str("content"), "text", str("text"), "entity", str("entity"), "host", act.Scope, "capability", act.Capability}
 	switch act.Capability {
-	case "gmail.send":
-		return fmt.Sprintf("enviar um e-mail para %v: “%s”", args["to"], str("subject"))
-	case "gmail.delete":
-		return fmt.Sprintf("apagar para sempre um e-mail (%s)", str("id"))
-	case "gmail.trash":
-		return fmt.Sprintf("mover um e-mail para a lixeira (%s)", str("id"))
-	case "gmail.archive":
-		return fmt.Sprintf("arquivar um e-mail (%s)", str("id"))
-	case "gmail.unsubscribe":
-		return fmt.Sprintf("cancelar a inscrição de uma lista de e-mails (%s)", str("id"))
-	case "gmail.draft":
-		return fmt.Sprintf("deixar um rascunho para %v: “%s”", args["to"], str("subject"))
-	case "gmail.label":
-		return fmt.Sprintf("marcar um e-mail com “%s” (%s)", str("label"), str("id"))
-	case "todoist.add":
-		return fmt.Sprintf("criar a tarefa “%s” no Todoist", str("content"))
-	case "todoist.close":
-		return fmt.Sprintf("concluir uma tarefa no Todoist (%s)", str("id"))
-	case "whatsapp.send_to":
-		return fmt.Sprintf("mandar no WhatsApp para %s: “%s”", str("to"), str("text"))
-	case "ha.call", "ha.critical":
-		return fmt.Sprintf("acionar %s na casa", str("entity"))
-	case "http.getJSON":
-		return fmt.Sprintf("consultar %s pela primeira vez", act.Scope)
+	case "gmail.send", "gmail.delete", "gmail.trash", "gmail.archive", "gmail.unsubscribe", "gmail.draft", "gmail.label",
+		"todoist.add", "todoist.close", "whatsapp.send_to", "ha.call", "http.getJSON":
+		return i18n.T(ctx, "action."+act.Capability, vars...)
+	case "ha.critical":
+		return i18n.T(ctx, "action.ha.call", vars...)
 	}
-	return "usar " + act.Capability
+	return i18n.T(ctx, "action.other", vars...)
 }
 
 func (a *App) mailOps(ctx context.Context) (undo.Mail, error) {
@@ -191,6 +175,11 @@ func (a *App) putPreset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	preset, ok := policy.Presets()[req.Preset]
+	for i := range preset {
+		if t, found := i18n.Lookup(i18n.Of(r.Context()), "rule."+preset[i].ID); found {
+			preset[i].Text = t
+		}
+	}
 	if !ok {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "preset must be conservative, balanced or liberal"})
 		return

@@ -11,7 +11,7 @@ import { PhonePairing } from '../components/PhonePairing'
 import { Button, Card } from '../components/ui'
 import { api, type Settings as S } from '../lib/api'
 import { cn } from '../lib/cn'
-import { fill, useT, type TKey } from '../lib/i18n'
+import { fill, useT, type TKey, LANGUAGES } from '../lib/i18n'
 
 const judges = [
   { value: 'local', title: 'settings.judge.local', text: 'settings.judge.localText' },
@@ -80,8 +80,7 @@ export function Settings() {
               <label>
                 <span className="mb-1 block text-[12.5px] font-medium text-ink-2">{t('settings.language')}</span>
                 <select value={s.locale} onChange={(e) => setS({ ...s, locale: e.target.value })} className={cn(field, 'w-full')}>
-                  <option value="pt-BR">Português</option>
-                  <option value="en-US">English</option>
+                  {LANGUAGES.map((l) => <option key={l.tag} value={l.tag}>{l.name}</option>)}
                 </select>
               </label>
               <label>

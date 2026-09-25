@@ -140,12 +140,15 @@ mod desktop {
         }
     }
 
+    /// status shows a line on the app's own page: a known key ("stopped",
+    /// "slow") in the page's language, or a raw line from the server.
     fn status(app: &AppHandle, text: &str) {
+        status_with(app, text, "")
+    }
+
+    fn status_with(app: &AppHandle, key: &str, arg: &str) {
         if let Some(w) = app.get_webview_window("main") {
-            let js = format!(
-                "document.getElementById('status') && (document.getElementById('status').textContent = {:?})",
-                text
-            );
+            let js = format!("window.__zodimStatus && window.__zodimStatus({key:?}, {arg:?})");
             let _ = w.eval(&js);
         }
     }
@@ -201,7 +204,7 @@ mod desktop {
                         if saved_remote(&handle).is_some() {
                             return;
                         }
-                        status(&handle, &format!("O Zodim parou (código {:?}). Feche e abra de novo.", p.code));
+                        status_with(&handle, "stopped", &format!("{}", p.code.unwrap_or(-1)));
                         show(&handle);
                     }
                     _ => {}
@@ -223,7 +226,7 @@ mod desktop {
                 }
                 std::thread::sleep(Duration::from_millis(150));
             }
-            status(&handle, "O Zodim demorou demais para abrir.");
+            status(&handle, "slow");
         });
         Ok(())
     }

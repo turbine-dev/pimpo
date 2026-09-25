@@ -5,6 +5,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"strings"
 	"sync"
 	"time"
@@ -209,8 +210,8 @@ func (s *Scheduler) run(ctx context.Context, id, trigger string, event any) (sto
 	s.Store.SetRoutineState(context.WithoutCancel(ctx), id, store.RoutineBroken)
 	s.Changed(ctx, id)
 	s.Notify.Notify(context.WithoutCancel(ctx), explore.Notice{
-		Text:    fmt.Sprintf("⚠️ %s não rodou.\n%s\n\nPausei a rotina até você decidir.", r.Body.Name, friendly(errText)),
-		Actions: []explore.Action{{Label: "Rodar de novo", Data: "run:" + id}, {Label: "Refazer com o agente", Data: "repair:" + id}},
+		Text:    i18n.T(ctx, "msg.routine.failed", "name", r.Body.Name, "error", friendly(errText)),
+		Actions: []explore.Action{{Label: i18n.T(ctx, "btn.runAgain"), Data: "run:" + id}, {Label: i18n.T(ctx, "btn.redo"), Data: "repair:" + id}},
 		Kind:    "failure",
 	})
 	return run, runErr

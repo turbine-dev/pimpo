@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"math/big"
 	"strconv"
 	"strings"
@@ -92,7 +93,7 @@ func (d *Directory) List(ctx context.Context) ([]Person, error) {
 	if err != nil {
 		return nil, err
 	}
-	owner := Person{ID: OwnerID, Name: "Você", Role: Owner}
+	owner := Person{ID: OwnerID, Name: i18n.T(ctx, "people.you"), Role: Owner}
 	if d.OwnerChat != nil {
 		owner.Chat, _ = d.OwnerChat(ctx)
 	}

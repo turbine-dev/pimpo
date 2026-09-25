@@ -59,6 +59,10 @@ Ordered by Jev (`tools/jev/decisions_next.py`) from complaints about Hermes and 
 6. **Desktop as a client of a remote Zodim**: the menu bar switches between the local server and one elsewhere, paired with the phone's link; the local server stops meanwhile. The connection page was checked in the browser against a real server with the native calls stood in for; the native switch itself was built but not clicked through, since the owner's app was running.
 7. **iMessage**: cut (needs full disk access to read Messages).
 
+## Languages
+
+The app, server messages (channels, approvals, notices), built-in connector texts, routine dates and money, and the phone/desktop shell page are in ten languages: pt, en, es, fr, de, it, ja, zh, ko, ru, with each language's plural rules. Portuguese is the source; the translations were written by a model and checked for keys, {slots} and plural forms, not reviewed by native speakers yet. Texts speak about Zodim in the third person; first person is kept only for the owner's own words (example requests, preset rules). The user guide is English only.
+
 ## Pending decisions for the owner
 
 - **License**: the plan says free and open source; the exact license is not chosen yet.

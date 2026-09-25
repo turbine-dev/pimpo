@@ -114,7 +114,7 @@ func TestWhatsAppChannel(t *testing.T) {
 	}
 	var offer *waOut
 	for i := range sent {
-		if sent[i].Buttons == 2 && strings.Contains(sent[i].Text, "sozinho") {
+		if sent[i].Buttons == 2 && strings.Contains(sent[i].Text, "Transformar em rotina") {
 			offer = &sent[i]
 		}
 	}
@@ -150,7 +150,7 @@ func TestWhatsAppChannel(t *testing.T) {
 	defer mu.Unlock()
 	var asked, delivered bool
 	for _, m := range sent {
-		asked = asked || (m.Buttons == 3 && strings.Contains(m.Text, "Posso"))
+		asked = asked || (m.Buttons == 3 && strings.Contains(m.Text, "Permitir isto?"))
 		delivered = delivered || (m.To == "5511988887777" && m.Text == "Chego às 19h")
 	}
 	if !asked || !delivered {

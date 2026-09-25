@@ -72,3 +72,25 @@ func TestManifestLocale(t *testing.T) {
 		t.Fatalf("%v %v", res.Logs, err)
 	}
 }
+
+func TestDatesInEveryLanguage(t *testing.T) {
+	d := time.Date(2026, 9, 25, 9, 0, 0, 0, time.UTC)
+	for locale, want := range map[string]string{
+		"de-DE": "Freitag, 25. September",
+		"es-ES": "viernes, 25 de septiembre",
+		"ru-RU": "пятница, 25 сентября",
+		"ja-JP": "9月25日（金曜日）",
+		"xx":    "Friday, September 25",
+	} {
+		pattern := map[string]string{"de-DE": "EEEE, d. MMMM", "es-ES": "EEEE, d 'de' MMMM", "ru-RU": "EEEE, d MMMM", "ja-JP": "MMMMd'日（'EEEE'）'", "xx": "EEEE, MMMM d"}[locale]
+		if got := formatDate(d, pattern, lang(locale)); got != want {
+			t.Errorf("%s: %q, want %q", locale, got, want)
+		}
+	}
+	if got := formatMoney(1234.5, "EUR", "de"); got != "€ 1.234,50" {
+		t.Errorf("de money %q", got)
+	}
+	if got := monthNumber("septiembre"); got != 9 {
+		t.Errorf("spanish month %d", got)
+	}
+}

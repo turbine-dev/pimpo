@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -97,5 +98,5 @@ func (a *App) announceUpgrade(ctx context.Context) {
 		return
 	}
 	a.Channel.Notify(ctx, explore.Notice{Kind: "backup",
-		Text: "Zodim foi atualizado de " + u.From + " para " + u.To + ". Guardei uma cópia de tudo como estava antes: se algo parecer errado, vá em Ajustes › Backup › Cópias locais e volte a ela."})
+		Text: i18n.T(ctx, "msg.upgrade", "from", u.From, "to", u.To)})
 }

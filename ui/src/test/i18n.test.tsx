@@ -3,8 +3,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { LocaleProvider, translate, type Locale } from '../lib/i18n'
+import { LANGUAGES, localeFrom, LocaleProvider, translate, type Locale } from '../lib/i18n'
+import { de } from '../lib/locales/de'
 import { en } from '../lib/locales/en'
+import { es } from '../lib/locales/es'
+import { fr } from '../lib/locales/fr'
+import { it as itLocale } from '../lib/locales/it'
+import { ja } from '../lib/locales/ja'
+import { ko } from '../lib/locales/ko'
+import { ru } from '../lib/locales/ru'
+import { zh } from '../lib/locales/zh'
 import { pt } from '../lib/locales/pt'
 import { Routines } from '../pages/Routines'
 import { Settings } from '../pages/Settings'
@@ -37,10 +45,36 @@ describe('dictionaries', () => {
     for (const k of Object.keys(pt) as (keyof typeof pt)[]) expect([k, slots(en[k])]).toEqual([k, slots(pt[k])])
   })
 
+  it('every language has every key, with the same {slots}', () => {
+    const all: Record<string, Record<string, string>> = { es, fr, de, it: itLocale, ja, zh, ko, ru }
+    for (const [lang, d] of Object.entries(all)) {
+      for (const k of Object.keys(pt) as (keyof typeof pt)[]) expect([lang, k, slots(d[k] ?? '')]).toEqual([lang, k, slots(pt[k])])
+    }
+    expect(LANGUAGES.map((l) => l.locale).sort()).toEqual(['de', 'en', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'ru', 'zh'])
+  })
+
+  it('picks each language and its plural rules', () => {
+    expect(localeFrom('de-AT')).toBe('de')
+    expect(localeFrom('zh-Hans-CN')).toBe('zh')
+    expect(localeFrom('xx')).toBe('en')
+    expect(translate('ru', 'as.count', { count: 1 })).toBe(ru['as.count_one'].replace('{count}', '1'))
+    expect(translate('ru', 'as.count', { count: 3 })).toBe(ru['as.count_few'].replace('{count}', '3'))
+    expect(translate('ru', 'as.count', { count: 7 })).toBe(ru['as.count_many'].replace('{count}', '7'))
+  })
+
   it('interpolates and picks the plural form', () => {
     expect(translate('en', 'rules.testSome', { count: 1 })).toBe('Over the last week, this rule would have applied to 1 action.')
     expect(translate('en', 'rules.testSome', { count: 3 })).toBe('Over the last week, this rule would have applied to 3 actions.')
     expect(translate('pt', 'inbox.didntRun', { name: 'Resumo' })).toBe('Resumo não rodou')
+  })
+})
+
+describe('German', () => {
+  it('shows the Routines empty state in German', async () => {
+    mockFetch(empty)
+    wrapIn(<Routines onNew={() => {}} />, 'de')
+    expect(await screen.findByText(de['routines.emptyTitle'])).toBeInTheDocument()
+    expect(screen.queryByText('No routines yet')).not.toBeInTheDocument()
   })
 })
 

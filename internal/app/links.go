@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"slices"
 	"strconv"
 	"strings"
@@ -77,9 +78,9 @@ func (a *App) linkMessage(ctx context.Context, kind string, run *linkRun, in cha
 		if owner == "" && code == a.Channel.PairingCode() {
 			a.Events.Put(ctx, linkOwnerKey(kind), in.From)
 			a.Events.Append(ctx, "channel.paired", "human:owner", map[string]string{"channel": kind})
-			reply("Oi! Agora a gente também conversa por aqui. Me peça algo que você faz toda semana.")
+			reply(i18n.T(ctx, "msg.pair.link"))
 		} else if owner == "" {
-			reply("Esse código não confere. Veja o código de pareamento em Conexões.")
+			reply(i18n.T(ctx, "msg.pair.linkBad"))
 		}
 		return
 	}
@@ -104,7 +105,7 @@ func (a *App) linkMessage(ctx context.Context, kind string, run *linkRun, in cha
 	}
 	out, err := h.Request(pctx, text)
 	if err != nil {
-		out = "Não consegui começar: " + err.Error()
+		out = i18n.T(ctx, "msg.start.failed", "error", err)
 	}
 	reply(out)
 }
@@ -132,7 +133,7 @@ func (a *App) mirrorLinks(ctx context.Context, n explore.Notice) {
 			for i, act := range n.Actions {
 				opts = append(opts, fmt.Sprintf("%d = %s", i+1, act.Label))
 			}
-			text += "\n\nResponda com o número: " + strings.Join(opts, " · ")
+			text += "\n\n" + i18n.T(ctx, "msg.link.choose", "options", strings.Join(opts, " · "))
 			run.mu.Lock()
 			run.pending = slices.Clone(n.Actions)
 			run.mu.Unlock()

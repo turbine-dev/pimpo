@@ -7,7 +7,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
-	"fmt"
+	"github.com/denerFernandes/zodim/internal/i18n"
 	"math/big"
 	"strconv"
 	"strings"
@@ -154,19 +154,19 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 		if text == "" && len(m.Photo) > 0 {
 			seen, err := c.read(ctx, bot, m.Photo[len(m.Photo)-1].FileID)
 			if err != nil {
-				bot.Send(ctx, m.Chat.ID, "📷 Não consegui ler: "+err.Error())
+				bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.photo.failed", "error", err))
 				return
 			}
 			ask := strings.TrimSpace(m.Caption)
 			if ask == "" {
-				ask = "Veja o que fazer com isto"
+				ask = i18n.T(ctx, "msg.photo.ask")
 			}
-			text = ask + "\n\nTexto da foto:\n" + seen
+			text = ask + "\n\n" + i18n.T(ctx, "msg.photo.text") + "\n" + seen
 		}
 		if text == "" && m.Voice != nil {
 			heard, err := c.listen(ctx, bot, m.Voice.FileID)
 			if err != nil {
-				bot.Send(ctx, m.Chat.ID, "🎙️ Não consegui ouvir: "+err.Error())
+				bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.voice.failed", "error", err))
 				return
 			}
 			bot.Send(ctx, m.Chat.ID, "🎙️ “"+heard+"”")
@@ -177,7 +177,7 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 		}
 		reply, err := c.Handler.Request(people.With(ctx, person), text)
 		if err != nil {
-			reply = "Não consegui começar: " + err.Error()
+			reply = i18n.T(ctx, "msg.start.failed", "error", err)
 		}
 		bot.Send(ctx, m.Chat.ID, reply)
 		return
@@ -237,7 +237,7 @@ func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code s
 	if c.People != nil && code != "" && chat != m.Chat.ID {
 		if p, err := c.People.Pair(ctx, code, m.Chat.ID); err == nil {
 			c.Events.Append(ctx, EventPaired, "human:"+p.ID, map[string]any{"chat": m.Chat.ID, "person": p.ID})
-			bot.Send(ctx, m.Chat.ID, fmt.Sprintf("Oi, %s! Agora você fala com o Zodim da casa. Me peça algo que você faz toda semana.", p.Name))
+			bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.person", "name", p.Name))
 			return
 		}
 	}
@@ -245,11 +245,11 @@ func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code s
 		return
 	}
 	if chat == m.Chat.ID {
-		bot.Send(ctx, m.Chat.ID, "Já estamos conectados. Me peça algo que você faz toda semana.")
+		bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.already"))
 		return
 	}
 	if code == "" || code != c.PairingCode() {
-		bot.Send(ctx, m.Chat.ID, "Esse código não confere. Abra Conexões no Zodim e use o código mostrado lá.")
+		bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.badCode"))
 		return
 	}
 	c.Events.Put(ctx, chatKey, strconv.FormatInt(m.Chat.ID, 10))
@@ -257,5 +257,5 @@ func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code s
 	c.mu.Lock()
 	c.code = ""
 	c.mu.Unlock()
-	bot.Send(ctx, m.Chat.ID, fmt.Sprintf("Oi, %s! Estamos conectados. 👋\n\nMe peça algo que você faz toda semana, por exemplo:\n• \"Todo dia às 7h me manda a agenda e os e-mails importantes\"\n\nNa primeira vez eu faço com você olhando. Depois, faço sozinho.", m.From.FirstName))
+	bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.owner", "name", m.From.FirstName))
 }
