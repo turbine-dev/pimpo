@@ -6,6 +6,7 @@ import { NewTask } from './components/NewTask'
 import { Palette } from './components/Palette'
 import { Welcome } from './pages/Welcome'
 import { Shell, nav } from './components/Shell'
+import { Chat } from './pages/Chat'
 import { api } from './lib/api'
 import { useLiveEvents } from './lib/live'
 import { Connections } from './pages/Connections'
@@ -57,6 +58,8 @@ export default function App() {
         <Route path="/" element={setup.data && !setup.data.done ? <Navigate to="/welcome" replace /> : <Routines onNew={() => setNewTask(true)} />} />
         <Route path="/routines/:id" element={<RoutinePage />} />
         <Route path="/explorations/:id" element={<ExplorationPage />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/chat/:id" element={<Chat />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/receipts" element={<Receipts />} />
         <Route path="/rules" element={<Rules />} />

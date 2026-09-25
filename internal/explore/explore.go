@@ -99,7 +99,22 @@ func newID() string {
 
 // Start begins an exploration in the background and returns its id.
 func (s *Service) Start(ctx context.Context, request, actor string) (string, error) {
-	return s.start(ctx, request, actor, "")
+	return s.start(ctx, request, actor, "", Options{})
+}
+
+// Options adjust one exploration.
+type Options struct {
+	// Context is the conversation so far, given to the agent before the
+	// request.
+	Context string
+	// Quiet leaves the answer on the screen that asked, instead of also
+	// sending it to the owner's chat.
+	Quiet bool
+}
+
+// StartWith starts an exploration with options, for the in-app chat.
+func (s *Service) StartWith(ctx context.Context, request, actor string, o Options) (string, error) {
+	return s.start(ctx, request, actor, "", o)
 }
 
 // Repair re-explores a broken routine's task; approving it saves a new
@@ -121,10 +136,10 @@ func (s *Service) Repair(ctx context.Context, routineID, problem, actor string) 
 	if problem != "" {
 		request += "\n\n(Last time the automatic routine failed with: " + problem + ")"
 	}
-	return s.start(people.With(ctx, r.Person), request, actor, routineID)
+	return s.start(people.With(ctx, r.Person), request, actor, routineID, Options{})
 }
 
-func (s *Service) start(ctx context.Context, request, actor, target string) (string, error) {
+func (s *Service) start(ctx context.Context, request, actor, target string, o Options) (string, error) {
 	request = strings.TrimSpace(request)
 	if request == "" {
 		return "", errors.New("tell me what you want done")
@@ -143,7 +158,7 @@ func (s *Service) start(ctx context.Context, request, actor, target string) (str
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		s.run(context.WithoutCancel(ctx), e)
+		s.run(context.WithoutCancel(ctx), e, o)
 	}()
 	return id, nil
 }
@@ -151,7 +166,7 @@ func (s *Service) start(ctx context.Context, request, actor, target string) (str
 // Wait blocks until background explorations finish (tests and shutdown).
 func (s *Service) Wait() { s.wg.Wait() }
 
-func (s *Service) run(ctx context.Context, e store.Exploration) {
+func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
 	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: true, Person: e.Person}
@@ -169,9 +184,13 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 	}()
 
 	now := time.Now().In(s.zone())
+	prompt := e.Request
+	if o.Context != "" {
+		prompt = "The conversation so far:\n" + o.Context + "\n\nNow the owner says: " + e.Request
+	}
 	resp, err := s.Agent.Run(ctx, llm.AgentRequest{
 		System:     explorerPrompt(now) + s.knownFacts(e.Person),
-		Prompt:     e.Request,
+		Prompt:     prompt,
 		MCPURL:     fmt.Sprintf("%s/mcp/explore/%s?key=%s", s.BaseURL, e.ID, key),
 		Model:      s.Model,
 		MaxCostUSD: s.maxCost(ctx),
@@ -183,14 +202,19 @@ func (s *Service) run(ctx context.Context, e store.Exploration) {
 		e.State, e.Error = store.ExplorationFailed, err.Error()
 		s.Store.SaveExploration(ctx, e)
 		s.Env.Events.Append(ctx, EventFailed, "system", map[string]string{"exploration": e.ID, "error": err.Error()})
-		s.Notify.Notify(ctx, Notice{Text: "⚠️ Não consegui terminar: " + e.Request + "\n" + err.Error(), To: e.Person})
+		if !o.Quiet {
+			s.Notify.Notify(ctx, Notice{Text: "⚠️ Não consegui terminar: " + e.Request + "\n" + err.Error(), To: e.Person})
+		}
 		return
 	}
-	t := &trace.Trace{ID: e.ID, Request: e.Request, Now: now.Format(time.RFC3339), Calls: h.Calls(), Judgments: h.Judgments(), Questions: h.Questions(), Outcome: strings.TrimSpace(resp.Text)}
+	t := &trace.Trace{ID: e.ID, Request: prompt, Now: now.Format(time.RFC3339), Calls: h.Calls(), Judgments: h.Judgments(), Questions: h.Questions(), Outcome: strings.TrimSpace(resp.Text)}
 	t.Expect = DeriveExpect(t.Calls)
 	e.Trace, e.Summary, e.State = t, t.Outcome, store.ExplorationReady
 	s.Store.SaveExploration(ctx, e)
 	s.Env.Events.Append(ctx, EventFinished, "system", map[string]any{"exploration": e.ID, "calls": len(t.Calls), "cost_usd": e.CostUSD})
+	if o.Quiet {
+		return
+	}
 	text := "✅ " + shorten(t.Outcome, 1500)
 	if n := dryRuns(t.Calls); n > 0 {
 		text += fmt.Sprintf("\n\n(%d ações foram só simuladas; nada foi alterado.)", n)

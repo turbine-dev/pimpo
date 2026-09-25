@@ -47,24 +47,41 @@ func (a *App) remember(ctx context.Context, act policy.Action) {
 
 // describeAction is the sentence shown in approval requests.
 func describeAction(act policy.Action) string {
+	who := strings.TrimPrefix(strings.SplitN(act.Source, "#", 2)[0], "routine:")
+	return who + " quer " + actionPhrase(act)
+}
+
+// actionPhrase says what an action does, starting with the verb.
+func actionPhrase(act policy.Action) string {
 	args, _ := act.Args.(map[string]any)
 	str := func(k string) string { s, _ := args[k].(string); return s }
-	who := strings.TrimPrefix(strings.SplitN(act.Source, "#", 2)[0], "routine:")
 	switch act.Capability {
 	case "gmail.send":
-		return fmt.Sprintf("%s quer enviar um e-mail para %v: “%s”", who, args["to"], str("subject"))
+		return fmt.Sprintf("enviar um e-mail para %v: “%s”", args["to"], str("subject"))
 	case "gmail.delete":
-		return fmt.Sprintf("%s quer apagar para sempre um e-mail (%s)", who, str("id"))
+		return fmt.Sprintf("apagar para sempre um e-mail (%s)", str("id"))
 	case "gmail.trash":
-		return fmt.Sprintf("%s quer mover um e-mail para a lixeira (%s)", who, str("id"))
+		return fmt.Sprintf("mover um e-mail para a lixeira (%s)", str("id"))
 	case "gmail.archive":
-		return fmt.Sprintf("%s quer arquivar um e-mail (%s)", who, str("id"))
+		return fmt.Sprintf("arquivar um e-mail (%s)", str("id"))
 	case "gmail.unsubscribe":
-		return fmt.Sprintf("%s quer cancelar a inscrição de uma lista de e-mails (%s)", who, str("id"))
+		return fmt.Sprintf("cancelar a inscrição de uma lista de e-mails (%s)", str("id"))
+	case "gmail.draft":
+		return fmt.Sprintf("deixar um rascunho para %v: “%s”", args["to"], str("subject"))
+	case "gmail.label":
+		return fmt.Sprintf("marcar um e-mail com “%s” (%s)", str("label"), str("id"))
+	case "todoist.add":
+		return fmt.Sprintf("criar a tarefa “%s” no Todoist", str("content"))
+	case "todoist.close":
+		return fmt.Sprintf("concluir uma tarefa no Todoist (%s)", str("id"))
+	case "whatsapp.send_to":
+		return fmt.Sprintf("mandar no WhatsApp para %s: “%s”", str("to"), str("text"))
+	case "ha.call", "ha.critical":
+		return fmt.Sprintf("acionar %s na casa", str("entity"))
 	case "http.getJSON":
-		return fmt.Sprintf("%s quer consultar %s pela primeira vez", who, act.Scope)
+		return fmt.Sprintf("consultar %s pela primeira vez", act.Scope)
 	}
-	return fmt.Sprintf("%s quer usar %s", who, act.Capability)
+	return "usar " + act.Capability
 }
 
 func (a *App) mailOps(ctx context.Context) (undo.Mail, error) {

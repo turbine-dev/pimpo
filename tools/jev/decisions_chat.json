@@ -1,0 +1,19 @@
+{
+ "model": "jev-1.13.0",
+ "answers": {
+  "chat_actions": {
+   "type": "choice",
+   "choice": "rehearse_confirm",
+   "confidence": 0.89,
+   "probabilities": {
+    "rehearse_confirm": 0.92,
+    "answers_only": 0.02,
+    "live_with_approvals": 0.06
+   }
+  }
+ },
+ "usage": {
+  "input_tokens": 866,
+  "output_tokens": 50
+ }
+}

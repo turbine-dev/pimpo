@@ -62,7 +62,20 @@ CREATE TABLE IF NOT EXISTS runs (
   cost_usd   REAL NOT NULL DEFAULT 0,
   calls      INTEGER NOT NULL DEFAULT 0
 );
-CREATE INDEX IF NOT EXISTS runs_routine ON runs (routine, id);`
+CREATE INDEX IF NOT EXISTS runs_routine ON runs (routine, id);
+CREATE TABLE IF NOT EXISTS chats (
+  id         TEXT PRIMARY KEY,
+  title      TEXT NOT NULL,
+  person     TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS chat_turns (
+  chat        TEXT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+  seq         INTEGER NOT NULL,
+  exploration TEXT NOT NULL,
+  PRIMARY KEY (chat, seq)
+);`
 
 // columns added after the first release, applied to older databases.
 var additions = []string{
@@ -408,6 +421,84 @@ func (s *Store) Runs(ctx context.Context, routine string, limit int) ([]Run, err
 		out = append(out, r)
 	}
 	return out, rows.Err()
+}
+
+// Chat is a conversation in the app: a thread of explorations.
+type Chat struct {
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	Person    string    `json:"person,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Turns     int       `json:"turns"`
+}
+
+func (s *Store) CreateChat(ctx context.Context, c Chat) error {
+	now := ts(time.Now())
+	_, err := s.db.ExecContext(ctx, `INSERT INTO chats (id, title, person, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`, c.ID, c.Title, c.Person, now, now)
+	return err
+}
+
+// AddTurn appends an exploration to a chat.
+func (s *Store) AddTurn(ctx context.Context, chat, exploration string) error {
+	_, err := s.db.ExecContext(ctx, `INSERT INTO chat_turns (chat, seq, exploration) SELECT ?, COALESCE(MAX(seq), 0) + 1, ? FROM chat_turns WHERE chat = ?`, chat, exploration, chat)
+	if err == nil {
+		_, err = s.db.ExecContext(ctx, `UPDATE chats SET updated_at = ? WHERE id = ?`, ts(time.Now()), chat)
+	}
+	return err
+}
+
+// Chats lists a person's chats, most recent first.
+func (s *Store) Chats(ctx context.Context, person string) ([]Chat, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT c.id, c.title, c.person, c.created_at, c.updated_at, (SELECT COUNT(*) FROM chat_turns t WHERE t.chat = c.id)
+		FROM chats c WHERE c.person = ? ORDER BY c.updated_at DESC LIMIT 200`, person)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []Chat{}
+	for rows.Next() {
+		var c Chat
+		var created, updated string
+		if err := rows.Scan(&c.ID, &c.Title, &c.Person, &created, &updated, &c.Turns); err != nil {
+			return nil, err
+		}
+		c.CreatedAt, c.UpdatedAt = parse(created), parse(updated)
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// Chat returns a chat and its explorations in order.
+func (s *Store) Chat(ctx context.Context, id string) (Chat, []string, error) {
+	var c Chat
+	var created, updated string
+	err := s.db.QueryRowContext(ctx, `SELECT id, title, person, created_at, updated_at FROM chats WHERE id = ?`, id).Scan(&c.ID, &c.Title, &c.Person, &created, &updated)
+	if err != nil {
+		return c, nil, err
+	}
+	c.CreatedAt, c.UpdatedAt = parse(created), parse(updated)
+	rows, err := s.db.QueryContext(ctx, `SELECT exploration FROM chat_turns WHERE chat = ? ORDER BY seq`, id)
+	if err != nil {
+		return c, nil, err
+	}
+	defer rows.Close()
+	var ids []string
+	for rows.Next() {
+		var e string
+		rows.Scan(&e)
+		ids = append(ids, e)
+	}
+	c.Turns = len(ids)
+	return c, ids, rows.Err()
+}
+
+func (s *Store) DeleteChat(ctx context.Context, id string) error {
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM chat_turns WHERE chat = ?`, id); err != nil {
+		return err
+	}
+	_, err := s.db.ExecContext(ctx, `DELETE FROM chats WHERE id = ?`, id)
+	return err
 }
 
 // RecentRun is a run with its routine's name, for the history of all

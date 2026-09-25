@@ -3,11 +3,11 @@ import { render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 
-export function wrap(ui: ReactNode) {
+export function wrap(ui: ReactNode, at = '/') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <MemoryRouter initialEntries={[at]}>{ui}</MemoryRouter>
     </QueryClientProvider>,
   )
 }
