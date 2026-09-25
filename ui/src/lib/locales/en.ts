@@ -639,4 +639,10 @@ export const en: Record<Key, string> = {
   'bots.detect': 'Detect chat',
   'bots.noChat': 'no chat yet',
   'bots.remove': 'Remove {name}',
+  'up.title': 'New version in the gallery',
+  'up.adds': 'Now you can change: {list}.',
+  'up.keeps': 'Your schedule and the settings you already made stay.',
+  'up.update': 'Update',
+  'rs.makeAdjustable': 'To get settings (city, limits, destinations), redo the routine with the agent.',
+  'rs.redo': 'Redo with the agent',
 }

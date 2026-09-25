@@ -14,6 +14,7 @@ export type RoutineSummary = {
   default_schedule?: string
   params?: RoutineParam[]
   values?: Record<string, unknown>
+  gallery_update?: { name: string; description: string; settings: string[] }
 }
 
 export type ParamType = 'text' | 'number' | 'boolean' | 'date' | 'time' | 'location' | 'select' | 'multiselect' | 'email' | 'destinations'
@@ -197,6 +198,7 @@ export const api = {
   removeCatalog: (id: string) => request<void>('DELETE', `/api/catalog/${id}`),
   checkCatalog: (id: string) => request<{ ok: boolean; detail?: string }>('POST', `/api/catalog/${id}/check`),
   protection: () => request<{ version: number; entries: number; updated: string; fetched?: string; enabled: boolean; blocked: number }>('GET', '/api/protection'),
+  updateFromGallery: (id: string) => request<RoutineSummary>('POST', `/api/routines/${id}/update`),
   saveRoutineSettings: (id: string, schedule: string, params: Record<string, unknown>) => request<RoutineSummary>('PUT', `/api/routines/${id}/settings`, { schedule, params }),
   destinations: () => request<Destination[]>('GET', '/api/destinations'),
   geocode: (q: string) => request<Place[]>('GET', `/api/geocode?q=${encodeURIComponent(q)}`),

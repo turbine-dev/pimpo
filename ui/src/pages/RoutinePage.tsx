@@ -78,7 +78,7 @@ export function RoutinePage() {
       )}
       {act.data?.error && <p className="mb-4 text-sm text-danger">{act.data.error}</p>}
 
-      <RoutineSettings s={s} />
+      <RoutineSettings s={s} onRedo={() => act.mutate('repair')} />
 
       <Tabs.Root defaultValue={params.get('tab') ?? 'overview'}>
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('routine.details')}>

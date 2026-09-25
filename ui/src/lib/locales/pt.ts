@@ -639,6 +639,12 @@ export const pt = {
   'bots.detect': 'Detectar chat',
   'bots.noChat': 'sem chat ainda',
   'bots.remove': 'Remover {name}',
+  'up.title': 'Nova versão na galeria',
+  'up.adds': 'Agora dá para ajustar: {list}.',
+  'up.keeps': 'O seu horário e os ajustes que você já fez continuam.',
+  'up.update': 'Atualizar',
+  'rs.makeAdjustable': 'Para ganhar ajustes (cidade, limites, destinos), refaça a rotina com o agente.',
+  'rs.redo': 'Refazer com o agente',
 }
 
 export type Key = keyof typeof pt

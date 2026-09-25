@@ -51,6 +51,8 @@ type routineSummary struct {
 	Params          []runtime.Param `json:"params"`
 	// Values are the parameters as the routine sees them, defaults included.
 	Values map[string]any `json:"values"`
+	// Update is a newer version in the gallery the routine came from.
+	Update *galleryUpdate `json:"gallery_update,omitempty"`
 }
 
 func (a *App) summary(ctx context.Context, r store.Routine) routineSummary {
@@ -68,6 +70,7 @@ func (a *App) summary(ctx context.Context, r store.Routine) routineSummary {
 	if n := a.Scheduler.Next(r.ID); !n.IsZero() {
 		sum.NextRun = n.Format(time.RFC3339)
 	}
+	sum.Update = a.pendingUpdate(ctx, r)
 	runs, _ := a.Store.Runs(ctx, r.ID, 14)
 	for i := len(runs) - 1; i >= 0; i-- {
 		o := runs[i].Outcome
