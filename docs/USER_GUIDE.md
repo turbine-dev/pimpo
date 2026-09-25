@@ -66,6 +66,10 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 3. Scan the QR code with the Zodim app, or paste the link.
 4. Lost the phone? Tap the trash icon next to it. Only that phone loses access.
 
+## Other chat channels
+
+Besides Telegram and WhatsApp, you can talk to Zodim in private messages on **Discord**, **Slack** or **Signal**. Set one up in **Conexões** (each card says what to create and which token to paste), then send it `zodim` followed by the pairing code shown in Conexões. Only you are answered; strangers get nothing. These services have no buttons, so choices arrive numbered: answer `1`, `2`… Signal goes through a signal-cli daemon on your computer, so messages stay end-to-end encrypted up to it. iMessage and SMS are not supported: iMessage needs full disk access to read Messages, and SMS needs a paid service.
+
 ## More connectors
 
 **Busca na web** in Connections lets Zodim search the internet, with a Brave Search API key (free for 2,000 searches a month) or the address of a SearXNG instance you trust. DuckDuckGo has no official API for web results; a SearXNG instance can include it among its sources.
