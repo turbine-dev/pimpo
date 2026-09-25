@@ -25,6 +25,10 @@ Want to see it first? Run `zodim serve --demo`: a sample mailbox and calendar, n
 2. **Routine.** If you like the result, tap "Transformar em rotina". Zodim writes code with tests and checks it against what the agent did. You can read the code on the routine's page.
 3. **On its own.** The routine runs on schedule without a model. If a service changes and the routine breaks, you get a notice with "Refazer", and the agent fixes it.
 
+## Routines that react to something new
+
+Ask for a reaction instead of a time ("me avise quando chegar e-mail da Ana", "quando esse site publicar algo novo") and the routine watches instead of running on a clock. Zodim checks the source every few minutes without any model, so the checks cost nothing, and runs the routine only with what it has not seen before; the first check only learns what is already there. Change how often it checks in the routine's settings. The empty checks stay out of **Atividade**; what was found and what the routine did show up as usual. The gallery's **E-mail de alguém importante** is one.
+
 ## Changing a routine without code
 
 Every routine page starts with **Ajustes da rotina**:

@@ -130,7 +130,7 @@ export function RoutineCard({ r, onOpen }: { r: RoutineSummary; onOpen?: () => v
           <div className="space-y-1.5">
             {runs.length ? <RunDots runs={runs} /> : <span className="text-[12px] text-ink-3">{t('routine.noRunsYet')}</span>}
             <div className="flex items-center gap-1 text-[12px] text-ink-3">
-              <Clock size={12} /> {r.state === 'active' && r.next_run ? when(r.next_run) : cronText(r.schedule)}
+              <Clock size={12} /> {r.watch && !r.schedule ? t('routine.onNew', { what: capabilityLabel(r.watch.capability).toLowerCase() }) : r.state === 'active' && r.next_run ? when(r.next_run) : cronText(r.schedule)}
             </div>
           </div>
           <div className="text-right">

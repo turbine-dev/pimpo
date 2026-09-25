@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/runtime"
 	"github.com/denerFernandes/zodim/internal/trace"
 )
 
@@ -131,6 +132,21 @@ type Routine struct {
 type Settings struct {
 	Schedule string         `json:"schedule,omitempty"`
 	Params   map[string]any `json:"params,omitempty"`
+	// WatchEvery overrides how often a watching routine checks.
+	WatchEvery string `json:"watch_every,omitempty"`
+}
+
+// Watch is what the routine waits for, with the owner's interval, or nil.
+func (r Routine) Watch() *runtime.Watch {
+	w := r.Body.Manifest.Watch
+	if w == nil {
+		return nil
+	}
+	c := *w
+	if r.Settings.WatchEvery != "" {
+		c.Every = r.Settings.WatchEvery
+	}
+	return &c
 }
 
 // Schedule is when the routine runs: the owner's choice, else the

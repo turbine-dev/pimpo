@@ -43,6 +43,8 @@ type Scenario struct {
 	// Params sets the routine's parameters for this scenario; the rest keep
 	// their defaults.
 	Params map[string]any `json:"params,omitempty"`
+	// Event is what wakes a watching routine in this scenario.
+	Event any `json:"event,omitempty"`
 }
 
 // Response is a canned result for one call to a read capability. Calls to

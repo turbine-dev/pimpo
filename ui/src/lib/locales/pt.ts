@@ -999,6 +999,17 @@ export const pt = {
   'home.chooseModel': 'Escolher um modelo',
   'home.budgetOut': 'O limite de gasto de hoje acabou; tarefas novas esperam até amanhã.',
   'shell.menu': 'Menu do Zodim',
+  'rs.watchText': 'Roda sozinha quando aparece algo novo — ela {what} e só age com o que ainda não viu. Nenhum modelo é usado para verificar.',
+  'rs.checkEvery': 'Verificar a cada',
+  'rs.watchHint': 'Verificar mais vezes avisa mais cedo; cada verificação não custa nada.',
+  'rs.every.5m': '5 minutos',
+  'rs.every.10m': '10 minutos',
+  'rs.every.15m': '15 minutos',
+  'rs.every.30m': '30 minutos',
+  'rs.every.1h': '1 hora',
+  'rs.every.3h': '3 horas',
+  'rs.every.24h': '1 dia',
+  'routine.onNew': 'quando chega algo novo · {what}',
 }
 
 export type Key = keyof typeof pt

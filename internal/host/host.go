@@ -72,6 +72,9 @@ type Host struct {
 	// Allowed, when set, is every capability this run may use; an
 	// assistant limited to a few tools runs this way.
 	Allowed map[string]bool
+	// QuietReads leaves successful reads out of the event log; a watch
+	// polling every few minutes would otherwise bury the receipts.
+	QuietReads bool
 
 	mu        sync.Mutex
 	calls     []trace.Call
@@ -207,6 +210,9 @@ func (h *Host) record(ctx context.Context, rec ActionRecord, result any) {
 	h.calls = append(h.calls, trace.Call{Capability: rec.Capability, Args: mustJSON(rec.Args), Result: raw})
 	h.mu.Unlock()
 	rec.Result = truncate(raw, 16<<10)
+	if h.QuietReads && rec.Risk == capability.Read.String() && rec.Error == "" {
+		return
+	}
 	if h.Events != nil {
 		h.Events.Append(ctx, ActionEvent, h.Source, rec)
 	}

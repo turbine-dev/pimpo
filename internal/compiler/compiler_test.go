@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/runtime"
 	"github.com/denerFernandes/zodim/internal/trace"
 )
 
@@ -112,5 +114,28 @@ func TestTransientFormatErrorsAreRetried(t *testing.T) {
 	attempts, err := Compiler{Model: &flaky{fails: 2, ok: llm.Response{Structured: routineJSON(generic)}}}.Compile(context.Background(), recorded)
 	if err != nil || len(attempts) != 1 || !attempts[0].Accepted() {
 		t.Fatalf("%v %+v", err, attempts)
+	}
+}
+
+// "Tell me when Ana emails me" is a watch: the replay wakes the routine
+// with the emails the agent read, and its tests bring their own items.
+func TestWatchingRoutinePassesTheReplay(t *testing.T) {
+	r := routine.Routine{Name: "ana-alert", Code: `async function run() { for (const m of event.items) await telegram.send({text: "Ana: " + m.subject}); }`,
+		Manifest: runtime.Manifest{Capabilities: []string{"gmail.search", "telegram.send"},
+			Watch: &runtime.Watch{Capability: "gmail.search", Args: map[string]any{"query": "from:ana@acme.com"}, Key: "id", Every: "10m"}},
+		Tests: []routine.Test{{Name: "two new", Scenario: trace.Scenario{Now: "2026-10-01T10:00:00-03:00",
+			Event:  map[string]any{"items": []any{map[string]any{"id": "x1", "subject": "Budget"}, map[string]any{"id": "x2", "subject": "Trip"}}},
+			Expect: []trace.Expect{{Capability: "telegram.send", Count: func() *int { n := 2; return &n }(), Contains: []string{"Budget", "Trip"}}}}}},
+	}
+	a := Verify(context.Background(), r, recorded)
+	if !a.Accepted() {
+		t.Fatalf("%s %v", a.Invalid, a.Problems())
+	}
+	if ev := WatchEvent(recorded, *r.Manifest.Watch); len(ev["items"].([]any)) != 1 {
+		t.Fatalf("%v", ev)
+	}
+	r.Manifest.Watch = nil
+	if a := Verify(context.Background(), r, recorded); a.Invalid == "" {
+		t.Fatal("a routine with neither schedule nor watch was accepted")
 	}
 }

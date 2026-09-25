@@ -319,8 +319,9 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Schedule string         `json:"schedule"`
-		Params   map[string]any `json:"params"`
+		Schedule   string         `json:"schedule"`
+		Params     map[string]any `json:"params"`
+		WatchEvery string         `json:"watch_every"`
 	}
 	if err := server.Decode(r, &req); err != nil {
 		server.WriteError(w, err)
@@ -356,7 +357,14 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 	if req.Schedule == rt.Body.Manifest.Schedule {
 		req.Schedule = ""
 	}
-	settings := store.Settings{Schedule: req.Schedule, Params: req.Params}
+	if req.WatchEvery != "" {
+		d, err := time.ParseDuration(req.WatchEvery)
+		if err != nil || d < 5*time.Minute || d > 24*time.Hour || rt.Body.Manifest.Watch == nil {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: "checks happen every 5 minutes to 24 hours, and only for routines that watch"})
+			return
+		}
+	}
+	settings := store.Settings{Schedule: req.Schedule, Params: req.Params, WatchEvery: req.WatchEvery}
 	if err := a.Store.SetRoutineSettings(ctx, rt.ID, settings); err != nil {
 		server.WriteError(w, err)
 		return

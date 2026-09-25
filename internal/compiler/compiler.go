@@ -12,6 +12,7 @@ import (
 	"github.com/denerFernandes/zodim/internal/capability"
 	"github.com/denerFernandes/zodim/internal/llm"
 	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/zodim/internal/runtime"
 	"github.com/denerFernandes/zodim/internal/trace"
 )
 
@@ -111,6 +112,10 @@ func Verify(ctx context.Context, r routine.Routine, t trace.Trace) Attempt {
 		a.Invalid = "manifest: " + err.Error()
 		return a
 	}
+	if err := r.Manifest.Starts(); err != nil {
+		a.Invalid = "manifest: " + err.Error()
+		return a
+	}
 	for name := range r.Manifest.Judgments {
 		if _, ok := t.Judgments[name]; !ok {
 			a.Invalid = fmt.Sprintf("judgment %q was never made while exploring, so it cannot be tested; use only %s", name, judgmentList(t))
@@ -121,7 +126,11 @@ func Verify(ctx context.Context, r routine.Routine, t trace.Trace) Attempt {
 		a.Invalid = "empty code"
 		return a
 	}
-	a.Outcomes = append(a.Outcomes, routine.Check(ctx, r, "replay of the exploration", t.Replay()))
+	replay := t.Replay()
+	if w := r.Manifest.Watch; w != nil {
+		replay.Event = WatchEvent(t, *w)
+	}
+	a.Outcomes = append(a.Outcomes, routine.Check(ctx, r, "replay of the exploration", replay))
 	for _, test := range r.Tests {
 		a.Outcomes = append(a.Outcomes, routine.Check(ctx, r, "test "+test.Name, test.Scenario))
 	}
@@ -153,7 +162,8 @@ Rules for the code:
 - Keep messages concise and readable. Send nothing when there is nothing worth sending, unless the user asked for a message every time.
 
 Rules for the manifest:
-- schedule: a 5-field cron expression matching the request.
+- schedule: a 5-field cron expression matching the request, or "" when the routine reacts to something new (see watch).
+- watch: when the request is about reacting to something new ("when an email from X arrives", "whenever this feed has a new post", "if the front door opens", "me avise quando chegar…"), declare {capability, args, key, every} instead of a schedule. capability is the read capability you call to find the items (also listed in capabilities); args are its arguments, with {{param}} for values that come from params; key is the field that identifies one item (id, link, entity_id); every is how often to check ("10m"; at least "5m", "30m" or "1h" when minutes do not matter). Zodim calls it without a model and runs the routine only with the items it has not seen, as event.items (each item shaped like that capability's results). Work on event.items and do not call the watched capability again. Tests of such a routine set event: {items: [...]} with new fictional items, and one test should have items that must not produce a message.
 - locale: the language the user wrote the request in, "pt-BR" or "en-US". dates.format uses it for weekday and month names, so write messages and test expectations in that language.
 - capabilities: the minimum set the code calls. Scoped capabilities need the host, e.g. "http.getJSON:api.open-meteo.com". The host is fixed; values in the URL's query (latitude, longitude, currency) can come from params.
 - params: each {name (JavaScript identifier), label (short, in the request's language), type, default, options, help}. Types: text, number, boolean, date (YYYY-MM-DD), time (HH:MM), location (default {"name","latitude","longitude","timezone"}), select and multiselect (with options), email, destinations. Every param except destinations has a default taken from the request.
@@ -168,6 +178,8 @@ var schema = json.RawMessage(`{
   "description":{"type":"string"},
   "manifest":{"type":"object","additionalProperties":false,"required":["schedule","capabilities"],"properties":{
     "schedule":{"type":"string"},
+    "watch":{"type":"object","additionalProperties":false,"required":["capability","key"],"properties":{
+      "capability":{"type":"string"},"args":{"type":"object"},"key":{"type":"string"},"every":{"type":"string"}}},
     "capabilities":{"type":"array","items":{"type":"string"}},
     "judgments":{"type":"object","additionalProperties":{"type":"string"}},
     "locale":{"type":"string","enum":["pt-BR","en-US"]},
@@ -180,6 +192,7 @@ var schema = json.RawMessage(`{
     "name":{"type":"string"},
     "now":{"type":"string"},
     "params":{"type":"object"},
+    "event":{"type":"object","properties":{"items":{"type":"array"}}},
     "responses":{"type":"array","items":{"type":"object","required":["capability","result"],"properties":{"capability":{"type":"string"},"result":{}}}},
     "judgments":{"type":"object","additionalProperties":{"type":"object","additionalProperties":{"type":"number"}}},
     "expect":{"type":"array","items":{"type":"object","required":["capability"],"properties":{
@@ -187,6 +200,24 @@ var schema = json.RawMessage(`{
       "contains":{"type":"array","items":{"type":"string"}},
       "not_contains":{"type":"array","items":{"type":"string"}}}}}}}}
  }}`)
+
+// WatchEvent is what a watching routine would have been woken with during
+// the exploration: every item the agent read from the watched capability.
+func WatchEvent(t trace.Trace, w runtime.Watch) map[string]any {
+	name := strings.SplitN(w.Capability, ":", 2)[0]
+	items := []any{}
+	for _, c := range t.Calls {
+		if c.Capability != name {
+			continue
+		}
+		var v any
+		json.Unmarshal(c.Result, &v)
+		if list, ok := v.([]any); ok {
+			items = append(items, list...)
+		}
+	}
+	return map[string]any{"items": items}
+}
 
 func prompt(t trace.Trace, feedback []string) string {
 	var b strings.Builder

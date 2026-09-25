@@ -1,6 +1,9 @@
 export type RunOutcome = 'ok' | 'failed' | 'skipped'
 
+export type Watch = { capability: string; args?: Record<string, unknown>; key: string; every?: string }
+
 export type RoutineSummary = {
+  watch?: Watch
   id: string
   name: string
   description: string
@@ -268,7 +271,7 @@ export const api = {
   checkCatalog: (id: string) => request<{ ok: boolean; detail?: string }>('POST', `/api/catalog/${id}/check`),
   protection: () => request<{ version: number; entries: number; updated: string; fetched?: string; enabled: boolean; blocked: number }>('GET', '/api/protection'),
   updateFromGallery: (id: string) => request<RoutineSummary>('POST', `/api/routines/${id}/update`),
-  saveRoutineSettings: (id: string, schedule: string, params: Record<string, unknown>) => request<RoutineSummary>('PUT', `/api/routines/${id}/settings`, { schedule, params }),
+  saveRoutineSettings: (id: string, schedule: string, params: Record<string, unknown>, watchEvery = '') => request<RoutineSummary>('PUT', `/api/routines/${id}/settings`, { schedule, params, watch_every: watchEvery }),
   destinations: () => request<Destination[]>('GET', '/api/destinations'),
   geocode: (q: string) => request<Place[]>('GET', `/api/geocode?q=${encodeURIComponent(q)}`),
   bots: () => request<TelegramBot[]>('GET', '/api/telegram/bots'),
