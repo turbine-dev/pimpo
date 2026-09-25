@@ -27,7 +27,7 @@ type merge struct {
 }
 
 type organized struct {
-	At      time.Time `json:"at"`
+	At      time.Time `json:"at,omitzero"`
 	Checked int       `json:"checked"`
 	Merged  []merge   `json:"merged"`
 	Error   string    `json:"error,omitempty"`
@@ -119,9 +119,12 @@ func (a *App) organizeRoutes() {
 		server.WriteJSON(w, 200, res)
 	})
 	a.Server.Handle("GET /api/memory/organized", func(w http.ResponseWriter, r *http.Request) {
-		var last organized
+		last := organized{Merged: []merge{}}
 		if raw, _ := a.Events.Get(r.Context(), organizedKey); raw != "" {
 			json.Unmarshal([]byte(raw), &last)
+		}
+		if last.Merged == nil {
+			last.Merged = []merge{}
 		}
 		server.WriteJSON(w, 200, last)
 	})

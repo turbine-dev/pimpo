@@ -134,11 +134,11 @@ export function Memory() {
         <p className="mb-4 text-[12.5px] text-ink-3">
           {(() => {
             const o = organize.data ?? last!
-            return o.merged.length
+            return o.merged?.length
               ? t('memory.organized', { count: o.merged.length, when: relative(o.at) })
               : t('memory.organizedNone', { when: relative(o.at) })
           })()}
-          {(organize.data ?? last)?.merged.map((m) => <span key={m.dropped} className="mt-0.5 block">“{m.dropped}” → “{m.kept}”</span>)}
+          {(organize.data ?? last)?.merged?.map((m) => <span key={m.dropped} className="mt-0.5 block">“{m.dropped}” → “{m.kept}”</span>)}
         </p>
       )}
       {organize.error && <p className="mb-4 text-[13px] text-danger">{organize.error.message}</p>}
