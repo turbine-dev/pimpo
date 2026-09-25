@@ -73,6 +73,18 @@ type Settings struct {
 	// LabsOff turns off newer features: memory_organize, meaning_search,
 	// mcp_registry.
 	LabsOff []string `json:"labs_off,omitempty"`
+	// Models are API models the owner set up, with their price; the model
+	// settings above may name one as provider:model.
+	Models    []ModelOption `json:"models,omitempty"`
+	OllamaURL string        `json:"ollama_url,omitempty"`
+}
+
+// ModelOption is an API model with its price in USD per million tokens,
+// which the budget needs before the model may run.
+type ModelOption struct {
+	ID       string  `json:"id"`
+	PriceIn  float64 `json:"price_in"`
+	PriceOut float64 `json:"price_out"`
 }
 
 var (
@@ -214,6 +226,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.chatRoutes()
 	a.assistantRoutes()
 	a.voiceRoutes()
+	a.modelRoutes()
 	return a, nil
 }
 
@@ -279,6 +292,22 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 	for _, k := range s.LabsOff {
 		if !labs[k] {
 			return server.StatusError{Status: 400, Msg: "unknown feature " + k}
+		}
+	}
+	known := map[string]bool{}
+	for _, m := range s.Models {
+		provider, name, _ := strings.Cut(m.ID, ":")
+		if !slices.Contains(llm.Providers, provider) || strings.TrimSpace(name) == "" {
+			return server.StatusError{Status: 400, Msg: "a model is provider:name, with provider anthropic, openai, openrouter or ollama"}
+		}
+		if m.PriceIn < 0 || m.PriceOut < 0 || m.PriceIn > 1000 || m.PriceOut > 1000 {
+			return server.StatusError{Status: 400, Msg: "prices are USD per million tokens, from 0 to 1000"}
+		}
+		known[m.ID] = true
+	}
+	for _, chosen := range []string{s.ExploreModel, s.CompileModel, s.JudgeModel} {
+		if provider, _, ok := strings.Cut(chosen, ":"); ok && slices.Contains(llm.Providers, provider) && !known[chosen] {
+			return server.StatusError{Status: 400, Msg: chosen + " is not among your models; add it with its price first"}
 		}
 	}
 	b, _ := json.Marshal(s)
@@ -456,11 +485,54 @@ func (a *App) runAgent(ctx context.Context, r llm.AgentRequest) (llm.Response, e
 type claude struct{ a *App }
 
 func (c claude) Generate(ctx context.Context, r llm.Request) (llm.Response, error) {
+	if api, ok, err := c.a.apiModel(ctx, r.Model); ok {
+		if err != nil {
+			return llm.Response{}, err
+		}
+		return api.Generate(ctx, r)
+	}
 	return llm.ClaudeCLI{}.Generate(ctx, r)
 }
 func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
+	if api, ok, err := c.a.apiModel(ctx, r.Model); ok {
+		if err != nil {
+			return llm.Response{}, err
+		}
+		return api.Run(ctx, r)
+	}
 	return llm.ClaudeCLI{}.Run(ctx, r)
 }
+
+// apiModel resolves a provider:model setting to an API backend; ok is
+// false for Claude Code models (sonnet, opus, haiku).
+func (a *App) apiModel(ctx context.Context, model string) (llm.API, bool, error) {
+	provider, name, found := strings.Cut(model, ":")
+	if !found || !slices.Contains(llm.Providers, provider) {
+		return llm.API{}, false, nil
+	}
+	for _, m := range a.Settings(ctx).Models {
+		if m.ID != model {
+			continue
+		}
+		api := llm.API{Provider: provider, Model: name, PriceIn: m.PriceIn, PriceOut: m.PriceOut, Base: modelBase[provider]}
+		if provider == "ollama" {
+			if u := a.Settings(ctx).OllamaURL; u != "" {
+				api.Base = strings.TrimRight(u, "/") + "/v1"
+			}
+		} else {
+			key, err := a.secret(ctx, "model."+provider+".key")
+			if err != nil || key == "" {
+				return api, true, fmt.Errorf("add your %s API key in Settings › Models", provider)
+			}
+			api.Key = key
+		}
+		return api, true, nil
+	}
+	return llm.API{}, true, fmt.Errorf("%s has no price yet; add it in Settings › Models", model)
+}
+
+// modelBase lets tests point providers at fakes.
+var modelBase = map[string]string{}
 
 func claudeInstalled() bool { _, err := exec.LookPath("claude"); return err == nil }
 

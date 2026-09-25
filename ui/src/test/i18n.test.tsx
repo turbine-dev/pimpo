@@ -61,7 +61,7 @@ describe('English', () => {
     expect(screen.getByText('Community protection')).toBeInTheDocument()
     expect(screen.getByLabelText('Daily limit in dollars')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Language for the app and messages' })).toHaveValue('en-US')
-    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Save' }).length).toBeGreaterThan(0)
   })
 
   it('prefers the saved locale over the browser and sets <html lang>', async () => {
