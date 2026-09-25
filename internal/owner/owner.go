@@ -49,6 +49,9 @@ type Channel struct {
 	People *people.Directory
 	// Mirror also delivers every notice on another channel, such as WhatsApp.
 	Mirror func(ctx context.Context, n explore.Notice)
+	// Muted says whether the owner silenced this kind of notice; it is
+	// still kept in the app's inbox.
+	Muted func(ctx context.Context, kind string) bool
 	// Transcribe turns a voice note into text; nil means voice notes are
 	// not understood.
 	Transcribe func(ctx context.Context, audio []byte) (string, error)
@@ -81,7 +84,10 @@ func (c *Channel) Chat(ctx context.Context) (int64, error) {
 // Notify sends a notice to the owner and keeps it in the event log, where
 // the web inbox shows it even when Telegram is not paired.
 func (c *Channel) Notify(ctx context.Context, n explore.Notice) error {
-	c.Events.Append(ctx, EventNotice, "system", map[string]any{"text": n.Text, "actions": n.Actions, "to": people.Norm(n.To)})
+	c.Events.Append(ctx, EventNotice, "system", map[string]any{"text": n.Text, "actions": n.Actions, "to": people.Norm(n.To), "kind": n.Kind})
+	if n.Kind != "" && c.Muted != nil && c.Muted(ctx, n.Kind) {
+		return nil
+	}
 	if c.Mirror != nil {
 		c.Mirror(ctx, n)
 	}

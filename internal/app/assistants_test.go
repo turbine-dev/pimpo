@@ -63,3 +63,26 @@ func TestAssistantOnlyUsesItsCapabilities(t *testing.T) {
 		t.Fatal(code)
 	}
 }
+
+func TestSettingsMuteOnlyWhatMayBeMuted(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	base := ta.Settings(t.Context())
+	for _, bad := range []Settings{{Mute: []string{"approval"}}, {LabsOff: []string{"everything"}}} {
+		s := base
+		s.Mute, s.LabsOff = bad.Mute, bad.LabsOff
+		if code, _ := ta.do(t, "PUT", "/api/settings", s); code != 400 {
+			t.Fatalf("accepted %+v", bad)
+		}
+	}
+	s := base
+	s.Mute, s.LabsOff = []string{"task"}, []string{"mcp_registry"}
+	if code, _ := ta.do(t, "PUT", "/api/settings", s); code != 200 {
+		t.Fatal(code)
+	}
+	if !ta.Channel.Muted(t.Context(), "task") || ta.Channel.Muted(t.Context(), "approval") || ta.lab(t.Context(), "mcp_registry") {
+		t.Fatal("settings not applied")
+	}
+	if code, _ := ta.do(t, "GET", "/api/connectors/registry?q=x", nil); code != 403 {
+		t.Fatal("the registry answered while turned off")
+	}
+}

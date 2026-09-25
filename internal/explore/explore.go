@@ -33,6 +33,9 @@ type Notice struct {
 	Actions []Action
 	// To is the person who should get it; empty is the owner.
 	To string
+	// Kind lets the owner silence some notices: task, failure, backup.
+	// Approvals and messages a routine sends always arrive.
+	Kind string
 }
 
 type Action struct {
@@ -64,6 +67,8 @@ type Service struct {
 	Memory *memory.Memory
 	// Recall, when set, searches memory by meaning.
 	Recall Recall
+	// Guide is the user guide, for questions about Zodim itself.
+	Guide string
 
 	mu       sync.Mutex
 	sessions map[string]session
@@ -201,7 +206,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	if s.sessions == nil {
 		s.sessions = map[string]session{}
 	}
-	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "zodim", Tools: tools(h, s.Memory, s.Recall)}}
+	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "zodim", Tools: tools(h, s.Memory, s.Recall, s.Guide)}}
 	s.mu.Unlock()
 	defer func() {
 		s.mu.Lock()
@@ -229,7 +234,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		s.Store.SaveExploration(ctx, e)
 		s.Env.Events.Append(ctx, EventFailed, "system", map[string]string{"exploration": e.ID, "error": err.Error()})
 		if !o.Quiet {
-			s.Notify.Notify(ctx, Notice{Text: "⚠️ Não consegui terminar: " + e.Request + "\n" + err.Error(), To: e.Person})
+			s.Notify.Notify(ctx, Notice{Text: "⚠️ Não consegui terminar: " + e.Request + "\n" + err.Error(), To: e.Person, Kind: "task"})
 		}
 		return
 	}
@@ -246,7 +251,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		text += fmt.Sprintf("\n\n(%d ações foram só simuladas; nada foi alterado.)", n)
 	}
 	text += "\n\nQuer que eu faça isso sozinho, sem gastar com modelo a cada vez?"
-	s.Notify.Notify(ctx, Notice{Text: text, Actions: []Action{{"Transformar em rotina", "compile:" + e.ID}, {"Descartar", "discard:" + e.ID}}, To: e.Person})
+	s.Notify.Notify(ctx, Notice{Text: text, Actions: []Action{{"Transformar em rotina", "compile:" + e.ID}, {"Descartar", "discard:" + e.ID}}, To: e.Person, Kind: "task"})
 }
 
 // knownFacts lists what the owner confirmed, for the explorer's prompt.

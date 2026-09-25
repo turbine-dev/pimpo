@@ -202,6 +202,7 @@ func (s *Scheduler) RunNow(ctx context.Context, id, trigger string) (store.Run, 
 	s.Notify.Notify(context.WithoutCancel(ctx), explore.Notice{
 		Text:    fmt.Sprintf("⚠️ %s não rodou.\n%s\n\nPausei a rotina até você decidir.", r.Body.Name, friendly(errText)),
 		Actions: []explore.Action{{Label: "Rodar de novo", Data: "run:" + id}, {Label: "Refazer com o agente", Data: "repair:" + id}},
+		Kind:    "failure",
 	})
 	return run, runErr
 }

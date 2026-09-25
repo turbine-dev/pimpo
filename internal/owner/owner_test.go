@@ -178,3 +178,24 @@ func TestPhotosBecomeRequests(t *testing.T) {
 		t.Fatalf("%v", h.requests)
 	}
 }
+
+func TestMutedNoticesStayInTheInbox(t *testing.T) {
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "v.db"))
+	defer ev.Close()
+	bot := &fakeBot{}
+	mirrored := 0
+	c := &Channel{Events: ev, Bot: func(context.Context) Bot { return bot },
+		Mirror: func(context.Context, explore.Notice) { mirrored++ },
+		Muted:  func(_ context.Context, kind string) bool { return kind == "task" }}
+	ctx := context.Background()
+	ev.Put(ctx, chatKey, "42")
+	c.Notify(ctx, explore.Notice{Text: "✅ pronto", Kind: "task"})
+	c.Notify(ctx, explore.Notice{Text: "Posso apagar?", Kind: "approval"})
+	if len(bot.sent) != 1 || bot.sent[0] != "Posso apagar?" || mirrored != 1 {
+		t.Fatalf("sent %v, mirrored %d", bot.sent, mirrored)
+	}
+	evs, _ := ev.List(ctx, event.Query{Types: []string{EventNotice}})
+	if len(evs) != 2 {
+		t.Fatalf("a muted notice left the inbox: %d", len(evs))
+	}
+}

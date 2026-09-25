@@ -103,7 +103,7 @@ func (a *App) organizeLoop(ctx context.Context, every time.Duration) {
 		if raw, _ := a.Events.Get(ctx, organizedKey); raw != "" {
 			json.Unmarshal([]byte(raw), &last)
 		}
-		if now.Hour() >= 3 && last.At.In(now.Location()).Format("2006-01-02") != now.Format("2006-01-02") {
+		if a.lab(ctx, "memory_organize") && now.Hour() >= 3 && last.At.In(now.Location()).Format("2006-01-02") != now.Format("2006-01-02") {
 			a.organizeMemory(ctx)
 		}
 	}
@@ -161,7 +161,7 @@ func (a *App) SearchMeaning(ctx context.Context, query, person string) ([]found,
 		seen[f.ID] = true
 	}
 	j, ok := meaningJudge(a)
-	if !ok {
+	if !ok || !a.lab(ctx, "meaning_search") {
 		return out, false, nil
 	}
 	all, _ := a.Memory.SearchFor("", person)
