@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -115,5 +116,29 @@ func TestRecentRunsAcrossRoutines(t *testing.T) {
 	failed, _ := s.RecentRuns(ctx, RunFailed, 0, 10)
 	if len(failed) != 1 || failed[0].Error != "timeout" || failed[0].Routine != "tides" {
 		t.Fatalf("%+v", failed)
+	}
+}
+
+func TestChatsKeepTheirTurnsInOrder(t *testing.T) {
+	s := open(t)
+	ctx := context.Background()
+	s.CreateChat(ctx, Chat{ID: "c1", Title: "Agenda"})
+	s.CreateChat(ctx, Chat{ID: "c2", Title: "Da Ana", Person: "ana"})
+	for _, e := range []string{"e1", "e2", "e3"} {
+		if err := s.AddTurn(ctx, "c1", e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c, ids, err := s.Chat(ctx, "c1")
+	if err != nil || c.Title != "Agenda" || strings.Join(ids, ",") != "e1,e2,e3" || c.Turns != 3 {
+		t.Fatalf("%+v %v %v", c, ids, err)
+	}
+	mine, _ := s.Chats(ctx, "")
+	if len(mine) != 1 || mine[0].ID != "c1" || mine[0].Turns != 3 {
+		t.Fatalf("owner sees %+v", mine)
+	}
+	s.DeleteChat(ctx, "c1")
+	if _, _, err := s.Chat(ctx, "c1"); err == nil {
+		t.Fatal("chat not deleted")
 	}
 }

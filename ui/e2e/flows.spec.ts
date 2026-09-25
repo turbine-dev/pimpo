@@ -132,6 +132,23 @@ test.describe.serial('the story, end to end', () => {
 })
 
 
+test('a chat rehearses, then does exactly what it showed', async ({ page }) => {
+  await login(page)
+  await page.goto('/chat')
+  await expect(page.getByRole('heading', { name: 'Em que posso ajudar?' })).toBeVisible()
+  await page.getByLabel('Escreva uma mensagem…').fill('Arquive as newsletters da caixa de entrada')
+  await page.getByLabel('Escreva uma mensagem…').press('Enter')
+  await expect(page.getByText('Trabalhando…')).toBeVisible()
+  await expect(page.getByText(/Três eram newsletters/)).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText('Para isso eu faria:')).toBeVisible()
+  await expect(page.getByText('Arquivar um e-mail (INBOX/40)')).toBeVisible()
+  await page.getByRole('button', { name: 'Confirmar e fazer' }).click()
+  // An earlier test may have archived these already; either way it answers.
+  await expect(page.getByText(/^Feito\.$|Parte não deu certo/)).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('button', { name: 'Confirmar e fazer' })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /Arquive as newsletters/ })).toBeVisible()
+})
+
 test('every screen is in the sidebar', async ({ page }) => {
   await page.goto('/auth?token=e2e-token')
   const nav = page.getByRole('navigation', { name: 'Principal', exact: true })
