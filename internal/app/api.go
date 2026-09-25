@@ -431,3 +431,14 @@ func (a *App) deleteConnection(w http.ResponseWriter, r *http.Request) {
 	a.Events.Append(ctx, "connection.removed", "human:owner", map[string]string{"kind": kind})
 	server.WriteJSON(w, 200, map[string]string{"kind": kind, "state": "removed"})
 }
+
+// respond writes v, or err as a 400 with its message.
+func respond(w http.ResponseWriter) func(v any, err error) {
+	return func(v any, err error) {
+		if err != nil {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+			return
+		}
+		server.WriteJSON(w, 200, v)
+	}
+}

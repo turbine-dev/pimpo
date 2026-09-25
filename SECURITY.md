@@ -30,6 +30,6 @@ Anything that breaks the promises in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md
 
 ## Audits
 
-- Every change runs `go vet`, the race detector, the gate tests (200-email deletion, 50 injections, 50 memory poisonings, family isolation, client reminders) and the UI accessibility checks.
+- Every change runs `go vet`, the race detector, the gate tests (200-email deletion, 50 injections, 50 memory poisonings, family isolation) and the UI accessibility checks.
 - Before each release we run `govulncheck` and `npm audit`. The latest run found no reachable vulnerabilities after moving to Go 1.26.8.
 - An independent audit is planned for v2 (see the roadmap). Its report will be published here in full.

@@ -12,7 +12,6 @@ require (
 	github.com/emersion/go-message v0.18.2
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/go-git/go-git/v5 v5.19.2
-	github.com/go-pdf/fpdf v0.9.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/teambition/rrule-go v1.8.2
 	github.com/titanous/json5 v1.0.0

@@ -20,7 +20,7 @@ Want to see it first? Run `vigia serve --demo`: a sample mailbox and calendar, n
 - **Precisa de você** lists what is waiting for you: approvals, finished explorations, problems. On the phone it is the first tab.
 - Approval buttons: **Permitir** (this time), **Todos desta vez** (the rest of this run), **Sempre** (this routine, from now on), **Negar**.
 - **Regras**: write rules in plain words ("nunca apague e-mails do meu chefe"). You see exactly what the rule will enforce, and a test against last week, before saving.
-- Some things always ask, whatever the rules say: messages to clients, WhatsApp to other people, locks and alarms.
+- Some things always ask, whatever the rules say: WhatsApp to other people, locks and alarms.
 
 ## Receipts and undo
 
@@ -43,10 +43,6 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 ## Gallery
 
 Browse ready-made routines, filtered by what they can touch. Vigia checks the author's signature, runs the routine's tests, and audits what it really calls before installing. To share one of yours, use **Publicar** on its page.
-
-## Business
-
-**Negócio** keeps clients, quotes and invoices. Download them as PDF, turn a quote into an invoice, generate a payment link (Mercado Pago or Stripe), and export a CSV for your accountant. Vigia never moves money, and reminders to clients always wait for your approval. Send a photo of a handwritten quote on Telegram and Vigia reads it.
 
 ## Moving and backups
 

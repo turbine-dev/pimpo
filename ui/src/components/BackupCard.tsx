@@ -11,7 +11,7 @@ async function post(path: string, body: BodyInit, json = false) {
 }
 
 // Everything in one file: routines, history, receipts, memory, people,
-// business, connectors and secrets, the secrets sealed with a passphrase.
+// connectors and secrets, the secrets sealed with a passphrase.
 export function BackupCard() {
   const t = useT()
   const [pass, setPass] = useState('')
