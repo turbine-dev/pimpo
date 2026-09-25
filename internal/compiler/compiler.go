@@ -159,6 +159,7 @@ Rules for the code:
 - When the routine sends a message to the owner, use notify.send({text}) (not telegram.send) and declare a parameter {"name":"destinos","label":"Onde avisar","type":"destinations","default":[]}; the owner picks one or more bots or channels.
 - Subjective decisions ("is this important?", "is this a newsletter?", "does this need a reply?") must use a judgment: declare it in manifest.judgments as {name: "yes/no question about one item"} and call await judge.<name>(item), which returns {p} (probability of yes). Treat p >= 0.5 as yes. Pass the whole item. You may only declare the judgments the agent made while exploring (listed in the prompt); everything else must be decided by plain code (dates, amounts, keywords, fields like replied or labels).
 - Objective decisions (dates, amounts, senders, keywords the user named) are plain code.
+- Text the agent COMPOSED from an item's content (a one-line summary, what an email asks for, a suggested reply) cannot be plain code: declare it in manifest.writes as {name: "instruction in the request's language"} and call await write.<name>(item), which returns {text}. A small model writes it each run, so use writes only for composed text, never for facts plain code can copy (sender, subject, date, amount), and call it only for the items that will be sent. Copying fields is always better than writing.
 - Keep messages concise and readable. Send nothing when there is nothing worth sending, unless the user asked for a message every time.
 
 Rules for the manifest:
@@ -168,7 +169,7 @@ Rules for the manifest:
 - capabilities: the minimum set the code calls. Scoped capabilities need the host, e.g. "http.getJSON:api.open-meteo.com". The host is fixed; values in the URL's query (latitude, longitude, currency) can come from params.
 - params: each {name (JavaScript identifier), label (short, in the request's language), type, default, options, help}. Types: text, number, boolean, date (YYYY-MM-DD), time (HH:MM), location (default {"name","latitude","longitude","timezone"}), select and multiselect (with options), email, destinations. Every param except destinations has a default taken from the request.
 
-Rules for tests: write 2 or 3 scenarios with NEW fictional data (not the recording) covering the normal case and an edge case (nothing to report, several items, an item that must be excluded). Each has now, responses (canned results for read calls, in the order the code makes them), optional params (values for this scenario; at least one test should change a param from its default), judgments (labels for the new items: judgment name -> {identifying substring of the item: probability}) and expect (checks on write calls: capability, optional count, contains, not_contains). Expectations must follow from the data and the request.`
+Rules for tests: write 2 or 3 scenarios with NEW fictional data (not the recording) covering the normal case and an edge case (nothing to report, several items, an item that must be excluded). Each has now, responses (canned results for read calls, in the order the code makes them), optional writes (canned texts: write name -> identifying substring of the item -> text), optional params (values for this scenario; at least one test should change a param from its default), judgments (labels for the new items: judgment name -> {identifying substring of the item: probability}) and expect (checks on write calls: capability, optional count, contains, not_contains). Expectations must follow from the data and the request.`
 
 var schema = json.RawMessage(`{
  "type":"object","additionalProperties":false,
@@ -182,6 +183,7 @@ var schema = json.RawMessage(`{
       "capability":{"type":"string"},"args":{"type":"object"},"key":{"type":"string"},"every":{"type":"string"}}},
     "capabilities":{"type":"array","items":{"type":"string"}},
     "judgments":{"type":"object","additionalProperties":{"type":"string"}},
+    "writes":{"type":"object","additionalProperties":{"type":"string"}},
     "locale":{"type":"string","enum":["pt-BR","en-US"]},
     "params":{"type":"array","items":{"type":"object","required":["name","label","type"],"properties":{
       "name":{"type":"string"},"label":{"type":"string"},
@@ -195,6 +197,7 @@ var schema = json.RawMessage(`{
     "event":{"type":"object","properties":{"items":{"type":"array"}}},
     "responses":{"type":"array","items":{"type":"object","required":["capability","result"],"properties":{"capability":{"type":"string"},"result":{}}}},
     "judgments":{"type":"object","additionalProperties":{"type":"object","additionalProperties":{"type":"number"}}},
+    "writes":{"type":"object","additionalProperties":{"type":"object","additionalProperties":{"type":"string"}}},
     "expect":{"type":"array","items":{"type":"object","required":["capability"],"properties":{
       "capability":{"type":"string"},"count":{"type":"integer"},
       "contains":{"type":"array","items":{"type":"string"}},

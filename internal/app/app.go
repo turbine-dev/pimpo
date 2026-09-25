@@ -199,7 +199,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	router.Add(a.Outbox)
 	a.Undo = &undo.Undo{Events: events, Outbox: a.Outbox, Mail: a.mailOps}
 	env := host.Env{Router: router, Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide),
-		Approver: approver{a.Approvals}, Remember: a.remember,
+		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
 		RoleOf: func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) }}
 	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone}
 	a.Explore = &explore.Service{Guide: docs.Guide, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 2},

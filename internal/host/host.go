@@ -38,6 +38,9 @@ type Env struct {
 	Approver Approver
 	// Remember turns an "always" answer into a lasting permission.
 	Remember func(ctx context.Context, a policy.Action)
+	// Write composes a short text with a small model; nil means routines
+	// that write cannot run.
+	Write func(ctx context.Context, instruction string, input any) (text string, costUSD float64, err error)
 	// RoleOf names a person's role in the house; nil treats everyone as
 	// the owner.
 	RoleOf func(ctx context.Context, person string) string
@@ -240,6 +243,33 @@ func (h *Host) Judge(ctx context.Context, name, question string, item any) (floa
 		h.Events.Append(ctx, JudgmentEvent, h.Source, map[string]any{"source": h.Source, "judgment": name, "question": question, "p": a.P, "backend": a.Backend, "item": truncateAny(item)})
 	}
 	return a.P, nil
+}
+
+// WriteEstimate is the most one written text may cost.
+const WriteEstimate = 0.02
+
+// WriteEvent records a text a routine had a model write.
+const WriteEvent = "text.written"
+
+// Write lets a routine have a small model compose text, within budget.
+func (h *Host) Write(ctx context.Context, name, instruction string, input any) (string, error) {
+	if h.Budget != nil {
+		if err := h.Budget.CheckFor(ctx, WriteEstimate); err != nil {
+			return "", err
+		}
+	}
+	if h.Env.Write == nil {
+		return "", errors.New("no model is set up to write text; see Settings › Models")
+	}
+	text, cost, err := h.Env.Write(ctx, instruction, input)
+	if err != nil {
+		return "", err
+	}
+	h.addCost(ctx, cost, "writing")
+	if h.Events != nil {
+		h.Events.Append(ctx, WriteEvent, h.Source, map[string]any{"source": h.Source, "write": name, "instruction": instruction, "text": text, "cost_usd": cost})
+	}
+	return text, nil
 }
 
 // Label records a decision the explorer made, keyed by an item reference.

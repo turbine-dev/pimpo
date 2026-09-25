@@ -155,6 +155,7 @@ type scenarioHost struct {
 	responses map[string][]json.RawMessage
 	last      map[string]json.RawMessage
 	judgments map[string]map[string]float64
+	texts     map[string]map[string]string
 	writes    []Write
 	now       time.Time
 }
@@ -164,7 +165,7 @@ type scenarioHost struct {
 var searchable = map[string]bool{"gmail.search": true, "calendar.events": true}
 
 func newScenarioHost(s trace.Scenario) *scenarioHost {
-	h := &scenarioHost{world: map[string][]any{}, responses: map[string][]json.RawMessage{}, last: map[string]json.RawMessage{}, judgments: s.Judgments}
+	h := &scenarioHost{world: map[string][]any{}, responses: map[string][]json.RawMessage{}, last: map[string]json.RawMessage{}, judgments: s.Judgments, texts: s.Writes}
 	seen := map[string]bool{}
 	for _, r := range s.Responses {
 		h.responses[r.Capability] = append(h.responses[r.Capability], r.Result)
@@ -230,6 +231,19 @@ func normalize(v any) any {
 // by its id or a piece of its text, sometimes both ("INBOX/1 - Contrato");
 // the key whose parts match the most text wins. Unlabeled items get a clear
 // "no".
+// Write answers with the scenario's canned text for the best-matching
+// input, or a placeholder naming the write.
+func (h *scenarioHost) Write(_ context.Context, name, _ string, input any) (string, error) {
+	text := flatten(input)
+	best, bestScore := "("+name+")", 0
+	for key, out := range h.texts[name] {
+		if score := matchScore(key, text); score > bestScore {
+			best, bestScore = out, score
+		}
+	}
+	return best, nil
+}
+
 func (h *scenarioHost) Judge(_ context.Context, name, _ string, item any) (float64, error) {
 	text := flatten(item)
 	best, bestScore := 0.05, 0

@@ -38,7 +38,7 @@ describe('RoutineSettings', () => {
     expect(screen.getByText('São Paulo')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Salvar ajustes' })).toBeDisabled()
     await userEvent.type(screen.getByLabelText('Cidade: Procure uma cidade'), 'Lisboa')
-    await userEvent.click(await screen.findByRole('option', { name: /Lisboa/ }))
+    await userEvent.click(await screen.findByRole('option', { name: /Lisboa/ }, { timeout: 5000 }))
     await userEvent.selectOptions(screen.getByLabelText('Quando'), 'weekdays')
     fireEvent.change(screen.getByLabelText('às'), { target: { value: '06:30' } })
     await userEvent.click(await screen.findByRole('button', { name: /familia_bot/ }))

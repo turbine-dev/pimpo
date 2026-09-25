@@ -29,6 +29,8 @@ Want to see it first? Run `zodim serve --demo`: a sample mailbox and calendar, n
 
 Ask for a reaction instead of a time ("me avise quando chegar e-mail da Ana", "quando esse site publicar algo novo") and the routine watches instead of running on a clock. Zodim checks the source every few minutes without any model, so the checks cost nothing, and runs the routine only with what it has not seen before; the first check only learns what is already there. Change how often it checks in the routine's settings. The empty checks stay out of **Atividade**; what was found and what the routine did show up as usual. The gallery's **E-mail de alguém importante** is one.
 
+A routine can also write a little: "e me diga em uma frase o que ela pede", "sugira uma resposta". The part that must be composed is written by a small model (the one set for judgments) for each item, about a fraction of a cent each; everything that can be copied (sender, subject, date) stays plain code. Each text is checked against the daily limit first, shows up in **Atividade**, and treats the email as data, never as orders. What the routine then does with the text still passes your rules and approvals.
+
 ## Changing a routine without code
 
 Every routine page starts with **Ajustes da rotina**:
