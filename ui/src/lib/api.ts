@@ -35,10 +35,13 @@ export type RecentRun = { id: number; routine: string; name: string; version: nu
 
 export type Organized = { at?: string; checked: number; merged: { kept: string; dropped: string }[]; error?: string }
 
-export type Chat = { id: string; title: string; created_at: string; updated_at: string; turns: number }
+export type Chat = { id: string; title: string; assistant?: string; created_at: string; updated_at: string; turns: number }
 export type ChatAction = { capability: string; text: string; risk: CapRisk; args: unknown }
 export type ChatTurn = { id: string; request: string; state: 'running' | 'ready' | 'compiling' | 'done' | 'failed' | 'discarded'; summary?: string; error?: string; cost_usd: number; routine?: string; created_at: string
   actions: ChatAction[]; done?: { state: 'running' | 'done' | 'failed'; at: string; results: { capability: string; ok: boolean; error?: string }[] } }
+
+export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[] }
+export type CapabilitySpec = { name: string; risk: CapRisk; signature: string; returns: string }
 
 export type RemoteState = {
   tailscale: { state: 'off' | 'starting' | 'needs_login' | 'needs_funnel' | 'running' | 'error'; auth_url?: string; url?: string; error?: string }
@@ -185,10 +188,14 @@ export const api = {
   memoryOrganized: () => request<Organized>('GET', '/api/memory/organized'),
   chats: () => request<Chat[]>('GET', '/api/chats'),
   chat: (id: string) => request<{ chat: Chat; turns: ChatTurn[] }>('GET', `/api/chats/${id}`),
-  newChat: (text: string) => request<{ chat: string; turn: string }>('POST', '/api/chats', { text }),
+  newChat: (text: string, assistant = '') => request<{ chat: string; turn: string }>('POST', '/api/chats', { text, assistant }),
   sendChat: (id: string, text: string) => request<{ chat: string; turn: string }>('POST', `/api/chats/${id}/messages`, { text }),
   chatDo: (id: string, turn: string) => request<ChatTurn>('POST', `/api/chats/${id}/turns/${turn}/do`),
   deleteChat: (id: string) => request<{ deleted: string }>('DELETE', `/api/chats/${id}`),
+  assistants: () => request<Assistant[]>('GET', '/api/assistants'),
+  saveAssistant: (a: Assistant) => request<Assistant>('PUT', `/api/assistants/${a.id}`, a),
+  deleteAssistant: (id: string) => request<{ deleted: string }>('DELETE', `/api/assistants/${id}`),
+  capabilities: () => request<CapabilitySpec[]>('GET', '/api/capabilities'),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),

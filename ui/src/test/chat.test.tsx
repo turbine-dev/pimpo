@@ -16,7 +16,7 @@ describe('Chat', () => {
     const calls = mockFetch({ '/api/chats': [], 'POST /api/chats': { chat: 'c1', turn: 'e1' }, '/api/chats/c1': { chat: { id: 'c1', title: 'x' }, turns: [turn({ state: 'running', actions: [] })] } })
     wrap(<Routes><Route path="/" element={<Chat />} /><Route path="/chat/:id" element={<Chat />} /></Routes>)
     await userEvent.click(await screen.findByRole('button', { name: 'O que eu tenho amanhã na agenda?' }))
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'O que eu tenho amanhã na agenda?' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'O que eu tenho amanhã na agenda?', assistant: '' }))
     expect(await screen.findByText('Trabalhando…')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ver passo a passo' })).toHaveAttribute('href', '/explorations/e1')
   })

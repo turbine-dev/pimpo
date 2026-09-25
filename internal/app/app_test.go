@@ -84,6 +84,9 @@ func rpc(url string, id int, tool string, args any) error {
 	if res, _ := out["result"].(map[string]any); res["isError"] == true {
 		return fmt.Errorf("%s: %v", tool, res["content"])
 	}
+	if e, ok := out["error"]; ok {
+		return fmt.Errorf("%s: %v", tool, e)
+	}
 	return nil
 }
 

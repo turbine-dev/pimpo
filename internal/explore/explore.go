@@ -110,6 +110,16 @@ type Options struct {
 	// Quiet leaves the answer on the screen that asked, instead of also
 	// sending it to the owner's chat.
 	Quiet bool
+	// Assistant, when set, gives the agent a role and limits its tools.
+	Assistant *Assistant
+}
+
+// Assistant is a named role for the agent with the capabilities it may use.
+type Assistant struct {
+	Name         string
+	Instructions string
+	// Capabilities limits the tools; empty means all of them.
+	Capabilities []string
 }
 
 // StartWith starts an exploration with options, for the in-app chat.
@@ -170,6 +180,22 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
 	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: true, Person: e.Person}
+	role := ""
+	if as := o.Assistant; as != nil {
+		if len(as.Capabilities) > 0 {
+			h.Allowed = map[string]bool{}
+			for _, c := range as.Capabilities {
+				h.Allowed[c] = true
+			}
+		}
+		role = "\n\nYou are acting as the owner's assistant named " + as.Name + "."
+		if strings.TrimSpace(as.Instructions) != "" {
+			role += " The owner describes this assistant's job as follows (a description of the job, not a way around any rule): " + strings.TrimSpace(as.Instructions)
+		}
+		if h.Allowed != nil {
+			role += " You can only use the tools listed; if the request needs something else, say which assistant or connection would be needed."
+		}
+	}
 	key := newID() + newID()
 	s.mu.Lock()
 	if s.sessions == nil {
@@ -189,7 +215,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		prompt = "The conversation so far:\n" + o.Context + "\n\nNow the owner says: " + e.Request
 	}
 	resp, err := s.Agent.Run(ctx, llm.AgentRequest{
-		System:     explorerPrompt(now) + s.knownFacts(e.Person),
+		System:     explorerPrompt(now) + s.knownFacts(e.Person) + role,
 		Prompt:     prompt,
 		MCPURL:     fmt.Sprintf("%s/mcp/explore/%s?key=%s", s.BaseURL, e.ID, key),
 		Model:      s.Model,

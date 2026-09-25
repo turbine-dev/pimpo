@@ -189,6 +189,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.mcpRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
+	a.assistantRoutes()
 	return a, nil
 }
 

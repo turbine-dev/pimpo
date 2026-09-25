@@ -69,6 +69,9 @@ type Host struct {
 	// way: they show what would happen and change nothing but messages to
 	// the owner.
 	DryRun bool
+	// Allowed, when set, is every capability this run may use; an
+	// assistant limited to a few tools runs this way.
+	Allowed map[string]bool
 
 	mu        sync.Mutex
 	calls     []trace.Call
@@ -144,6 +147,9 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 		act.Role = h.RoleOf(ctx, person)
 	}
 	d := pol.Decide(ctx, act)
+	if h.Allowed != nil && !h.Allowed[name] {
+		d = policy.Decision{Verdict: policy.Block, Reason: "this assistant may not use " + name}
+	}
 	rec.Verdict, rec.Reason, rec.Rule = d.Verdict, d.Reason, d.Rule
 	simulated := h.DryRun && spec.Risk >= capability.Reversible
 
