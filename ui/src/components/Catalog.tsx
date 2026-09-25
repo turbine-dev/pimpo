@@ -5,12 +5,14 @@ import { useState } from 'react'
 import { api, type CatalogKind } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT } from '../lib/i18n'
+import { McpExplore, McpManual } from './McpServers'
 import { Button, Card, RiskBadge } from './ui'
 
 export function Catalog() {
   const t = useT()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['catalog'], queryFn: api.catalog })
+  const [tab, setTab] = useState<'installed' | 'explore' | 'manual'>('installed')
   const list = q.data?.connectors ?? []
   const refresh = () => qc.invalidateQueries({ queryKey: ['catalog'] })
   const reload = useMutation({ mutationFn: () => fetch('/api/connectors/reload', { method: 'POST', credentials: 'same-origin' }), onSuccess: refresh })
@@ -27,6 +29,17 @@ export function Catalog() {
     <section aria-label={t('catalog.title')} className="mt-8">
       <h2 className="mb-1 text-[17px] font-semibold tracking-tight">{t('catalog.title')}</h2>
       <p className="mb-3 text-[13px] text-ink-2">{t('catalog.text')}</p>
+      <div role="tablist" aria-label={t('catalog.title')} className="mb-4 flex gap-1 border-b border-line">
+        {(['installed', 'explore', 'manual'] as const).map((k) => (
+          <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+            className={cn('-mb-px border-b-2 px-3 py-2 text-[13px] transition', tab === k ? 'border-accent font-medium text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
+            {t(k === 'installed' ? 'mcp.tabInstalled' : k === 'explore' ? 'mcp.tabExplore' : 'mcp.tabManual')}
+          </button>
+        ))}
+      </div>
+      {tab === 'explore' && <McpExplore />}
+      {tab === 'manual' && <McpManual />}
+      {tab === 'installed' && <>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 py-1.5 text-[13px] hover:border-line-strong">
           <Puzzle size={14} /> {t('catalog.install')}
@@ -42,6 +55,7 @@ export function Catalog() {
       <div className="grid gap-3 lg:grid-cols-2">
         {list.map((k) => <KindCard key={k.id} k={k} />)}
       </div>
+      </>}
     </section>
   )
 }
@@ -54,6 +68,7 @@ function KindCard({ k }: { k: CatalogKind }) {
   const refresh = () => qc.invalidateQueries({ queryKey: ['catalog'] })
   const save = useMutation({ mutationFn: () => api.setCatalog(k.id, values), onSuccess: () => { setValues({}); refresh(); check.mutate() } })
   const remove = useMutation({ mutationFn: () => api.removeCatalog(k.id), onSuccess: refresh })
+  const uninstall = useMutation({ mutationFn: () => api.mcpRemove(k.id), onSuccess: refresh })
   const check = useMutation({ mutationFn: () => api.checkCatalog(k.id) })
   const needsSetup = k.fields.length > 0
 
@@ -86,6 +101,13 @@ function KindCard({ k }: { k: CatalogKind }) {
                 ))}
               </ul>
               <p className="text-[12.5px] text-ink-2">{k.help}</p>
+              {k.external && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {k.source && <span className="text-[12px] text-ink-3">{t('mcp.source', { source: k.source })}</span>}
+                  <Button size="sm" variant="ghost" onClick={() => uninstall.mutate()} disabled={uninstall.isPending}>{t('mcp.remove')}</Button>
+                  {uninstall.error && <span className="text-[12.5px] text-danger">{uninstall.error.message}</span>}
+                </div>
+              )}
               {needsSetup && (
                 <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); save.mutate() }}>
                   {k.fields.map((f) => (

@@ -186,6 +186,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.destinationRoutes()
 	a.remoteRoutes()
 	a.cloudRoutes()
+	a.mcpRoutes()
 	return a, nil
 }
 

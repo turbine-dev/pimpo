@@ -66,6 +66,21 @@ cp -r ./tides ~/.zodim/connectors/
 
 The connector shows up in Connections with its capabilities, their risk, fields for the env vars it declares, and a **Testar** button that runs the contract. Connectors travel with **Exportar tudo**, like everything else.
 
+## Adding an existing MCP server
+
+Any MCP server works without writing a `connector.json`:
+
+- **Conexões › Explorar** searches the [official MCP registry](https://registry.modelcontextprotocol.io). Servers published as npm or PyPI packages run on this computer through `npx` or `uvx`, pinned to the listed version; remote servers are reached over streamable HTTP, and only over https.
+- **Conexões › Adicionar manualmente** takes a command (`npx -y @company/server@1.2.3`) or an https address, with env vars or headers.
+
+Zodim connects, lists the tools and suggests a risk for each from the server's own hints (`readOnlyHint`, `destructiveHint`); a tool without hints counts as irreversible, so Zodim asks before using it. The owner picks which tools to include and can change any risk before installing. Zodim writes the `connector.json` itself (marked `imported`), keeps env values and headers in the vault, and from then on:
+
+- each tool is a capability named `<name>.<tool>` that goes through rules and approvals like any other;
+- tools the server adds later stay hidden, and a tool that disappears stops the connector until it is added again and reviewed;
+- **Desinstalar** removes the folder, the capabilities and the stored keys.
+
+Registry servers are third-party code that Zodim has not verified. Local ones run with a clean environment that holds only the variables you filled in.
+
 ## Built-in connectors
 
 The catalog in Connections also has native connectors, written in Go with contract tests against fake servers in `internal/connector/services`:

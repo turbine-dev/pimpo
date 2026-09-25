@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/denerFernandes/zodim/internal/connector/external"
@@ -53,7 +54,8 @@ type catalogView struct {
 	// Values holds the non-secret fields already set, to show them.
 	Values map[string]string `json:"values"`
 	// External connectors run as their own process, from connector.json.
-	External bool `json:"external,omitempty"`
+	External bool   `json:"external,omitempty"`
+	Source   string `json:"source,omitempty"`
 }
 
 func (a *App) catalogConfigured(ctx context.Context, k services.Kind) (bool, map[string]string) {
@@ -101,7 +103,7 @@ func (a *App) putCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if c := a.externalConnector(r.PathValue("kind")); c != nil {
-		for _, e := range c.Env {
+		for _, e := range append(append([]string{}, c.Env...), c.Headers...) {
 			if v := strings.TrimSpace(req[e]); v != "" {
 				if err := a.Vault.Set(ctx, "connector."+c.Name+"."+e, v); err != nil {
 					server.WriteError(w, err)
@@ -227,9 +229,13 @@ func (a *App) externalKinds() []catalogView {
 	defer a.mu.Unlock()
 	var out []catalogView
 	for _, c := range a.external {
-		v := catalogView{Kind: services.Kind{ID: c.Name, Title: c.Name, Description: c.Description, Help: "Conector externo em " + c.Dir + ". Roda como um processo separado e só recebe as variáveis abaixo.", Fields: []services.Field{}},
-			Capabilities: []catalogCap{}, Values: map[string]string{}, External: true, Configured: true}
-		for _, e := range c.Env {
+		help := "Conector externo em " + c.Dir + ". Roda como um processo separado e só recebe as variáveis abaixo."
+		if c.URL != "" {
+			help = "Servidor MCP remoto em " + c.URL + ". Recebe só o que o Zodim envia a ele, com os cabeçalhos abaixo."
+		}
+		v := catalogView{Kind: services.Kind{ID: c.Name, Title: c.Name, Description: c.Description, Help: help, Fields: []services.Field{}},
+			Capabilities: []catalogCap{}, Values: map[string]string{}, External: true, Configured: true, Source: c.Source}
+		for _, e := range append(append([]string{}, c.Env...), c.Headers...) {
 			v.Fields = append(v.Fields, services.Field{Name: e, Label: e, Secret: true})
 		}
 		for _, cp := range c.Manifest.Capabilities {
@@ -237,5 +243,6 @@ func (a *App) externalKinds() []catalogView {
 		}
 		out = append(out, v)
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
 }
