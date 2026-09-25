@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownToLine, Loader2, Plus, Repeat, Sparkles, X } from 'lucide-react'
 import { motion } from 'motion/react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RoutineCard } from '../components/RoutineCard'
+import { RunHistory } from '../components/RunHistory'
 import { SinceYesterday } from '../components/SinceYesterday'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api, type Exploration } from '../lib/api'
+import { cn } from '../lib/cn'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
 
@@ -17,6 +20,7 @@ export function Routines({ onNew }: { onNew: () => void }) {
   const imported = useQuery({ queryKey: ['explorations', 'imported'], queryFn: () => api.explorations('imported') })
   const list = routines.data ?? []
   const open = pending.data ?? []
+  const [tab, setTab] = useState<'routines' | 'runs'>('routines')
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -30,6 +34,18 @@ export function Routines({ onNew }: { onNew: () => void }) {
         </Button>
       </div>
 
+      {list.length > 0 && (
+        <div role="tablist" aria-label={t('routines.title')} className="mb-5 flex gap-1 border-b border-line">
+          {(['routines', 'runs'] as const).map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+              className={cn('-mb-px border-b-2 px-3 py-2 text-[13px] transition', tab === k ? 'border-accent font-medium text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
+              {t(k === 'routines' ? 'routines.tabRoutines' : 'routines.tabRuns')}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {tab === 'runs' ? <RunHistory /> : <>
       {list.length > 0 && <SinceYesterday />}
 
       {open.length > 0 && (
@@ -53,6 +69,7 @@ export function Routines({ onNew }: { onNew: () => void }) {
           ))}
         </div>
       )}
+      </>}
     </div>
   )
 }

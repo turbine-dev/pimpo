@@ -12,18 +12,21 @@ const field = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline
 const input = field + ' w-full'
 
 // The schedule shapes people use, as a form; anything else stays cron.
-type Freq = 'daily' | 'weekdays' | 'weekly' | 'monthly' | 'hourly' | 'custom'
-type Sched = { freq: Freq; time: string; days: number[]; dom: number; every: number; cron: string }
+type Freq = 'daily' | 'weekdays' | 'weekly' | 'monthly' | 'hourly' | 'minutes' | 'custom'
+type Sched = { freq: Freq; time: string; days: number[]; dom: number; every: number; minutes: number; cron: string }
+
+const minuteSteps = [5, 10, 15, 30]
 
 const pad = (n: number | string) => String(n).padStart(2, '0')
 
 export function parseCron(expr: string): Sched {
-  const base: Sched = { freq: 'custom', time: '07:00', days: [1], dom: 1, every: 2, cron: expr }
+  const base: Sched = { freq: 'custom', time: '07:00', days: [1], dom: 1, every: 2, minutes: 15, cron: expr }
   const f = expr.trim().split(/\s+/)
   if (f.length !== 5) return base
   const [m, h, dom, mon, dow] = f
   const num = (s: string) => /^\d+$/.test(s)
   if (mon !== '*') return base
+  if (m.startsWith('*/') && minuteSteps.includes(+m.slice(2)) && h === '*' && dom === '*' && dow === '*') return { ...base, freq: 'minutes', minutes: +m.slice(2) }
   if (num(m) && h.startsWith('*/') && num(h.slice(2)) && dom === '*' && dow === '*') return { ...base, freq: 'hourly', every: +h.slice(2), time: `00:${pad(m)}` }
   if (!num(m) || !num(h)) return base
   const time = `${pad(h)}:${pad(m)}`
@@ -42,6 +45,7 @@ export function toCron(s: Sched): string {
     case 'weekly': return `${m} ${h} * * ${[...s.days].sort().join(',') || '1'}`
     case 'monthly': return `${m} ${h} ${s.dom} * *`
     case 'hourly': return `${m} */${s.every} * * *`
+    case 'minutes': return `*/${s.minutes} * * * *`
     default: return s.cron.trim()
   }
 }
@@ -120,7 +124,7 @@ function UpdateBanner({ s }: { s: RoutineSummary }) {
 
 function ScheduleEditor({ value, onChange }: { value: Sched; onChange: (s: Sched) => void }) {
   const t = useT()
-  const freqs: Freq[] = ['daily', 'weekdays', 'weekly', 'monthly', 'hourly', 'custom']
+  const freqs: Freq[] = ['daily', 'weekdays', 'weekly', 'monthly', 'hourly', 'minutes', 'custom']
   const set = (p: Partial<Sched>) => onChange({ ...value, ...p })
   return (
     <fieldset>
@@ -140,7 +144,15 @@ function ScheduleEditor({ value, onChange }: { value: Sched; onChange: (s: Sched
             {t('rs.hours')}
           </label>
         )}
-        {value.freq !== 'hourly' && value.freq !== 'custom' && (
+        {value.freq === 'minutes' && (
+          <label className="flex items-center gap-2 text-[13px] text-ink-2">{t('rs.every')}
+            <select value={value.minutes} onChange={(e) => set({ minutes: +e.target.value })} className={cn(field, 'w-auto')} aria-label={t('rs.minutesLabel')}>
+              {minuteSteps.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+            {t('rs.minutes')}
+          </label>
+        )}
+        {value.freq !== 'hourly' && value.freq !== 'minutes' && value.freq !== 'custom' && (
           <label className="flex items-center gap-2 text-[13px] text-ink-2">{t('rs.at')}
             <input type="time" value={value.time} onChange={(e) => e.target.value && set({ time: e.target.value })} className={cn(field, 'w-32')} aria-label={t('rs.at')} />
           </label>

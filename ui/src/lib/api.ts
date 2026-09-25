@@ -31,6 +31,8 @@ export type McpListing = { id: string; name: string; title: string; description:
 export type McpSource = { name: string; command?: string; args?: string[]; url?: string; env?: Record<string, string>; headers?: Record<string, string>; arg_values?: Record<string, string> }
 export type McpTool = { tool: string; capability: string; title?: string; description: string; risk: CapRisk }
 
+export type RecentRun = { id: number; routine: string; name: string; version: number; started_at: string; ended_at?: string; outcome: 'ok' | 'failed' | 'skipped' | 'running'; error?: string; cost_usd: number; calls: number }
+
 export type RemoteState = {
   tailscale: { state: 'off' | 'starting' | 'needs_login' | 'needs_funnel' | 'running' | 'error'; auth_url?: string; url?: string; error?: string }
   lan: { on: boolean; url?: string; error?: string }
@@ -170,6 +172,7 @@ export const api = {
   mcpProbe: (s: McpSource) => request<{ tools: McpTool[] }>('POST', '/api/connectors/probe', s),
   mcpAdd: (s: McpSource & { description?: string; source?: string; tools: Record<string, CapRisk> }) => request<{ loaded: number }>('POST', '/api/connectors/add', s),
   mcpRemove: (name: string) => request<{ loaded: number }>('DELETE', `/api/connectors/${name}`),
+  recentRuns: (outcome = '', before = 0) => request<RecentRun[]>('GET', `/api/runs?outcome=${outcome}&before=${before}&limit=50`),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),

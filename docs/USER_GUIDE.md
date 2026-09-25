@@ -25,6 +25,10 @@ Every routine page starts with **Ajustes da rotina**:
 
 To add more Telegram bots, go to **Conexões › Bots extras do Telegram**. Create the bot with @BotFather, paste its token, send it a message (or add it to a group), and tap **Detectar chat**.
 
+## Run history
+
+**Rotinas › Execuções** lists every run of every routine, newest first, with its cost, how many calls it made and how long it took. **Com falha** shows only what went wrong, with the error. A routine can run as often as every 5 minutes (**A cada alguns minutos** in its schedule).
+
 ## Approvals and rules
 
 - **Precisa de você** lists what is waiting for you: approvals, finished explorations, problems. On the phone it is the first tab.
