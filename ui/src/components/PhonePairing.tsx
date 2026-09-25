@@ -19,7 +19,7 @@ export function PhonePairing() {
   const pairing = useQuery({ queryKey: ['pairing'], queryFn: api.pairing })
   const remote = useQuery({
     queryKey: ['remote'], queryFn: api.remote,
-    refetchInterval: (q) => (['starting', 'needs_login'].includes(q.state.data?.tailscale.state ?? '') ? 2000 : false),
+    refetchInterval: (q) => (['starting', 'needs_login', 'needs_funnel'].includes(q.state.data?.tailscale.state ?? '') ? 2000 : false),
   })
   const toggle = useMutation({
     mutationFn: ({ kind, on }: { kind: 'tailscale' | 'lan'; on: boolean }) => api.switchRemote(kind, on),
@@ -138,6 +138,13 @@ function TailscaleState({ s }: { s?: RemoteState['tailscale'] }) {
         <div className="space-y-1">
           <a href={s.auth_url} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center rounded-[10px] bg-ink px-3 text-[13px] font-medium text-bg shadow-[var(--shadow-card)] hover:opacity-90">{t('phone.tsLogin')}</a>
           <p className="text-[12px] text-ink-3">{t('phone.tsLoginHint')}</p>
+        </div>
+      )
+    case 'needs_funnel':
+      return (
+        <div className="space-y-1">
+          <p className="text-[12px] text-ink-3">{t('phone.tsFunnelHint')}</p>
+          <a href={s.auth_url} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center rounded-[10px] bg-ink px-3 text-[13px] font-medium text-bg shadow-[var(--shadow-card)] hover:opacity-90">{t('phone.tsFunnel')}</a>
         </div>
       )
     case 'running':

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	"tailscale.com/tailcfg"
 	"tailscale.com/tsnet"
 )
 
@@ -43,6 +44,28 @@ func (t *Tailscale) Login(ctx context.Context) error {
 		return err
 	}
 	return lc.StartLoginInteractive(ctx)
+}
+
+// Funnel reports whether the tailnet lets this node use Funnel (HTTPS
+// certificates and the funnel attribute) and, when not, the link where the
+// owner turns both on with one click.
+func (t *Tailscale) Funnel(ctx context.Context) (bool, string, error) {
+	lc, err := t.srv.LocalClient()
+	if err != nil {
+		return false, "", err
+	}
+	st, err := lc.StatusWithoutPeers(ctx)
+	if err != nil {
+		return false, "", err
+	}
+	if st.Self != nil && st.Self.HasCap(tailcfg.CapabilityHTTPS) && st.Self.HasCap(tailcfg.NodeAttrFunnel) {
+		return true, "", nil
+	}
+	info, err := lc.QueryFeature(ctx, "funnel")
+	if err != nil {
+		return false, "", err
+	}
+	return info.Complete, info.URL, nil
 }
 
 func (t *Tailscale) ListenFunnel() (net.Listener, error) {

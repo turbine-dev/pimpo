@@ -21,7 +21,7 @@ export type ParamType = 'text' | 'number' | 'boolean' | 'date' | 'time' | 'locat
 export type RoutineParam = { name: string; label: string; type: ParamType; default?: unknown; options?: string[]; help?: string }
 export type Place = { name: string; latitude: number; longitude: number; timezone?: string; country?: string }
 export type RemoteState = {
-  tailscale: { state: 'off' | 'starting' | 'needs_login' | 'running' | 'error'; auth_url?: string; url?: string; error?: string }
+  tailscale: { state: 'off' | 'starting' | 'needs_login' | 'needs_funnel' | 'running' | 'error'; auth_url?: string; url?: string; error?: string }
   lan: { on: boolean; url?: string; error?: string }
 }
 export type Destination = { id: string; label: string; kind: string; ready: boolean }

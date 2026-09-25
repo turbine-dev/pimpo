@@ -22,12 +22,17 @@ type Node interface {
 	// login URL when there is one, and the node's DNS name.
 	State(ctx context.Context) (state, authURL, dnsName string, err error)
 	Login(ctx context.Context) error
+	// Funnel reports whether Funnel can be used, or the link that turns it
+	// on for the tailnet.
+	Funnel(ctx context.Context) (ready bool, enableURL string, err error)
 	ListenFunnel() (net.Listener, error)
 	Close() error
 }
 
 type Status struct {
-	// State is off, starting, needs_login, running or error.
+	// State is off, starting, needs_login, needs_funnel, running or error.
+	// AuthURL is the sign-in link, or with needs_funnel the link that turns
+	// on HTTPS and Funnel.
 	State   string `json:"state"`
 	AuthURL string `json:"auth_url,omitempty"`
 	URL     string `json:"url,omitempty"`
@@ -98,8 +103,18 @@ func (r *Remote) run(ctx context.Context) {
 		case err != nil:
 			r.fail(err)
 		case state == "Running":
-			r.publish(ctx, node, dns)
-			return
+			ready, enable, err := node.Funnel(ctx)
+			switch {
+			case err != nil:
+				r.fail(err)
+			case ready:
+				r.publish(ctx, node, dns)
+				return
+			case enable != "":
+				r.set(Status{State: "needs_funnel", AuthURL: enable})
+			default:
+				r.fail(errors.New("Funnel not available; HTTPS must be enabled"))
+			}
 		case state == "NeedsLogin" && auth == "" && !asked:
 			asked = true
 			if err := node.Login(ctx); err != nil {
@@ -155,10 +170,10 @@ func (r *Remote) Stop() {
 func friendly(err error) string {
 	s := err.Error()
 	switch {
-	case strings.Contains(s, "Funnel not available") || strings.Contains(s, "funnel"):
-		return "Funnel is off in your Tailscale account: turn it on in the admin console (Access controls › Funnel) and try again. " + s
 	case strings.Contains(s, "HTTPS") || strings.Contains(s, "cert"):
-		return "HTTPS certificates are off in your Tailscale account: turn on MagicDNS and HTTPS in the admin console (DNS) and try again. " + s
+		return "HTTPS certificates are off in your Tailscale account: turn on HTTPS in the admin console (login.tailscale.com/admin/dns), then turn this off and on again."
+	case strings.Contains(s, "Funnel not available") || strings.Contains(s, "funnel"):
+		return "Funnel is off in your Tailscale account: allow it in the admin console (Access controls › Funnel), then turn this off and on again."
 	}
 	return s
 }

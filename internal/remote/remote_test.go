@@ -18,6 +18,7 @@ type fakeNode struct {
 	auth   string
 	logins int
 	funnel error
+	enable string
 	ln     net.Listener
 	closed bool
 }
@@ -34,6 +35,11 @@ func (f *fakeNode) Login(context.Context) error {
 	f.logins++
 	f.auth = "https://login.tailscale.com/a/abc123"
 	return nil
+}
+func (f *fakeNode) Funnel(context.Context) (bool, string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.enable == "", f.enable, nil
 }
 func (f *fakeNode) ListenFunnel() (net.Listener, error) {
 	if f.funnel != nil {
@@ -75,7 +81,16 @@ func TestLoginThenPublish(t *testing.T) {
 	if s.AuthURL != "https://login.tailscale.com/a/abc123" || node.logins != 1 {
 		t.Fatalf("%+v logins %d", s, node.logins)
 	}
+	node.mu.Lock()
+	node.enable = "https://login.tailscale.com/f/funnel?node=abc"
+	node.mu.Unlock()
 	node.login()
+	if s = wait(t, r, "needs_funnel"); s.AuthURL != "https://login.tailscale.com/f/funnel?node=abc" {
+		t.Fatalf("%+v", s)
+	}
+	node.mu.Lock()
+	node.enable = ""
+	node.mu.Unlock()
 	s = wait(t, r, "running")
 	if s.URL != "https://zodim-dener.tail1234.ts.net" || got != s.URL {
 		t.Fatalf("%+v %q", s, got)
@@ -137,5 +152,12 @@ func TestLANServesOnTheHomeAddress(t *testing.T) {
 	}
 	if b, _ := io.ReadAll(resp.Body); string(b) != "ok" || !strings.HasPrefix(url, "http://") {
 		t.Fatalf("%s %q", url, b)
+	}
+}
+
+func TestHTTPSRefusalNamesHTTPS(t *testing.T) {
+	msg := friendly(errors.New("Funnel not available; HTTPS must be enabled. See https://tailscale.com/s/https."))
+	if !strings.Contains(msg, "HTTPS certificates are off") {
+		t.Fatal(msg)
 	}
 }
