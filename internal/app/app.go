@@ -130,6 +130,7 @@ type App struct {
 	MailInsecure bool
 	// Router is shared by every run; the demo swaps connectors in it.
 	Router *connector.Router
+	links  map[string]*linkRun
 	// DemoJudge replaces the judgment backends in demo mode.
 	DemoJudge judge.Judge
 
@@ -159,6 +160,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Channel.People = a.People
 	a.Channel.Mirror = func(ctx context.Context, n explore.Notice) {
 		a.mirrorWhatsApp(ctx, n)
+		a.mirrorLinks(ctx, n)
 		go a.mirrorWebhook(context.WithoutCancel(ctx), n)
 		if a.DesktopNotify && (n.To == "" || n.To == people.OwnerID) {
 			title, body, _ := strings.Cut(n.Text, "\n")
@@ -226,6 +228,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.startRemote(ctx)
 	go a.cloudLoop(ctx, 15*time.Minute)
 	go a.organizeLoop(ctx, 30*time.Minute)
+	a.startLinks(ctx)
 	a.restartListener(ctx)
 	return nil
 }

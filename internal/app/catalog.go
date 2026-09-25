@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 
@@ -154,6 +155,9 @@ func (a *App) putCatalog(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	a.Events.Append(ctx, "connection.set", actor(ctx), map[string]string{"kind": k.ID})
+	if slices.Contains(services.LinkKinds, k.ID) {
+		a.restartLink(ctx, k.ID)
+	}
 	server.WriteJSON(w, 200, map[string]string{"kind": k.ID})
 }
 
@@ -173,6 +177,10 @@ func (a *App) deleteCatalog(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	a.Events.Append(ctx, "connection.removed", actor(ctx), map[string]string{"kind": k.ID})
+	if slices.Contains(services.LinkKinds, k.ID) {
+		a.restartLink(ctx, k.ID)
+		a.Events.Put(ctx, linkOwnerKey(k.ID), "")
+	}
 	server.WriteJSON(w, 200, map[string]string{"kind": k.ID, "state": "removed"})
 }
 
