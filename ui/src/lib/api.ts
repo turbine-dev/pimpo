@@ -175,6 +175,8 @@ export class ApiError extends Error {
   }
 }
 
+export type Snapshot = { name: string; label: string; when: string; bytes: number }
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, { method, headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin' })
   const text = await res.text()
@@ -213,6 +215,10 @@ export const api = {
   setModelKey: (provider: string, key: string) => request<{ set: boolean }>('PUT', `/api/models/keys/${provider}`, { key }),
   testModel: (id: string) => request<{ ok: boolean; text: string; cost_usd: number }>('POST', '/api/models/test', { id }),
   system: () => request<SystemState>('GET', '/api/system'),
+  snapshots: () => request<{ snapshots: Snapshot[]; staged?: string; available: boolean; version?: string }>('GET', '/api/snapshots'),
+  createSnapshot: () => request<Snapshot>('POST', '/api/snapshots'),
+  stageRestore: (name: string) => request<{ staged: string }>('POST', '/api/snapshots/restore', { name }),
+  cancelRestore: () => request<{ staged: string }>('DELETE', '/api/snapshots/restore'),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[] }>('GET', `/api/routines/${id}`),

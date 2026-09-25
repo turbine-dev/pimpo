@@ -222,6 +222,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.destinationRoutes()
 	a.remoteRoutes()
 	a.cloudRoutes()
+	a.snapshotRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
@@ -245,6 +246,7 @@ func (a *App) Start(ctx context.Context) error {
 	go a.organizeLoop(ctx, 30*time.Minute)
 	a.startLinks(ctx)
 	go a.healthLoop(ctx, time.Minute)
+	a.announceUpgrade(ctx)
 	a.restartListener(ctx)
 	return nil
 }

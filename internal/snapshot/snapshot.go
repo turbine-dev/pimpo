@@ -164,3 +164,25 @@ func copyDir(src, dst string) error {
 		return copyFile(p, target)
 	})
 }
+
+const stagedFile = "restore-pending"
+
+// Stage marks a snapshot to be restored on the next start, since the
+// database cannot be swapped while Zodim has it open.
+func Stage(home, name string) error {
+	if name == "" || strings.ContainsAny(name, `/\`) || strings.Contains(name, "..") {
+		return fmt.Errorf("snapshot %s not found", name)
+	}
+	if _, err := info(home, name); err != nil {
+		return fmt.Errorf("snapshot %s not found", name)
+	}
+	return os.WriteFile(filepath.Join(home, stagedFile), []byte(name), 0o600)
+}
+
+// Staged returns the snapshot waiting to be restored, if any.
+func Staged(home string) string {
+	b, _ := os.ReadFile(filepath.Join(home, stagedFile))
+	return strings.TrimSpace(string(b))
+}
+
+func Unstage(home string) { os.Remove(filepath.Join(home, stagedFile)) }

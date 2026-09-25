@@ -54,6 +54,7 @@ Ordered by Jev (`tools/jev/decisions_next.py`) from complaints about Hermes and 
 1. **Routines that react to something new** (a watched read, polled without a model). Built.
 2. **A writing step** in routines: a small model writes one text per item, bounded and billed. Built.
 3. **An alert when a channel stops working**, sent on the others and again when it comes back. Built.
+4. **Going back after an update**: the copy made before each update, like the daily ones, can be put back from Ajustes › Backup, and the owner is told after an update. It restores data, not the old binary (there is no auto-updater to roll back). Built.
 
 ## Pending decisions for the owner
 
