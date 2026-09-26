@@ -46,8 +46,27 @@ mod desktop {
     }
 
     /// set_mascot keeps the choice, shows or hides the cat, and tells the
-    /// app's pages and the menu bar.
+    /// app's pages and the menu bar. Turning it off lets the cat wave and
+    /// trot off the screen first; the window closes when it has left, or
+    /// after a few seconds in any case.
     pub fn set_mascot(app: &AppHandle, on: bool) {
+        keep_mascot(app, on);
+        if on {
+            mascot(app, true);
+            return;
+        }
+        if let Some(w) = app.get_webview_window("mascot") {
+            let _ = w.eval("window.__pimpoGoodbye ? window.__pimpoGoodbye() : window.location.assign('/desktop/mascot?on=0')");
+            let handle = app.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(Duration::from_secs(6));
+                mascot(&handle, false);
+            });
+        }
+    }
+
+    /// keep_mascot records the choice and shows it in the app and menu bar.
+    fn keep_mascot(app: &AppHandle, on: bool) {
         if let Some(f) = mascot_file(app) {
             let _ = if on {
                 f.parent().map(std::fs::create_dir_all);
@@ -56,7 +75,6 @@ mod desktop {
                 std::fs::remove_file(&f)
             };
         }
-        mascot(app, on);
         if let Some(w) = app.get_webview_window("main") {
             sync_mascot(app, &w);
         }
@@ -86,9 +104,27 @@ mod desktop {
         Some((x.parse().ok()?, y.parse().ok()?))
     }
 
-    /// remember_corner keeps where the cat is after it moves.
+    /// on_screen reports whether a window at x, y (logical points) fits
+    /// entirely inside one of the monitors.
+    fn on_screen(app: &AppHandle, x: f64, y: f64, w: f64, h: f64) -> bool {
+        app.available_monitors().unwrap_or_default().iter().any(|m| {
+            let scale = m.scale_factor();
+            let p = m.position().to_logical::<f64>(scale);
+            let s = m.size().to_logical::<f64>(scale);
+            x >= p.x && y >= p.y && x + w <= p.x + s.width && y + h <= p.y + s.height
+        })
+    }
+
+    /// remember_corner keeps where the cat is after it moves. It only counts
+    /// when the window is just the cat: while it grows or shrinks for a
+    /// bubble or a game it moves and resizes in two steps, and the corner in
+    /// between is not where the cat is.
     pub fn remember_corner(window: &tauri::Window) {
         let (Ok(pos), Ok(size), Ok(scale)) = (window.outer_position(), window.outer_size(), window.scale_factor()) else { return };
+        let (lw, lh) = (size.width as f64 / scale, size.height as f64 / scale);
+        if (lw - 96.0).abs() > 2.0 || (lh - 120.0).abs() > 2.0 {
+            return;
+        }
         let right = (pos.x as f64 + size.width as f64) / scale;
         let bottom = (pos.y as f64 + size.height as f64) / scale;
         if let Some(f) = corner_file(window.app_handle()) {
@@ -122,7 +158,8 @@ mod desktop {
         }
         // Back where the owner left it: its bottom-right corner is kept, since
         // the window grows up and to the left for the bubble and the games.
-        if let Some((right, bottom)) = mascot_corner(app) {
+        // A corner no monitor contains (say, one since unplugged) is dropped.
+        if let Some((right, bottom)) = mascot_corner(app).filter(|&(r, b)| on_screen(app, r - w, b - h, w, h)) {
             x = right - w;
             y = bottom - h;
         }
@@ -141,6 +178,12 @@ mod desktop {
             .position(x, y)
             // The cat's links open in the main window instead of its own.
             .on_navigation(move |u| {
+                // The cat said goodbye (from its own menu, or when turned off).
+                if u.path() == "/desktop/mascot" {
+                    keep_mascot(&main, false);
+                    mascot(&main, false);
+                    return false;
+                }
                 if u.path() != "/open" {
                     return true;
                 }
@@ -446,7 +489,7 @@ mod desktop {
 
     pub fn keep_running_on_close(ev: &WindowEvent, window: &tauri::Window) {
         if window.label() == "mascot" {
-            if let WindowEvent::Moved(_) = ev {
+            if let WindowEvent::Moved(_) | WindowEvent::Resized(_) = ev {
                 remember_corner(window);
             }
             return;

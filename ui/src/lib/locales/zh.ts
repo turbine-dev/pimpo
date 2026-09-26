@@ -1071,4 +1071,6 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'mascot.setting': '在屏幕上显示 Pimpo',
   'mascot.settingText': '小猫待在角落里，用表情显示进展，提醒你需要处理的事，还会时不时和蝴蝶或小球玩耍。拖到任意位置；点击打开菜单。',
   'mascot.desktopHint': '在桌面应用中，即使关闭窗口它也会留在屏幕上。也可以通过菜单栏中的 Pimpo 菜单开启或关闭。',
+  'mascot.feed': '喂零食',
+  'mascot.off': '关闭 Pimpo',
 }

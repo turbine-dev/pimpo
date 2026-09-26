@@ -1,9 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Cat, Mascot, mascotOn, setMascotOn } from '../components/Mascot'
 import { LocaleProvider } from '../lib/i18n'
 import { mockFetch } from './helpers'
+
+vi.mock('../lib/purr', () => ({ purr: vi.fn() }))
+import { purr } from '../lib/purr'
 
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })
 
@@ -43,6 +46,16 @@ describe('Pimpo', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('catches a treat and purrs', async () => {
+    mockFetch({ '/api/state': null })
+    wrap()
+    await userEvent.click(screen.getByRole('button', { name: 'Pimpo, o mascote' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /Dar petisco/ }))
+    expect(document.querySelector('.pimpo-treat')).not.toBeNull()
+    await waitFor(() => expect(purr).toHaveBeenCalled(), { timeout: 3000 })
+    expect(document.querySelector('.pimpo-love')).not.toBeNull()
+  })
+
   it('draws its games', () => {
     const { container } = render(<Cat mood="idle" petting={false} play="butterfly" />)
     expect(container.querySelector('.pimpo-butterfly')).not.toBeNull()
@@ -70,7 +83,9 @@ describe('Pimpo', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Pimpo, o mascote' }))
     await userEvent.click(screen.getByRole('menuitem', { name: /Esconder o Pimpo/ }))
-    expect(screen.queryByRole('button', { name: 'Pimpo, o mascote' })).not.toBeInTheDocument()
+    // It waves and trots off before it is gone.
+    expect(document.querySelector('.pimpo-play-bye')).not.toBeNull()
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Pimpo, o mascote' })).not.toBeInTheDocument(), { timeout: 5000 })
     act(() => setMascotOn(true))
     expect(screen.getByRole('button', { name: 'Pimpo, o mascote' })).toBeInTheDocument()
   })

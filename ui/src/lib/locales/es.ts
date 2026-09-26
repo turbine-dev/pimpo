@@ -1093,4 +1093,6 @@ export const es: Record<Key, string> & Record<string, string> = {
   'mascot.setting': 'Pimpo en pantalla',
   'mascot.settingText': 'El gatito se queda en una esquina, muestra cómo van las cosas, avisa lo que te necesita y, de vez en cuando, juega con una mariposa o una pelota. Arrástralo a cualquier lugar; haz clic para ver el menú.',
   'mascot.desktopHint': 'En la app de escritorio, se queda en pantalla aunque la ventana esté cerrada. También puedes activarlo y desactivarlo desde el menú de Pimpo en la barra de menús.',
+  'mascot.feed': 'Dar una golosina',
+  'mascot.off': 'Desactivar a Pimpo',
 }

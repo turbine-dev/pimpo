@@ -1071,4 +1071,6 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'mascot.setting': '화면에 Pimpo 표시',
   'mascot.settingText': '새끼 고양이가 구석에 앉아 진행 상황을 보여 주고 확인이 필요한 일을 알려 주며, 가끔 나비나 공을 가지고 놀아요. 원하는 곳으로 끌어다 놓고, 클릭하면 메뉴가 열려요.',
   'mascot.desktopHint': '데스크톱 앱에서는 창을 닫아도 화면에 남아 있어요. 메뉴 막대의 Pimpo 메뉴에서도 켜고 끌 수 있어요.',
+  'mascot.feed': '간식 주기',
+  'mascot.off': 'Pimpo 끄기',
 }
