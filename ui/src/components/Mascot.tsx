@@ -235,6 +235,28 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
     return () => clearInterval(tick)
   }, [on, play, bubble, menu, mood])
 
+  // The menu closes on a click anywhere else: another program (the floating
+  // window loses focus), the empty space around the cat, or Escape.
+  const menuRef = useRef<HTMLDivElement>(null)
+  const catRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!menu) return
+    const close = () => setMenu(false)
+    const outside = (e: PointerEvent) => {
+      const target = e.target as Node
+      if (!menuRef.current?.contains(target) && !catRef.current?.contains(target)) close()
+    }
+    const escape = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
+    window.addEventListener('blur', close)
+    document.addEventListener('pointerdown', outside)
+    document.addEventListener('keydown', escape)
+    return () => {
+      window.removeEventListener('blur', close)
+      document.removeEventListener('pointerdown', outside)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [menu])
+
   const expanded: boolean | 'play' = bubble || menu ? true : play === 'butterfly' || play === 'ball' ? 'play' : false
   useEffect(() => { if (standalone) fitWindow(expanded).catch(() => {}) }, [standalone, expanded])
 
@@ -290,14 +312,14 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
         </div>
       )}
       {menu && (
-        <div role="menu" className="pointer-events-auto mb-2 w-56 rounded-xl border border-line bg-surface p-1 text-[13px] shadow-[var(--shadow-pop)]">
+        <div ref={menuRef} role="menu" className="pointer-events-auto mb-2 w-56 rounded-xl border border-line bg-surface p-1 text-[13px] shadow-[var(--shadow-pop)]">
           <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-sunken" onClick={() => open('/')}><Plus size={15} /> {t('common.newTask')}</button>
           <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-sunken" onClick={() => open('/inbox')}><Inbox size={15} /> {t('nav.inbox')}{waiting > 0 && <span className="ml-auto rounded-full bg-change-soft px-1.5 text-[11px] text-change">{waiting}</span>}</button>
           <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-sunken" onClick={() => { store.set('pimpo.mascot.mute', String(Date.now() + 3600_000)); setMenu(false); setBubble(null) }}><BellOff size={15} /> {t('mascot.mute')}</button>
           {!standalone && <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-ink-2 hover:bg-sunken" onClick={() => { setMenu(false); setMascotOn(false) }}><EyeOff size={15} /> {t('mascot.hide')}</button>}
         </div>
       )}
-      <button type="button" aria-label={t('mascot.label')} aria-haspopup="menu" aria-expanded={menu}
+      <button ref={catRef} type="button" aria-label={t('mascot.label')} aria-haspopup="menu" aria-expanded={menu}
         className="pimpo-button pointer-events-auto h-[104px] w-[80px] cursor-grab touch-none select-none active:cursor-grabbing"
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
         onPointerEnter={() => { setPetting(true); lastActive.current = Date.now(); setMood((m) => (m === 'sleep' ? 'idle' : m)) }}
