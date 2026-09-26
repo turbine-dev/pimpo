@@ -49,7 +49,7 @@ export function People() {
 
 function Avatar({ name, owner }: { name: string; owner?: boolean }) {
   return (
-    <div className={cn('grid size-10 shrink-0 place-items-center rounded-full text-[15px] font-semibold', owner ? 'bg-accent text-white' : 'bg-explore-soft text-explore')}>
+    <div className={cn('grid size-10 shrink-0 place-items-center rounded-full text-[15px] font-semibold', owner ? 'bg-ink text-bg' : 'bg-explore-soft text-explore')}>
       {owner ? <Crown size={17} /> : name.slice(0, 1).toUpperCase()}
     </div>
   )
