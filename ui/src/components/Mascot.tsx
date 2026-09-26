@@ -70,7 +70,9 @@ async function fitWindow(expanded: boolean | 'play') {
   const w = t?.window?.getCurrentWindow()
   if (!w || !t?.dpi) return
   const [pos, size, scale] = await Promise.all([w.outerPosition(), w.outerSize(), w.scaleFactor()])
-  const [nw, nh] = expanded === 'play' ? [200, 126] : expanded ? [330, 480] : [96, 120]
+  // Games need room above the cat (the jump for a treat, the butterfly)
+  // and to its left (the ball, the fish thrown in).
+  const [nw, nh] = expanded === 'play' ? [220, 210] : expanded ? [330, 480] : [96, 120]
   await w.setPosition(new t.dpi.PhysicalPosition(Math.round(pos.x + size.width - nw * scale), Math.round(pos.y + size.height - nh * scale)))
   await w.setSize(new t.dpi.LogicalSize(nw, nh))
 }
@@ -344,7 +346,7 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
     }
   }, [menu])
 
-  const expanded: boolean | 'play' = bubble || menu ? true : play === 'butterfly' || play === 'ball' || play === 'feed' ? 'play' : false
+  const expanded: boolean | 'play' = bubble || menu ? true : play === 'butterfly' || play === 'ball' || play === 'feed' || play === 'bye' ? 'play' : false
   useEffect(() => { if (standalone) fitWindow(expanded).catch(() => {}) }, [standalone, expanded])
 
   // The desktop app's main window leaves the cat to its floating window.
