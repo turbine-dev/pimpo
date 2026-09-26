@@ -8,11 +8,11 @@ import { mockFetch, wrap } from './helpers'
 afterEach(() => vi.unstubAllGlobals())
 
 describe('Help and settings', () => {
-  it('asks Zodim about itself', async () => {
+  it('asks Pimpo about itself', async () => {
     const calls = mockFetch({ 'POST /api/chats': { chat: 'c9', turn: 'e1' } })
     wrap(<Routes><Route path="/" element={<Help />} /><Route path="/chat/:id" element={<p>chat aberto</p>} /></Routes>)
-    await userEvent.click(screen.getByRole('button', { name: 'Como abro o Zodim no celular?' }))
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'Como abro o Zodim no celular?', assistant: '' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Como abro o Pimpo no celular?' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'Como abro o Pimpo no celular?', assistant: '' }))
     expect(await screen.findByText('chat aberto')).toBeInTheDocument()
   })
 

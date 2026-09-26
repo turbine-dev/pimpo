@@ -13,20 +13,20 @@ What is built, what each phase gate needs, and which gates wait on people or tim
 | F6 Memory with provenance, family, WhatsApp | Provenance and trust on every fact, people with roles and responsible persons, per-person memory, accounts and chats, per-person rules, WhatsApp Cloud API with signed webhooks | 50 memory poisoning attacks 100% blocked; isolation tests 100% | **Passed, automated** (`TestGatePoisonedMemoryNeverBecomesInstruction`, `TestGateFamilyIsolation`) |
 | F7 Gallery | Ed25519-signed, content-addressed routines; audit run with every capability reachable; revocation; install review; publishing; 10 starter routines shipped in the binary | 50 community routines with zero divergences; confirmed reports removed within 72 h | **Waiting on community.** The verifier runs on every index in CI and on every install |
 | F8 More channels and connectors | Connector catalog (RSS, GitHub, Todoist, Notion, Obsidian, Home Assistant, Slack, Discord), external connectors over MCP with contracts (installed from a zip or folder, no restart), voice notes (whisper.cpp), email channel, generic channel API | 15 connectors with green contract tests against the real APIs for 4 consecutive weeks | **Waiting on time:** 15 connectors exist with contract tests against fake servers; live probes (`Testar`) need 4 weeks of real credentials |
-| F9 Small business | **Removed from the roadmap** (2026-09-25): a back office is a different product and blurred what Zodim is for. Photos read with Tesseract stay, as a channel feature | — | — |
+| F9 Small business | **Removed from the roadmap** (2026-09-25): a back office is a different product and blurred what Pimpo is for. Photos read with Tesseract stay, as a channel feature | — | — |
 | F10 Native apps | Desktop notifications, per-device pairing tokens with revocation, iOS and Android companion (Tauri) built from the same project, phone-first navigation | Median alert-to-tap < 3 s over 20 approvals; pairing and revocation pass on iOS, Android, macOS, Windows, Linux | **Partly automated:** pairing and revocation tests pass; the iOS app runs in the simulator; the Android APK builds but was not run (the local system image is incomplete); timing needs real devices |
-| F11 Protection network and Guard | Signed protection list (domains, skills, patterns), daily refresh, starter list in the binary, local override of false positives; Guard plugins for OpenClaw (`before_tool_call`) and Hermes (`pre_tool_call`) | 100 installs using the list; ≥ 1 real block from it; < 5% contested; Guard contract tests on the two latest versions of each agent | **Waiting on community.** Guard suites pass against a real Zodim (`TestGuardPluginsAgainstZodim`); testing against real OpenClaw and Hermes releases is pending |
+| F11 Protection network and Guard | Signed protection list (domains, skills, patterns), daily refresh, starter list in the binary, local override of false positives; Guard plugins for OpenClaw (`before_tool_call`) and Hermes (`pre_tool_call`) | 100 installs using the list; ≥ 1 real block from it; < 5% contested; Guard contract tests on the two latest versions of each agent | **Waiting on community.** Guard suites pass against a real Pimpo (`TestGuardPluginsAgainstPimpo`); testing against real OpenClaw and Hermes releases is pending |
 | F12 Longevity | Stable extension SDK (connectors, channels, judges, Guard, gallery, protection), Portuguese and English UI, security policy and threat model with a test per defense, LTS policy, governance, RFC process, code of conduct, user guide | 3 maintainers besides the founder; a published independent audit; LTS fixes within 7 days | **Waiting on people.** `govulncheck`: no reachable vulnerabilities (toolchain go1.26.8) |
 
 ## Everywhere
 
 - **Web**: every feature, in Portuguese and English, installable as a PWA.
 - **Desktop**: macOS DMG built and run locally; Windows and Linux bundles are built by the release workflow.
-- **Phone**: iOS build verified in the simulator (pairing screen). The Android APK builds. The phone reaches Zodim at home over the Wi-Fi (no account) or from anywhere through the Tailscale built into Zodim; with both, it tries home first. The embedded Tailscale was checked up to the sign-in step; the Funnel link needs an owner's Tailscale account.
+- **Phone**: iOS build verified in the simulator (pairing screen). The Android APK builds. The phone reaches Pimpo at home over the Wi-Fi (no account) or from anywhere through the Tailscale built into Pimpo; with both, it tries home first. The embedded Tailscale was checked up to the sign-in step; the Funnel link needs an owner's Tailscale account.
 
 ## Export, import and extension
 
-- `zodim export` / `zodim import`, and **Ajustes › Exportar e importar tudo**, move everything (database, memory, connectors, secrets sealed with a passphrase) between machines.
+- `pimpo export` / `pimpo import`, and **Ajustes › Exportar e importar tudo**, move everything (database, memory, connectors, secrets sealed with a passphrase) between machines.
 - Connectors, channels, judges and Guard clients plug in without recompiling ([SDK](SDK.md), [connectors](CONNECTORS.md)).
 
 ## After the roadmap: closing the gaps with OpenClaw
@@ -56,10 +56,14 @@ Ordered by Jev (`tools/jev/decisions_next.py`) from complaints about Hermes and 
 3. **An alert when a channel stops working**, sent on the others and again when it comes back. Built.
 4. **Going back after an update**: the copy made before each update, like the daily ones, can be put back from Ajustes › Backup, and the owner is told after an update. It restores data, not the old binary (there is no auto-updater to roll back). Built.
 5. **Prompt caching** with Anthropic's API: system prompt, tools and the growing conversation are cached; cache writes and reads are priced in the budget. Checked against a fake server; needs an owner's API key to check live.
-6. **Desktop as a client of a remote Zodim**: the menu bar switches between the local server and one elsewhere, paired with the phone's link; the local server stops meanwhile. The connection page was checked in the browser against a real server with the native calls stood in for; the native switch itself was built but not clicked through, since the owner's app was running.
+6. **Desktop as a client of a remote Pimpo**: the menu bar switches between the local server and one elsewhere, paired with the phone's link; the local server stops meanwhile. The connection page was checked in the browser against a real server with the native calls stood in for; the native switch itself was built but not clicked through, since the owner's app was running.
 7. **iMessage**: cut (needs full disk access to read Messages).
 
-## Complex routines, Zodim's way
+## Pimpo
+
+Renamed from Zodim (after Vigia) to Pimpo, the owner's tuxedo cat, with a black-and-white identity: the app icon, tray silhouette, favicon and logo are the cat's head, and the interface's accent is black on light and white on dark (color is kept only where it carries meaning). Existing installs carry over: ~/.zodim moves to ~/.pimpo, the keychain key is copied, old backups (including their secrets, which the first rename missed) and the old Drive folder still work, `zodim <code>` still pairs, the phone keeps its saved link, and a Tailscale node that already existed keeps its name so paired phones keep their link. The mascot lives in the app and, in the desktop app, optionally on the desktop in a small always-on-top window.
+
+## Complex routines, Pimpo's way
 
 Asked for after comparing with OpenClaw and Hermes skills (folders of scripts run by the agent), built without running arbitrary code:
 
@@ -69,10 +73,10 @@ Asked for after comparing with OpenClaw and Hermes skills (folders of scripts ru
 
 ## Languages
 
-The app, server messages (channels, approvals, notices), built-in connector texts, routine dates and money, and the phone/desktop shell page are in ten languages: pt, en, es, fr, de, it, ja, zh, ko, ru, with each language's plural rules. Portuguese is the source; the translations were written by a model and checked for keys, {slots} and plural forms, not reviewed by native speakers yet. Texts speak about Zodim in the third person; first person is kept only for the owner's own words (example requests, preset rules). The user guide is English only.
+The app, server messages (channels, approvals, notices), built-in connector texts, routine dates and money, and the phone/desktop shell page are in ten languages: pt, en, es, fr, de, it, ja, zh, ko, ru, with each language's plural rules. Portuguese is the source; the translations were written by a model and checked for keys, {slots} and plural forms, not reviewed by native speakers yet. Texts speak about Pimpo in the third person; first person is kept only for the owner's own words (example requests, preset rules). The user guide is English only.
 
 ## Pending decisions for the owner
 
 - **License**: the plan says free and open source; the exact license is not chosen yet.
-- **Publishing**: the `zodim-gallery` and `zodim-protection` repositories, releases and signing keys (the maintainer keys are in `~/.config/zodim/`).
+- **Publishing**: the `pimpo-gallery` and `pimpo-protection` repositories, releases and signing keys (the maintainer keys are in `~/.config/pimpo/`).
 - **Android emulator image**: about 1.5 GB to download before the APK can be run locally.

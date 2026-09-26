@@ -112,7 +112,7 @@ func TestImportedRemoteConnector(t *testing.T) {
 		return "", nil
 	}
 	c := &Connector{Manifest: m, Secrets: secrets}
-	out, err := c.Call(context.Background(), "gh.get_repo", "", map[string]any{"repo": "zodim"})
+	out, err := c.Call(context.Background(), "gh.get_repo", "", map[string]any{"repo": "pimpo"})
 	if err != nil || out.(map[string]any)["stars"] != float64(42) {
 		t.Fatalf("%v %v", out, err)
 	}

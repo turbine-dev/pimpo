@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/budget"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/pimpo/internal/budget"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/server"
 )
 
 // API keys for model providers live in the vault; the models and their

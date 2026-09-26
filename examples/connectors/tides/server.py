@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A minimal Zodim connector: MCP over stdio, one JSON message per line,
+"""A minimal Pimpo connector: MCP over stdio, one JSON message per line,
 standard library only. Replace `today` with a call to a real service."""
 import json
 import sys

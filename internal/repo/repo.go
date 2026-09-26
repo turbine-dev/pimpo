@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/routine"
-	"github.com/denerFernandes/zodim/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/runtime"
 )
 
 // Dir is where routines live inside the repository.
@@ -165,12 +165,12 @@ func Commit(ctx context.Context, root, message string) (string, error) {
 	if _, err := Git(ctx, root, "diff", "--cached", "--quiet", "--", Dir); err == nil {
 		return "", nil
 	}
-	// The owner's git identity signs the commit; without one, Zodim's.
+	// The owner's git identity signs the commit; without one, Pimpo's.
 	if _, err := Git(ctx, root, "commit", "-m", message, "--", Dir); err != nil {
 		if !strings.Contains(err.Error(), "tell me who you are") && !strings.Contains(err.Error(), "user.email") {
 			return "", err
 		}
-		if _, err := Git(ctx, root, "-c", "user.name=Zodim", "-c", "user.email=zodim@localhost", "commit", "-m", message, "--", Dir); err != nil {
+		if _, err := Git(ctx, root, "-c", "user.name=Pimpo", "-c", "user.email=pimpo@localhost", "commit", "-m", message, "--", Dir); err != nil {
 			return "", err
 		}
 	}

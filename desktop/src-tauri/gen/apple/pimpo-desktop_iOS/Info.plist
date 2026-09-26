@@ -46,9 +46,9 @@
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Para falar com o Zodim do seu computador pela rede de casa.</string>
+	<string>Para falar com o Pimpo do seu computador pela rede de casa.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Para você falar com o Zodim em vez de digitar.</string>
+	<string>Para você falar com o Pimpo em vez de digitar.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Para transformar o que você fala em texto.</string>
 </dict>

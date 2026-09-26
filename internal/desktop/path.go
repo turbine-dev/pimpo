@@ -58,7 +58,7 @@ func cacheFile() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(dir, "zodim", "shell-path")
+	return filepath.Join(dir, "pimpo", "shell-path")
 }
 
 func cachedPath() []string {
@@ -85,7 +85,7 @@ func mergePath(have, add []string) string {
 	return strings.Join(out, string(os.PathListSeparator))
 }
 
-const marker = "__zodim_path__"
+const marker = "__pimpo_path__"
 
 // loginPath asks the owner's shell, interactive so rc files run, for its
 // PATH; the markers skip anything the rc files print.

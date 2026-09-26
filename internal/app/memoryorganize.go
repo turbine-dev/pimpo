@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/judge"
-	"github.com/denerFernandes/zodim/internal/memory"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/pimpo/internal/judge"
+	"github.com/denerFernandes/pimpo/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/server"
 )
 
 // Memory keeps itself tidy: every night near-duplicate facts are checked

@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/denerFernandes/zodim/internal/backup"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/vault"
+	"github.com/denerFernandes/pimpo/internal/backup"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/vault"
 )
 
 // A staged import is a backup already unpacked (and its passphrase already
@@ -36,7 +36,7 @@ func applyImport(home string) (string, error) {
 		return keep, err
 	}
 	os.RemoveAll(stage)
-	store, err := event.Open(filepath.Join(home, "zodim.db"))
+	store, err := event.Open(filepath.Join(home, "pimpo.db"))
 	if err != nil {
 		return keep, err
 	}

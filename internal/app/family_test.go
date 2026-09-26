@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/approval"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/memory"
-	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/pimpo/internal/approval"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/people"
 )
 
 // callTool calls an MCP tool and returns its text, or the error text.

@@ -148,7 +148,7 @@ function Detail({ item, onClose }: { item: GalleryItem | null; onClose: () => vo
 
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <a className="flex items-center gap-1.5 text-[12.5px] text-ink-3 hover:text-ink" target="_blank" rel="noreferrer"
-                  href={`https://github.com/denerFernandes/zodim-gallery/issues/new?template=report.yml&title=${encodeURIComponent('Report: ' + g.id)}`}>
+                  href={`https://github.com/denerFernandes/pimpo-gallery/issues/new?template=report.yml&title=${encodeURIComponent('Report: ' + g.id)}`}>
                   <Flag size={13} /> {t('gallery.report')}
                 </a>
                 {install.error && <p className="text-[13px] text-danger">{install.error.message}</p>}

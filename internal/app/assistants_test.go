@@ -8,9 +8,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/voice"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/voice"
 )
 
 func TestAssistantOnlyUsesItsCapabilities(t *testing.T) {

@@ -7,10 +7,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/denerFernandes/zodim/internal/memory"
-	"github.com/denerFernandes/zodim/internal/migrate"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/pimpo/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/migrate"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/store"
 )
 
 // ImportOptions says which parts of a plan to bring over.

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/store"
 )
 
 const (

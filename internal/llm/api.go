@@ -14,7 +14,7 @@ import (
 
 // API drives a model over a provider's HTTP API: Anthropic's Messages API,
 // or the chat completions API that OpenAI, OpenRouter and Ollama share.
-// As an agent it runs its own tool loop against Zodim's MCP server, so the
+// As an agent it runs its own tool loop against Pimpo's MCP server, so the
 // policy still checks every call on the other side.
 type API struct {
 	// Provider is anthropic, openai, openrouter or ollama.
@@ -29,7 +29,7 @@ type API struct {
 	HTTP              *http.Client
 }
 
-// Providers are the API backends Zodim knows.
+// Providers are the API backends Pimpo knows.
 var Providers = []string{"anthropic", "openai", "openrouter", "ollama"}
 
 // ErrCostLimit stops a call that would go over its budget.
@@ -336,7 +336,7 @@ func (a API) Generate(ctx context.Context, r Request) (Response, error) {
 	return resp, nil
 }
 
-// mcpClient calls Zodim's MCP server for the agent.
+// mcpClient calls Pimpo's MCP server for the agent.
 type mcpClient struct {
 	url  string
 	http *http.Client
@@ -371,7 +371,7 @@ func (m *mcpClient) call(ctx context.Context, method string, params any, out any
 	return json.Unmarshal(r.Result, out)
 }
 
-// Run is the agent loop: the model calls Zodim's tools until it answers.
+// Run is the agent loop: the model calls Pimpo's tools until it answers.
 func (a API) Run(ctx context.Context, r AgentRequest) (Response, error) {
 	m := &mcpClient{url: r.MCPURL, http: &http.Client{Timeout: 5 * time.Minute}}
 	var list struct {
@@ -382,7 +382,7 @@ func (a API) Run(ctx context.Context, r AgentRequest) (Response, error) {
 		} `json:"tools"`
 	}
 	if err := m.call(ctx, "tools/list", map[string]any{}, &list); err != nil {
-		return Response{}, fmt.Errorf("could not list Zodim's tools: %w", err)
+		return Response{}, fmt.Errorf("could not list Pimpo's tools: %w", err)
 	}
 	c := &chat{a: a, system: r.System}
 	for _, t := range list.Tools {

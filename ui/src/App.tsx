@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { Mascot } from './components/Mascot'
 import { NewTask } from './components/NewTask'
 import { Palette } from './components/Palette'
 import { Welcome } from './pages/Welcome'
@@ -31,6 +32,7 @@ export default function App() {
   const [newTask, setNewTask] = useState(false)
   const [palette, setPalette] = useState(false)
   const location = useLocation()
+  const nav = useNavigate()
   const setup = useQuery({ queryKey: ['setup'], queryFn: api.setup })
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -45,6 +47,14 @@ export default function App() {
   useLiveEvents()
   const state = useQuery({ queryKey: ['state'], queryFn: api.state, refetchInterval: 30_000 })
   const attention = (state.data?.awaiting ?? 0) + (state.data?.broken ?? 0) + (state.data?.approvals ?? 0)
+  if (location.pathname === '/mascot') {
+    // The desktop app's floating window: only the cat, on a transparent page.
+    // Links go through /open, which the app turns into its main window.
+    document.body.style.background = 'transparent'
+    document.documentElement.style.background = 'transparent'
+    document.body.style.overflow = 'hidden'
+    return <Mascot standalone onOpen={(path) => { location.pathname !== path && window.location.assign('/open?path=' + encodeURIComponent(path)) }} />
+  }
   if (location.pathname === '/welcome') {
     return (
       <div className="min-h-full px-4">
@@ -78,6 +88,7 @@ export default function App() {
         <Route path="/design" element={<Design />} />
       </Routes>
       </ErrorBoundary>
+      <Mascot onOpen={(path) => nav(path)} />
       <NewTask open={newTask} onOpenChange={setNewTask} />
       <Palette open={palette} onOpenChange={setPalette} onNewTask={() => setNewTask(true)} />
     </Shell>

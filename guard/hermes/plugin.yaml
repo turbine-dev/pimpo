@@ -1,9 +1,9 @@
-name: zodim-guard
+name: pimpo-guard
 version: "1.0.0"
-description: Every tool call passes Zodim's rules and the shared protection list first.
+description: Every tool call passes Pimpo's rules and the shared protection list first.
 provides_hooks: [pre_tool_call]
 manifest_version: 2
 config_schema:
-  url: {type: str, default: "http://127.0.0.1:7788", description: "Zodim's address"}
-  token: {type: str, default: "", description: "A device token from Zodim › Ajustes › Abrir no celular"}
-  fail_open: {type: bool, default: false, description: "Let tools run when Zodim does not answer"}
+  url: {type: str, default: "http://127.0.0.1:7788", description: "Pimpo's address"}
+  token: {type: str, default: "", description: "A device token from Pimpo › Ajustes › Abrir no celular"}
+  fail_open: {type: bool, default: false, description: "Let tools run when Pimpo does not answer"}

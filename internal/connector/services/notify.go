@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/connector"
 )
 
 // Slack and Discord reach the owner through an incoming webhook of their

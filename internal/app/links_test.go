@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/chatlink"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/pimpo/internal/chatlink"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/store"
 )
 
 type fakeLink struct {
@@ -43,11 +43,11 @@ func TestSignalLikeChannelPairsAndAnswersByNumber(t *testing.T) {
 	run := &linkRun{link: l, cancel: func() {}}
 	ta.links = map[string]*linkRun{"signal": run}
 
-	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: "zodim 000000"})
+	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: "pimpo 000000"})
 	if !strings.Contains(l.last(), "não confere") {
 		t.Fatalf("%q", l.last())
 	}
-	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: "zodim " + ta.Channel.PairingCode()})
+	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: "pimpo " + ta.Channel.PairingCode()})
 	if !strings.Contains(l.last(), "conectado por aqui") {
 		t.Fatalf("%q", l.last())
 	}

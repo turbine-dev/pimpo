@@ -12,15 +12,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/connector/external"
-	"github.com/denerFernandes/zodim/internal/connector/services"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/connector/external"
+	"github.com/denerFernandes/pimpo/internal/connector/services"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/server"
 )
 
 // Adding third-party MCP servers: found in the official registry or typed
-// by hand. Zodim connects, lists the tools, and the owner sets what each
+// by hand. Pimpo connects, lists the tools, and the owner sets what each
 // one may do before anything is installed.
 
 // registryBase lets tests point the search at a fake registry.

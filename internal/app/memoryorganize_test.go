@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/judge"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/judge"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/memory"
 )
 
 // sameJudge says two facts match unless their texts differ in a digit.

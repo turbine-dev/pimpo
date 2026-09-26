@@ -7,16 +7,16 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"math/big"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/telegram"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/telegram"
 )
 
 const (
@@ -45,7 +45,7 @@ type Channel struct {
 	// Bot returns the current bot, or nil when Telegram is not set up.
 	Bot     func(ctx context.Context) Bot
 	Handler Handler
-	// People lets household members talk to Zodim; nil means only the owner.
+	// People lets household members talk to Pimpo; nil means only the owner.
 	People *people.Directory
 	// Mirror also delivers every notice on another channel, such as WhatsApp.
 	Mirror func(ctx context.Context, n explore.Notice)
@@ -148,7 +148,7 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 		}
 		person, ok := c.who(ctx, m.Chat.ID)
 		if !ok {
-			// Only people of the house can talk to Zodim; others get nothing.
+			// Only people of the house can talk to Pimpo; others get nothing.
 			return
 		}
 		if text == "" && len(m.Photo) > 0 {

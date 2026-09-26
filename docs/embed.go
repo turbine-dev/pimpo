@@ -1,5 +1,5 @@
 // Package docs ships the user guide inside the binary, so the agent can
-// answer questions about Zodim itself.
+// answer questions about Pimpo itself.
 package docs
 
 import _ "embed"

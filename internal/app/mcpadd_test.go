@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/connector/external"
-	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/connector/external"
+	"github.com/denerFernandes/pimpo/internal/llm"
 )
 
 // weatherMCP is a remote MCP server answering plain JSON.
@@ -53,7 +53,7 @@ func TestAddMCPServerFromTheRegistry(t *testing.T) {
 	ta.Home = t.TempDir()
 	mcp := weatherMCP(t)
 	defer mcp.Close()
-	// Zodim requires https for remote servers.
+	// Pimpo requires https for remote servers.
 	tlsMCP := httptest.NewTLSServer(mcp.Config.Handler)
 	defer tlsMCP.Close()
 	external.HTTP = tlsMCP.Client()

@@ -60,7 +60,7 @@ export function CloudBackup() {
               <Label text={t('cloud.bucket')}><input className={field} value={c.bucket ?? ''} onChange={(e) => set({ bucket: e.target.value })} autoComplete="off" /></Label>
               <Label text={t('cloud.region')}><input className={field} value={c.region ?? ''} onChange={(e) => set({ region: e.target.value })} placeholder={t('cloud.regionHint')} autoComplete="off" /></Label>
               <Label text={t('cloud.endpoint')}><input className={field} value={c.endpoint ?? ''} onChange={(e) => set({ endpoint: e.target.value })} placeholder={t('cloud.endpointHint')} inputMode="url" autoComplete="off" /></Label>
-              <Label text={t('cloud.prefix')}><input className={field} value={c.prefix ?? ''} onChange={(e) => set({ prefix: e.target.value })} placeholder="zodim/" autoComplete="off" /></Label>
+              <Label text={t('cloud.prefix')}><input className={field} value={c.prefix ?? ''} onChange={(e) => set({ prefix: e.target.value })} placeholder="pimpo/" autoComplete="off" /></Label>
               <Label text={t('cloud.access')}><input className={field} value={keys.access_key} onChange={(e) => setKeys({ ...keys, access_key: e.target.value })} placeholder={s.has_keys ? t('cloud.keySaved') : ''} autoComplete="off" /></Label>
               <Label text={t('cloud.secret')}><input className={field} type="password" value={keys.secret_key} onChange={(e) => setKeys({ ...keys, secret_key: e.target.value })} placeholder={s.has_keys ? t('cloud.keySaved') : ''} autoComplete="new-password" /></Label>
             </div>
@@ -156,8 +156,8 @@ function CloudFiles() {
   )
 }
 
-// stamp reads the UTC time in a backup's name (zodim-20260925-120000.zodim).
+// stamp reads the UTC time in a backup's name (pimpo-20260925-120000.pimpo).
 function stamp(name: string) {
-  const m = name.match(/^zodim-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.zodim$/)
+  const m = name.match(/^pimpo-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.pimpo$/)
   return m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z` : undefined
 }

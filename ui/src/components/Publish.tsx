@@ -34,10 +34,10 @@ export function Publish({ id, name }: { id: string; name: string }) {
               <p>{t('publish.signed')}</p>
               <ol className="list-decimal space-y-1 pl-5">
                 <li>{t('publish.step1')}</li>
-                <li>{fill(t('publish.step2'), { repo: <a className="underline" href="https://github.com/denerFernandes/zodim-gallery" target="_blank" rel="noreferrer">zodim-gallery</a> })}</li>
+                <li>{fill(t('publish.step2'), { repo: <a className="underline" href="https://github.com/denerFernandes/pimpo-gallery" target="_blank" rel="noreferrer">pimpo-gallery</a> })}</li>
                 <li>{t('publish.step3')}</li>
               </ol>
-              <a href={file} download={`${id}.zodim.json`}><Button variant="primary"><Download size={15} /> {t('publish.download', { file: `${id}.zodim.json` })}</Button></a>
+              <a href={file} download={`${id}.pimpo.json`}><Button variant="primary"><Download size={15} /> {t('publish.download', { file: `${id}.pimpo.json` })}</Button></a>
             </div>
           ) : (
             <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); sign.mutate() }}>

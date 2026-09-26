@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/llm"
 )
 
 func TestExploreWithAnAPIModel(t *testing.T) {

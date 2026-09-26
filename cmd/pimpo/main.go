@@ -1,4 +1,4 @@
-// Command zodim runs the personal agent: the local server, the web UI and
+// Command pimpo runs the personal agent: the local server, the web UI and
 // the Telegram channel.
 package main
 
@@ -20,18 +20,18 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/app"
-	"github.com/denerFernandes/zodim/internal/desktop"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/snapshot"
-	"github.com/denerFernandes/zodim/internal/vault"
+	"github.com/denerFernandes/pimpo/internal/app"
+	"github.com/denerFernandes/pimpo/internal/desktop"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/snapshot"
+	"github.com/denerFernandes/pimpo/internal/vault"
 )
 
 var version = "dev"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, "zodim:", err)
+		fmt.Fprintln(os.Stderr, "pimpo:", err)
 		os.Exit(1)
 	}
 }
@@ -69,14 +69,19 @@ func dataDir(flagValue string) string {
 	if flagValue != "" {
 		return flagValue
 	}
-	if d := os.Getenv("ZODIM_HOME"); d != "" {
-		return d
+	for _, env := range []string{"PIMPO_HOME", "ZODIM_HOME"} {
+		if d := os.Getenv(env); d != "" {
+			return d
+		}
 	}
 	home, _ := os.UserHomeDir()
-	dir := filepath.Join(home, ".zodim")
-	if err := adoptLegacy(filepath.Join(home, ".vigia"), dir); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	dir := filepath.Join(home, ".pimpo")
+	// Pimpo was called Zodim, and Vigia before that.
+	for _, old := range []struct{ dir, name, label string }{{".zodim", "zodim", "Zodim"}, {".vigia", "vigia", "Vigia"}} {
+		if err := adoptLegacy(filepath.Join(home, old.dir), dir, old.name, old.label); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 	return dir
 }
@@ -84,8 +89,8 @@ func dataDir(flagValue string) string {
 func serve(args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	addr := fs.String("addr", "127.0.0.1:7788", "listen address (loopback only unless you know why)")
-	dir := fs.String("data", "", "data directory (default ~/.zodim)")
-	demoMode := fs.Bool("demo", false, "try Zodim with a demo mailbox and calendar, no accounts and no model costs")
+	dir := fs.String("data", "", "data directory (default ~/.pimpo)")
+	demoMode := fs.Bool("demo", false, "try Pimpo with a demo mailbox and calendar, no accounts and no model costs")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -109,25 +114,25 @@ func serve(args []string) error {
 		}
 		fmt.Printf("Restored %s. What was here before is a snapshot too.\n", name)
 	}
-	store, err := event.Open(filepath.Join(home, "zodim.db"))
+	store, err := event.Open(filepath.Join(home, "pimpo.db"))
 	if err != nil {
 		return err
 	}
 	defer store.Close()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if os.Getenv("ZODIM_DESKTOP_NOTIFY") != "" {
+	if os.Getenv("PIMPO_DESKTOP_NOTIFY") != "" {
 		desktop.KnownPath()
 		go desktop.ShellPath()
 	}
-	if os.Getenv("ZODIM_EXIT_WITH_PARENT") != "" {
+	if os.Getenv("PIMPO_EXIT_WITH_PARENT") != "" {
 		go exitWithParent(ctx, stop)
 	}
 	if err := guardVersion(ctx, store, home); err != nil {
 		return err
 	}
-	os.WriteFile(filepath.Join(home, "zodim.pid"), []byte(strconv.Itoa(os.Getpid())), 0o600)
-	defer os.Remove(filepath.Join(home, "zodim.pid"))
+	os.WriteFile(filepath.Join(home, "pimpo.pid"), []byte(strconv.Itoa(os.Getpid())), 0o600)
+	defer os.Remove(filepath.Join(home, "pimpo.pid"))
 	go dailySnapshots(ctx, store, home)
 
 	token, err := sessionToken(ctx, store)
@@ -155,8 +160,8 @@ func serve(args []string) error {
 	if !*demoMode {
 		a.AttachRemote(home, nil)
 	}
-	a.DesktopNotify = os.Getenv("ZODIM_DESKTOP_NOTIFY") != ""
-	a.TelegramAPI = os.Getenv("ZODIM_TELEGRAM_API")
+	a.DesktopNotify = os.Getenv("PIMPO_DESKTOP_NOTIFY") != ""
+	a.TelegramAPI = os.Getenv("PIMPO_TELEGRAM_API")
 	if *demoMode {
 		a.EnableDemo(ctx, 700*time.Millisecond)
 		fmt.Println("Demo mode: a sample mailbox and calendar, a scripted agent, no model costs.")
@@ -165,7 +170,7 @@ func serve(args []string) error {
 		return err
 	}
 	srv := a.Server
-	fmt.Printf("Zodim %s is running.\n\n  Open: http://%s/auth?token=%s\n\nData: %s\n", version, ln.Addr(), token, home)
+	fmt.Printf("Pimpo %s is running.\n\n  Open: http://%s/auth?token=%s\n\nData: %s\n", version, ln.Addr(), token, home)
 	httpSrv := &http.Server{Handler: srv, ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		<-ctx.Done()
@@ -206,7 +211,7 @@ func guardVersion(ctx context.Context, s *event.Store, home string) error {
 		if err != nil {
 			return fmt.Errorf("could not snapshot before updating from %s: %w", last, err)
 		}
-		fmt.Printf("Updated from %s to %s. Snapshot %s keeps the old data; `zodim restore %s` brings it back.\n", last, version, snap.Name, snap.Name)
+		fmt.Printf("Updated from %s to %s. Snapshot %s keeps the old data; `pimpo restore %s` brings it back.\n", last, version, snap.Name, snap.Name)
 		b, _ := json.Marshal(map[string]string{"from": last, "to": version, "snapshot": snap.Name})
 		s.Put(ctx, app.UpgradeKey, string(b))
 	}
@@ -216,7 +221,7 @@ func guardVersion(ctx context.Context, s *event.Store, home string) error {
 // applyRestore puts back a snapshot the app staged, before anything opens
 // the database.
 func applyRestore(home, name string) error {
-	store, err := event.Open(filepath.Join(home, "zodim.db"))
+	store, err := event.Open(filepath.Join(home, "pimpo.db"))
 	if err != nil {
 		return err
 	}
@@ -238,7 +243,7 @@ func dailySnapshots(ctx context.Context, s *event.Store, home string) {
 	}
 }
 
-func running(home string) bool { return alive(filepath.Join(home, "zodim.pid")) }
+func running(home string) bool { return alive(filepath.Join(home, "pimpo.pid")) }
 
 func alive(pidFile string) bool {
 	b, err := os.ReadFile(pidFile)
@@ -255,7 +260,7 @@ func alive(pidFile string) bool {
 
 func snapshots(cmd string, args []string) error {
 	fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
-	dir := fs.String("data", "", "data directory (default ~/.zodim)")
+	dir := fs.String("data", "", "data directory (default ~/.pimpo)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -274,7 +279,7 @@ func snapshots(cmd string, args []string) error {
 		}
 		return nil
 	case "snapshot":
-		store, err := event.Open(filepath.Join(home, "zodim.db"))
+		store, err := event.Open(filepath.Join(home, "pimpo.db"))
 		if err != nil {
 			return err
 		}
@@ -287,12 +292,12 @@ func snapshots(cmd string, args []string) error {
 		return nil
 	case "restore":
 		if fs.NArg() != 1 {
-			return errors.New("usage: zodim restore NAME (see zodim snapshots)")
+			return errors.New("usage: pimpo restore NAME (see pimpo snapshots)")
 		}
 		if running(home) {
-			return errors.New("stop Zodim before restoring")
+			return errors.New("stop Pimpo before restoring")
 		}
-		store, err := event.Open(filepath.Join(home, "zodim.db"))
+		store, err := event.Open(filepath.Join(home, "pimpo.db"))
 		if err != nil {
 			return err
 		}
@@ -309,7 +314,7 @@ func snapshots(cmd string, args []string) error {
 // across restarts until the user rotates it.
 func sessionToken(ctx context.Context, s *event.Store) (string, error) {
 	// Browser tests pin the token so they can log in.
-	if t := os.Getenv("ZODIM_TOKEN"); t != "" {
+	if t := os.Getenv("PIMPO_TOKEN"); t != "" {
 		return t, s.Put(ctx, "session_token", t)
 	}
 	if t, err := s.Get(ctx, "session_token"); err != nil || t != "" {

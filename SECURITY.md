@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please report privately, not in a public issue: use GitHub's **Report a vulnerability** button on this repository, or email owner@example.com with "Zodim security" in the subject. Include what you found, how to reproduce it, and which version you ran (`zodim version`).
+Please report privately, not in a public issue: use GitHub's **Report a vulnerability** button on this repository, or email owner@example.com with "Pimpo security" in the subject. Include what you found, how to reproduce it, and which version you ran (`pimpo version`).
 
 What to expect:
 

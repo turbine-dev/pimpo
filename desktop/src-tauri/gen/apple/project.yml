@@ -1,6 +1,6 @@
-name: zodim-desktop
+name: pimpo-desktop
 options:
-  bundleIdPrefix: app.zodim.companion
+  bundleIdPrefix: app.pimpo.companion
   deploymentTarget:
     iOS: 14.0
 fileGroups: [../../src]
@@ -10,8 +10,8 @@ configs:
 settingGroups:
   app:
     base:
-      PRODUCT_NAME: Zodim
-      PRODUCT_BUNDLE_IDENTIFIER: app.zodim.companion
+      PRODUCT_NAME: Pimpo
+      PRODUCT_BUNDLE_IDENTIFIER: app.pimpo.companion
 targetTemplates:
   app:
     type: application
@@ -24,20 +24,20 @@ targetTemplates:
     settings:
       groups: [app]
 targets:
-  zodim-desktop_iOS:
+  pimpo-desktop_iOS:
     type: application
     platform: iOS
     sources:
       - path: Sources
       - path: Assets.xcassets
       - path: Externals
-      - path: zodim-desktop_iOS
+      - path: pimpo-desktop_iOS
       - path: assets
         buildPhase: resources
         type: folder
       - path: LaunchScreen.storyboard
     info:
-      path: zodim-desktop_iOS/Info.plist
+      path: pimpo-desktop_iOS/Info.plist
       properties:
         LSRequiresIPhoneOS: true
         UILaunchStoryboardName: LaunchScreen
@@ -54,7 +54,7 @@ targets:
         CFBundleShortVersionString: 0.5.0
         CFBundleVersion: "0.5.0"
     entitlements:
-      path: zodim-desktop_iOS/zodim-desktop_iOS.entitlements
+      path: pimpo-desktop_iOS/pimpo-desktop_iOS.entitlements
     scheme:
       environmentVariables:
         RUST_BACKTRACE: full

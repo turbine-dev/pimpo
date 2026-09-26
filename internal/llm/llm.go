@@ -137,17 +137,17 @@ type Agent interface {
 	Run(ctx context.Context, r AgentRequest) (Response, error)
 }
 
-// Run drives Claude Code with only the Zodim MCP tools: no shell, no files,
-// no web. Every tool call is pre-approved because Zodim's own policy checks
+// Run drives Claude Code with only the Pimpo MCP tools: no shell, no files,
+// no web. Every tool call is pre-approved because Pimpo's own policy checks
 // it on the other side of the MCP connection.
 func (c ClaudeCLI) Run(ctx context.Context, r AgentRequest) (Response, error) {
 	bin := c.Binary
 	if bin == "" {
 		bin = "claude"
 	}
-	cfg, _ := json.Marshal(map[string]any{"mcpServers": map[string]any{"zodim": map[string]string{"type": "http", "url": r.MCPURL}}})
+	cfg, _ := json.Marshal(map[string]any{"mcpServers": map[string]any{"pimpo": map[string]string{"type": "http", "url": r.MCPURL}}})
 	args := []string{"-p", r.Prompt, "--output-format", "json", "--tools", "", "--no-session-persistence",
-		"--strict-mcp-config", "--mcp-config", string(cfg), "--allowed-tools", "mcp__zodim"}
+		"--strict-mcp-config", "--mcp-config", string(cfg), "--allowed-tools", "mcp__pimpo"}
 	if m := firstNonEmpty(r.Model, c.Model); m != "" {
 		args = append(args, "--model", m)
 	}

@@ -9,7 +9,7 @@ import './index.css'
 
 // Inside the desktop app the window cannot open new ones: links meant for a
 // new tab go to the computer's browser through the local server.
-const desktop = (window as { __ZODIM_DESKTOP__?: string }).__ZODIM_DESKTOP__
+const desktop = (window as { __PIMPO_DESKTOP__?: string }).__PIMPO_DESKTOP__
 if (desktop) {
   document.documentElement.dataset.desktop = desktop
   document.addEventListener('click', (e) => {

@@ -5,6 +5,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { BackupCard } from '../components/BackupCard'
 import { CloudBackup } from '../components/CloudBackup'
 import { SnapshotsCard } from '../components/SnapshotsCard'
+import { inDesktopApp, mascotOn, setMascotOn } from '../components/Mascot'
+import { Head } from '../components/PimpoArt'
 import { ModelsCard } from '../components/ModelsCard'
 import { ProtectionCard } from '../components/ProtectionCard'
 import { PhonePairing } from '../components/PhonePairing'
@@ -76,6 +78,7 @@ export function Settings() {
 
         <div className="min-w-0 flex-1 space-y-4">
           {section === 'geral' && <>
+            <MascotCard />
             <Card className="grid gap-4 p-5 sm:grid-cols-2">
               <label>
                 <span className="mb-1 block text-[12.5px] font-medium text-ink-2">{t('settings.language')}</span>
@@ -199,6 +202,26 @@ function Toggles({ title, text, items, onToggle }: { title: string; text: string
           </li>
         ))}
       </ul>
+    </Card>
+  )
+}
+
+// MascotCard turns the Pimpo mascot on or off in this app; the desktop
+// app also offers it on the whole screen from the menu bar.
+function MascotCard() {
+  const t = useT()
+  const [on, setOn] = useState(mascotOn)
+  return (
+    <Card className="flex items-center gap-4 p-5">
+      <svg viewBox="0 0 512 512" className="size-12 shrink-0" aria-hidden><Head mood={on ? 'happy' : 'sleep'} /></svg>
+      <div className="min-w-0 flex-1">
+        <div className="text-[15px] font-medium">{t('mascot.setting')}</div>
+        <p className="text-[13px] text-ink-3">{t('mascot.settingText')}</p>
+        {inDesktopApp() && <p className="mt-1 text-[12.5px] text-ink-3">{t('mascot.desktopHint')}</p>}
+      </div>
+      <label className="flex items-center gap-2 text-[13px]">
+        <input type="checkbox" role="switch" className="size-4 accent-[var(--color-accent)]" checked={on} onChange={(e) => { setMascotOn(e.target.checked); setOn(e.target.checked) }} aria-label={t('mascot.setting')} />
+      </label>
     </Card>
   )
 }

@@ -16,7 +16,7 @@ import (
 )
 
 // Drive keeps backups in a folder of the owner's Google Drive. With the
-// drive.file permission Zodim sees only files it created itself.
+// drive.file permission Pimpo sees only files it created itself.
 type Drive struct {
 	Token  func(ctx context.Context) (string, error)
 	Folder string
@@ -44,10 +44,13 @@ func (d *Drive) api() (string, string) {
 
 func (d *Drive) folder() string {
 	if d.Folder == "" {
-		return "Zodim backups"
+		return "Pimpo backups"
 	}
 	return d.Folder
 }
+
+// legacyFolder is where backups went before the rename; they stay listed.
+const legacyFolder = "Zodim backups"
 
 func (d *Drive) do(ctx context.Context, method, u, contentType string, data []byte) (*http.Response, error) {
 	tok, err := d.Token(ctx)
@@ -91,11 +94,11 @@ func driveError(status int, reason, msg string) error {
 	case reason == "accessNotConfigured" || strings.Contains(msg, "has not been used in project") || strings.Contains(msg, "is disabled"):
 		return errors.New("turn on the Google Drive API in your Google Cloud project, then try again")
 	case reason == "insufficientPermissions" || status == 403 && strings.Contains(msg, "scope"):
-		return errors.New("Zodim may not use your Drive yet: reconnect Google in Connections and allow Drive")
+		return errors.New("Pimpo may not use your Drive yet: reconnect Google in Connections and allow Drive")
 	case reason == "storageQuotaExceeded":
 		return errors.New("your Google Drive is full")
 	case status == 401:
-		return errors.New("Google signed Zodim out; reconnect Google in Connections")
+		return errors.New("Google signed Pimpo out; reconnect Google in Connections")
 	}
 	return fmt.Errorf("Google Drive refused (%d): %s", status, msg)
 }
@@ -150,6 +153,13 @@ func (d *Drive) folderIDFor(ctx context.Context) (string, error) {
 	found, err := d.search(ctx, "name = "+quote(d.folder())+" and mimeType = '"+folderType+"' and trashed = false")
 	if err != nil {
 		return "", err
+	}
+	if len(found) == 0 && d.Folder == "" {
+		// An install from before the rename keeps using its folder, so
+		// old and new backups stay together.
+		if found, err = d.search(ctx, "name = "+quote(legacyFolder)+" and mimeType = '"+folderType+"' and trashed = false"); err != nil {
+			return "", err
+		}
 	}
 	if len(found) > 0 {
 		id = found[0].ID

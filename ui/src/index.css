@@ -4,21 +4,22 @@
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
-/* Colors carry meaning: green reads, amber changes something reversible,
-   red cannot be undone, blue is the agent exploring. Everything else is neutral. */
+/* The brand is black and white, like the Pimpo. Color only carries meaning:
+   green reads, amber changes something reversible, red cannot be undone,
+   blue is the agent exploring. */
 @theme {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
 
-  --color-bg: #f7f7f5;
+  --color-bg: #f6f6f5;
   --color-surface: #ffffff;
   --color-raised: #ffffff;
-  --color-sunken: #efefec;
-  --color-line: #e4e4df;
-  --color-line-strong: #d3d3cc;
-  --color-ink: #16171a;
-  --color-ink-2: #4a4d55;
-  --color-ink-3: #62656c;
+  --color-sunken: #eeeeed;
+  --color-line: #e3e3e1;
+  --color-line-strong: #cfcfcc;
+  --color-ink: #111111;
+  --color-ink-2: #4a4a4a;
+  --color-ink-3: #666666;
 
   --color-read: #07754f;
   --color-read-soft: #e3f6ee;
@@ -28,7 +29,7 @@
   --color-danger-soft: #fce6ea;
   --color-explore: #2854d4;
   --color-explore-soft: #e6edff;
-  --color-accent: #4c3ee0;
+  --color-accent: #111111;
 
   --radius-card: 14px;
   --shadow-card: 0 1px 0 rgb(0 0 0 / 0.02), 0 1px 3px rgb(16 17 20 / 0.06);
@@ -42,15 +43,15 @@
 }
 
 [data-theme=dark] {
-  --color-bg: #0c0d10;
-  --color-surface: #131519;
-  --color-raised: #1a1d22;
-  --color-sunken: #0f1013;
-  --color-line: #23262d;
-  --color-line-strong: #30343c;
-  --color-ink: #eceef2;
-  --color-ink-2: #a8adb8;
-  --color-ink-3: #8a8f99;
+  --color-bg: #0b0b0b;
+  --color-surface: #141414;
+  --color-raised: #1b1b1b;
+  --color-sunken: #0f0f0f;
+  --color-line: #262626;
+  --color-line-strong: #343434;
+  --color-ink: #f2f2f2;
+  --color-ink-2: #b0b0b0;
+  --color-ink-3: #8c8c8c;
 
   --color-read: #34d399;
   --color-read-soft: rgb(52 211 153 / 0.12);
@@ -60,7 +61,7 @@
   --color-danger-soft: rgb(251 113 133 / 0.13);
   --color-explore: #7aa2ff;
   --color-explore-soft: rgb(122 162 255 / 0.13);
-  --color-accent: #8b7dff;
+  --color-accent: #f2f2f2;
 
   --shadow-card: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-pop: 0 16px 40px -8px rgb(0 0 0 / 0.6);
@@ -80,4 +81,74 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
+}
+
+/* The Pimpo mascot. Parts move around their own box; reduced motion stills them. */
+.pimpo { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.18)); }
+/* A black cat needs an edge on a dark page. */
+[data-theme=dark] .pimpo, [data-theme=dark] .pimpo-mark { filter: drop-shadow(0 0 1.2px rgb(255 255 255 / 0.75)) drop-shadow(0 0 7px rgb(255 255 255 / 0.12)); }
+.pimpo g, .pimpo path, .pimpo ellipse { transform-box: fill-box; }
+.pimpo-tail { transform-origin: 0% 100%; animation: pimpo-tail 3.2s ease-in-out infinite; }
+.pimpo-body { transform-origin: 50% 100%; animation: pimpo-breathe 3s ease-in-out infinite; }
+.pimpo-eyes { transform-origin: 50% 50%; animation: pimpo-blink 5.5s infinite; }
+.pimpo-head { transform-origin: 50% 90%; transition: transform .4s ease; }
+.pimpo-ear-l { transform-origin: 80% 100%; transition: transform .3s ease; }
+.pimpo-ear-r { transform-origin: 20% 100%; transition: transform .3s ease; }
+.pimpo-working .pimpo-pupils { animation: pimpo-look 1.6s ease-in-out infinite alternate; }
+.pimpo-alert { animation: pimpo-hop .9s ease-in-out infinite; }
+.pimpo-alert .pimpo-ear-l { transform: rotate(-6deg) translateY(-6px); }
+.pimpo-alert .pimpo-ear-r { transform: rotate(6deg) translateY(-6px); }
+.pimpo-happy .pimpo-tail { animation-duration: .7s; }
+.pimpo-happy .pimpo-head { transform: rotate(-5deg); }
+.pimpo-worried .pimpo-ear-l { transform: rotate(-24deg); }
+.pimpo-worried .pimpo-ear-r { transform: rotate(24deg); }
+.pimpo-worried .pimpo-tail { animation: none; transform: rotate(40deg); }
+.pimpo-sleep .pimpo-head { transform: rotate(8deg) translateY(10px); }
+.pimpo-sleep .pimpo-tail, .pimpo-sleep .pimpo-eyes { animation: none; }
+.pimpo-sleep .pimpo-body { animation-duration: 5s; }
+.pimpo-z text { animation: pimpo-z 3s ease-in-out infinite; }
+.pimpo-z text:nth-child(2) { animation-delay: 1.2s; }
+.pimpo-pet .pimpo-head { transform: rotate(-7deg); }
+.pimpo-heart { fill: #e11d48; animation: pimpo-heart 1.4s ease-out infinite; }
+.pimpo-bubble { animation: pimpo-pop .22s ease-out; transform-origin: 90% 100%; }
+@keyframes pimpo-tail { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(10deg); } }
+@keyframes pimpo-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.025); } }
+@keyframes pimpo-blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.08); } }
+@keyframes pimpo-look { from { transform: translateX(-9px); } to { transform: translateX(9px); } }
+@keyframes pimpo-hop { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-7px); } 55% { transform: translateY(0); } }
+@keyframes pimpo-z { 0% { opacity: 0; transform: translate(0, 10px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(14px, -24px); } }
+@keyframes pimpo-heart { 0% { opacity: 0; transform: translateY(10px) scale(.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px) scale(1.1); } }
+@keyframes pimpo-pop { from { opacity: 0; transform: scale(.9) translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .pimpo *, .pimpo, .pimpo-bubble { animation: none !important; transition: none !important; }
+}
+
+/* Games the Pimpo plays now and then. Things fly and roll to his left, so
+   a floating window widens to the left while he plays. */
+.pimpo-paw { transform-origin: 90% 95%; animation: pimpo-swipe 1.1s ease-in-out infinite; }
+.pimpo-play-groom .pimpo-paw { animation: pimpo-groom .7s ease-in-out infinite; transform: rotate(38deg) translate(40px, -70px); }
+.pimpo-butterfly { animation: pimpo-flutter 6s ease-in-out infinite; }
+.pimpo-wings { transform-origin: 50% 50%; animation: pimpo-flap .18s ease-in-out infinite alternate; }
+.pimpo-ball { animation: pimpo-roll 6s ease-in-out infinite; }
+.pimpo-ball-spin { animation: pimpo-spin 6s ease-in-out infinite; }
+.pimpo-play-yawn .pimpo-body { animation: pimpo-stretch 3s ease-in-out infinite; }
+.pimpo-play-yawn .pimpo-head { transform: rotate(-4deg) translateY(-6px); }
+.pimpo-play-butterfly .pimpo-head { animation: pimpo-follow 6s ease-in-out infinite; }
+.pimpo-play-ball .pimpo-tail { animation-duration: .9s; }
+@keyframes pimpo-swipe { 0%, 60%, 100% { transform: rotate(0); } 75% { transform: rotate(-28deg); } 85% { transform: rotate(8deg); } }
+@keyframes pimpo-groom { from { transform: rotate(38deg) translate(40px, -70px); } to { transform: rotate(30deg) translate(46px, -90px); } }
+@keyframes pimpo-flap { from { transform: scaleX(1); } to { transform: scaleX(.3); } }
+@keyframes pimpo-flutter {
+  0% { transform: translate(-40px, 120px); } 20% { transform: translate(40px, 40px); } 40% { transform: translate(150px, 110px); }
+  60% { transform: translate(60px, 190px); } 80% { transform: translate(-120px, 150px); } 100% { transform: translate(-40px, 120px); }
+}
+@keyframes pimpo-follow { 0%, 100% { transform: rotate(-6deg); } 40% { transform: rotate(6deg); } 80% { transform: rotate(-10deg); } }
+@keyframes pimpo-roll {
+  0% { transform: translate(-420px, 630px); } 35% { transform: translate(40px, 630px); } 50% { transform: translate(64px, 630px); }
+  75% { transform: translate(-220px, 630px); } 100% { transform: translate(-420px, 630px); }
+}
+@keyframes pimpo-spin { 0% { transform: rotate(0); } 35% { transform: rotate(560deg); } 50% { transform: rotate(600deg); } 75% { transform: rotate(240deg); } 100% { transform: rotate(0); } }
+@keyframes pimpo-stretch { 0%, 100% { transform: scaleY(1); } 40% { transform: scaleY(1.06) scaleX(.97); } }
+@media (prefers-reduced-motion: reduce) {
+  .pimpo-butterfly, .pimpo-ball { display: none; }
 }

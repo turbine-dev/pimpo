@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/connector"
 )
 
 func init() {
@@ -72,7 +72,7 @@ func init() {
 	})
 	register(Kind{
 		ID: "obsidian", Title: "Obsidian", Description: "Suas notas em Markdown, na pasta do cofre.",
-		Help:   "Informe a pasta do cofre neste computador. Antes de mudar uma nota, guardo uma cópia em .zodim/history.",
+		Help:   "Informe a pasta do cofre neste computador. Antes de mudar uma nota, guardo uma cópia em .pimpo/history.",
 		Fields: []Field{{Name: "vault", Label: "Pasta do cofre", Placeholder: "/Users/voce/Documents/Notas"}},
 		Specs: []capability.Spec{
 			{Name: "obsidian.search", Risk: capability.Read, Signature: "obsidian.search({query, max})", Returns: "[{note, line, text}] note is the path inside the vault",
@@ -82,7 +82,7 @@ func init() {
 		},
 		Call: callObsidian,
 		Probe: func(ctx context.Context, cfg Config) error {
-			_, err := callObsidian(ctx, cfg, "obsidian.search", "", map[string]any{"query": "zodim-probe"})
+			_, err := callObsidian(ctx, cfg, "obsidian.search", "", map[string]any{"query": "pimpo-probe"})
 			return err
 		},
 	})
@@ -305,7 +305,7 @@ func inVault(vault, note string) (string, error) {
 	}
 	p := filepath.Join(vault, filepath.Clean("/"+note))
 	rel, err := filepath.Rel(vault, p)
-	if err != nil || strings.HasPrefix(rel, "..") || strings.HasPrefix(rel, ".zodim") || strings.HasPrefix(rel, ".obsidian") {
+	if err != nil || strings.HasPrefix(rel, "..") || strings.HasPrefix(rel, ".pimpo") || strings.HasPrefix(rel, ".obsidian") {
 		return "", errors.New("note must be a path inside the vault")
 	}
 	if !strings.HasSuffix(p, ".md") {
@@ -382,7 +382,7 @@ func callObsidian(ctx context.Context, cfg Config, name, _ string, args any) (an
 		old, _ := os.ReadFile(p)
 		if len(old) > 0 {
 			rel, _ := filepath.Rel(vault, p)
-			keep := filepath.Join(vault, ".zodim", "history", rel+"."+time.Now().Format("20060102-150405"))
+			keep := filepath.Join(vault, ".pimpo", "history", rel+"."+time.Now().Format("20060102-150405"))
 			os.MkdirAll(filepath.Dir(keep), 0o755)
 			if err := os.WriteFile(keep, old, 0o644); err != nil {
 				return nil, err

@@ -7,14 +7,14 @@ import (
 	"slices"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/connector/services"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/internal/store"
-	"github.com/denerFernandes/zodim/internal/sysinfo"
+	"github.com/denerFernandes/pimpo/internal/connector/services"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/denerFernandes/pimpo/internal/sysinfo"
 )
 
-// The system panel: how busy this computer and Zodim are, what is running
+// The system panel: how busy this computer and Pimpo are, what is running
 // now, and the state of every part that talks to the outside.
 
 type component struct {

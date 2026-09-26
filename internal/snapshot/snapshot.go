@@ -1,4 +1,4 @@
-// Package snapshot copies Zodim's state (database and memory) aside before
+// Package snapshot copies Pimpo's state (database and memory) aside before
 // risky moments, such as an update, and restores it in one command.
 package snapshot
 
@@ -28,7 +28,7 @@ const Keep = 10
 func dir(home string) string { return filepath.Join(home, "snapshots") }
 
 // Create writes a consistent copy of the database (VACUUM INTO works while
-// Zodim runs) and a copy of the memory folder.
+// Pimpo runs) and a copy of the memory folder.
 func Create(db *sql.DB, home, label string) (Snapshot, error) {
 	when := time.Now()
 	name := when.UTC().Format("20060102-150405") + "-" + clean(label)
@@ -36,7 +36,7 @@ func Create(db *sql.DB, home, label string) (Snapshot, error) {
 	if err := os.MkdirAll(target, 0o700); err != nil {
 		return Snapshot{}, err
 	}
-	if _, err := db.Exec(`VACUUM INTO ?`, filepath.Join(target, "zodim.db")); err != nil {
+	if _, err := db.Exec(`VACUUM INTO ?`, filepath.Join(target, "pimpo.db")); err != nil {
 		os.RemoveAll(target)
 		return Snapshot{}, fmt.Errorf("copy database: %w", err)
 	}
@@ -65,7 +65,7 @@ func clean(label string) string {
 }
 
 func info(home, name string) (Snapshot, error) {
-	st, err := os.Stat(filepath.Join(dir(home), name, "zodim.db"))
+	st, err := os.Stat(filepath.Join(dir(home), name, "pimpo.db"))
 	if err != nil {
 		return Snapshot{}, err
 	}
@@ -105,11 +105,11 @@ func prune(home string) {
 	}
 }
 
-// Restore puts a snapshot back. Zodim must not be running. The current
+// Restore puts a snapshot back. Pimpo must not be running. The current
 // state is snapshotted first, so a restore can itself be undone.
 func Restore(home, name string, current *sql.DB) error {
 	src := filepath.Join(dir(home), name)
-	if _, err := os.Stat(filepath.Join(src, "zodim.db")); err != nil {
+	if _, err := os.Stat(filepath.Join(src, "pimpo.db")); err != nil {
 		return fmt.Errorf("snapshot %s not found", name)
 	}
 	if current != nil {
@@ -118,10 +118,10 @@ func Restore(home, name string, current *sql.DB) error {
 		}
 		current.Close()
 	}
-	for _, f := range []string{"zodim.db", "zodim.db-wal", "zodim.db-shm"} {
+	for _, f := range []string{"pimpo.db", "pimpo.db-wal", "pimpo.db-shm"} {
 		os.Remove(filepath.Join(home, f))
 	}
-	if err := copyFile(filepath.Join(src, "zodim.db"), filepath.Join(home, "zodim.db")); err != nil {
+	if err := copyFile(filepath.Join(src, "pimpo.db"), filepath.Join(home, "pimpo.db")); err != nil {
 		return err
 	}
 	os.RemoveAll(filepath.Join(home, "memory"))
@@ -168,7 +168,7 @@ func copyDir(src, dst string) error {
 const stagedFile = "restore-pending"
 
 // Stage marks a snapshot to be restored on the next start, since the
-// database cannot be swapped while Zodim has it open.
+// database cannot be swapped while Pimpo has it open.
 func Stage(home, name string) error {
 	if name == "" || strings.ContainsAny(name, `/\`) || strings.Contains(name, "..") {
 		return fmt.Errorf("snapshot %s not found", name)

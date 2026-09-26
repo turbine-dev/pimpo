@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/policy"
-	"github.com/denerFernandes/zodim/internal/protect"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/protection"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/policy"
+	"github.com/denerFernandes/pimpo/internal/protect"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/protection"
 )
 
-// Guard lets agents that are not Zodim, such as OpenClaw and Hermes, ask
-// Zodim's rules and the shared protection list before they run a tool.
+// Guard lets agents that are not Pimpo, such as OpenClaw and Hermes, ask
+// Pimpo's rules and the shared protection list before they run a tool.
 // Their tools are sorted into a few guard.* capabilities, so the owner
 // writes rules for them like for anything else.
 

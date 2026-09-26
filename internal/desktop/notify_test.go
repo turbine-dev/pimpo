@@ -13,11 +13,11 @@ func TestNotifyEscapes(t *testing.T) {
 		got = append([]string{name}, args...)
 		return nil
 	}
-	Notify(context.Background(), "Zodim", "Posso apagar \"tudo\"?\" & do shell script \"rm -rf ~\" --")
+	Notify(context.Background(), "Pimpo", "Posso apagar \"tudo\"?\" & do shell script \"rm -rf ~\" --")
 	cmd := strings.Join(got, " ")
 	switch runtime.GOOS {
 	case "darwin":
-		if !strings.Contains(cmd, `display notification "Posso apagar \"tudo\"?\" & do shell script \"rm -rf ~\" --" with title "Zodim"`) {
+		if !strings.Contains(cmd, `display notification "Posso apagar \"tudo\"?\" & do shell script \"rm -rf ~\" --" with title "Pimpo"`) {
 			t.Fatalf("%s", cmd)
 		}
 	case "linux":

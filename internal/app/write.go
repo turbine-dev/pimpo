@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/llm"
 )
 
 // A routine's write step: a small model composes one short text from one

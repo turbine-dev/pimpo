@@ -63,7 +63,7 @@ func TestDiscordDirectMessages(t *testing.T) {
 			for _, d := range []string{
 				`{"channel_id":"g1","guild_id":"x","content":"in a server","author":{"id":"u1"}}`,
 				`{"channel_id":"dm-1","content":"sou um bot","author":{"id":"b","bot":true}}`,
-				`{"channel_id":"dm-1","content":"oi zodim","author":{"id":"u1"}}`,
+				`{"channel_id":"dm-1","content":"oi pimpo","author":{"id":"u1"}}`,
 			} {
 				wsjson.Write(ctx, c, map[string]any{"op": 0, "t": "MESSAGE_CREATE", "s": s, "d": json.RawMessage(d)})
 				s++
@@ -79,7 +79,7 @@ func TestDiscordDirectMessages(t *testing.T) {
 	}
 	var got []Inbound
 	err := d.Run(context.Background(), func(in Inbound) { got = append(got, in) })
-	if err == nil || len(got) != 1 || got[0] != (Inbound{From: "u1", Chat: "dm-1", Text: "oi zodim"}) {
+	if err == nil || len(got) != 1 || got[0] != (Inbound{From: "u1", Chat: "dm-1", Text: "oi pimpo"}) {
 		t.Fatalf("%v %+v", err, got)
 	}
 	d.Send(context.Background(), "u1", "olá")
@@ -122,7 +122,7 @@ func TestSlackSocketMode(t *testing.T) {
 			for i, e := range []string{
 				`{"type":"message","channel_type":"channel","channel":"C1","user":"U1","text":"no canal"}`,
 				`{"type":"message","channel_type":"im","channel":"D1","user":"U1","text":"editada","subtype":"message_changed"}`,
-				`{"type":"message","channel_type":"im","channel":"D1","user":"U1","text":"oi zodim"}`,
+				`{"type":"message","channel_type":"im","channel":"D1","user":"U1","text":"oi pimpo"}`,
 			} {
 				wsjson.Write(ctx, c, map[string]any{"type": "events_api", "envelope_id": fmt.Sprint("e", i), "payload": map[string]any{"event": json.RawMessage(e)}})
 				var ack map[string]string
@@ -140,7 +140,7 @@ func TestSlackSocketMode(t *testing.T) {
 	}
 	var got []Inbound
 	s.Run(context.Background(), func(in Inbound) { got = append(got, in) })
-	if len(got) != 1 || got[0].Text != "oi zodim" || got[0].From != "U1" {
+	if len(got) != 1 || got[0].Text != "oi pimpo" || got[0].From != "U1" {
 		t.Fatalf("%+v", got)
 	}
 	s.Send(context.Background(), "U1", "olá")
@@ -160,7 +160,7 @@ func TestSignalThroughSignalCLI(t *testing.T) {
 		case "/api/v1/events":
 			w.Header().Set("Content-Type", "text/event-stream")
 			fmt.Fprint(w, "event:receive\ndata:{\"jsonrpc\":\"2.0\",\"method\":\"receive\",\"params\":{\"envelope\":{\"sourceNumber\":\"+5511999\",\"typingMessage\":{}}}}\n\n")
-			fmt.Fprint(w, "event:receive\ndata:{\"jsonrpc\":\"2.0\",\"method\":\"receive\",\"params\":{\"envelope\":{\"sourceNumber\":\"+5511999\",\"dataMessage\":{\"message\":\"oi zodim\"}}}}\n\n")
+			fmt.Fprint(w, "event:receive\ndata:{\"jsonrpc\":\"2.0\",\"method\":\"receive\",\"params\":{\"envelope\":{\"sourceNumber\":\"+5511999\",\"dataMessage\":{\"message\":\"oi pimpo\"}}}}\n\n")
 		case "/api/v1/rpc":
 			var req struct {
 				Method string         `json:"method"`
@@ -176,7 +176,7 @@ func TestSignalThroughSignalCLI(t *testing.T) {
 	s := &Signal{URL: srv.URL, Account: "+5511000"}
 	var got []Inbound
 	s.Run(context.Background(), func(in Inbound) { got = append(got, in) })
-	if len(got) != 1 || got[0] != (Inbound{From: "+5511999", Text: "oi zodim"}) {
+	if len(got) != 1 || got[0] != (Inbound{From: "+5511999", Text: "oi pimpo"}) {
 		t.Fatalf("%+v", got)
 	}
 	if err := s.Send(context.Background(), "+5511999", "olá"); err != nil {

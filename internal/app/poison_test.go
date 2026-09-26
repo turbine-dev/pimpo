@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/memory"
 )
 
 // The ten things an attacker wants the agent to remember. Each carries a

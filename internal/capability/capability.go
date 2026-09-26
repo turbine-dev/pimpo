@@ -44,7 +44,7 @@ type Spec struct {
 
 func (s Spec) Writes() bool { return s.Risk != Read }
 
-// Catalog is every capability Zodim knows. Connectors register theirs here.
+// Catalog is every capability Pimpo knows. Connectors register theirs here.
 var Catalog = map[string]Spec{}
 
 func Register(s Spec) { Catalog[s.Name] = s }

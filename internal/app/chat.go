@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/policy"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/policy"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/store"
 )
 
 // The chat in the app: each message is an exploration that sees the
@@ -240,7 +240,7 @@ func (a *App) history(ctx context.Context, ids []string) string {
 		if answer == "" {
 			answer = "(no answer: " + e.Error + ")"
 		}
-		b.WriteString("Owner: " + short(e.Request) + "\nZodim: " + short(answer) + "\n")
+		b.WriteString("Owner: " + short(e.Request) + "\nPimpo: " + short(answer) + "\n")
 	}
 	return strings.TrimSpace(b.String())
 }

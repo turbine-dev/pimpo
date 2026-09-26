@@ -7,7 +7,7 @@ import { Button, Card } from './ui'
 
 const when = (s: Snapshot) => date(s.when, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-// SnapshotsCard lists the copies Zodim keeps on this computer and puts one
+// SnapshotsCard lists the copies Pimpo keeps on this computer and puts one
 // back on the next start.
 export function SnapshotsCard() {
   const t = useT()

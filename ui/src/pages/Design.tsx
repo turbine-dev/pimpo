@@ -3,6 +3,7 @@ import { RoutineCard } from '../components/RoutineCard'
 import type { RoutineSummary } from '../lib/api'
 import { Button, Card, EmptyState, RiskBadge } from '../components/ui'
 import { useT } from '../lib/i18n'
+import { Cat } from '../components/Mascot'
 
 // The component catalog: every building block with realistic data, used to
 // review the design and as a visual regression target.
@@ -17,6 +18,23 @@ export function Design() {
   const t = useT()
   return (
     <div className="mx-auto max-w-6xl space-y-10">
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-ink-3">Pimpo</h2>
+        <div className="flex flex-wrap gap-6">
+          {(['idle', 'sleep', 'alert', 'happy', 'worried', 'working'] as const).map((m) => (
+            <figure key={m} className="text-center">
+              <div className="h-[130px] w-[100px]"><Cat mood={m} petting={false} /></div>
+              <figcaption className="mt-1 text-[12px] text-ink-3">{m}</figcaption>
+            </figure>
+          ))}
+          {(['butterfly', 'ball', 'yawn', 'groom'] as const).map((g) => (
+            <figure key={g} className="ml-10 text-center">
+              <div className="h-[130px] w-[100px]"><Cat mood="idle" petting={false} play={g} /></div>
+              <figcaption className="mt-1 text-[12px] text-ink-3">{g}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
       <section>
         <h2 className="mb-3 text-sm font-semibold text-ink-3">{t('design.cards')}</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -10,7 +10,7 @@ import { Button, Card } from './ui'
 
 const field = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
 
-// How the phone reaches this Zodim (home Wi-Fi, Tailscale built in, or an
+// How the phone reaches this Pimpo (home Wi-Fi, Tailscale built in, or an
 // address of the owner's), and the devices paired to it. Each device gets
 // its own link, shown once as a QR code; revoking one cuts off only it.
 export function PhonePairing() {

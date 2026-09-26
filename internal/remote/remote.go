@@ -1,4 +1,4 @@
-// Package remote gives Zodim a link the owner's phone can open from
+// Package remote gives Pimpo a link the owner's phone can open from
 // anywhere, with nothing to install: Tailscale runs inside the binary
 // (tsnet) and Funnel publishes the web app over HTTPS, with TLS ending on
 // this machine. The first time, the owner signs in to Tailscale in the

@@ -1,4 +1,4 @@
-# Zodim — Planejamento completo
+# Pimpo — Planejamento completo
 
 > **Nome provisório.** Premissas: gratuito e open source, local-first, sem prazos (cada fase termina num gate).
 > Prioridades e decisões de UI foram avaliadas com o **Jev** (TypeSafe System One). Os dados brutos estão em `jev/`, e o método no Apêndice A.
@@ -16,7 +16,7 @@
 3. A rotina roda sozinha no horário, **sem LLM**, por centavos. Um modelo de julgamento só entra em decisões pontuais ("este e-mail é importante?").
 4. Se algo muda, a rotina para, avisa e propõe um conserto que você aprova.
 
-**Por que é melhor que os dois:** eles passam **todo** pedido pelo LLM, toda vez. É daí que vêm a falta de confiabilidade (motivo nº 1 de abandono), o custo (até $131 por dia) e as regras esquecidas (o caso dos 200 e-mails apagados). O Zodim também é **seguro por construção**: regras fora do modelo, capacidades mínimas, aprovação no celular, chaves invisíveis, recibo e desfazer para tudo, e limite de gasto real (nenhum dos dois tem).
+**Por que é melhor que os dois:** eles passam **todo** pedido pelo LLM, toda vez. É daí que vêm a falta de confiabilidade (motivo nº 1 de abandono), o custo (até $131 por dia) e as regras esquecidas (o caso dos 200 e-mails apagados). O Pimpo também é **seguro por construção**: regras fora do modelo, capacidades mínimas, aprovação no celular, chaves invisíveis, recibo e desfazer para tudo, e limite de gasto real (nenhum dos dois tem).
 
 **A interface** (validada com o Jev): **chat para conversar e aprovar, mais uma interface web local para ver e controlar**. A tela principal é **Rotinas**. O momento que faz alguém dizer "uau" é **ver a tarefa que acabou de fazer virar uma rotina, com o custo caindo para zero**.
 
@@ -104,7 +104,7 @@ O resumo matinal só **lê** dados e **envia para você**. Não tem ação irrev
 | Capacidades por rotina | 2,94 | 2,33 | 1,19 | 2,69 | Manifesto checado no runtime |
 | **Limite de gasto** | 2,95 | 2,88 | 1,01 | 2,58 | Limite diário simples, checado antes de cada chamada (**maior prioridade geral: 2,13**) |
 | Passos de julgamento calibrados | 2,56 | 2,55 | 1,59 | 2,35 | Um julgamento: "e-mail importante?" |
-| Zodim de saúde | 2,70 | 2,29 | 1,17 | 2,26 | Toda falha vira aviso |
+| Pimpo de saúde | 2,70 | 2,29 | 1,17 | 2,26 | Toda falha vira aviso |
 | UI: Rotinas (mínima) | 2,61 | 2,45 | 0,89 | 1,63 | Cartão com execuções, custo e capacidades; escolhida pelo Jev como tela principal |
 
 **F2 — seguro por construção (v0.2)**
@@ -224,7 +224,7 @@ O resumo matinal só **lê** dados e **envia para você**. Não tem ação irrev
 - As chaves nunca aparecem: só "conectado em 12/09 · usado por 3 rotinas".
 
 **Onboarding (primeira execução)**
-1. "Oi, eu sou o Zodim." Três telas curtas explicando: rotinas, regras e recibos.
+1. "Oi, eu sou o Pimpo." Três telas curtas explicando: rotinas, regras e recibos.
 2. Conectar o Telegram (QR code ou link do bot).
 3. Conectar o modelo (chave de API, ou modelo local via Ollama).
 4. "O que eu posso fazer sem te perguntar?": três opções simples (conservador, equilibrado, liberal), que viram regras editáveis.
@@ -272,7 +272,7 @@ O Telegram é metade da interface e segue o mesmo sistema:
  Telegram ◀────────────┐                     ┌──────▶ Web UI (PWA, React)
                        │                     │
  ┌─────────────────────┴─────────────────────┴───────────────────────────┐
- │ zodim — um único binário Go                                            │
+ │ pimpo — um único binário Go                                            │
  │                                                                         │
  │  Gateway de canais ──▶ Conversa ──▶ Exploração (loop de ferramentas) ──┐ │
  │                                          │                             │ │
@@ -293,7 +293,7 @@ O Telegram é metade da interface e segue o mesmo sistema:
  │                                                                          │
  │  Armazenamento: SQLite (eventos só-acréscimo, auditoria encadeada)       │
  │  Memória: arquivos Markdown versionados (git embutido, go-git)           │
- │  Zodim de saúde · API HTTP + WebSocket para a UI                         │
+ │  Pimpo de saúde · API HTTP + WebSocket para a UI                         │
  └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -363,7 +363,7 @@ O compilador só propõe uma rotina quando **todas** as condições valem. As co
 **Medida de sucesso do compilador:** a fração de explorações elegíveis cuja rotina gerada passa nos próprios testes na primeira tentativa, e a fração de rotinas que rodam 30 dias sem conserto. Ambas são medidas no benchmark de rotinas (seção 7).
 
 ### 6.7 Privacidade e dados
-- **Tudo fica local:** banco, memória, recibos e segredos ficam na máquina do usuário. Não existe servidor do Zodim.
+- **Tudo fica local:** banco, memória, recibos e segredos ficam na máquina do usuário. Não existe servidor do Pimpo.
 - **O que sai da máquina:** apenas o que vai para o provedor de LLM e o backend de julgamento escolhidos. A UI mostra, em cada recibo, **o que foi enviado para qual provedor**.
 - **Minimização:** a exploração envia ao LLM só o necessário (por exemplo, o assunto e o remetente antes do corpo). As rotinas compiladas não enviam nada ao LLM, exceto nos passos de julgamento ou nas chamadas "usa LLM" declaradas.
 - **Redação:** segredos nunca entram em prompts (o corretor garante). Padrões sensíveis (cartões, documentos) são mascarados antes do envio, quando configurado.
@@ -454,7 +454,7 @@ F12 Longevidade: SDK, idiomas, auditoria, LTS ──────▶ v2.x
   - compilador integrado ao produto;
   - agendador (horário fixo);
   - um passo de julgamento ("e-mail importante?");
-  - zodim de saúde: toda falha vira aviso com o botão "refazer com o agente";
+  - pimpo de saúde: toda falha vira aviso com o botão "refazer com o agente";
   - limite de gasto diário simples.
 - **UI:** tela Rotinas (cartão com execuções, custo e capacidades) e o momento da compilação em versão simples.
 - **Tecnologia:**
@@ -501,7 +501,7 @@ F12 Longevidade: SDK, idiomas, auditoria, LTS ──────▶ v2.x
 - **Métricas:** tempo até a primeira rotina; pedidos de aprovação por dia (menos de 5); taxa de aceite do "Transformar em rotina".
 
 ### F4 · Três usos perfeitos → v0.4
-- **Objetivo:** o Zodim substitui de verdade o que o Dener usava antes.
+- **Objetivo:** o Pimpo substitui de verdade o que o Dener usava antes.
 - **Produto:**
   - triagem de e-mail (rascunhos, arquivar, cancelar inscrições; sempre reversível);
   - um terceiro uso escolhido pelo Dener (lembrete de contas, resumo semanal ou acompanhamento de pacotes);
@@ -517,10 +517,10 @@ F12 Longevidade: SDK, idiomas, auditoria, LTS ──────▶ v2.x
 - **Objetivo:** qualquer pessoa instala e quem usa OpenClaw ou Hermes migra sem dor.
 - **Produto:**
   - instalador para macOS (app de barra de menu que embute o binário) e script de uma linha para Linux, Raspberry Pi e VPS;
-  - `zodim migrate openclaw|hermes`: skills, memória, canais e agendamentos, com o relatório "o que cada skill podia fazer e o que pode agora";
+  - `pimpo migrate openclaw|hermes`: skills, memória, canais e agendamentos, com o relatório "o que cada skill podia fazer e o que pode agora";
   - skills importadas rodam com capacidades mínimas e, quando se repetem, viram rotinas;
   - OAuth do Google guiado na UI (cliente próprio do usuário), substituindo o IMAP como padrão.
-- **UI:** assistente de instalação; relatório de migração; página "O que o Zodim garante e o que não garante".
+- **UI:** assistente de instalação; relatório de migração; página "O que o Pimpo garante e o que não garante".
 - **Tecnologia:** assinatura dos binários (notarização no macOS); canal de atualização estável e beta; esquema de eventos e de rotinas congelado em v1, com migrações testadas.
 - **Qualidade:** matriz de testes em macOS, Ubuntu e Raspberry Pi OS; testes de migração com instalações reais anonimizadas do OpenClaw e do Hermes.
 - **Gate:** 3 de 3 participantes não técnicos concluem a instalação em até 15 minutos sem editar arquivos, com as regras padrão ativas; 3 instalações reais (OpenClaw ou Hermes) migram com um comando e pelo menos 80% das skills funcionam sem ajuste. *(Precisa do fim do stand by.)*
@@ -565,8 +565,8 @@ F12 Longevidade: SDK, idiomas, auditoria, LTS ──────▶ v2.x
 - **Métricas:** conectores ativos por usuário; falhas de conector por semana.
 
 ### F9 · (removida)
-- **Decisão do Dener em 25/09/2026:** o backoffice de pequeno negócio (clientes, orçamentos, faturas, links de pagamento) saiu do roadmap. É outro produto, um CRM, e misturava conceitos: o Zodim é um agente que transforma pedidos em rotinas confiáveis, não um sistema de gestão.
-- Quem tem um pequeno negócio usa o Zodim como qualquer pessoa: pedindo rotinas ("todo dia 5, me avise quem não pagou") sobre o e-mail, a agenda ou uma planilha.
+- **Decisão do Dener em 25/09/2026:** o backoffice de pequeno negócio (clientes, orçamentos, faturas, links de pagamento) saiu do roadmap. É outro produto, um CRM, e misturava conceitos: o Pimpo é um agente que transforma pedidos em rotinas confiáveis, não um sistema de gestão.
+- Quem tem um pequeno negócio usa o Pimpo como qualquer pessoa: pedindo rotinas ("todo dia 5, me avise quem não pagou") sobre o e-mail, a agenda ou uma planilha.
 - Ficam do trabalho feito só as partes genéricas: ler fotos (Tesseract) e áudios (whisper.cpp) em qualquer canal.
 
 ### F10 · Apps nativos → v1.5
@@ -574,7 +574,7 @@ F12 Longevidade: SDK, idiomas, auditoria, LTS ──────▶ v2.x
 - **Produto e UI:**
   - app de desktop (Tauri) com ícone na barra, notificações e início automático;
   - app de celular complementar (iOS e Android) focado em três coisas: aprovações, recibos e saúde;
-  - pareamento seguro com o Zodim de casa (QR code), sem servidor intermediário.
+  - pareamento seguro com o Pimpo de casa (QR code), sem servidor intermediário.
 - **Tecnologia:** comunicação cifrada ponta a ponta via túnel (por exemplo, Tailscale ou um relé cego opcional); notificações push.
 - **Qualidade:** testes de pareamento e revogação; auditoria das permissões dos apps.
 - **Gate:** em 20 aprovações medidas, a mediana do aviso ao toque é menor que 3 segundos; o pareamento e a revogação passam nos testes automatizados em iOS, Android, macOS, Windows e Linux.
@@ -613,7 +613,7 @@ Todas as 46 funcionalidades avaliadas pelo Jev, com a fase em que entram. Os nú
 | Fase | Funcionalidades |
 |---|---|
 | F0 | Prova do compilador · base do binário · Telegram mínimo · tokens de design |
-| F1 | Compilador de rotinas (1,91) · Agendador (1,57) · Resumo matinal (1,41) · Modo exploração (1,08) · Canal Telegram (1,39) · Capacidades (1,90) · Limite de gasto diário (2,13) · Julgamentos calibrados (1,73) · Zodim de saúde (1,78) · UI Rotinas mínima (1,85) · Qualquer provedor por API (0,42) · Binário único (1,40) |
+| F1 | Compilador de rotinas (1,91) · Agendador (1,57) · Resumo matinal (1,41) · Modo exploração (1,08) · Canal Telegram (1,39) · Capacidades (1,90) · Limite de gasto diário (2,13) · Julgamentos calibrados (1,73) · Pimpo de saúde (1,78) · UI Rotinas mínima (1,85) · Qualquer provedor por API (0,42) · Binário único (1,40) |
 | F2 | Motor de regras (1,96) · Aprovação no celular (1,81) · Corretor de credenciais (1,84) · Auditoria com argumentos (1,91) · Desfazer (1,84) · Autoconserto (1,66) · Sandbox por padrão (1,49) · UI Recibos (2,00) · UI Precisa de você (1,41) · UI Regras e Custo básicas |
 | F3 | UI Custo completa (1,82) · UI Regras com teste (1,69) · UI Exploração ao vivo (1,62) · UI Onboarding (1,51) · Anti-incômodo (1,52) · UI PWA (0,85) |
 | F4 | Triagem de e-mail (1,49) · Memória versionada (1,53) · UI Memória (1,39) · Modelo local de julgamento (1,68) · Atualização segura (1,31) |
@@ -678,14 +678,14 @@ Cada conector declara capacidades com nível de risco: 🟢 leitura, 🟡 escrit
 
 **Documentação**
 - Guia do usuário (em português e inglês), referência de conectores, guia do SDK e modelo de ameaças.
-- Página honesta "O que o Zodim garante e o que não garante".
+- Página honesta "O que o Pimpo garante e o que não garante".
 
 **Termos de uso e riscos legais**
 - **WhatsApp:** usar só a API oficial (Cloud API). Pontes não oficiais arriscam o banimento do número do usuário e ficam fora do projeto.
 - **Gmail e Google:** respeitar a política de dados de usuário das APIs do Google; o cliente OAuth é do próprio usuário, então os dados nunca passam por um app do projeto. A verificação do Google só entra se um dia houver um app compartilhado.
 - **Telegram:** bots seguem os termos da plataforma; o bot é do próprio usuário (criado com o BotFather no onboarding).
-- **Provedores de LLM:** o usuário usa as próprias chaves e aceita os termos do provedor. O Zodim mostra, em cada recibo, o que foi enviado para qual provedor.
-- **Responsabilidade:** licença Apache-2.0 sem garantia, e a página "O que o Zodim garante e o que não garante" deixa claro que decisões irreversíveis são sempre do usuário.
+- **Provedores de LLM:** o usuário usa as próprias chaves e aceita os termos do provedor. O Pimpo mostra, em cada recibo, o que foi enviado para qual provedor.
+- **Responsabilidade:** licença Apache-2.0 sem garantia, e a página "O que o Pimpo garante e o que não garante" deixa claro que decisões irreversíveis são sempre do usuário.
 - **Galeria e rede de proteção (F7 e F11):** política de conteúdo, processo de remoção e contestação publicados antes de abrir.
 
 **Idiomas**
@@ -726,7 +726,7 @@ Cada conector declara capacidades com nível de risco: 🟢 leitura, 🟡 escrit
 | **Compilar tarefas em rotinas confiáveis não funcionar bem** (a aposta central) | É a F1, com um caso só e gate de 30 dias. Se falhar, o produto ainda vale como "agente seguro por construção", mas perde o grande diferencial, e o plano é reavaliado antes de seguir |
 | Conectores do Google exigem verificação do app para escopos sensíveis do Gmail | Cada usuário cria o próprio cliente OAuth (guiado na UI) ou usa IMAP com senha de app; avaliar a verificação só quando houver usuários |
 | Poucas tarefas se repetem | Tarefas únicas ficam na exploração, já protegida. O foco inicial são justamente os usos repetitivos (resumo, triagem) |
-| APIs externas mudam | Zodim de saúde detecta e o autoconserto propõe um diff; nunca silêncio |
+| APIs externas mudam | Pimpo de saúde detecta e o autoconserto propõe um diff; nunca silêncio |
 | Aprovação demais vira incômodo | Anti-incômodo e classificador de risco; meta de menos de 5 pedidos por dia |
 | Comunidades enormes dos concorrentes | Não competir em quantidade: conquistar quem se queimou, com migração em 1 comando |
 | Eles copiam a ideia | Exigiria reescrever o núcleo deles (tudo passa pelo LLM) e criar segurança por capacidades; mesmo assim, velocidade e foco |
@@ -749,13 +749,13 @@ Cada conector declara capacidades com nível de risco: 🟢 leitura, 🟡 escrit
 
 ## 16. Visão de longo prazo
 
-**Onde o Zodim quer chegar:** ser o jeito padrão e confiável de ter um agente pessoal. Não pelo número de integrações, mas porque é o único em que as pessoas **confiam para deixar rodando sozinho**.
+**Onde o Pimpo quer chegar:** ser o jeito padrão e confiável de ter um agente pessoal. Não pelo número de integrações, mas porque é o único em que as pessoas **confiam para deixar rodando sozinho**.
 
 - **Do agente que conversa para o agente que vira software:** com o tempo, a maior parte do que o agente faz por uma pessoa são rotinas compiladas, legíveis e baratas. O LLM fica para o que é novo.
 - **Uma biblioteca aberta de rotinas auditáveis:** cada rotina com código, testes e capacidades declaradas, construída pela comunidade (F7). É o oposto de um mercado de skills que rodam com poder total.
 - **Proteção que cresce com o uso:** a rede compartilhada (F11) é o ativo que nenhum agente fabrica sozinho.
 - **Modelos de julgamento pequenos e locais:** cada vez mais decisões rodam de graça, offline, no computador da pessoa, com os dados dela.
-- **O que o Zodim nunca vai fazer:** vender dados, cobrar por segurança, mover dinheiro sozinho, ou esconder o que o agente fez.
+- **O que o Pimpo nunca vai fazer:** vender dados, cobrar por segurança, mover dinheiro sozinho, ou esconder o que o agente fez.
 
 ---
 

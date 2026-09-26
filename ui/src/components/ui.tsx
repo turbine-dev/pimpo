@@ -1,3 +1,4 @@
+import { Head } from './PimpoArt'
 import { type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from 'react'
 import { cn } from '../lib/cn'
 import { useT } from '../lib/i18n'
@@ -52,7 +53,11 @@ export function Kbd({ children }: { children: ReactNode }) {
 export function EmptyState({ icon, title, children, action }: { icon: ReactNode; title: string; children: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-[var(--radius-card)] border border-dashed border-line-strong px-8 py-16 text-center">
-      <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-sunken text-ink-2">{icon}</div>
+      {/* Nothing here yet, so the Pimpo naps; the page's icon sits on its side. */}
+      <div className="relative mb-4 size-16">
+        <svg viewBox="80 60 352 400" className="pimpo-mark size-16" aria-hidden><Head mood="sleep" whiskers={false} /></svg>
+        <div className="absolute -bottom-1 -right-2 grid size-7 place-items-center rounded-full border border-line bg-surface text-ink-2 [&>svg]:size-3.5">{icon}</div>
+      </div>
       <h3 className="text-[15px] font-semibold">{title}</h3>
       <p className="mt-1.5 max-w-sm text-sm text-ink-2">{children}</p>
       {action && <div className="mt-5">{action}</div>}

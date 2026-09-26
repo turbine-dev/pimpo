@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Para você falar com o Zodim em vez de digitar.</string>
+	<string>Para você falar com o Pimpo em vez de digitar.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Para transformar o que você fala em texto, no próprio computador.</string>
 </dict>

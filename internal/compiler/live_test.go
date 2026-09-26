@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/denerFernandes/zodim/internal/connector/services"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/runtime"
-	"github.com/denerFernandes/zodim/internal/trace"
+	_ "github.com/denerFernandes/pimpo/internal/connector/services"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/trace"
 )
 
 // A real model compiles "tell me when Ana emails me" into a watch, not a
@@ -75,9 +75,9 @@ func TestLiveWriteIsCompiled(t *testing.T) {
 // A real trace that failed on a wrong test (an item 25 hours old expected
 // in a 24-hour window) compiles, and retries see what was sent.
 func TestLiveRealTraceCompiles(t *testing.T) {
-	path := os.Getenv("ZODIM_TRACE")
+	path := os.Getenv("PIMPO_TRACE")
 	if path == "" {
-		t.Skip("set ZODIM_TRACE to a recorded trace")
+		t.Skip("set PIMPO_TRACE to a recorded trace")
 	}
 	raw, err := os.ReadFile(path)
 	if err != nil {

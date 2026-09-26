@@ -3,13 +3,14 @@ package app
 import (
 	"context"
 	"net/http"
+	"os"
 	"path/filepath"
 
-	"github.com/denerFernandes/zodim/internal/remote"
-	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/pimpo/internal/remote"
+	"github.com/denerFernandes/pimpo/internal/server"
 )
 
-// Two ways for the phone to reach this Zodim, both remembered across
+// Two ways for the phone to reach this Pimpo, both remembered across
 // restarts: Tailscale inside the binary (a stable https link from
 // anywhere) and the home network (no account, same Wi-Fi only).
 
@@ -19,13 +20,29 @@ const lanPort = 7788
 func (a *App) AttachRemote(home string, newNode func() remote.Node) {
 	if newNode == nil {
 		newNode = func() remote.Node {
-			return &remote.Tailscale{Dir: filepath.Join(home, "tailscale"), Hostname: "zodim"}
+			dir := filepath.Join(home, "tailscale")
+			return &remote.Tailscale{Dir: dir, Hostname: a.tailscaleName(context.Background(), dir)}
 		}
 	}
 	a.Remote = &remote.Remote{NewNode: newNode, Handler: a.Server, OnURL: func(url string) {
 		a.Events.Put(context.Background(), "public_url", url)
 	}}
 	a.LAN = &remote.LAN{Port: lanPort, Handler: a.Server}
+}
+
+// tailscaleName is the machine's name on the tailnet, which is part of the
+// phone's link. An install that joined before the rename keeps its name, so
+// paired phones keep working; new ones are "pimpo". The choice is kept.
+func (a *App) tailscaleName(ctx context.Context, dir string) string {
+	if name, _ := a.Events.Get(ctx, "remote.hostname"); name != "" {
+		return name
+	}
+	name := "pimpo"
+	if entries, err := os.ReadDir(dir); err == nil && len(entries) > 0 {
+		name = "zodim"
+	}
+	a.Events.Put(ctx, "remote.hostname", name)
+	return name
 }
 
 // startRemote resumes what the owner turned on before.

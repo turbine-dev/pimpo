@@ -1,4 +1,4 @@
-package app.zodim.companion
+package app.pimpo.companion
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

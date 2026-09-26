@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/denerFernandes/zodim/internal/memory"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/pimpo/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/server"
 )
 
 // AttachMemory gives the app the owner's memory, stored under dir.

@@ -1,4 +1,4 @@
-module github.com/denerFernandes/zodim
+module github.com/denerFernandes/pimpo
 
 go 1.26.6
 

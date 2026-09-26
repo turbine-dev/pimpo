@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/remote"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/remote"
 )
 
 type tsFake struct {
@@ -22,7 +22,7 @@ func (f *tsFake) Start() error { return nil }
 func (f *tsFake) State(context.Context) (string, string, string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.state, f.auth, "zodim.tail9.ts.net.", nil
+	return f.state, f.auth, "pimpo.tail9.ts.net.", nil
 }
 func (f *tsFake) Login(context.Context) error {
 	f.mu.Lock()
@@ -63,11 +63,11 @@ func TestPhoneLinksWithTailscaleAndHome(t *testing.T) {
 	node.mu.Unlock()
 	for i := 0; i < 50; i++ {
 		time.Sleep(30 * time.Millisecond)
-		if base, _ := ta.Events.Get(ctx, "public_url"); base == "https://zodim.tail9.ts.net" {
+		if base, _ := ta.Events.Get(ctx, "public_url"); base == "https://pimpo.tail9.ts.net" {
 			break
 		}
 	}
-	if base, _ := ta.Events.Get(ctx, "public_url"); base != "https://zodim.tail9.ts.net" {
+	if base, _ := ta.Events.Get(ctx, "public_url"); base != "https://pimpo.tail9.ts.net" {
 		t.Fatalf("public url %q", base)
 	}
 
@@ -76,9 +76,9 @@ func TestPhoneLinksWithTailscaleAndHome(t *testing.T) {
 	if !strings.HasPrefix(home, "http://") {
 		t.Fatalf("lan %v", st)
 	}
-	_, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "https://zodim.tail9.ts.net", "device": "Celular"})
+	_, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "https://pimpo.tail9.ts.net", "device": "Celular"})
 	link := out["link"].(string)
-	if !strings.HasPrefix(link, "https://zodim.tail9.ts.net/auth?token=") || !strings.Contains(link, "#home=http") || !strings.HasPrefix(out["home"].(string), home+"/auth?token=") {
+	if !strings.HasPrefix(link, "https://pimpo.tail9.ts.net/auth?token=") || !strings.Contains(link, "#home=http") || !strings.HasPrefix(out["home"].(string), home+"/auth?token=") {
 		t.Fatalf("links %v", out)
 	}
 	if on, _ := ta.Events.Get(ctx, "remote.lan"); on != "on" {

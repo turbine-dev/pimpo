@@ -10,14 +10,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/protect"
-	"github.com/denerFernandes/zodim/protection"
+	"github.com/denerFernandes/pimpo/internal/protect"
+	"github.com/denerFernandes/pimpo/protection"
 )
 
 const protectUsage = `usage:
-  zodim protect suggest --domain DOMAIN | --pattern REGEX [--capability NAME] --reason "why"   (prints an entry to propose by pull request)
-  zodim protect sign --key KEYFILE DIR       (maintainers: signs DIR/entries.json into DIR/list.json)
-  zodim protect verify FILE`
+  pimpo protect suggest --domain DOMAIN | --pattern REGEX [--capability NAME] --reason "why"   (prints an entry to propose by pull request)
+  pimpo protect sign --key KEYFILE DIR       (maintainers: signs DIR/entries.json into DIR/list.json)
+  pimpo protect verify FILE`
 
 func protectCmd(args []string, out io.Writer) error {
 	if len(args) == 0 {
@@ -45,7 +45,7 @@ func protectCmd(args []string, out io.Writer) error {
 		e.Capability = *capName
 		b, _ := json.MarshalIndent(e, "", "  ")
 		fmt.Fprintln(out, string(b))
-		fmt.Fprintln(out, "\nPropose it by pull request to github.com/denerFernandes/zodim-protection. Only the domain or pattern and the reason go in: never the message it came from.")
+		fmt.Fprintln(out, "\nPropose it by pull request to github.com/denerFernandes/pimpo-protection. Only the domain or pattern and the reason go in: never the message it came from.")
 		return nil
 	case "sign":
 		if *key == "" || fs.NArg() != 1 {

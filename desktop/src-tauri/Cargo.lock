@@ -2605,6 +2605,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "pimpo-desktop"
+version = "0.5.0"
+dependencies = [
+ "getrandom 0.3.4",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-opener",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+]
+
+[[package]]
 name = "pin-project-lite"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5257,19 +5270,6 @@ name = "zmij"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b"
-
-[[package]]
-name = "zodim-desktop"
-version = "0.5.0"
-dependencies = [
- "getrandom 0.3.4",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-opener",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
-]
 
 [[package]]
 name = "zvariant"

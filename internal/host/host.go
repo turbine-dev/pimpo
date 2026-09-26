@@ -11,14 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/budget"
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/connector"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/judge"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/policy"
-	"github.com/denerFernandes/zodim/internal/trace"
+	"github.com/denerFernandes/pimpo/internal/budget"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/judge"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/policy"
+	"github.com/denerFernandes/pimpo/internal/trace"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/telegram"
+	"github.com/denerFernandes/pimpo/internal/telegram"
 )
 
 type recorder struct{ sent []string }

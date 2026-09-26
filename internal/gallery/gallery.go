@@ -25,12 +25,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/routine"
 )
 
 // DefaultIndex is the community index.
-const DefaultIndex = "https://raw.githubusercontent.com/denerFernandes/zodim-gallery/main/index.json"
+const DefaultIndex = "https://raw.githubusercontent.com/denerFernandes/pimpo-gallery/main/index.json"
 
 type Entry struct {
 	ID      string          `json:"id"`
@@ -86,7 +86,14 @@ func Sign(id, author string, r routine.Routine, private string) (Entry, error) {
 
 // signed is what the signature covers: which entry, by whom, and exactly
 // which content.
-func (e Entry) signed() string { return "zodim-gallery-v1\n" + e.ID + "\n" + e.Author + "\n" + e.Hash }
+func (e Entry) signed() string { return signedAs("pimpo-gallery-v1", e) }
+
+// legacySigned is what entries signed before the rename covered.
+func (e Entry) legacySigned() string { return signedAs("zodim-gallery-v1", e) }
+
+func signedAs(label string, e Entry) string {
+	return label + "\n" + e.ID + "\n" + e.Author + "\n" + e.Hash
+}
 
 // Report is what verification found out about one entry.
 type Report struct {
@@ -117,7 +124,7 @@ func (ix Index) Verify(ctx context.Context, e Entry) Report {
 		fail("unknown author %q", e.Author)
 	} else if key, err := base64.StdEncoding.DecodeString(author.Key); err != nil || len(key) != ed25519.PublicKeySize {
 		fail("the author's key is malformed")
-	} else if sig, err := base64.StdEncoding.DecodeString(e.Signature); err != nil || !ed25519.Verify(ed25519.PublicKey(key), []byte(e.signed()), sig) {
+	} else if sig, err := base64.StdEncoding.DecodeString(e.Signature); err != nil || !(ed25519.Verify(ed25519.PublicKey(key), []byte(e.signed()), sig) || ed25519.Verify(ed25519.PublicKey(key), []byte(e.legacySigned()), sig)) {
 		fail("the signature does not match")
 	}
 	if len(e.Routine.Manifest.Uses) > 0 {

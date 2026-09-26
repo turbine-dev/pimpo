@@ -7,7 +7,7 @@ import { useT, type TKey } from '../lib/i18n'
 
 const questions: TKey[] = ['help.q1', 'help.q2', 'help.q3', 'help.q4', 'help.q5', 'help.q6']
 
-// Help asks Zodim about itself: the question starts a chat, and the agent
+// Help asks Pimpo about itself: the question starts a chat, and the agent
 // answers from the user guide it carries.
 export function Help() {
   const t = useT()
@@ -36,7 +36,7 @@ export function Help() {
         ))}
       </div>
       {ask.error && <p className="mt-3 text-[13px] text-danger">{ask.error.message}</p>}
-      <a href="https://github.com/denerFernandes/zodim/blob/main/docs/USER_GUIDE.md" target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-1.5 text-[12.5px] text-ink-3 underline">
+      <a href="https://github.com/denerFernandes/pimpo/blob/main/docs/USER_GUIDE.md" target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-1.5 text-[12.5px] text-ink-3 underline">
         <BookOpen size={13} /> {t('help.guide')}
       </a>
     </div>

@@ -72,7 +72,7 @@ func TestLiveMorningBrief(t *testing.T) {
 			time.Sleep(time.Second)
 			w.Write([]byte(`{"ok":true,"result":[]}`))
 		default:
-			w.Write([]byte(`{"ok":true,"result":{"username":"zodim_test_bot"}}`))
+			w.Write([]byte(`{"ok":true,"result":{"username":"pimpo_test_bot"}}`))
 		}
 	}))
 	defer tgSrv.Close()

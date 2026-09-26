@@ -28,7 +28,7 @@ type Input struct {
 	Default     string `json:"default,omitempty"`
 }
 
-// Listing is one registry server in the form Zodim can add.
+// Listing is one registry server in the form Pimpo can add.
 type Listing struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`

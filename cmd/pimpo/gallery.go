@@ -12,14 +12,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/gallery"
-	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/gallery"
+	"github.com/denerFernandes/pimpo/internal/routine"
 )
 
 const galleryUsage = `usage:
-  zodim gallery keygen --out KEYFILE
-  zodim gallery build --key KEYFILE --author ID --name "Your Name" DIR   (signs DIR/routines/*.json into DIR/index.json)
-  zodim gallery verify INDEX                                             (file or URL; fails on any problem)`
+  pimpo gallery keygen --out KEYFILE
+  pimpo gallery build --key KEYFILE --author ID --name "Your Name" DIR   (signs DIR/routines/*.json into DIR/index.json)
+  pimpo gallery verify INDEX                                             (file or URL; fails on any problem)`
 
 func galleryCmd(args []string, out io.Writer) error {
 	if len(args) == 0 {

@@ -12,16 +12,16 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/budget"
-	"github.com/denerFernandes/zodim/internal/compiler"
-	"github.com/denerFernandes/zodim/internal/connector"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/memory"
-	"github.com/denerFernandes/zodim/internal/routine"
-	"github.com/denerFernandes/zodim/internal/store"
-	"github.com/denerFernandes/zodim/internal/trace"
+	"github.com/denerFernandes/pimpo/internal/budget"
+	"github.com/denerFernandes/pimpo/internal/compiler"
+	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/denerFernandes/pimpo/internal/trace"
 )
 
 type inbox struct {

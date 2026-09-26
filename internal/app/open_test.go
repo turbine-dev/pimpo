@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/desktop"
-	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/desktop"
+	"github.com/denerFernandes/pimpo/internal/llm"
 )
 
 func TestDesktopWindowOpensLinksInTheBrowser(t *testing.T) {

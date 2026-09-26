@@ -1,4 +1,4 @@
-// Package i18n holds the messages Zodim sends outside the web app (notices,
+// Package i18n holds the messages Pimpo sends outside the web app (notices,
 // chat replies, approval requests) and the texts of the built-in
 // connectors, in every language the app offers. The web app has its own
 // dictionaries; these follow the same language setting.

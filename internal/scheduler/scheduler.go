@@ -6,17 +6,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/robfig/cron/v3"
 
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/runtime"
-	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/store"
 )
 
 const (
@@ -59,7 +59,7 @@ func (s *Scheduler) now() time.Time {
 }
 
 // Start schedules every active routine and runs the ones whose last
-// scheduled time passed while Zodim was off.
+// scheduled time passed while Pimpo was off.
 func (s *Scheduler) Start(ctx context.Context) error {
 	s.mu.Lock()
 	s.cron = cron.New(cron.WithLocation(s.zone()), cron.WithParser(parser))

@@ -1,4 +1,4 @@
-// Package app wires Zodim together: storage, connectors, the policy, the
+// Package app wires Pimpo together: storage, connectors, the policy, the
 // explorer, the scheduler, the Telegram channel and the web API.
 package app
 
@@ -7,48 +7,48 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/denerFernandes/zodim/internal/i18n"
-	"github.com/denerFernandes/zodim/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/runtime"
 	"os/exec"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/docs"
-	"github.com/denerFernandes/zodim/internal/approval"
-	"github.com/denerFernandes/zodim/internal/budget"
-	"github.com/denerFernandes/zodim/internal/compiler"
-	"github.com/denerFernandes/zodim/internal/connector"
-	"github.com/denerFernandes/zodim/internal/connector/calendar"
-	"github.com/denerFernandes/zodim/internal/connector/external"
-	"github.com/denerFernandes/zodim/internal/connector/mail"
-	"github.com/denerFernandes/zodim/internal/connector/services"
-	"github.com/denerFernandes/zodim/internal/connector/telegramcap"
-	"github.com/denerFernandes/zodim/internal/connector/web"
-	"github.com/denerFernandes/zodim/internal/desktop"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/gallery"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/judge"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/memory"
-	"github.com/denerFernandes/zodim/internal/oauth"
-	"github.com/denerFernandes/zodim/internal/ocr"
-	"github.com/denerFernandes/zodim/internal/outbox"
-	"github.com/denerFernandes/zodim/internal/owner"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/policy"
-	"github.com/denerFernandes/zodim/internal/protect"
-	"github.com/denerFernandes/zodim/internal/remote"
-	"github.com/denerFernandes/zodim/internal/scheduler"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/internal/store"
-	"github.com/denerFernandes/zodim/internal/telegram"
-	"github.com/denerFernandes/zodim/internal/undo"
-	"github.com/denerFernandes/zodim/internal/vault"
-	"github.com/denerFernandes/zodim/internal/voice"
+	"github.com/denerFernandes/pimpo/docs"
+	"github.com/denerFernandes/pimpo/internal/approval"
+	"github.com/denerFernandes/pimpo/internal/budget"
+	"github.com/denerFernandes/pimpo/internal/compiler"
+	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/connector/calendar"
+	"github.com/denerFernandes/pimpo/internal/connector/external"
+	"github.com/denerFernandes/pimpo/internal/connector/mail"
+	"github.com/denerFernandes/pimpo/internal/connector/services"
+	"github.com/denerFernandes/pimpo/internal/connector/telegramcap"
+	"github.com/denerFernandes/pimpo/internal/connector/web"
+	"github.com/denerFernandes/pimpo/internal/desktop"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/gallery"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/judge"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/oauth"
+	"github.com/denerFernandes/pimpo/internal/ocr"
+	"github.com/denerFernandes/pimpo/internal/outbox"
+	"github.com/denerFernandes/pimpo/internal/owner"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/policy"
+	"github.com/denerFernandes/pimpo/internal/protect"
+	"github.com/denerFernandes/pimpo/internal/remote"
+	"github.com/denerFernandes/pimpo/internal/scheduler"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/denerFernandes/pimpo/internal/telegram"
+	"github.com/denerFernandes/pimpo/internal/undo"
+	"github.com/denerFernandes/pimpo/internal/vault"
+	"github.com/denerFernandes/pimpo/internal/voice"
 )
 
 type Settings struct {
@@ -56,7 +56,7 @@ type Settings struct {
 	Locale       string `json:"locale"`
 	JudgeBackend string `json:"judge_backend"` // local, jev, llm
 	OllamaModel  string `json:"ollama_model"`
-	// LocalJudgeURL is Zodim's own small judgment model (tools/judge/serve.py).
+	// LocalJudgeURL is Pimpo's own small judgment model (tools/judge/serve.py).
 	LocalJudgeURL string `json:"local_judge_url"`
 	ExploreModel  string `json:"explore_model"`
 	CompileModel  string `json:"compile_model"`
@@ -64,7 +64,7 @@ type Settings struct {
 	// GalleryURL is the routine gallery index; a local path works too.
 	GalleryURL string `json:"gallery_url"`
 	// EmailChannel lets the owner ask by writing to themselves with
-	// "Zodim:" in the subject.
+	// "Pimpo:" in the subject.
 	EmailChannel bool `json:"email_channel"`
 	// ProtectionNetwork downloads the shared protection list daily.
 	ProtectionNetwork bool   `json:"protection_network"`
@@ -179,7 +179,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		go a.mirrorWebhook(context.WithoutCancel(ctx), n)
 		if a.DesktopNotify && (n.To == "" || n.To == people.OwnerID) {
 			title, body, _ := strings.Cut(n.Text, "\n")
-			go desktop.Notify(context.WithoutCancel(ctx), "Zodim", strings.TrimSpace(title+" "+body))
+			go desktop.Notify(context.WithoutCancel(ctx), "Pimpo", strings.TrimSpace(title+" "+body))
 		}
 	}
 	a.Channel.Muted = func(ctx context.Context, kind string) bool {

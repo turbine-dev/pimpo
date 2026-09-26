@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"net/http"
 	"slices"
 	"sort"
@@ -16,17 +16,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/budget"
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/compiler"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/mcp"
-	"github.com/denerFernandes/zodim/internal/memory"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/routine"
-	"github.com/denerFernandes/zodim/internal/store"
-	"github.com/denerFernandes/zodim/internal/trace"
+	"github.com/denerFernandes/pimpo/internal/budget"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/compiler"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/mcp"
+	"github.com/denerFernandes/pimpo/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/denerFernandes/pimpo/internal/trace"
 )
 
 // Notice is a message to the owner with optional buttons.
@@ -61,7 +61,7 @@ type Service struct {
 	Compiler compiler.Compiler
 	Notify   Notifier
 	Routines Routines
-	// BaseURL is where this Zodim serves MCP, e.g. http://127.0.0.1:7788.
+	// BaseURL is where this Pimpo serves MCP, e.g. http://127.0.0.1:7788.
 	BaseURL string
 	Zone    *time.Location
 	Model   string
@@ -69,7 +69,7 @@ type Service struct {
 	Memory *memory.Memory
 	// Recall, when set, searches memory by meaning.
 	Recall Recall
-	// Guide is the user guide, for questions about Zodim itself.
+	// Guide is the user guide, for questions about Pimpo itself.
 	Guide string
 
 	mu       sync.Mutex
@@ -208,7 +208,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	if s.sessions == nil {
 		s.sessions = map[string]session{}
 	}
-	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "zodim", Tools: tools(h, s.Memory, s.Recall, s.Guide)}}
+	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "pimpo", Tools: tools(h, s.Memory, s.Recall, s.Guide)}}
 	s.mu.Unlock()
 	defer func() {
 		s.mu.Lock()
@@ -537,8 +537,8 @@ func shorten(s string, n int) string {
 }
 
 func explorerPrompt(now time.Time) string {
-	return fmt.Sprintf(`You are Zodim, the owner's personal agent. Now is %s (owner's time zone).
-Do the owner's request once, right now, using ONLY the zodim tools. This run is recorded and will be turned into an automatic routine, so work the way the routine should work every time.
+	return fmt.Sprintf(`You are Pimpo, the owner's personal agent. Now is %s (owner's time zone).
+Do the owner's request once, right now, using ONLY the pimpo tools. This run is recorded and will be turned into an automatic routine, so work the way the routine should work every time.
 - Read what you need (calendar_events, gmail_search, http_getJSON). Prefer precise queries.
 - Changes (archive, label) are simulated while exploring: call them exactly as you would for real.
 - telegram_send really sends to the owner: send the final result there, exactly as the owner should receive it every time.

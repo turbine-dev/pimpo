@@ -12,7 +12,7 @@ import { canSpeak, speak, useDictation } from '../lib/voice'
 
 const suggestions: TKey[] = ['chat.s1', 'chat.s2', 'chat.s3', 'chat.s4']
 
-// A conversation with Zodim in the app. Each message is rehearsed like
+// A conversation with Pimpo in the app. Each message is rehearsed like
 // any task: reads are real, changes are listed and wait for a confirm.
 export function Chat() {
   const t = useT()

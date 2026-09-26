@@ -7,6 +7,7 @@ import { cn } from '../lib/cn'
 import { useT, type TKey } from '../lib/i18n'
 import { InboxPanel } from './InboxPanel'
 import { SystemPanel } from './SystemPanel'
+import { Logo } from './PimpoArt'
 import { Kbd } from './ui'
 
 export type NavItem = { to: string; label: TKey; icon: ReactNode; badge?: number }
@@ -38,27 +39,12 @@ export const nav: NavItem[] = [
   { to: '/help', label: 'nav.help', icon: <CircleHelp size={17} /> },
 ]
 
-export function Logo({ size = 28 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <defs>
-        <linearGradient id="zg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#6d5dfc" />
-          <stop offset=".55" stopColor="#4f46e5" />
-          <stop offset="1" stopColor="#1e1b4b" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="7.5" fill="url(#zg)" />
-      <path d="M10 11.1h10.5l-9.75 9.75H22" fill="none" stroke="white" strokeWidth="2.9" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M23.6 6.75c.3 1.7.9 2.25 2.55 2.55-1.65.3-2.25.9-2.55 2.55-.3-1.65-.9-2.25-2.55-2.55 1.65-.3 2.25-.85 2.55-2.55Z" fill="white" />
-    </svg>
-  )
-}
+export { Logo }
 
 function useTheme() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
-      return (localStorage.getItem('zodim.theme') as 'light' | 'dark') || 'dark'
+      return (localStorage.getItem('pimpo.theme') ?? localStorage.getItem('zodim.theme') ?? 'dark') as 'light' | 'dark'
     } catch {
       return 'dark'
     }
@@ -66,7 +52,7 @@ function useTheme() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     try {
-      localStorage.setItem('zodim.theme', theme)
+      localStorage.setItem('pimpo.theme', theme)
     } catch {
       /* private mode: the theme just is not remembered */
     }
@@ -140,7 +126,7 @@ function UserMenu({ onSystem, theme, toggleTheme }: { onSystem: () => void; them
         className="flex w-full items-center gap-2.5 rounded-[10px] px-2 py-1.5 text-left hover:bg-sunken">
         <Logo size={26} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-medium">Zodim</span>
+          <span className="block truncate text-[13px] font-medium">Pimpo</span>
           <span className="block truncate text-[11.5px] text-ink-3">{t('shell.thisComputer')}</span>
         </span>
         <ChevronDown size={14} className="text-ink-3" />
@@ -180,9 +166,9 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
   const t = useT()
   const [theme, toggle] = useTheme()
   const [more, setMore] = useState(false)
-  const [moreOpen, setMoreOpen] = useState(() => { try { return localStorage.getItem('zodim.more') === '1' } catch { return false } })
+  const [moreOpen, setMoreOpen] = useState(() => { try { return localStorage.getItem('pimpo.more') === '1' } catch { return false } })
   const [system, setSystem] = useState(false)
-  useEffect(() => { try { localStorage.setItem('zodim.more', moreOpen ? '1' : '0') } catch { /* not remembered */ } }, [moreOpen])
+  useEffect(() => { try { localStorage.setItem('pimpo.more', moreOpen ? '1' : '0') } catch { /* not remembered */ } }, [moreOpen])
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'd') { e.preventDefault(); setSystem((s) => !s) }
@@ -195,7 +181,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
       <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface/60 px-3 pb-3 pt-4 backdrop-blur md:flex">
         <div className="mb-4 flex items-center gap-2.5 px-2 in-data-[desktop=mac]:mt-7">
           <Logo />
-          <span className="flex-1 text-[15px] font-semibold tracking-tight">Zodim</span>
+          <span className="flex-1 text-[15px] font-semibold tracking-tight">Pimpo</span>
           <Link to="/" aria-label={t('chat.new')} title={t('chat.new')} className="grid size-8 place-items-center rounded-lg text-ink-2 hover:bg-sunken hover:text-ink"><Plus size={17} /></Link>
         </div>
         <nav className="flex flex-col gap-px" aria-label={t('shell.main')}>
