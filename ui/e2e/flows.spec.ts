@@ -9,14 +9,14 @@ test.describe.serial('the story, end to end', () => {
   test('first run guide leads to the first task', async ({ page }) => {
     await login(page)
     await expect(page).toHaveURL(/\/welcome/)
-    await expect(page.getByRole('heading', { name: 'Boas-vindas ao Zodim' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Boas-vindas ao Pimpo' })).toBeVisible()
     for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Continuar' }).click()
     await page.getByRole('button', { name: /Conservador/ }).click()
     await page.getByRole('button', { name: /Equilibrado/ }).click()
     await page.getByRole('button', { name: 'Continuar' }).click()
     await page.getByLabel('Limite diário em dólares').fill('2')
     await page.getByRole('button', { name: /Pedir a primeira tarefa/ }).click()
-    await expect(page.getByRole('heading', { name: 'O que o Zodim deve fazer?' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'O que o Pimpo deve fazer?' })).toBeVisible()
   })
 
   test('a task is explored, then compiled into a routine', async ({ page }) => {
@@ -121,7 +121,7 @@ test.describe.serial('the story, end to end', () => {
     await page.getByLabel('Senha para exportar').fill('uma senha longa')
     const download = page.waitForEvent('download')
     await page.getByRole('button', { name: 'Exportar' }).click()
-    expect((await download).suggestedFilename()).toMatch(/\.zodim$/)
+    expect((await download).suggestedFilename()).toMatch(/\.pimpo$/)
   })
 
   test('a local copy can be put back on the next start', async ({ page }) => {
@@ -132,9 +132,9 @@ test.describe.serial('the story, end to end', () => {
     await expect(row).toBeVisible()
     page.once('dialog', (d) => d.accept())
     await row.getByRole('button', { name: /Voltar a esta/ }).click()
-    await expect(page.getByText(/Ao fechar e abrir o Zodim/)).toBeVisible()
+    await expect(page.getByText(/Ao fechar e abrir o Pimpo/)).toBeVisible()
     await page.getByRole('button', { name: 'Cancelar' }).click()
-    await expect(page.getByText(/Ao fechar e abrir o Zodim/)).toHaveCount(0)
+    await expect(page.getByText(/Ao fechar e abrir o Pimpo/)).toHaveCount(0)
   })
 
   test('the phone menu reaches every screen', async ({ page }) => {
@@ -152,12 +152,12 @@ test.describe.serial('the story, end to end', () => {
 test('a chat rehearses, then does exactly what it showed', async ({ page }) => {
   await login(page)
   await page.goto('/chat')
-  await expect(page.getByRole('heading', { name: 'Como o Zodim pode ajudar?' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Como o Pimpo pode ajudar?' })).toBeVisible()
   await page.getByLabel('Escreva uma mensagem…').fill('Arquive as newsletters da caixa de entrada')
   await page.getByLabel('Escreva uma mensagem…').press('Enter')
   await expect(page.getByText('Trabalhando…')).toBeVisible()
   await expect(page.getByText(/Três eram newsletters/)).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByText('Para isso, o Zodim faria:')).toBeVisible()
+  await expect(page.getByText('Para isso, o Pimpo faria:')).toBeVisible()
   await expect(page.getByText('Arquivar um e-mail (INBOX/40)')).toBeVisible()
   await page.getByRole('button', { name: 'Confirmar e fazer' }).click()
   // An earlier test may have archived these already; either way it answers.
@@ -176,7 +176,7 @@ test('every screen is in the sidebar', async ({ page }) => {
   for (const name of ['Galeria', 'Conexões', 'Pessoas', 'Memória', 'Regras', 'Custo']) {
     await expect(nav.getByRole('link', { name })).toBeVisible()
   }
-  await page.getByRole('button', { name: 'Menu do Zodim' }).click()
+  await page.getByRole('button', { name: 'Menu do Pimpo' }).click()
   await expect(page.getByRole('menuitem', { name: 'Ajustes' })).toBeVisible()
   await page.getByRole('menuitem', { name: /Ocupação do sistema/ }).click()
   await expect(page.getByRole('heading', { name: 'Ocupação do sistema' })).toBeVisible()
@@ -198,7 +198,7 @@ test('a routine\'s schedule and settings change without code', async ({ page }) 
   await expect(page.getByLabel('Avisar guarda-chuva a partir de (% de chuva)')).toHaveValue('80')
   await expect(page.getByText(/dias úteis às 06:30/i).first()).toBeVisible()
   for (const theme of ['dark', 'light']) {
-    await page.evaluate((t) => localStorage.setItem('zodim.theme', t), theme)
+    await page.evaluate((t) => localStorage.setItem('pimpo.theme', t), theme)
     await page.reload()
     await page.waitForLoadState('networkidle')
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()

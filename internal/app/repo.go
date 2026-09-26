@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/i18n"
-	"github.com/denerFernandes/zodim/internal/repo"
-	"github.com/denerFernandes/zodim/internal/routine"
-	"github.com/denerFernandes/zodim/internal/runtime"
-	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/repo"
+	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/server"
 )
 
-// Routines in a repository: Zodim writes its routines to a folder (a git
+// Routines in a repository: Pimpo writes its routines to a folder (a git
 // repository the owner controls) and reads changes back. What comes back
 // is checked like a compiled routine and waits for the owner.
 
@@ -168,7 +168,7 @@ func (a *App) exportRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	commit := ""
 	if repo.IsGit(ctx, path) {
-		if commit, err = repo.Commit(ctx, path, fmt.Sprintf("Zodim: %d routines", len(all))); err != nil {
+		if commit, err = repo.Commit(ctx, path, fmt.Sprintf("Pimpo: %d routines", len(all))); err != nil {
 			server.WriteJSON(w, 200, map[string]any{"written": len(all), "view": a.repoView(ctx, err.Error())})
 			return
 		}

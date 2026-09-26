@@ -23,7 +23,7 @@ export function BackupCard() {
       const url = URL.createObjectURL(await res.blob())
       const a = document.createElement('a')
       a.href = url
-      a.download = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'zodim.zodim'
+      a.download = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'pimpo.pimpo'
       a.click()
       URL.revokeObjectURL(url)
     },
@@ -50,7 +50,7 @@ export function BackupCard() {
         <label className="flex h-10 min-w-[200px] flex-1 cursor-pointer items-center gap-2 rounded-[10px] border border-dashed border-line bg-bg px-3 text-[13px] text-ink-2 hover:border-line-strong">
           <FileUp size={15} className="shrink-0 text-ink-3" />
           <span className="truncate">{file ? file.name : t('backup.pick')}</span>
-          <input type="file" accept=".zodim" aria-label={t('backup.file')} className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input type="file" accept=".pimpo" aria-label={t('backup.file')} className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </label>
         <input type="password" value={importPass} onChange={(e) => setImportPass(e.target.value)} placeholder={t('backup.passImportPlaceholder')} aria-label={t('backup.passImport')} className={input} />
         <Button type="submit" disabled={!file || !importPass || imp.isPending}><Upload size={15} /> {t('backup.import')}</Button>

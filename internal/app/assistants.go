@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/server"
 )
 
 // Assistants are named roles for the agent: instructions for the job and

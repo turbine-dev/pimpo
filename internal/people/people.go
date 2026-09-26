@@ -1,4 +1,4 @@
-// Package people is the household: who may talk to Zodim, in what role,
+// Package people is the household: who may talk to Pimpo, in what role,
 // and who answers for whom. The owner is implicit and always exists.
 package people
 
@@ -7,14 +7,14 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"math/big"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/pimpo/internal/event"
 )
 
 type Role string
@@ -277,7 +277,7 @@ func (d *Directory) Update(ctx context.Context, id string, role Role, responsibl
 	return Person{}, ErrUnknown
 }
 
-// Remove forgets a person; their chat can no longer talk to Zodim.
+// Remove forgets a person; their chat can no longer talk to Pimpo.
 func (d *Directory) Remove(ctx context.Context, id string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()

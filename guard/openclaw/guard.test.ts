@@ -1,4 +1,4 @@
-// Runs against a real Zodim when ZODIM_URL and ZODIM_TOKEN are set (the Go
+// Runs against a real Pimpo when PIMPO_URL and PIMPO_TOKEN are set (the Go
 // test suite does this), or against a stub otherwise.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -20,9 +20,9 @@ async function stub(answer: object, status = 200) {
   return { url: `http://127.0.0.1:${port}`, close: () => server.close() }
 }
 
-const live = process.env.ZODIM_URL ? { url: process.env.ZODIM_URL, token: process.env.ZODIM_TOKEN ?? '' } : null
+const live = process.env.PIMPO_URL ? { url: process.env.PIMPO_URL, token: process.env.PIMPO_TOKEN ?? '' } : null
 
-test('maps Zodim decisions to OpenClaw hook results', async () => {
+test('maps Pimpo decisions to OpenClaw hook results', async () => {
   for (const [answer, check] of [
     [{ decision: 'allow', capability: 'guard.read' }, (r: unknown) => assert.equal(r, undefined)],
     [{ decision: 'block', capability: 'guard.web', reason: 'rede de proteção' }, (r: any) => assert.match(r.blockReason, /rede de proteção/)],
@@ -34,7 +34,7 @@ test('maps Zodim decisions to OpenClaw hook results', async () => {
   }
 })
 
-test('fails closed when Zodim is down, unless told otherwise', async () => {
+test('fails closed when Pimpo is down, unless told otherwise', async () => {
   const down = { url: 'http://127.0.0.1:9', token: 't', timeoutMs: 500 }
   assert.equal(((await decide(down, 'read', {})) as any).block, true)
   assert.equal(await decide({ ...down, failOpen: true }, 'read', {}), undefined)
@@ -43,7 +43,7 @@ test('fails closed when Zodim is down, unless told otherwise', async () => {
   s.close()
 })
 
-test('against a running Zodim', { skip: !live }, async () => {
+test('against a running Pimpo', { skip: !live }, async () => {
   assert.equal(await decide(live!, 'read', { path: 'a.md' }), undefined)
   assert.equal(((await decide(live!, 'web_fetch', { url: 'https://webhook.site/x' })) as any).block, true)
   assert.ok(((await decide(live!, 'exec', { command: 'ls' })) as any).requireApproval)

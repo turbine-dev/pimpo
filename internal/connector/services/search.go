@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/capability"
 )
 
 // Web search through Brave's official API or a SearXNG instance the owner

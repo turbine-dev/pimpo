@@ -22,6 +22,8 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
       ws.onmessage = (m) => {
         const e = JSON.parse(m.data) as VEvent
         onEvent?.(e)
+        // The mascot and other listeners hear every event without a second socket.
+        window.dispatchEvent(new CustomEvent('pimpo:event', { detail: e }))
         qc.invalidateQueries({ queryKey: ['state'] })
         if (e.type.startsWith('routine') || e.type.startsWith('exploration') || e.type === 'action.done') {
           qc.invalidateQueries({ queryKey: ['routines'] })

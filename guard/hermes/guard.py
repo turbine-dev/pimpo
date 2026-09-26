@@ -12,14 +12,14 @@ def decide(url, token, tool_name, args, session="", fail_open=False, timeout=8):
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             ans = json.load(resp)
-    except Exception as e:  # Zodim down, refused or unreachable
+    except Exception as e:  # Pimpo down, refused or unreachable
         if fail_open:
             return None
-        return {"action": "block", "message": "Zodim não respondeu, então não deixo passar: %s" % e}
+        return {"action": "block", "message": "Pimpo não respondeu, então não deixo passar: %s" % e}
     decision = ans.get("decision")
     reason = ans.get("reason") or ans.get("capability", "")
     if decision == "block":
-        return {"action": "block", "message": "Zodim bloqueou: " + reason}
+        return {"action": "block", "message": "Pimpo bloqueou: " + reason}
     if decision == "ask":
-        return {"action": "approve", "message": "Zodim pede aprovação: " + reason, "rule_key": "zodim:" + ans.get("capability", "guard")}
+        return {"action": "approve", "message": "Pimpo pede aprovação: " + reason, "rule_key": "pimpo:" + ans.get("capability", "guard")}
     return None

@@ -23,14 +23,14 @@ func call(t *testing.T, url, body string) map[string]any {
 }
 
 func TestToolsListAndCall(t *testing.T) {
-	s := &Server{Name: "zodim", Tools: []Tool{
+	s := &Server{Name: "pimpo", Tools: []Tool{
 		{Name: "echo", Description: "echo", InputSchema: json.RawMessage(`{"type":"object"}`), Handle: func(_ context.Context, a json.RawMessage) (any, error) { return json.RawMessage(a), nil }},
 		{Name: "fail", InputSchema: json.RawMessage(`{"type":"object"}`), Handle: func(context.Context, json.RawMessage) (any, error) { return nil, errors.New("nope") }},
 	}}
 	srv := httptest.NewServer(s)
 	defer srv.Close()
 	init := call(t, srv.URL, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`)
-	if init["result"].(map[string]any)["serverInfo"].(map[string]any)["name"] != "zodim" {
+	if init["result"].(map[string]any)["serverInfo"].(map[string]any)["name"] != "pimpo" {
 		t.Fatalf("initialize %+v", init)
 	}
 	list := call(t, srv.URL, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)

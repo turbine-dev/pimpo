@@ -1,5 +1,5 @@
 // Package oauth signs the owner into Google with their own OAuth client
-// (installed-app flow with PKCE). Tokens stay in the vault; Zodim never
+// (installed-app flow with PKCE). Tokens stay in the vault; Pimpo never
 // routes them through any server of its own.
 package oauth
 
@@ -19,7 +19,7 @@ import (
 )
 
 // Scopes: full mail access over IMAP/SMTP, read-only calendars, and the
-// Drive files Zodim creates itself (its backups).
+// Drive files Pimpo creates itself (its backups).
 var Scopes = []string{"https://mail.google.com/", "https://www.googleapis.com/auth/calendar.readonly", DriveScope, "openid", "email"}
 
 const DriveScope = "https://www.googleapis.com/auth/drive.file"
@@ -121,7 +121,7 @@ func (g *Google) Finish(ctx context.Context, state, code string) (string, error)
 		return "", err
 	}
 	if tok.RefreshToken == "" {
-		return "", errors.New("Google did not grant offline access; remove Zodim's access in your Google account and try again")
+		return "", errors.New("Google did not grant offline access; remove Pimpo's access in your Google account and try again")
 	}
 	if err := g.Store.Set(ctx, "google.refresh", tok.RefreshToken); err != nil {
 		return "", err

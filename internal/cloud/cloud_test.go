@@ -80,7 +80,7 @@ func fakeS3(t *testing.T, bucket, access, secret string) *httptest.Server {
 
 func exercise(t *testing.T, s Store) {
 	ctx := context.Background()
-	for _, n := range []string{"zodim-1.zodim", "zodim-2.zodim", "zodim-3 (cópia).zodim"} {
+	for _, n := range []string{"pimpo-1.pimpo", "pimpo-2.pimpo", "pimpo-3 (cópia).pimpo"} {
 		if err := s.Put(ctx, n, []byte("sealed "+n)); err != nil {
 			t.Fatal(err)
 		}
@@ -94,13 +94,13 @@ func exercise(t *testing.T, s Store) {
 		names = append(names, o.Name)
 	}
 	sort.Strings(names)
-	if strings.Join(names, ",") != "zodim-1.zodim,zodim-2.zodim,zodim-3 (cópia).zodim" {
+	if strings.Join(names, ",") != "pimpo-1.pimpo,pimpo-2.pimpo,pimpo-3 (cópia).pimpo" {
 		t.Fatalf("%v", names)
 	}
-	if b, err := s.Get(ctx, "zodim-3 (cópia).zodim"); err != nil || string(b) != "sealed zodim-3 (cópia).zodim" {
+	if b, err := s.Get(ctx, "pimpo-3 (cópia).pimpo"); err != nil || string(b) != "sealed pimpo-3 (cópia).pimpo" {
 		t.Fatalf("%q %v", b, err)
 	}
-	if err := s.Delete(ctx, "zodim-1.zodim"); err != nil {
+	if err := s.Delete(ctx, "pimpo-1.pimpo"); err != nil {
 		t.Fatal(err)
 	}
 	if list, _ := s.List(ctx); len(list) != 2 {
@@ -125,7 +125,7 @@ func TestS3SignsEveryRequest(t *testing.T) {
 
 func TestS3AddressesAmazonByHost(t *testing.T) {
 	s := &S3{Bucket: "minha-casa", Region: "sa-east-1"}
-	if u, _ := s.url("zodim 1.zodim", nil); u != "https://minha-casa.s3.sa-east-1.amazonaws.com/zodim%201.zodim" {
+	if u, _ := s.url("pimpo 1.pimpo", nil); u != "https://minha-casa.s3.sa-east-1.amazonaws.com/pimpo%201.pimpo" {
 		t.Fatal(u)
 	}
 	if _, err := (&S3{Endpoint: "storage.example.com", Bucket: "b"}).url("x", nil); err == nil {
@@ -212,7 +212,7 @@ func TestDriveKeepsBackupsInItsFolder(t *testing.T) {
 		t.Fatalf("%d folders", folders)
 	}
 	// A second client finds the same folder instead of making another.
-	if list, err := (&Drive{Token: tok, API: srv.URL + "/api", Upload: srv.URL + "/upload", Folder: "Zodim backups"}).List(context.Background()); err != nil || len(list) != 2 {
+	if list, err := (&Drive{Token: tok, API: srv.URL + "/api", Upload: srv.URL + "/upload", Folder: "Pimpo backups"}).List(context.Background()); err != nil || len(list) != 2 {
 		t.Fatalf("%v %v", list, err)
 	}
 

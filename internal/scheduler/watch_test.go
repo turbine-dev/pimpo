@@ -6,11 +6,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/routine"
-	"github.com/denerFernandes/zodim/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/runtime"
 )
 
 // inbox serves test.inbox: the mail it has now, and the queries it got.

@@ -1,4 +1,4 @@
-// Package demo runs Zodim without accounts or model costs: an in-memory
+// Package demo runs Pimpo without accounts or model costs: an in-memory
 // mailbox and calendar, a scripted explorer and ready routines. It exists
 // for trying the product, for browser tests and for screenshots.
 package demo
@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/judge"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/judge"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/routine"
 )
 
 // Mailbox is an in-memory inbox that behaves like the mail connector.

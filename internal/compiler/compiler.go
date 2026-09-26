@@ -9,11 +9,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/routine"
-	"github.com/denerFernandes/zodim/internal/runtime"
-	"github.com/denerFernandes/zodim/internal/trace"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/trace"
 )
 
 type Compiler struct {
@@ -160,7 +160,7 @@ func Verify(ctx context.Context, r routine.Routine, t trace.Trace) Attempt {
 	return a
 }
 
-const system = `You compile a recorded task into a routine for Zodim, a personal agent.
+const system = `You compile a recorded task into a routine for Pimpo, a personal agent.
 A routine is plain JavaScript that runs on a schedule WITHOUT a language model. It must do for new data what the agent did in the recording.
 
 Rules for the code:
@@ -188,7 +188,7 @@ Rules for the code:
 
 Rules for the manifest:
 - schedule: a 5-field cron expression matching the request, or "" when the routine reacts to something new (see watch).
-- watch: when the request is about reacting to something new ("when an email from X arrives", "whenever this feed has a new post", "if the front door opens", "me avise quando chegar…"), declare {capability, args, key, every} instead of a schedule. capability is the read capability you call to find the items (also listed in capabilities); args are its arguments, with {{param}} for values that come from params; key is the field that identifies one item (id, link, entity_id); every is how often to check ("10m"; at least "5m", "30m" or "1h" when minutes do not matter). Zodim calls it without a model and runs the routine only with the items it has not seen, as event.items (each item shaped like that capability's results). Work on event.items and do not call the watched capability again. Tests of such a routine set event: {items: [...]} with new fictional items, and one test should have items that must not produce a message.
+- watch: when the request is about reacting to something new ("when an email from X arrives", "whenever this feed has a new post", "if the front door opens", "me avise quando chegar…"), declare {capability, args, key, every} instead of a schedule. capability is the read capability you call to find the items (also listed in capabilities); args are its arguments, with {{param}} for values that come from params; key is the field that identifies one item (id, link, entity_id); every is how often to check ("10m"; at least "5m", "30m" or "1h" when minutes do not matter). Pimpo calls it without a model and runs the routine only with the items it has not seen, as event.items (each item shaped like that capability's results). Work on event.items and do not call the watched capability again. Tests of such a routine set event: {items: [...]} with new fictional items, and one test should have items that must not produce a message.
 - locale: the language the user wrote the request in: "pt-BR", "en-US", "es-ES", "fr-FR", "de-DE", "it-IT", "ja-JP", "zh-CN", "ko-KR" or "ru-RU". dates.format uses it for weekday and month names, so write messages and test expectations in that language.
 - capabilities: the minimum set the code calls. Scoped capabilities need the host, e.g. "http.getJSON:api.open-meteo.com". The host is fixed; values in the URL's query (latitude, longitude, currency) can come from params.
 - uses: ids of installed routines this one runs with routines.run (omit when none).

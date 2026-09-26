@@ -1,16 +1,16 @@
 {
-  "id": "zodim-guard",
-  "name": "Zodim Guard",
-  "description": "Every tool call passes Zodim's rules and the shared protection list first.",
+  "id": "pimpo-guard",
+  "name": "Pimpo Guard",
+  "description": "Every tool call passes Pimpo's rules and the shared protection list first.",
   "activation": { "onStartup": true },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
     "required": ["url", "token"],
     "properties": {
-      "url": { "type": "string", "description": "Zodim's address, e.g. http://127.0.0.1:7788" },
-      "token": { "type": "string", "description": "A device token from Zodim › Ajustes › Abrir no celular" },
-      "failOpen": { "type": "boolean", "default": false, "description": "Let tools run when Zodim does not answer (default: block)" }
+      "url": { "type": "string", "description": "Pimpo's address, e.g. http://127.0.0.1:7788" },
+      "token": { "type": "string", "description": "A device token from Pimpo › Ajustes › Abrir no celular" },
+      "failOpen": { "type": "boolean", "default": false, "description": "Let tools run when Pimpo does not answer (default: block)" }
     }
   }
 }

@@ -10,12 +10,12 @@ const off = { config: { kind: '', every: 'daily', keep: 7 }, has_keys: false, ha
 describe('CloudBackup', () => {
   it('sets up S3, backs up now and restores a copy', async () => {
     let state: Record<string, unknown> = off
-    const on = (body: unknown) => (state = { ...off, config: body, has_keys: true, has_passphrase: true, last: { at: new Date().toISOString(), ok: true, name: 'zodim-20260925-100000.zodim', size: 3_300_000 } })
+    const on = (body: unknown) => (state = { ...off, config: body, has_keys: true, has_passphrase: true, last: { at: new Date().toISOString(), ok: true, name: 'pimpo-20260925-100000.pimpo', size: 3_300_000 } })
     const calls = mockFetch({
       '/api/backup/cloud': () => state,
       'PUT /api/backup/cloud': on,
       'POST /api/backup/cloud/run': { ok: true },
-      '/api/backup/cloud/files': [{ name: 'zodim-20260925-100000.zodim', size: 3_300_000, modified: '2026-09-25T10:00:05Z' }],
+      '/api/backup/cloud/files': [{ name: 'pimpo-20260925-100000.pimpo', size: 3_300_000, modified: '2026-09-25T10:00:05Z' }],
       'POST /api/backup/cloud/restore': { secrets: 4, restart: true },
     })
     wrap(<CloudBackup />)
@@ -37,7 +37,7 @@ describe('CloudBackup', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Ver backups' }))
     await userEvent.click(await screen.findByRole('button', { name: /Restaurar o backup de/ }))
     await userEvent.click(screen.getAllByRole('button', { name: /Restaurar o backup de/ }).at(-1)!)
-    await waitFor(() => expect(calls.find((c) => c.url === '/api/backup/cloud/restore')?.body).toEqual({ name: 'zodim-20260925-100000.zodim' }))
+    await waitFor(() => expect(calls.find((c) => c.url === '/api/backup/cloud/restore')?.body).toEqual({ name: 'pimpo-20260925-100000.pimpo' }))
     expect(await screen.findByText(/Arquivo conferido \(4 chaves\)/)).toBeInTheDocument()
   })
 

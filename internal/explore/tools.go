@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/mcp"
-	"github.com/denerFernandes/zodim/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/mcp"
+	"github.com/denerFernandes/pimpo/internal/memory"
 )
 
 // toolName maps "gmail.search" to "gmail_search"; MCP tool names cannot
@@ -110,8 +110,8 @@ func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string) []mcp.
 	})
 	if guide != "" {
 		out = append(out, mcp.Tool{
-			Name:        "zodim_guide",
-			Description: "Search Zodim's user guide, for questions about Zodim itself (what it can do, where a setting is, how routines, approvals, the phone app, backups or connectors work). The guide is in English: search with English words, answer in the owner's language. An empty query lists the sections.",
+			Name:        "pimpo_guide",
+			Description: "Search Pimpo's user guide, for questions about Pimpo itself (what it can do, where a setting is, how routines, approvals, the phone app, backups or connectors work). The guide is in English: search with English words, answer in the owner's language. An empty query lists the sections.",
 			InputSchema: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}}}`),
 			Handle: func(_ context.Context, raw json.RawMessage) (any, error) {
 				var a struct {

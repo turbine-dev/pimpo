@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/demo"
-	"github.com/denerFernandes/zodim/internal/undo"
+	"github.com/denerFernandes/pimpo/internal/demo"
+	"github.com/denerFernandes/pimpo/internal/undo"
 )
 
 // EnableDemo swaps every external service for the demo's: an in-memory

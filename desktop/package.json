@@ -1,5 +1,5 @@
 {
-  "name": "zodim-desktop",
+  "name": "pimpo-desktop",
   "private": true,
   "scripts": {
     "tauri": "tauri"

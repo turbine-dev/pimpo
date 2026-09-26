@@ -8,14 +8,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/policy"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/policy"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/owner"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/owner"
 )
 
 func TestChannelHealth(t *testing.T) {

@@ -11,14 +11,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/vault"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/vault"
 )
 
 func TestExportImportRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	home := t.TempDir()
-	ev, _ := event.Open(filepath.Join(home, "zodim.db"))
+	ev, _ := event.Open(filepath.Join(home, "pimpo.db"))
 	defer ev.Close()
 	v, _ := vault.Open(ev.DB(), vault.FileKey(filepath.Join(home, "key-a")))
 	v.Set(ctx, "telegram.token", "123:secret")
@@ -49,7 +49,7 @@ func TestExportImportRoundTrip(t *testing.T) {
 
 	// A new machine, with its own vault key.
 	other := t.TempDir()
-	os.WriteFile(filepath.Join(other, "zodim.db"), []byte("old"), 0o600)
+	os.WriteFile(filepath.Join(other, "pimpo.db"), []byte("old"), 0o600)
 	unpacked := t.TempDir()
 	_, secrets, err := Unpack(bytes.NewReader(buf.Bytes()), unpacked, "correct horse")
 	if err != nil || secrets["telegram.token"] != "123:secret" {
@@ -59,10 +59,10 @@ func TestExportImportRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if b, _ := os.ReadFile(filepath.Join(keep, "zodim.db")); string(b) != "old" {
+	if b, _ := os.ReadFile(filepath.Join(keep, "pimpo.db")); string(b) != "old" {
 		t.Fatal("the previous data was not kept")
 	}
-	ev2, err := event.Open(filepath.Join(other, "zodim.db"))
+	ev2, err := event.Open(filepath.Join(other, "pimpo.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestExportImportRoundTrip(t *testing.T) {
 func TestImportsBackupsFromBeforeTheRename(t *testing.T) {
 	ctx := context.Background()
 	home := t.TempDir()
-	ev, _ := event.Open(filepath.Join(home, "zodim.db"))
+	ev, _ := event.Open(filepath.Join(home, "pimpo.db"))
 	defer ev.Close()
 	v, _ := vault.Open(ev.DB(), vault.FileKey(filepath.Join(home, "key")))
 	v.Set(ctx, "telegram.token", "123:secret")
@@ -105,11 +105,19 @@ func TestImportsBackupsFromBeforeTheRename(t *testing.T) {
 	tw := tar.NewWriter(gw)
 	walk(bytes.NewReader(buf.Bytes()), func(name string, data io.Reader) error {
 		b, _ := io.ReadAll(data)
+		// A backup made as Zodim: its names, and its secrets sealed
+		// under its own format name.
 		switch name {
-		case "zodim.db":
-			name = "vigia.db"
+		case "pimpo.db":
+			name = "zodim.db"
 		case "manifest.json":
-			b = bytes.Replace(b, []byte(format), []byte(legacyFormat), 1)
+			b = bytes.Replace(b, []byte(format), []byte(legacyFormats[0]), 1)
+		case "secrets.enc":
+			plain, err := open(b, "correct horse", format)
+			if err != nil {
+				t.Fatal(err)
+			}
+			b, _ = sealWith(plain, "correct horse", legacyFormats[0])
 		}
 		tw.WriteHeader(&tar.Header{Name: name, Mode: 0o600, Size: int64(len(b)), Typeflag: tar.TypeReg})
 		tw.Write(b)
@@ -117,7 +125,7 @@ func TestImportsBackupsFromBeforeTheRename(t *testing.T) {
 	})
 	tw.Close()
 	gw.Close()
-	if m, err := Inspect(bytes.NewReader(old.Bytes())); err != nil || m.Format != legacyFormat {
+	if m, err := Inspect(bytes.NewReader(old.Bytes())); err != nil || m.Format != legacyFormats[0] {
 		t.Fatalf("inspect %+v %v", m, err)
 	}
 	dir := t.TempDir()
@@ -125,7 +133,7 @@ func TestImportsBackupsFromBeforeTheRename(t *testing.T) {
 	if err != nil || secrets["telegram.token"] != "123:secret" {
 		t.Fatalf("%v %v", secrets, err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "zodim.db")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "pimpo.db")); err != nil {
 		t.Fatal("the old database name was not mapped")
 	}
 }
@@ -133,7 +141,7 @@ func TestImportsBackupsFromBeforeTheRename(t *testing.T) {
 func TestSealedBackupsHideEverything(t *testing.T) {
 	ctx := context.Background()
 	home := t.TempDir()
-	ev, _ := event.Open(filepath.Join(home, "zodim.db"))
+	ev, _ := event.Open(filepath.Join(home, "pimpo.db"))
 	defer ev.Close()
 	v, _ := vault.Open(ev.DB(), vault.FileKey(filepath.Join(home, "key")))
 	v.Set(ctx, "telegram.token", "123:secret")
@@ -146,7 +154,7 @@ func TestSealedBackupsHideEverything(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Contains(sealed, []byte("eu@exemplo.com")) || bytes.Contains(sealed, []byte("zodim.db")) {
+	if bytes.Contains(sealed, []byte("eu@exemplo.com")) || bytes.Contains(sealed, []byte("pimpo.db")) {
 		t.Fatal("the sealed file shows its contents")
 	}
 	if _, _, err := Unpack(bytes.NewReader(sealed), t.TempDir(), "wrong horse"); !errors.Is(err, ErrPassphrase) {
@@ -157,7 +165,7 @@ func TestSealedBackupsHideEverything(t *testing.T) {
 	if err != nil || secrets["telegram.token"] != "123:secret" {
 		t.Fatalf("%v %v", secrets, err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "zodim.db")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "pimpo.db")); err != nil {
 		t.Fatal("database missing")
 	}
 }

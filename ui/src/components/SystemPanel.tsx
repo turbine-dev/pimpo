@@ -46,7 +46,7 @@ function Meter({ label, value, sub, history, max, pct }: { label: string; value:
 const dot: Record<SysComponent['state'], string> = { ok: 'bg-read', off: 'bg-line-strong', error: 'bg-danger', waiting: 'bg-change' }
 const groups: [SysComponent['group'], TKey][] = [['channel', 'sys.channels'], ['account', 'sys.accounts'], ['brain', 'sys.brain'], ['service', 'sys.services'], ['access', 'sys.access'], ['backup', 'sys.backup']]
 
-// SystemPanel is the live view of how busy the computer and Zodim are and
+// SystemPanel is the live view of how busy the computer and Pimpo are and
 // whether every part is working.
 export function SystemPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const t = useT()
@@ -83,7 +83,7 @@ export function SystemPanel({ open, onOpenChange }: { open: boolean; onOpenChang
           {!d ? <p className="text-[13px] text-ink-3">{q.error ? q.error.message : t('sys.loading')}</p> : <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Meter label={t('sys.computer')} value={hostPct > 100 ? '100%+' : `${Math.round(hostPct)}%`} sub={t('sys.load', { load: d.host.load[0].toFixed(1), cpus: d.host.cpus })} history={hist.load} max={d.host.cpus} />
-              <Meter label={t('sys.zodimCpu')} value={`${d.process.cpu_percent.toFixed(1)}%`} sub={t('sys.goroutines', { n: d.process.goroutines })} history={hist.cpu} max={5} />
+              <Meter label={t('sys.pimpoCpu')} value={`${d.process.cpu_percent.toFixed(1)}%`} sub={t('sys.goroutines', { n: d.process.goroutines })} history={hist.cpu} max={5} />
               <Meter label={t('sys.memory')} value={mb(d.process.heap_bytes)} sub={t('sys.memoryOf', { sys: mb(d.process.sys_bytes), total: d.host.mem_total ? gb(d.host.mem_total) : '—' })} history={hist.heap} />
               <Meter label={t('sys.disk')} value={t('sys.free', { free: gb(d.host.disk_free) })} sub={t('sys.of', { total: gb(d.host.disk_size) })} pct={diskUsed} />
             </div>

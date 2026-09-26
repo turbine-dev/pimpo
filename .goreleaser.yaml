@@ -1,12 +1,12 @@
 version: 2
-project_name: zodim
+project_name: pimpo
 
 before:
   hooks:
     - make ui
 
 builds:
-  - main: ./cmd/zodim
+  - main: ./cmd/pimpo
     env: [CGO_ENABLED=0]
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64, arm]
@@ -37,5 +37,5 @@ changelog:
 release:
   github:
     owner: denerFernandes
-    name: zodim
+    name: pimpo
   draft: true

@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/owner"
-	"github.com/denerFernandes/zodim/internal/snapshot"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/owner"
+	"github.com/denerFernandes/pimpo/internal/snapshot"
 )
 
 func TestSnapshotsFromTheApp(t *testing.T) {

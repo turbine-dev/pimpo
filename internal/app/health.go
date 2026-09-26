@@ -2,11 +2,11 @@ package app
 
 import (
 	"context"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/explore"
 )
 
 // Channel health: each channel reports how its last attempts went. One

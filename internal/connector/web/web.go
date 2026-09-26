@@ -37,7 +37,7 @@ func (w *Web) Call(ctx context.Context, _, scope string, args any) (any, error) 
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "Zodim/1")
+	req.Header.Set("User-Agent", "Pimpo/1")
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("GET %s failed: %w", u.Hostname(), errors.Unwrap(err))

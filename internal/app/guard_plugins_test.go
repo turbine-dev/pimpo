@@ -8,16 +8,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/llm"
 )
 
 // The Guard plugins for OpenClaw and Hermes run their own test suites
-// against a real Zodim, with a paired device token.
-func TestGuardPluginsAgainstZodim(t *testing.T) {
+// against a real Pimpo, with a paired device token.
+func TestGuardPluginsAgainstPimpo(t *testing.T) {
 	ta := newApp(t, weatherAgent, &llm.Fake{})
 	_, pair := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://127.0.0.1:7788", "device": "Guard"})
 	token := strings.TrimPrefix(pair["link"].(string), "http://127.0.0.1:7788/auth?token=")
-	env := append(os.Environ(), "ZODIM_URL="+ta.srv.URL, "ZODIM_TOKEN="+token)
+	env := append(os.Environ(), "PIMPO_URL="+ta.srv.URL, "PIMPO_TOKEN="+token)
 	root, _ := filepath.Abs("../../guard")
 
 	t.Run("hermes", func(t *testing.T) {

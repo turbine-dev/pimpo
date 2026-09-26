@@ -22,7 +22,7 @@ import (
 	gomail "github.com/emersion/go-message/mail"
 	"github.com/emersion/go-sasl"
 
-	"github.com/denerFernandes/zodim/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/connector"
 )
 
 type Message struct {

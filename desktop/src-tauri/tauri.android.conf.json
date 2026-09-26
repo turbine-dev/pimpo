@@ -1,5 +1,5 @@
 {
-  "identifier": "app.zodim.companion",
+  "identifier": "app.pimpo.companion",
   "bundle": { "externalBin": [] },
-  "app": { "windows": [{ "label": "main", "title": "Zodim" }] }
+  "app": { "windows": [{ "label": "main", "title": "Pimpo" }] }
 }

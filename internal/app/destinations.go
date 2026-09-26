@@ -14,13 +14,13 @@ import (
 
 	"github.com/robfig/cron/v3"
 
-	"github.com/denerFernandes/zodim/internal/connector"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/internal/store"
-	"github.com/denerFernandes/zodim/internal/telegram"
+	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/denerFernandes/pimpo/internal/telegram"
 )
 
 // Destinations are the places a routine can deliver to with notify.send:
@@ -157,7 +157,7 @@ func (a *App) deliver(ctx context.Context, target, text string) error {
 		if r := []rune(subject); len(r) > 80 {
 			subject = string(r[:79]) + "…"
 		}
-		_, err := a.Router.Call(ctx, "gmail.send", "", map[string]any{"to": me, "subject": "Zodim: " + subject, "body": text})
+		_, err := a.Router.Call(ctx, "gmail.send", "", map[string]any{"to": me, "subject": "Pimpo: " + subject, "body": text})
 		return err
 	case strings.HasPrefix(target, "bot:"):
 		id := strings.TrimPrefix(target, "bot:")

@@ -26,7 +26,7 @@ The local model answers; only items where it is unsure (p within a band around 0
 | ±0.4 | 22% | 0.924 | 0.071 | 0.057 | 0.945 |
 | all | 100% | 0.948 | 0.036 | 0.046 | 0.991 |
 
-**Decision:** with the local backend selected, Zodim uses the cascade with a band of 0.4 (`judge.Cascade`): about a fifth of the paid calls for most of the accuracy. Without a Jev key, the unsure items go to the owner's model instead. With no network at all, the local answer stands.
+**Decision:** with the local backend selected, Pimpo uses the cascade with a band of 0.4 (`judge.Cascade`): about a fifth of the paid calls for most of the accuracy. Without a Jev key, the unsure items go to the owner's model instead. With no network at all, the local answer stands.
 
 ## Reproduce
 

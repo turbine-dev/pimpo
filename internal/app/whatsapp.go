@@ -3,16 +3,16 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"io"
 	"net/http"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/connector"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/people"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/internal/whatsapp"
+	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/whatsapp"
 )
 
 // WhatsApp is a second channel through the official Cloud API: the owner
@@ -120,7 +120,7 @@ func (a *App) whatsappMessage(ctx context.Context, m whatsapp.Inbound) {
 }
 
 func pairingCode(text string) (string, bool) {
-	for _, prefix := range []string{"/start ", "zodim ", "Zodim "} {
+	for _, prefix := range []string{"/start ", "pimpo ", "Pimpo ", "zodim ", "Zodim "} {
 		if code, ok := strings.CutPrefix(text, prefix); ok {
 			return strings.TrimSpace(code), true
 		}

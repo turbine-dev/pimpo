@@ -1,7 +1,7 @@
 {
-  "name": "@zodim/openclaw-guard",
+  "name": "@pimpo/openclaw-guard",
   "version": "1.0.0",
-  "description": "Ask Zodim's rules and the shared protection list before OpenClaw runs a tool.",
+  "description": "Ask Pimpo's rules and the shared protection list before OpenClaw runs a tool.",
   "type": "module",
   "openclaw": { "extensions": ["./index.ts"] },
   "scripts": { "test": "node --test guard.test.ts" }

@@ -1,6 +1,6 @@
 // Package external runs connectors written by anyone, in any language, as
 // separate processes speaking MCP over stdio. A connector ships a
-// connector.json that declares every capability with its risk; Zodim only
+// connector.json that declares every capability with its risk; Pimpo only
 // exposes what is declared, checks that the process offers exactly that,
 // and gives it no secrets but the ones it names.
 package external
@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/capability"
 )
 
 type Manifest struct {
@@ -95,7 +95,7 @@ func Load(dir string) (Manifest, error) {
 			return man, fmt.Errorf("capability %q must be named %s.<method>", c.Name, man.Name)
 		}
 		if _, builtin := capability.Catalog[c.Name]; builtin && !external[c.Name] {
-			return man, fmt.Errorf("capability %q is already provided by Zodim", c.Name)
+			return man, fmt.Errorf("capability %q is already provided by Pimpo", c.Name)
 		}
 		if _, ok := risks[c.Risk]; !ok {
 			return man, fmt.Errorf("capability %q: risk must be read, notify, reversible or irreversible", c.Name)
@@ -123,7 +123,7 @@ func Load(dir string) (Manifest, error) {
 var risks = map[string]capability.Risk{"read": capability.Read, "notify": capability.Notify, "reversible": capability.Reversible, "irreversible": capability.Irreversible}
 
 // external remembers capabilities registered from connectors, so reloading
-// one does not look like a clash with Zodim's own.
+// one does not look like a clash with Pimpo's own.
 var external = map[string]bool{}
 
 // Register adds the manifest's capabilities to the catalog.

@@ -3,11 +3,11 @@ package services
 import (
 	"context"
 
-	"github.com/denerFernandes/zodim/internal/chatlink"
+	"github.com/denerFernandes/pimpo/internal/chatlink"
 )
 
 // Conversation channels: set up here like any connector, they let the
-// owner talk to Zodim in private messages. They offer no capabilities.
+// owner talk to Pimpo in private messages. They offer no capabilities.
 
 // LinkKinds lists the catalog entries that are conversation channels.
 var LinkKinds = []string{"discordchat", "slackchat", "signal"}
@@ -47,23 +47,23 @@ func checkLink(kind string) func(ctx context.Context, cfg Config) error {
 
 func init() {
 	register(Kind{
-		ID: "discordchat", Title: "Discord", Description: "Converse com o Zodim por mensagem privada no Discord.",
-		Help:   "Em discord.com/developers/applications, crie um app, vá em Bot, gere o token e convide o bot para um servidor seu. Depois mande para ele, no privado: zodim e o código de pareamento de Conexões.",
+		ID: "discordchat", Title: "Discord", Description: "Converse com o Pimpo por mensagem privada no Discord.",
+		Help:   "Em discord.com/developers/applications, crie um app, vá em Bot, gere o token e convide o bot para um servidor seu. Depois mande para ele, no privado: pimpo e o código de pareamento de Conexões.",
 		Fields: []Field{{Name: "token", Label: "Token do bot", Secret: true}},
 		Probe:  checkLink("discordchat"),
 	})
 	register(Kind{
-		ID: "slackchat", Title: "Slack", Description: "Converse com o Zodim por mensagem direta no Slack.",
+		ID: "slackchat", Title: "Slack", Description: "Converse com o Pimpo por mensagem direta no Slack.",
 		Help: "Em api.slack.com/apps, crie um app, ligue o Socket Mode (gera o token xapp- com connections:write), assine o evento message.im, dê ao bot im:history, im:write e chat:write e instale no workspace. " +
-			"Depois mande para o app, na mensagem direta: zodim e o código de pareamento de Conexões.",
+			"Depois mande para o app, na mensagem direta: pimpo e o código de pareamento de Conexões.",
 		Fields: []Field{{Name: "bot_token", Label: "Bot token (xoxb-)", Secret: true}, {Name: "app_token", Label: "App token (xapp-)", Secret: true}},
 		Probe:  checkLink("slackchat"),
 	})
 	register(Kind{
-		ID: "signal", Title: "Signal", Description: "Converse com o Zodim pelo Signal, cifrado até este computador.",
+		ID: "signal", Title: "Signal", Description: "Converse com o Pimpo pelo Signal, cifrado até este computador.",
 		Help: "Instale o signal-cli, registre ou vincule um número e deixe rodando: signal-cli -a +55NUMERO daemon --http 127.0.0.1:8080. " +
-			"Depois mande para esse número, pelo seu Signal: zodim e o código de pareamento de Conexões.",
-		Fields: []Field{{Name: "url", Label: "Endereço do signal-cli", Placeholder: "http://127.0.0.1:8080"}, {Name: "account", Label: "Número do Zodim no Signal", Placeholder: "+5511…", Optional: true}},
+			"Depois mande para esse número, pelo seu Signal: pimpo e o código de pareamento de Conexões.",
+		Fields: []Field{{Name: "url", Label: "Endereço do signal-cli", Placeholder: "http://127.0.0.1:8080"}, {Name: "account", Label: "Número do Pimpo no Signal", Placeholder: "+5511…", Optional: true}},
 		Probe:  checkLink("signal"),
 	})
 }

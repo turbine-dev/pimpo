@@ -1,6 +1,6 @@
 // Package protect is the shared protection list: exfiltration domains,
 // malicious skills and dangerous action patterns reported by people who
-// run Zodim, reviewed, and published as a signed static file. Clients
+// run Pimpo, reviewed, and published as a signed static file. Clients
 // only download it; nothing about the person travels, and nothing needs a
 // server.
 package protect
@@ -26,7 +26,7 @@ import (
 )
 
 // DefaultURL is where the community list is published.
-const DefaultURL = "https://raw.githubusercontent.com/denerFernandes/zodim-protection/main/list.json"
+const DefaultURL = "https://raw.githubusercontent.com/denerFernandes/pimpo-protection/main/list.json"
 
 type Entry struct {
 	ID string `json:"id"`

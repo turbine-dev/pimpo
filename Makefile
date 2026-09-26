@@ -4,7 +4,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 .PHONY: dmg build ui test test-go test-ui lint proof check e2e desktop release-snapshot
 
 build: ui
-	go build -ldflags "$(LDFLAGS)" -o bin/zodim ./cmd/zodim
+	go build -ldflags "$(LDFLAGS)" -o bin/pimpo ./cmd/pimpo
 
 ui:
 	cd ui && npm ci --no-audit --no-fund && npm run build
@@ -39,7 +39,7 @@ e2e: build
 # desktop builds the Tauri app with this machine's server binary inside.
 desktop: ui
 	mkdir -p desktop/src-tauri/binaries
-	go build -ldflags "$(LDFLAGS)" -o desktop/src-tauri/binaries/zodim-$$(rustc -vV | sed -n 's/host: //p') ./cmd/zodim
+	go build -ldflags "$(LDFLAGS)" -o desktop/src-tauri/binaries/pimpo-$$(rustc -vV | sed -n 's/host: //p') ./cmd/pimpo
 	cd desktop && npm ci --no-audit --no-fund && npx tauri build --bundles app
 
 # dmg builds the macOS installer too; its Finder styling step sometimes

@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"strings"
 	"sync"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/protect"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/protect"
 )
 
 // Rule is one decision the owner made, in a form the engine can check

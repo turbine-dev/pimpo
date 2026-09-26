@@ -10,7 +10,7 @@ import (
 )
 
 // LAN serves the web app on the home network's address as well, so a
-// phone on the same Wi-Fi reaches Zodim with no account at all. Only
+// phone on the same Wi-Fi reaches Pimpo with no account at all. Only
 // private addresses are used: nothing is exposed outside the house.
 type LAN struct {
 	Port    int

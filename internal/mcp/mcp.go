@@ -1,5 +1,5 @@
 // Package mcp is a minimal Model Context Protocol server over HTTP
-// (JSON-RPC, single response per request). It exposes Zodim's capabilities
+// (JSON-RPC, single response per request). It exposes Pimpo's capabilities
 // as tools to an exploring agent.
 package mcp
 

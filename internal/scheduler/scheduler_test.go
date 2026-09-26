@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/connector"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/routine"
-	"github.com/denerFernandes/zodim/internal/runtime"
-	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/store"
 )
 
 type tg struct {

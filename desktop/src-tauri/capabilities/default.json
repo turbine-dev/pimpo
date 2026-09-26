@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "The local shell page only; the Zodim web app gets no native access.",
+  "description": "The local shell page only; the Pimpo web app gets no native access.",
   "windows": ["main"],
   "permissions": ["core:default"]
 }

@@ -3,23 +3,23 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/internal/snapshot"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/snapshot"
 )
 
-// UpgradeKey holds {from, to, snapshot} after Zodim starts on a new
+// UpgradeKey holds {from, to, snapshot} after Pimpo starts on a new
 // version, until the owner has been told.
 const UpgradeKey = "upgrade.notice"
 
-// Local snapshots: Zodim copies its data aside every day, before an
+// Local snapshots: Pimpo copies its data aside every day, before an
 // update and before an import. Any of them can be put back; it takes
-// effect when Zodim restarts, since the database is open while it runs.
+// effect when Pimpo restarts, since the database is open while it runs.
 func (a *App) snapshotRoutes() {
 	a.Server.Handle("GET /api/snapshots", a.listSnapshots)
 	a.Server.Handle("POST /api/snapshots", a.createSnapshot)
@@ -85,7 +85,7 @@ func (a *App) cancelRestore(w http.ResponseWriter, r *http.Request) {
 	server.WriteJSON(w, 200, map[string]any{"staged": ""})
 }
 
-// announceUpgrade tells the owner once that Zodim was updated and that the
+// announceUpgrade tells the owner once that Pimpo was updated and that the
 // state from before is kept.
 func (a *App) announceUpgrade(ctx context.Context) {
 	raw, _ := a.Events.Get(ctx, UpgradeKey)

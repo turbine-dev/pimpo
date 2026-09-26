@@ -1,4 +1,4 @@
-"""Zodim Guard for Hermes: asks Zodim before every tool call."""
+"""Pimpo Guard for Hermes: asks Pimpo before every tool call."""
 import os
 
 from .guard import decide
@@ -9,13 +9,13 @@ _settings = {}
 def on_pre_tool_call(tool_name="", args=None, task_id="", **kwargs):
     try:
         return decide(
-            _settings.get("url") or os.environ.get("ZODIM_URL", "http://127.0.0.1:7788"),
-            _settings.get("token") or os.environ.get("ZODIM_TOKEN", ""),
+            _settings.get("url") or os.environ.get("PIMPO_URL", "http://127.0.0.1:7788"),
+            _settings.get("token") or os.environ.get("PIMPO_TOKEN", ""),
             tool_name, args, kwargs.get("session_id") or task_id,
             fail_open=bool(_settings.get("fail_open")),
         )
     except Exception as e:  # never let a bug here wave a tool through
-        return {"action": "block", "message": "Zodim Guard falhou: %s" % e}
+        return {"action": "block", "message": "Pimpo Guard falhou: %s" % e}
 
 
 def register(ctx):

@@ -9,21 +9,21 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/app"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/migrate"
-	"github.com/denerFernandes/zodim/internal/snapshot"
-	"github.com/denerFernandes/zodim/internal/vault"
+	"github.com/denerFernandes/pimpo/internal/app"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/migrate"
+	"github.com/denerFernandes/pimpo/internal/snapshot"
+	"github.com/denerFernandes/pimpo/internal/vault"
 )
 
 func migrateCmd(args []string, out io.Writer) error {
 	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		return errors.New("usage: zodim migrate openclaw|hermes [--home DIR] [--apply] [--secrets] [--trust]")
+		return errors.New("usage: pimpo migrate openclaw|hermes [--home DIR] [--apply] [--secrets] [--trust]")
 	}
 	from := args[0]
 	fs := flag.NewFlagSet("migrate", flag.ContinueOnError)
 	fromHome := fs.String("home", "", "the other agent's data (default ~/.openclaw or ~/.hermes)")
-	dir := fs.String("data", "", "Zodim data directory (default ~/.zodim)")
+	dir := fs.String("data", "", "Pimpo data directory (default ~/.pimpo)")
 	apply := fs.Bool("apply", false, "import; without it, only show what would come over")
 	secrets := fs.Bool("secrets", false, "also copy the Telegram token and mail password into the vault")
 	trust := fs.Bool("trust", false, "treat imported memories and rules as your own words")
@@ -42,9 +42,9 @@ func migrateCmd(args []string, out io.Writer) error {
 
 	home := dataDir(*dir)
 	if running(home) {
-		return errors.New("Zodim is running; import from Settings › Import in the web app instead")
+		return errors.New("Pimpo is running; import from Settings › Import in the web app instead")
 	}
-	store, err := event.Open(filepath.Join(home, "zodim.db"))
+	store, err := event.Open(filepath.Join(home, "pimpo.db"))
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func migrateCmd(args []string, out io.Writer) error {
 	if n.Telegram || n.Mail {
 		fmt.Fprint(out, " Tokens are in the vault.")
 	}
-	fmt.Fprintf(out, "\nThe tasks wait on the Routines page: explore each once and it becomes a routine.\nChanged your mind? `zodim restore %s`\n", snap.Name)
+	fmt.Fprintf(out, "\nThe tasks wait on the Routines page: explore each once and it becomes a routine.\nChanged your mind? `pimpo restore %s`\n", snap.Name)
 	return nil
 }
 

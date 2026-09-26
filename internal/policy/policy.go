@@ -6,7 +6,7 @@ package policy
 import (
 	"context"
 
-	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/capability"
 )
 
 type Verdict string

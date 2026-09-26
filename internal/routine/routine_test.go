@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/runtime"
-	"github.com/denerFernandes/zodim/internal/trace"
+	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/trace"
 )
 
 func one() *int { n := 1; return &n }

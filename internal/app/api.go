@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/desktop"
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/runtime"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/internal/store"
-	"github.com/denerFernandes/zodim/internal/telegram"
+	"github.com/denerFernandes/pimpo/internal/desktop"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/denerFernandes/pimpo/internal/telegram"
 )
 
 func (a *App) routes() {

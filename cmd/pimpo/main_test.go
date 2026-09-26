@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/snapshot"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/snapshot"
 )
 
 func TestNewVersionTakesASnapshotFirst(t *testing.T) {
 	home := t.TempDir()
-	s, _ := event.Open(filepath.Join(home, "zodim.db"))
+	s, _ := event.Open(filepath.Join(home, "pimpo.db"))
 	defer s.Close()
 	ctx := context.Background()
 	version = "0.3.0"
@@ -57,8 +57,8 @@ func TestMigrateDryRunTouchesNothing(t *testing.T) {
 	if !strings.Contains(out.String(), "1 memories") || !strings.Contains(out.String(), "Nothing imported") {
 		t.Fatalf("dry run:\n%s", out.String())
 	}
-	if _, err := os.Stat(filepath.Join(data, "zodim.db")); err == nil {
-		t.Fatal("a dry run touched Zodim's data")
+	if _, err := os.Stat(filepath.Join(data, "pimpo.db")); err == nil {
+		t.Fatal("a dry run touched Pimpo's data")
 	}
 }
 

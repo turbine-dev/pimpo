@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A local judgment server for Zodim: POST /judge {"question", "item"} ->
+"""A local judgment server for Pimpo: POST /judge {"question", "item"} ->
 {"p"}. Runs a small model with MLX on Apple Silicon, free and offline.
 Usage: serve.py MODEL [ADAPTER] [PORT]"""
 import json, sys

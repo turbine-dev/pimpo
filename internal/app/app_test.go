@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/vault"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/vault"
 )
 
 type testApp struct {

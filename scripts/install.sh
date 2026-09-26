@@ -1,9 +1,9 @@
 #!/bin/sh
-# Install Zodim on Linux or macOS: curl -fsSL https://raw.githubusercontent.com/denerFernandes/zodim/main/scripts/install.sh | sh
+# Install Pimpo on Linux or macOS: curl -fsSL https://raw.githubusercontent.com/denerFernandes/pimpo/main/scripts/install.sh | sh
 # Options: --service (run at boot with systemd, Linux), --version vX.Y.Z, --dir DIR
 set -eu
 
-repo="denerFernandes/zodim"
+repo="denerFernandes/pimpo"
 version="latest"
 dir="${HOME}/.local/bin"
 service=0
@@ -31,8 +31,8 @@ if [ "$version" = "latest" ]; then
 else
   base="https://github.com/$repo/releases/download/$version"
 fi
-base="${ZODIM_BASE_URL:-$base}"
-archive="zodim_${os}_${arch}.tar.gz"
+base="${PIMPO_BASE_URL:-$base}"
+archive="pimpo_${os}_${arch}.tar.gz"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
@@ -48,8 +48,8 @@ fi
 
 tar -xzf "$tmp/$archive" -C "$tmp"
 mkdir -p "$dir"
-install -m 0755 "$tmp/zodim" "$dir/zodim"
-echo "Installed $("$dir/zodim" version) to $dir/zodim"
+install -m 0755 "$tmp/pimpo" "$dir/pimpo"
+echo "Installed $("$dir/pimpo" version) to $dir/pimpo"
 case ":$PATH:" in *":$dir:"*) ;; *) echo "Add $dir to your PATH." ;; esac
 
 if [ "$service" = 1 ]; then
@@ -57,15 +57,15 @@ if [ "$service" = 1 ]; then
     echo "--service needs systemd; on macOS use the desktop app, which starts at login" >&2
     exit 1
   fi
-  unit="$HOME/.config/systemd/user/zodim.service"
+  unit="$HOME/.config/systemd/user/pimpo.service"
   mkdir -p "$(dirname "$unit")"
   cat > "$unit" <<UNIT
 [Unit]
-Description=Zodim personal agent
+Description=Pimpo personal agent
 After=network-online.target
 
 [Service]
-ExecStart=$dir/zodim serve
+ExecStart=$dir/pimpo serve
 Restart=on-failure
 RestartSec=5
 
@@ -73,9 +73,9 @@ RestartSec=5
 WantedBy=default.target
 UNIT
   systemctl --user daemon-reload
-  systemctl --user enable --now zodim
+  systemctl --user enable --now pimpo
   loginctl enable-linger "$(id -un)" 2>/dev/null || true
-  echo "Zodim runs at boot. Open link: journalctl --user -u zodim | grep auth"
+  echo "Pimpo runs at boot. Open link: journalctl --user -u pimpo | grep auth"
 else
-  echo "Start it with: zodim serve"
+  echo "Start it with: pimpo serve"
 fi

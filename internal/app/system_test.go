@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/routine"
-	"github.com/denerFernandes/zodim/internal/store"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/store"
 )
 
 func TestSystemStatus(t *testing.T) {

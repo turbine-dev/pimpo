@@ -1,4 +1,4 @@
-// Package store keeps Zodim's working state: routines and their versions,
+// Package store keeps Pimpo's working state: routines and their versions,
 // explorations waiting for approval, and runs. The event log remains the
 // record of what happened; these tables are the current picture.
 package store
@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/routine"
-	"github.com/denerFernandes/zodim/internal/runtime"
-	"github.com/denerFernandes/zodim/internal/trace"
+	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/denerFernandes/pimpo/internal/trace"
 )
 
 var ErrNotFound = errors.New("not found")

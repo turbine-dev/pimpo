@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/capability"
-	"github.com/denerFernandes/zodim/internal/connector"
+	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/connector"
 )
 
 func init() {
@@ -84,7 +84,7 @@ func readFeed(ctx context.Context, _ Config, _, _ string, args any) (any, error)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Zodim/1 (+https://github.com/denerFernandes/zodim)")
+	req.Header.Set("User-Agent", "Pimpo/1 (+https://github.com/denerFernandes/pimpo)")
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

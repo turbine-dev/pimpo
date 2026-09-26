@@ -14,7 +14,7 @@ import (
 
 	"github.com/dop251/goja"
 
-	"github.com/denerFernandes/zodim/internal/capability"
+	"github.com/denerFernandes/pimpo/internal/capability"
 )
 
 // Host performs capability calls on behalf of a routine. It is where the
@@ -54,7 +54,7 @@ type Manifest struct {
 	Uses []string `json:"uses,omitempty"`
 }
 
-// Watch is what a routine waits for: Zodim calls Capability with Args
+// Watch is what a routine waits for: Pimpo calls Capability with Args
 // every Every, without a model, and runs the routine with the items whose
 // Key it has not seen before, as event.items.
 type Watch struct {

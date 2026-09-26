@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/llm"
-	"github.com/denerFernandes/zodim/internal/memory"
+	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/memory"
 )
 
 func TestImportFromHermes(t *testing.T) {
@@ -76,18 +76,18 @@ func TestImportFromHermes(t *testing.T) {
 
 func TestDevicePairingAndRevocation(t *testing.T) {
 	ta := newApp(t, weatherAgent, &llm.Fake{})
-	if code, _ := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://zodim.example.com", "device": "Celular"}); code != 400 {
+	if code, _ := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://pimpo.example.com", "device": "Celular"}); code != 400 {
 		t.Fatalf("accepted plain http on a public host: %d", code)
 	}
 	if code, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "http://192.168.1.20:7788"}); code != 200 || out["link"] != nil {
 		t.Fatalf("home network %d %v", code, out)
 	}
-	_, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "https://zodim.tail1.ts.net/x", "device": "Celular da Ana"})
+	_, out := ta.do(t, "POST", "/api/pairing", map[string]string{"base": "https://pimpo.tail1.ts.net/x", "device": "Celular da Ana"})
 	link, _ := out["link"].(string)
-	if !strings.HasPrefix(link, "https://zodim.tail1.ts.net/auth?token=") || strings.Contains(link, "token=tok") {
+	if !strings.HasPrefix(link, "https://pimpo.tail1.ts.net/auth?token=") || strings.Contains(link, "token=tok") {
 		t.Fatalf("link %q", link)
 	}
-	token := strings.TrimPrefix(link, "https://zodim.tail1.ts.net/auth?token=")
+	token := strings.TrimPrefix(link, "https://pimpo.tail1.ts.net/auth?token=")
 	get := func(tok string) int {
 		req, _ := http.NewRequest("GET", ta.srv.URL+"/api/routines", nil)
 		req.Header.Set("Authorization", "Bearer "+tok)
@@ -95,7 +95,7 @@ func TestDevicePairingAndRevocation(t *testing.T) {
 		return resp.StatusCode
 	}
 	if get(token) != 200 {
-		t.Fatal("the device token does not open Zodim")
+		t.Fatal("the device token does not open Pimpo")
 	}
 	resp, _ := http.Get(ta.srv.URL + "/auth?token=" + token)
 	if resp.Request.URL.Path != "/" {

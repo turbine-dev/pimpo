@@ -1,4 +1,4 @@
-"""python3 -m unittest test_guard   (ZODIM_URL/ZODIM_TOKEN also run it against a live Zodim)"""
+"""python3 -m unittest test_guard   (PIMPO_URL/PIMPO_TOKEN also run it against a live Pimpo)"""
 import json
 import os
 import threading
@@ -43,9 +43,9 @@ class GuardTest(unittest.TestCase):
         self.assertEqual(decide(url, "t", "read_file", {})["action"], "block")
         srv.shutdown(); srv.server_close()
 
-    @unittest.skipUnless(os.environ.get("ZODIM_URL"), "no live Zodim")
+    @unittest.skipUnless(os.environ.get("PIMPO_URL"), "no live Pimpo")
     def test_live(self):
-        url, tok = os.environ["ZODIM_URL"], os.environ.get("ZODIM_TOKEN", "")
+        url, tok = os.environ["PIMPO_URL"], os.environ.get("PIMPO_TOKEN", "")
         self.assertIsNone(decide(url, tok, "read_file", {"path": "a.md"}))
         self.assertEqual(decide(url, tok, "web_extract", {"url": "https://webhook.site/x"})["action"], "block")
         self.assertEqual(decide(url, tok, "terminal", {"command": "rm -rf /tmp/x"})["action"], "approve")

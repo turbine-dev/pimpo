@@ -1,1 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M8 13H27L9 31H31" fill="none" stroke="#000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M35.5 4c.7 3.6 1.9 4.8 5.5 5.5-3.6.7-4.8 1.9-5.5 5.5-.7-3.6-1.9-4.8-5.5-5.5 3.6-.7 4.8-1.9 5.5-5.5Z" fill="#000"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <mask id="holes">
+      <rect width="512" height="512" fill="#fff"/>
+      <path d="M256 214c-7 0-11 10-13 26-3 22-6 36-18 46-18 4-40 12-52 32-14 24-8 54 18 72 22 16 44 22 65 22s43-6 65-22c26-18 32-48 18-72-12-20-34-28-52-32-12-10-15-24-18-46-2-16-6-26-13-26Z" fill="#000"/>
+      <ellipse cx="200" cy="262" rx="34" ry="40" fill="#000"/>
+      <ellipse cx="312" cy="262" rx="34" ry="40" fill="#000"/>
+      <ellipse cx="207" cy="266" rx="15" ry="23" fill="#fff"/>
+      <ellipse cx="305" cy="266" rx="15" ry="23" fill="#fff"/>
+      <path d="M236 318c0-7 8-10 20-10s20 3 20 10c0 8-11 16-20 18-9-2-20-10-20-18Z" fill="#fff"/>
+    </mask>
+  </defs>
+  <g mask="url(#holes)" fill="#000">
+    <path d="M124 250 146 96c2-14 16-19 26-10l92 96Z" stroke="#000" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M388 250 366 96c-2-14-16-19-26-10l-92 96Z" stroke="#000" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M256 164c-66 0-116 20-142 60-24 36-24 84-6 120 28 56 84 84 148 84s120-28 148-84c18-36 18-84-6-120-26-40-76-60-142-60Z"/>
+  </g>
+</svg>

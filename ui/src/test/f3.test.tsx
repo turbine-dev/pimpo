@@ -13,7 +13,7 @@ describe('Welcome', () => {
     const first = vi.fn()
     wrap(<Welcome onFirstTask={first} />)
     expect(await screen.findByText(/Modo demonstração/)).toBeInTheDocument()
-    for (const title of ['Onde vocês conversam', 'O que o Zodim pode ler', 'O que o Zodim pode fazer sem perguntar?']) {
+    for (const title of ['Onde vocês conversam', 'O que o Pimpo pode ler', 'O que o Pimpo pode fazer sem perguntar?']) {
       await userEvent.click(screen.getByRole('button', { name: /Continuar/ }))
       await screen.findByRole('heading', { name: title })
     }

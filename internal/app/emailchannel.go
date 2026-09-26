@@ -2,16 +2,17 @@ package app
 
 import (
 	"context"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/connector/mail"
-	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/pimpo/internal/connector/mail"
+	"github.com/denerFernandes/pimpo/internal/people"
 )
 
-var zodimSubject = regexp.MustCompile(`(?i)^\s*(re:\s*)*zodim\s*[:\-–]\s*`)
+// pimpoSubject also accepts the old name, so saved habits keep working.
+var pimpoSubject = regexp.MustCompile(`(?i)^\s*(re:\s*)*(pimpo|zodim)\s*[:\-–]\s*`)
 
 func (a *App) emailChannel(ctx context.Context, every time.Duration) {
 	t := time.NewTicker(every)
@@ -29,22 +30,22 @@ func (a *App) emailChannel(ctx context.Context, every time.Duration) {
 }
 
 // checkEmailChannel reads messages the owner sent to themselves with
-// "Zodim:" in the subject and treats each as a request. Only the owner's
-// own address counts: anyone can put "Zodim" in a subject.
+// "Pimpo:" in the subject and treats each as a request. Only the owner's
+// own address counts: anyone can put "Pimpo" in a subject.
 func (a *App) checkEmailChannel(ctx context.Context) int {
 	ctx = people.With(ctx, people.OwnerID)
 	me, _ := a.Events.Get(ctx, "mail.user")
 	if me == "" {
 		return 0
 	}
-	got, err := a.Router.Call(ctx, "gmail.search", "", map[string]any{"query": "from:" + me + " to:" + me + " subject:zodim", "max": 20})
+	got, err := a.Router.Call(ctx, "gmail.search", "", map[string]any{"query": "from:" + me + " to:" + me + " subject:pimpo", "max": 20})
 	if err != nil {
 		return 0
 	}
 	msgs, _ := got.([]mail.Message)
 	n := 0
 	for _, m := range msgs {
-		if !strings.EqualFold(m.From, me) || !zodimSubject.MatchString(m.Subject) {
+		if !strings.EqualFold(m.From, me) || !pimpoSubject.MatchString(m.Subject) {
 			continue
 		}
 		id := m.MessageID
@@ -56,7 +57,7 @@ func (a *App) checkEmailChannel(ctx context.Context) int {
 			continue
 		}
 		a.Events.Put(ctx, key, time.Now().Format(time.RFC3339))
-		text := strings.TrimSpace(zodimSubject.ReplaceAllString(m.Subject, "") + "\n" + m.Snippet)
+		text := strings.TrimSpace(pimpoSubject.ReplaceAllString(m.Subject, "") + "\n" + m.Snippet)
 		reply, err := handler{a}.Request(ctx, text)
 		if err != nil {
 			reply = i18n.T(ctx, "msg.start.failed", "error", err)

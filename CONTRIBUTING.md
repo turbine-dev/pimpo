@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping. A few things keep Zodim trustworthy:
+Thanks for helping. A few things keep Pimpo trustworthy:
 
 - **Everything is tested.** A behavior without a test is a bug waiting. Run `make check` before every commit; `scripts/commit.sh` refuses to commit when it fails.
 - **English in code.** The UI speaks Portuguese and English.

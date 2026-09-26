@@ -60,7 +60,7 @@ func dial(ctx context.Context, e Endpoint, timeout time.Duration) (transport, er
 		}
 		t = s
 	}
-	if _, err := t.rpc(ctx, "initialize", map[string]any{"protocolVersion": protocolVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "zodim", "version": "1"}}); err != nil {
+	if _, err := t.rpc(ctx, "initialize", map[string]any{"protocolVersion": protocolVersion, "capabilities": map[string]any{}, "clientInfo": map[string]string{"name": "pimpo", "version": "1"}}); err != nil {
 		t.close()
 		return nil, fmt.Errorf("%s did not initialize: %w", e.Name, err)
 	}

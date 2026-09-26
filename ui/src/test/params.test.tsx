@@ -30,7 +30,7 @@ const routine: RoutineSummary = {
 describe('RoutineSettings', () => {
   it('changes the city, the time and the destinations without code', async () => {
     const calls = mockFetch({
-      '/api/destinations': [{ id: 'telegram', label: 'Telegram @zodim_bot', kind: 'telegram', ready: true }, { id: 'bot:ab', label: 'Telegram @familia_bot → Família', kind: 'telegram', ready: true }, { id: 'whatsapp', label: 'WhatsApp', kind: 'whatsapp', ready: false }],
+      '/api/destinations': [{ id: 'telegram', label: 'Telegram @pimpo_bot', kind: 'telegram', ready: true }, { id: 'bot:ab', label: 'Telegram @familia_bot → Família', kind: 'telegram', ready: true }, { id: 'whatsapp', label: 'WhatsApp', kind: 'whatsapp', ready: false }],
       '/api/geocode?q=Lisboa': [{ name: 'Lisboa', latitude: 38.72, longitude: -9.14, country: 'Portugal' }],
       'PUT /api/routines/clima/settings': routine,
     })
@@ -42,7 +42,7 @@ describe('RoutineSettings', () => {
     await userEvent.selectOptions(screen.getByLabelText('Quando'), 'weekdays')
     fireEvent.change(screen.getByLabelText('às'), { target: { value: '06:30' } })
     await userEvent.click(await screen.findByRole('button', { name: /familia_bot/ }))
-    await userEvent.click(screen.getByRole('button', { name: /zodim_bot/ }))
+    await userEvent.click(screen.getByRole('button', { name: /pimpo_bot/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Salvar ajustes' }))
     await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({
       schedule: '30 6 * * 1-5',

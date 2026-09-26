@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/denerFernandes/zodim/internal/connector/services"
-	"github.com/denerFernandes/zodim/internal/host"
-	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/connector/services"
+	"github.com/denerFernandes/pimpo/internal/host"
+	"github.com/denerFernandes/pimpo/internal/llm"
 )
 
 func TestCatalogConnectors(t *testing.T) {

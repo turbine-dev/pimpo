@@ -1,10 +1,10 @@
-//! The desktop app runs the Zodim server as a sidecar on a free loopback
+//! The desktop app runs the Pimpo server as a sidecar on a free loopback
 //! port and shows its web UI. Closing the window keeps the agent running in
-//! the menu bar; only Quit stops it. It can instead open a Zodim running
+//! the menu bar; only Quit stops it. It can instead open a Pimpo running
 //! elsewhere (a home server, a VPS), with the same link the phone pairs
 //! with; the local server then stays off, so one bot and one set of
 //! routines never run twice. On mobile there is no sidecar: the shell page
-//! always pairs with a Zodim running elsewhere.
+//! always pairs with a Pimpo running elsewhere.
 
 #[cfg(desktop)]
 mod desktop {
@@ -15,7 +15,7 @@ mod desktop {
     use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
     use tauri::webview::NewWindowResponse;
-    use tauri::{AppHandle, Manager, Url, WebviewWindowBuilder, WindowEvent};
+    use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
     use tauri_plugin_opener::OpenerExt;
     use tauri_plugin_autostart::ManagerExt as _;
     use tauri_plugin_shell::process::{CommandChild, CommandEvent};
@@ -24,14 +24,143 @@ mod desktop {
     pub struct Server(pub Mutex<Option<CommandChild>>);
 
     /// Shell is the address of the app's own page, to come back to it from
-    /// a remote Zodim.
+    /// a remote Pimpo.
     pub struct Shell(pub Mutex<Option<Url>>);
+
+    /// Local is the address of this computer's Pimpo once it answers.
+    pub struct Local(pub Mutex<Option<String>>);
+
+    fn mascot_file(app: &AppHandle) -> Option<std::path::PathBuf> {
+        app.path().app_config_dir().ok().map(|d| d.join("mascot-on"))
+    }
+
+    fn mascot_wanted(app: &AppHandle) -> bool {
+        mascot_file(app).map(|f| f.exists()).unwrap_or(false)
+    }
+
+    /// is_local reports whether a URL is this computer's Pimpo, the only
+    /// page allowed to switch the floating cat.
+    fn is_local(app: &AppHandle, u: &Url) -> bool {
+        let local = app.try_state::<Local>().and_then(|l| l.0.lock().unwrap().clone());
+        local.is_some_and(|base| u.as_str().starts_with(&base))
+    }
+
+    /// set_mascot keeps the choice, shows or hides the cat, and tells the
+    /// app's pages and the menu bar.
+    pub fn set_mascot(app: &AppHandle, on: bool) {
+        if let Some(f) = mascot_file(app) {
+            let _ = if on {
+                f.parent().map(std::fs::create_dir_all);
+                std::fs::write(&f, b"on")
+            } else {
+                std::fs::remove_file(&f)
+            };
+        }
+        mascot(app, on);
+        if let Some(w) = app.get_webview_window("main") {
+            sync_mascot(app, &w);
+        }
+        if let Some(item) = app.try_state::<MascotItem>() {
+            let _ = item.0.set_checked(on);
+        }
+    }
+
+    /// sync_mascot tells a page whether the floating cat is on, since the
+    /// page's own storage changes with the port on every start.
+    fn sync_mascot(app: &AppHandle, w: &tauri::WebviewWindow) {
+        let on = if mascot_wanted(app) { "on" } else { "off" };
+        let _ = w.eval(&format!("try {{ localStorage.setItem('pimpo.mascot', '{on}'); window.dispatchEvent(new Event('pimpo:mascot')) }} catch (e) {{}}"));
+    }
+
+    pub struct MascotItem(pub CheckMenuItem<tauri::Wry>);
+
+    fn corner_file(app: &AppHandle) -> Option<std::path::PathBuf> {
+        app.path().app_config_dir().ok().map(|d| d.join("mascot-corner"))
+    }
+
+    /// mascot_corner is the floating cat's bottom-right corner, in logical
+    /// points, where the owner last left it.
+    fn mascot_corner(app: &AppHandle) -> Option<(f64, f64)> {
+        let text = std::fs::read_to_string(corner_file(app)?).ok()?;
+        let (x, y) = text.trim().split_once(',')?;
+        Some((x.parse().ok()?, y.parse().ok()?))
+    }
+
+    /// remember_corner keeps where the cat is after it moves.
+    pub fn remember_corner(window: &tauri::Window) {
+        let (Ok(pos), Ok(size), Ok(scale)) = (window.outer_position(), window.outer_size(), window.scale_factor()) else { return };
+        let right = (pos.x as f64 + size.width as f64) / scale;
+        let bottom = (pos.y as f64 + size.height as f64) / scale;
+        if let Some(f) = corner_file(window.app_handle()) {
+            let _ = std::fs::write(f, format!("{right:.0},{bottom:.0}"));
+        }
+    }
+
+    /// mascot shows or hides the floating Pimpo: a small transparent window
+    /// above everything, with only the cat. It grows while its bubble or
+    /// menu is open, so the corner of the screen stays clickable. It shows
+    /// this computer's Pimpo only.
+    pub fn mascot(app: &AppHandle, on: bool) {
+        if !on {
+            if let Some(w) = app.get_webview_window("mascot") {
+                let _ = w.close();
+            }
+            return;
+        }
+        if app.get_webview_window("mascot").is_some() || saved_remote(app).is_some() {
+            return;
+        }
+        let Some(base) = app.try_state::<Local>().and_then(|l| l.0.lock().unwrap().clone()) else { return };
+        let Ok(url) = Url::parse(&format!("{base}/mascot")) else { return };
+        let (w, h) = (96.0, 120.0);
+        let mut x = 40.0;
+        let mut y = 40.0;
+        if let Ok(Some(m)) = app.primary_monitor() {
+            let size = m.size().to_logical::<f64>(m.scale_factor());
+            x = size.width - w - 24.0;
+            y = size.height - h - 96.0;
+        }
+        // Back where the owner left it: its bottom-right corner is kept, since
+        // the window grows up and to the left for the bubble and the games.
+        if let Some((right, bottom)) = mascot_corner(app) {
+            x = right - w;
+            y = bottom - h;
+        }
+        let main = app.clone();
+        let open_base = base.clone();
+        let _ = WebviewWindowBuilder::new(app, "mascot", WebviewUrl::External(url))
+            .title("Pimpo")
+            .transparent(true)
+            .decorations(false)
+            .shadow(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .resizable(false)
+            .visible_on_all_workspaces(true)
+            .inner_size(w, h)
+            .position(x, y)
+            // The cat's links open in the main window instead of its own.
+            .on_navigation(move |u| {
+                if u.path() != "/open" {
+                    return true;
+                }
+                let path = u.query_pairs().find(|(k, _)| k == "path").map(|(_, v)| v.to_string()).unwrap_or_else(|| "/".into());
+                if path.starts_with('/') {
+                    if let (Ok(target), Some(w)) = (Url::parse(&format!("{open_base}{path}")), main.get_webview_window("main")) {
+                        let _ = w.navigate(target);
+                    }
+                }
+                show(&main);
+                false
+            })
+            .build();
+    }
 
     fn remote_file(app: &AppHandle) -> Option<std::path::PathBuf> {
         app.path().app_config_dir().ok().map(|d| d.join("remote.txt"))
     }
 
-    /// The remote Zodim chosen, as its link and optional home address.
+    /// The remote Pimpo chosen, as its link and optional home address.
     pub fn saved_remote(app: &AppHandle) -> Option<(String, String)> {
         let text = std::fs::read_to_string(remote_file(app)?).ok()?;
         let mut lines = text.lines();
@@ -72,7 +201,7 @@ mod desktop {
         saved_remote(&app).map(|(l, h)| vec![l, h]).unwrap_or_default()
     }
 
-    /// use_remote keeps the link and stops the local Zodim.
+    /// use_remote keeps the link and stops the local Pimpo.
     #[tauri::command]
     pub fn use_remote(app: AppHandle, link: String, home: String) -> Result<(), String> {
         check_link(&link)?;
@@ -87,11 +216,13 @@ mod desktop {
             std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
         }
         std::fs::write(&file, format!("{link}\n{home}\n")).map_err(|e| e.to_string())?;
+        mascot(&app, false);
+        *app.state::<Local>().0.lock().unwrap() = None;
         stop(&app);
         Ok(())
     }
 
-    /// use_local forgets the remote Zodim and starts the one on this
+    /// use_local forgets the remote Pimpo and starts the one on this
     /// computer, which opens when it is ready.
     #[tauri::command]
     pub fn use_local(app: AppHandle) -> Result<(), String> {
@@ -118,8 +249,25 @@ mod desktop {
         let conf = app.config().app.windows.iter().find(|w| w.label == "main").expect("main window config").clone();
         let handle = app.clone();
         let platform = if cfg!(target_os = "macos") { "mac" } else { "on" };
+        let nav = app.clone();
+        let loaded = app.clone();
         let w = WebviewWindowBuilder::from_config(app, &conf)?
-            .initialization_script(format!("window.__ZODIM_DESKTOP__ = {platform:?}"))
+            .initialization_script(format!("window.__PIMPO_DESKTOP__ = {platform:?}"))
+            // Ajustes switches the floating Pimpo by visiting /desktop/mascot,
+            // so the page needs no native access.
+            .on_navigation(move |u| {
+                if u.path() != "/desktop/mascot" || !is_local(&nav, u) {
+                    return true;
+                }
+                let on = u.query_pairs().any(|(k, v)| k == "on" && v == "1");
+                set_mascot(&nav, on);
+                false
+            })
+            .on_page_load(move |w, p| {
+                if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
+                    sync_mascot(&loaded, &w);
+                }
+            })
             .on_new_window(move |url, _| {
                 if matches!(url.scheme(), "http" | "https" | "mailto") {
                     let _ = handle.opener().open_url(url.as_str(), None::<&str>);
@@ -128,6 +276,7 @@ mod desktop {
             })
             .build()?;
         app.manage(Shell(Mutex::new(w.url().ok())));
+        app.manage(Local(Mutex::new(None)));
         app.manage(Server(Mutex::new(None)));
         Ok(())
     }
@@ -148,7 +297,7 @@ mod desktop {
 
     fn status_with(app: &AppHandle, key: &str, arg: &str) {
         if let Some(w) = app.get_webview_window("main") {
-            let js = format!("window.__zodimStatus && window.__zodimStatus({key:?}, {arg:?})");
+            let js = format!("window.__pimpoStatus && window.__pimpoStatus({key:?}, {arg:?})");
             let _ = w.eval(&js);
         }
     }
@@ -163,7 +312,7 @@ mod desktop {
         b.iter().map(|x| format!("{x:02x}")).collect()
     }
 
-    /// start runs the local Zodim unless a remote one was chosen; the shell
+    /// start runs the local Pimpo unless a remote one was chosen; the shell
     /// page then connects to it.
     pub fn start(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         if saved_remote(app).is_some() {
@@ -181,11 +330,11 @@ mod desktop {
         let addr = format!("127.0.0.1:{port}");
         let (mut rx, child) = app
             .shell()
-            .sidecar("zodim")?
+            .sidecar("pimpo")?
             .args(["serve", "--addr", &addr])
-            .env("ZODIM_TOKEN", &token)
-            .env("ZODIM_EXIT_WITH_PARENT", "1")
-            .env("ZODIM_DESKTOP_NOTIFY", "1")
+            .env("PIMPO_TOKEN", &token)
+            .env("PIMPO_EXIT_WITH_PARENT", "1")
+            .env("PIMPO_DESKTOP_NOTIFY", "1")
             .spawn()?;
         *app.state::<Server>().0.lock().unwrap() = Some(child);
 
@@ -200,7 +349,7 @@ mod desktop {
                         }
                     }
                     CommandEvent::Terminated(p) => {
-                        // Stopped on purpose when switching to a remote Zodim.
+                        // Stopped on purpose when switching to a remote Pimpo.
                         if saved_remote(&handle).is_some() {
                             return;
                         }
@@ -222,6 +371,12 @@ mod desktop {
                     if let Some(w) = handle.get_webview_window("main") {
                         let _ = w.navigate(url);
                     }
+                    *handle.state::<Local>().0.lock().unwrap() = Some(format!("http://{addr}"));
+                    if mascot_wanted(&handle) {
+                        // After the main window has signed in, so the cat shares its session.
+                        std::thread::sleep(Duration::from_millis(1500));
+                        mascot(&handle, true);
+                    }
                     return;
                 }
                 std::thread::sleep(Duration::from_millis(150));
@@ -240,22 +395,25 @@ mod desktop {
     }
 
     pub fn tray(app: &AppHandle) -> tauri::Result<()> {
-        let open = MenuItem::with_id(app, "open", "Abrir o Zodim", true, None::<&str>)?;
-        let remote = MenuItem::with_id(app, "remote", "Conectar a outro Zodim…", true, None::<&str>)?;
-        let local = MenuItem::with_id(app, "local", "Usar o Zodim deste computador", true, None::<&str>)?;
+        let open = MenuItem::with_id(app, "open", "Abrir o Pimpo", true, None::<&str>)?;
+        let remote = MenuItem::with_id(app, "remote", "Conectar a outro Pimpo…", true, None::<&str>)?;
+        let local = MenuItem::with_id(app, "local", "Usar o Pimpo deste computador", true, None::<&str>)?;
         let at_login = app.autolaunch().is_enabled().unwrap_or(false);
         let login = CheckMenuItem::with_id(app, "login", "Abrir ao iniciar o computador", true, at_login, None::<&str>)?;
-        let quit = MenuItem::with_id(app, "quit", "Sair do Zodim", true, Some("CmdOrCtrl+Q"))?;
-        let menu = Menu::with_items(app, &[&open, &login, &PredefinedMenuItem::separator(app)?, &remote, &local, &PredefinedMenuItem::separator(app)?, &quit])?;
-        TrayIconBuilder::with_id("zodim")
+        let cat = CheckMenuItem::with_id(app, "mascot", "Pimpo na área de trabalho", true, mascot_wanted(app), None::<&str>)?;
+        app.manage(MascotItem(cat.clone()));
+        let quit = MenuItem::with_id(app, "quit", "Sair do Pimpo", true, Some("CmdOrCtrl+Q"))?;
+        let menu = Menu::with_items(app, &[&open, &cat, &login, &PredefinedMenuItem::separator(app)?, &remote, &local, &PredefinedMenuItem::separator(app)?, &quit])?;
+        TrayIconBuilder::with_id("pimpo")
             .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
             .icon_as_template(true)
-            .tooltip("Zodim")
+            .tooltip("Pimpo")
             .menu(&menu)
             .show_menu_on_left_click(false)
             .on_menu_event(move |app, ev| match ev.id().as_ref() {
                 "open" => show(app),
                 "remote" => pair(app),
+                "mascot" => set_mascot(app, !mascot_wanted(app)),
                 "local" => {
                     if saved_remote(app).is_some() {
                         if let Some(url) = app.try_state::<Shell>().and_then(|s| s.0.lock().unwrap().clone()) {
@@ -287,6 +445,15 @@ mod desktop {
     }
 
     pub fn keep_running_on_close(ev: &WindowEvent, window: &tauri::Window) {
+        if window.label() == "mascot" {
+            if let WindowEvent::Moved(_) = ev {
+                remember_corner(window);
+            }
+            return;
+        }
+        if window.label() != "main" {
+            return;
+        }
         if let WindowEvent::CloseRequested { api, .. } = ev {
             api.prevent_close();
             let _ = window.hide();
@@ -300,12 +467,12 @@ mod tests {
 
     #[test]
     fn links_need_https_or_a_private_address_and_a_token() {
-        assert!(check_link("https://zodim.tail1.ts.net/auth?token=abc").is_ok());
+        assert!(check_link("https://pimpo.tail1.ts.net/auth?token=abc").is_ok());
         assert!(check_link("http://192.168.1.20:7788/auth?token=abc").is_ok());
         assert!(check_link("http://100.101.1.2:7788/auth?token=abc").is_ok());
         assert!(check_link("http://example.com/auth?token=abc").is_err());
         assert!(check_link("http://100.200.1.2/auth?token=abc").is_err());
-        assert!(check_link("https://zodim.example.com/auth").is_err());
+        assert!(check_link("https://pimpo.example.com/auth").is_err());
         assert!(check_link("not a link").is_err());
     }
 }
@@ -338,7 +505,7 @@ pub fn run() {
 
     let app = builder
         .build(tauri::generate_context!())
-        .expect("error while building Zodim");
+        .expect("error while building Pimpo");
     app.run(|_app, _ev| {
         #[cfg(desktop)]
         match _ev {

@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/llm"
 )
 
 type bucket struct {
@@ -72,8 +72,8 @@ func TestCloudBackupsToS3(t *testing.T) {
 	ta.Home = t.TempDir()
 	ctx := context.Background()
 	b := &bucket{objects: map[string][]byte{
-		"zodim-20200101-000000.zodim": []byte("old"),
-		"zodim-20200102-000000.zodim": []byte("old"),
+		"pimpo-20200101-000000.pimpo": []byte("old"),
+		"pimpo-20200102-000000.pimpo": []byte("old"),
 		"notes.txt":                   []byte("not ours"),
 	}}
 	srv := httptest.NewServer(b)
@@ -103,7 +103,7 @@ func TestCloudBackupsToS3(t *testing.T) {
 		t.Fatalf("%d %v", code, run)
 	}
 	names := b.names()
-	if len(names) != 3 || names[0] != "notes.txt" || names[1] != "zodim-20200102-000000.zodim" {
+	if len(names) != 3 || names[0] != "notes.txt" || names[1] != "pimpo-20200102-000000.pimpo" {
 		t.Fatalf("keep 2 and never touch other files: %v", names)
 	}
 	sealed := b.objects[names[2]]
@@ -121,7 +121,7 @@ func TestCloudBackupsToS3(t *testing.T) {
 	if code, out := ta.do(t, "POST", "/api/backup/cloud/restore", map[string]string{"name": names[2]}); code != 200 || out["restart"] != true {
 		t.Fatalf("%d %v", code, out)
 	}
-	if _, err := os.Stat(filepath.Join(ta.Home, "import-pending", "zodim.db")); err != nil {
+	if _, err := os.Stat(filepath.Join(ta.Home, "import-pending", "pimpo.db")); err != nil {
 		t.Fatal("restore was not staged")
 	}
 	if code, _ := ta.do(t, "POST", "/api/backup/cloud/restore", map[string]string{"name": "../notes.txt"}); code != 400 {

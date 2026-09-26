@@ -12,7 +12,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/denerFernandes/zodim/internal/event"
+	"github.com/denerFernandes/pimpo/internal/event"
 )
 
 func newTest(t *testing.T) (*Server, *httptest.Server) {

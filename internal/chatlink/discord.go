@@ -103,7 +103,7 @@ func (d *Discord) Run(ctx context.Context, on func(Inbound)) error {
 	}
 	json.Unmarshal(first.D, &hello)
 	identify := map[string]any{"op": 2, "d": map[string]any{"token": d.Token, "intents": directMessages,
-		"properties": map[string]string{"os": "zodim", "browser": "zodim", "device": "zodim"}}}
+		"properties": map[string]string{"os": "pimpo", "browser": "pimpo", "device": "pimpo"}}}
 	if err := wsjson.Write(ctx, conn, identify); err != nil {
 		return err
 	}

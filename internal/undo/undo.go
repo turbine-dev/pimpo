@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/event"
-	"github.com/denerFernandes/zodim/internal/host"
+	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/denerFernandes/pimpo/internal/host"
 )
 
 const EventUndone = "action.undone"

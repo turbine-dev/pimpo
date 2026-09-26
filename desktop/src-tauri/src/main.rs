@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    zodim_desktop_lib::run()
+    pimpo_desktop_lib::run()
 }

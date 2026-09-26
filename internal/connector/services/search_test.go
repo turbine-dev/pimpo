@@ -36,11 +36,11 @@ func TestWebSearchWithBraveOrSearXNG(t *testing.T) {
 			w.WriteHeader(403)
 			return
 		}
-		w.Write([]byte(`{"results":[{"title":"Zodim","url":"https://zodim.app","content":"agente pessoal"}]}`))
+		w.Write([]byte(`{"results":[{"title":"Pimpo","url":"https://pimpo.app","content":"agente pessoal"}]}`))
 	}))
 	defer searx.Close()
-	out, err = callSearch(ctx, cfgMap(map[string]string{"searxng_url": searx.URL + "/"}), "web.search", "", map[string]any{"query": "zodim"})
-	if err != nil || out.([]result)[0].URL != "https://zodim.app" {
+	out, err = callSearch(ctx, cfgMap(map[string]string{"searxng_url": searx.URL + "/"}), "web.search", "", map[string]any{"query": "pimpo"})
+	if err != nil || out.([]result)[0].URL != "https://pimpo.app" {
 		t.Fatalf("%v %v", out, err)
 	}
 	if _, err := callSearch(ctx, cfgMap(nil), "web.search", "", map[string]any{"query": "x"}); err == nil || !strings.Contains(err.Error(), "Connections") {

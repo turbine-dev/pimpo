@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Score the OpenClaw features Zodim lacks, to order the next work. Writes decisions_gaps.json."""
+"""Score the OpenClaw features Pimpo lacks, to order the next work. Writes decisions_gaps.json."""
 import json
 from concurrent.futures import ThreadPoolExecutor
 from prioritize import PRODUCT, FEATURE_QS, call
 
-NOW = ("Zodim today: compiled routines with replay tests, approvals with a mandatory floor, receipts in a hash chain, signed gallery of routines, "
+NOW = ("Pimpo today: compiled routines with replay tests, approvals with a mandatory floor, receipts in a hash chain, signed gallery of routines, "
        "memory with provenance, budget, family members, encrypted cloud backup, phone pairing with Tailscale built in, desktop/iOS/Android apps. "
        "The owner talks to it only on Telegram, WhatsApp or email; the LLM is only the Claude Code CLI; connectors are local MCP programs installed from a zip.")
 GAPS = {
@@ -18,7 +18,7 @@ GAPS = {
     "voice_out": "Spoken replies (text to speech) and a microphone in the in-app chat.",
     "channels": "Two-way conversation on Slack and Discord, and Signal/iMessage/SMS channels.",
     "assistants": "Several named assistants, each with its own tools, permissions and channels.",
-    "help": "A built-in 'what can Zodim do?' helper that answers questions about the app itself, per-type notification settings and a Labs area.",
+    "help": "A built-in 'what can Pimpo do?' helper that answers questions about the app itself, per-type notification settings and a Labs area.",
 }
 
 def score(item):

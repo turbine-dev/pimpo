@@ -20,7 +20,7 @@ function recognizer(): (new () => Recognition) | undefined {
 const canRecord = () => typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
 
 // useDictation turns speech into text: with the browser's own recognition
-// when there is one, else by recording and asking Zodim to transcribe it
+// when there is one, else by recording and asking Pimpo to transcribe it
 // on this machine.
 export function useDictation(onText: (text: string, final: boolean) => void) {
   const [listening, setListening] = useState(false)

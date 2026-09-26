@@ -1,6 +1,6 @@
 # Engineering Guidelines
 
-This is how we build Zodim. It applies to everyone who sends code, docs or reviews, including people who use AI tools to help them.
+This is how we build Pimpo. It applies to everyone who sends code, docs or reviews, including people who use AI tools to help them.
 
 The rules are short on purpose. If something here gets in the way of good work, open an issue and we'll change it. Until then, follow it.
 
@@ -192,7 +192,7 @@ Events are the source of truth. Replay depends on them, so they have strict rule
 
 ## 8. Using AI tools
 
-Zodim is built with coding agents too, so of course you can use them here. The rules are the same as for code you wrote by hand, with a few additions because AI output has recognizable habits.
+Pimpo is built with coding agents too, so of course you can use them here. The rules are the same as for code you wrote by hand, with a few additions because AI output has recognizable habits.
 
 ### You are the author
 

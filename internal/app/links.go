@@ -3,20 +3,20 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/denerFernandes/zodim/internal/chatlink"
-	"github.com/denerFernandes/zodim/internal/connector/services"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/people"
+	"github.com/denerFernandes/pimpo/internal/chatlink"
+	"github.com/denerFernandes/pimpo/internal/connector/services"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/people"
 )
 
 // Conversation channels beyond Telegram and WhatsApp: Discord, Slack and
-// Signal. The owner pairs by sending "zodim <code>" in a private message;
+// Signal. The owner pairs by sending "pimpo <code>" in a private message;
 // strangers get nothing. These services have no buttons, so choices come
 // numbered and the owner answers with the number.
 

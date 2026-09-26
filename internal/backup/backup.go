@@ -1,4 +1,4 @@
-// Package backup exports everything Zodim keeps into one file and imports
+// Package backup exports everything Pimpo keeps into one file and imports
 // it on another machine: the database (routines, history, receipts,
 // people), the memory with its history, installed connectors,
 // and the vault's secrets. Secrets are re-encrypted with a passphrase the
@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -29,12 +30,12 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const format = "zodim-backup-1"
+const format = "pimpo-backup-1"
 
-// legacyFormat is what backups made before the rename say.
-const legacyFormat = "vigia-backup-1"
+// legacyFormats are what backups made under the earlier names say.
+var legacyFormats = []string{"zodim-backup-1", "vigia-backup-1"}
 
-func known(f string) bool { return f == format || f == legacyFormat }
+func known(f string) bool { return f == format || slices.Contains(legacyFormats, f) }
 
 type Manifest struct {
 	Format  string    `json:"format"`
@@ -54,12 +55,17 @@ var ErrPassphrase = errors.New("wrong passphrase, or the file was changed")
 
 func seal(plain []byte, pass string) ([]byte, error) { return sealWith(plain, pass, format) }
 
-func open(sealed []byte, pass string) ([]byte, error) { return openWith(sealed, pass, format) }
+// open decrypts secrets sealed under the backup's own format name, so
+// backups made before a rename still open.
+func open(sealed []byte, pass, format string) ([]byte, error) { return openWith(sealed, pass, format) }
 
 // sealedMagic starts a backup encrypted as a whole, for storage the owner
 // does not control: the database and memory, not only the secrets, are
 // unreadable without the passphrase.
-const sealedMagic = "ZODIM-SEALED-1\n"
+const sealedMagic = "PIMPO-SEALED-1\n"
+
+// legacyMagic starts backups sealed before the rename.
+var legacyMagic = []string{"ZODIM-SEALED-1\n"}
 
 // Seal encrypts a whole exported archive.
 func Seal(archive []byte, pass string) ([]byte, error) {
@@ -78,14 +84,15 @@ func Seal(archive []byte, pass string) ([]byte, error) {
 func unseal(r io.Reader, pass string) (io.Reader, error) {
 	br := bufio.NewReader(r)
 	head, _ := br.Peek(len(sealedMagic))
-	if string(head) != sealedMagic {
+	magic := string(head)
+	if magic != sealedMagic && !slices.Contains(legacyMagic, magic) {
 		return br, nil
 	}
 	all, err := io.ReadAll(io.LimitReader(br, 4<<30))
 	if err != nil {
 		return nil, err
 	}
-	plain, err := openWith(all[len(sealedMagic):], pass, sealedMagic)
+	plain, err := openWith(all[len(magic):], pass, magic)
 	if err != nil {
 		return nil, err
 	}
@@ -128,12 +135,12 @@ func Export(ctx context.Context, db *sql.DB, home string, vault Secrets, passphr
 	if len(passphrase) < 8 {
 		return Manifest{}, errors.New("choose a passphrase of at least 8 characters")
 	}
-	tmp, err := os.MkdirTemp("", "zodim-export-")
+	tmp, err := os.MkdirTemp("", "pimpo-export-")
 	if err != nil {
 		return Manifest{}, err
 	}
 	defer os.RemoveAll(tmp)
-	dbCopy := filepath.Join(tmp, "zodim.db")
+	dbCopy := filepath.Join(tmp, "pimpo.db")
 	if _, err := db.ExecContext(ctx, `VACUUM INTO ?`, dbCopy); err != nil {
 		return Manifest{}, fmt.Errorf("copy database: %w", err)
 	}
@@ -180,7 +187,7 @@ func Export(ctx context.Context, db *sql.DB, home string, vault Secrets, passphr
 	if err != nil {
 		return m, err
 	}
-	if err := add("zodim.db", raw); err != nil {
+	if err := add("pimpo.db", raw); err != nil {
 		return m, err
 	}
 	if err := add("secrets.enc", sealed); err != nil {
@@ -225,7 +232,7 @@ func Inspect(r io.Reader) (Manifest, error) {
 		return nil
 	})
 	if err == nil && !known(m.Format) {
-		err = errors.New("not a Zodim backup")
+		err = errors.New("not a Pimpo backup")
 	}
 	return m, err
 }
@@ -233,7 +240,7 @@ func Inspect(r io.Reader) (Manifest, error) {
 func walk(r io.Reader, fn func(name string, data io.Reader) error) error {
 	gz, err := gzip.NewReader(r)
 	if err != nil {
-		return errors.New("not a Zodim backup")
+		return errors.New("not a Pimpo backup")
 	}
 	tr := tar.NewReader(gz)
 	for {
@@ -278,10 +285,10 @@ func Unpack(r io.Reader, dir, passphrase string) (Manifest, map[string]string, e
 			var err error
 			sealed, err = io.ReadAll(data)
 			return err
-		case name == "vigia.db":
-			clean = "zodim.db"
+		case name == "zodim.db" || name == "vigia.db":
+			clean = "pimpo.db"
 			fallthrough
-		case name == "zodim.db", strings.HasPrefix(clean, "memory"+string(filepath.Separator)), strings.HasPrefix(clean, "connectors"+string(filepath.Separator)):
+		case name == "pimpo.db", strings.HasPrefix(clean, "memory"+string(filepath.Separator)), strings.HasPrefix(clean, "connectors"+string(filepath.Separator)):
 			p := filepath.Join(dir, clean)
 			if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 				return err
@@ -300,9 +307,9 @@ func Unpack(r io.Reader, dir, passphrase string) (Manifest, map[string]string, e
 		return m, nil, err
 	}
 	if !known(m.Format) {
-		return m, nil, errors.New("not a Zodim backup")
+		return m, nil, errors.New("not a Pimpo backup")
 	}
-	plain, err := open(sealed, passphrase)
+	plain, err := open(sealed, passphrase, m.Format)
 	if err != nil {
 		return m, nil, err
 	}
@@ -317,7 +324,7 @@ func Place(unpacked, home string) (string, error) {
 	if err := os.MkdirAll(keep, 0o700); err != nil {
 		return "", err
 	}
-	for _, name := range []string{"zodim.db", "zodim.db-wal", "zodim.db-shm", "memory", "connectors"} {
+	for _, name := range []string{"pimpo.db", "pimpo.db-wal", "pimpo.db-shm", "memory", "connectors"} {
 		src := filepath.Join(home, name)
 		if _, err := os.Stat(src); err == nil {
 			if err := os.Rename(src, filepath.Join(keep, name)); err != nil {
@@ -325,7 +332,7 @@ func Place(unpacked, home string) (string, error) {
 			}
 		}
 	}
-	for _, name := range []string{"zodim.db", "memory", "connectors"} {
+	for _, name := range []string{"pimpo.db", "memory", "connectors"} {
 		src := filepath.Join(unpacked, name)
 		if _, err := os.Stat(src); err == nil {
 			if err := os.Rename(src, filepath.Join(home, name)); err != nil {

@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/zodim/internal/backup"
-	"github.com/denerFernandes/zodim/internal/cloud"
-	"github.com/denerFernandes/zodim/internal/explore"
-	"github.com/denerFernandes/zodim/internal/oauth"
-	"github.com/denerFernandes/zodim/internal/server"
+	"github.com/denerFernandes/pimpo/internal/backup"
+	"github.com/denerFernandes/pimpo/internal/cloud"
+	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/denerFernandes/pimpo/internal/oauth"
+	"github.com/denerFernandes/pimpo/internal/server"
 )
 
 // Automatic backups to storage the owner already has. Each one is the
@@ -49,7 +49,8 @@ const (
 	cloudOKKey   = "backup.cloud.ok"
 )
 
-var cloudName = regexp.MustCompile(`^zodim-\d{8}-\d{6}\.zodim$`)
+// cloudName matches backups, including those named before the rename.
+var cloudName = regexp.MustCompile(`^(pimpo|zodim)-\d{8}-\d{6}\.(pimpo|zodim)$`)
 
 // cloudStore lets tests point S3 and Drive at fakes.
 var cloudHTTP *http.Client
@@ -78,7 +79,7 @@ func (a *App) cloudStore(ctx context.Context, c cloudConfig) (cloud.Store, error
 			return nil, errors.New("connect Google in Connections first")
 		}
 		if !a.Google.Granted(ctx, oauth.DriveScope) {
-			return nil, errors.New("Zodim may not use your Drive yet: reconnect Google in Connections and allow Drive")
+			return nil, errors.New("Pimpo may not use your Drive yet: reconnect Google in Connections and allow Drive")
 		}
 		return &cloud.Drive{Token: a.Google.Token, API: driveAPI, Upload: driveUpload, HTTP: cloudHTTP}, nil
 	}
@@ -110,7 +111,7 @@ func (a *App) backupToCloud(ctx context.Context) cloudRun {
 		if err != nil {
 			return err
 		}
-		run.Name, run.Size = "zodim-"+run.At.UTC().Format("20060102-150405")+".zodim", len(sealed)
+		run.Name, run.Size = "pimpo-"+run.At.UTC().Format("20060102-150405")+".pimpo", len(sealed)
 		if err := store.Put(ctx, run.Name, sealed); err != nil {
 			return err
 		}
@@ -343,7 +344,7 @@ func (a *App) restoreCloud(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !cloudName.MatchString(req.Name) {
-		server.WriteError(w, server.StatusError{Status: 400, Msg: "not a Zodim backup"})
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "not a Pimpo backup"})
 		return
 	}
 	store, err := a.cloudStore(ctx, a.cloudConfig(ctx))
@@ -363,7 +364,7 @@ func (a *App) restoreCloud(w http.ResponseWriter, r *http.Request) {
 	a.stageImport(w, r, bytes.NewReader(data), pass)
 }
 
-// stageImport checks and stages a backup; it takes effect when Zodim
+// stageImport checks and stages a backup; it takes effect when Pimpo
 // restarts, since the database cannot be swapped while it is open.
 func (a *App) stageImport(w http.ResponseWriter, r *http.Request, file io.Reader, pass string) {
 	if a.Home == "" {

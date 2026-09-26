@@ -1,4 +1,4 @@
-// Package chatlink lets the owner talk to Zodim on Discord, Slack and
+// Package chatlink lets the owner talk to Pimpo on Discord, Slack and
 // Signal, in private messages. Each link keeps a connection open, hands
 // over what arrives and sends replies; the app decides who may talk.
 package chatlink
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Inbound is a private message someone sent to Zodim.
+// Inbound is a private message someone sent to Pimpo.
 type Inbound struct {
 	// From identifies the sender in that service: a user id or a number.
 	From string

@@ -3,16 +3,16 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/denerFernandes/zodim/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/i18n"
 	"net/http"
 	"slices"
 	"sort"
 	"strings"
 
-	"github.com/denerFernandes/zodim/internal/connector/external"
-	"github.com/denerFernandes/zodim/internal/connector/services"
-	"github.com/denerFernandes/zodim/internal/server"
-	"github.com/denerFernandes/zodim/internal/vault"
+	"github.com/denerFernandes/pimpo/internal/connector/external"
+	"github.com/denerFernandes/pimpo/internal/connector/services"
+	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/vault"
 )
 
 // The catalog: connectors set up from a form in Connections. Secret fields
