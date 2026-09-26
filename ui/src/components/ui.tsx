@@ -96,3 +96,14 @@ export function PageSkeleton() {
     </div>
   )
 }
+
+/** Switch turns a setting on or off. On, the track is the ink colour and the
+ * knob the page colour, so it reads in both themes of a black-and-white UI. */
+export function Switch({ on, onChange, label, disabled, className }: { on: boolean; onChange: (on: boolean) => void; label: string; disabled?: boolean; className?: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled} onClick={() => onChange(!on)}
+      className={cn('flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition disabled:opacity-60', on ? 'bg-ink' : 'bg-line-strong', className)}>
+      <span className={cn('size-5 rounded-full shadow transition', on ? 'translate-x-5 bg-bg' : 'bg-white')} />
+    </button>
+  )
+}

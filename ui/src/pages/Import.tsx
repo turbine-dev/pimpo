@@ -181,8 +181,8 @@ function Skills({ plan }: { plan: MigrationPlan }) {
 function Toggle({ on, set, title, text }: { on: boolean; set: (v: boolean) => void; title: string; text?: string }) {
   return (
     <button type="button" role="switch" aria-checked={on} onClick={() => set(!on)} className="flex w-full items-start gap-3 rounded-lg p-2 text-left hover:bg-sunken">
-      <span className={cn('mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition', on ? 'bg-accent' : 'bg-line-strong')}>
-        <motion.span layout className={cn('size-4 rounded-full bg-white shadow', on && 'ml-auto')} />
+      <span className={cn('mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition', on ? 'bg-ink' : 'bg-line-strong')}>
+        <motion.span layout className={cn('size-4 rounded-full shadow', on ? 'ml-auto bg-bg' : 'bg-white')} />
       </span>
       <span>
         <span className="block text-[14px]">{title}</span>

@@ -6,7 +6,7 @@ import { api, type RemoteState } from '../lib/api'
 import { cn } from '../lib/cn'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
-import { Button, Card } from './ui'
+import { Button, Card, Switch } from './ui'
 
 const field = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
 
@@ -119,10 +119,7 @@ function Access({ icon, title, text, on, busy, onToggle, children }: { icon: Rea
         <div className="text-[12.5px] text-ink-3">{text}</div>
         {on && children && <div className="mt-1.5">{children}</div>}
       </div>
-      <button type="button" role="switch" aria-checked={on} aria-label={title} disabled={busy} onClick={onToggle}
-        className={cn('mt-0.5 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition', on ? 'bg-accent' : 'bg-line-strong')}>
-        <span className={cn('size-5 rounded-full bg-white shadow transition', on && 'translate-x-5')} />
-      </button>
+      <Switch on={on} label={title} disabled={busy} onChange={() => onToggle()} className="mt-0.5" />
     </div>
   )
 }

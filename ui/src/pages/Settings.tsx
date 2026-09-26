@@ -10,7 +10,7 @@ import { Head } from '../components/PimpoArt'
 import { ModelsCard } from '../components/ModelsCard'
 import { ProtectionCard } from '../components/ProtectionCard'
 import { PhonePairing } from '../components/PhonePairing'
-import { Button, Card } from '../components/ui'
+import { Button, Card, Switch } from '../components/ui'
 import { api, type Settings as S } from '../lib/api'
 import { cn } from '../lib/cn'
 import { fill, useT, type TKey, LANGUAGES } from '../lib/i18n'
@@ -195,10 +195,7 @@ function Toggles({ title, text, items, onToggle }: { title: string; text: string
               <div className="text-[13.5px]">{it.label}</div>
               {it.hint && <div className="text-[12px] text-ink-3">{it.hint}</div>}
             </div>
-            <button type="button" role="switch" aria-checked={it.on} aria-label={it.label} disabled={it.locked} onClick={() => onToggle(it.key, !it.on)}
-              className={cn('mt-0.5 flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition disabled:opacity-60', it.on ? 'bg-accent' : 'bg-line-strong')}>
-              <span className={cn('size-5 rounded-full bg-white shadow transition', it.on && 'translate-x-5')} />
-            </button>
+            <Switch on={it.on} label={it.label} disabled={it.locked} onChange={(v) => onToggle(it.key, v)} className="mt-0.5" />
           </li>
         ))}
       </ul>
@@ -219,9 +216,7 @@ function MascotCard() {
         <p className="text-[13px] text-ink-3">{t('mascot.settingText')}</p>
         {inDesktopApp() && <p className="mt-1 text-[12.5px] text-ink-3">{t('mascot.desktopHint')}</p>}
       </div>
-      <label className="flex items-center gap-2 text-[13px]">
-        <input type="checkbox" role="switch" className="size-4 accent-[var(--color-accent)]" checked={on} onChange={(e) => { setMascotOn(e.target.checked); setOn(e.target.checked) }} aria-label={t('mascot.setting')} />
-      </label>
+      <Switch on={on} label={t('mascot.setting')} onChange={(v) => { setMascotOn(v); setOn(v) }} />
     </Card>
   )
 }
