@@ -1071,6 +1071,8 @@ export const pt = {
   'mascot.setting': 'Pimpo na tela',
   'mascot.settingText': 'O gatinho fica num canto, mostra como as coisas vão, avisa o que precisa de você e, de vez em quando, brinca com uma borboleta ou uma bolinha. Arraste para qualquer lugar; clique para o menu.',
   'mascot.desktopHint': 'No app para computador, ele fica na tela mesmo com a janela fechada. Também dá para ligar e desligar pelo menu do Pimpo na barra de menus.',
+  'mascot.feed': 'Dar petisco',
+  'mascot.off': 'Desligar o Pimpo',
 }
 
 export type Key = keyof typeof pt

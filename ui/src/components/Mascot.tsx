@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { BellOff, EyeOff, Inbox, Plus } from 'lucide-react'
+import { BellOff, EyeOff, Fish, Inbox, Plus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, type VEvent } from '../lib/api'
+import { purr } from '../lib/purr'
 import { useT, type TKey } from '../lib/i18n'
 import { Head, type Mood } from './PimpoArt'
 
@@ -50,6 +51,20 @@ const tauri = () => (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__
 
 // fitWindow grows the floating window for the bubble or menu and shrinks it
 // back to the cat, keeping its bottom-right corner in place.
+// walkWindowOff moves the floating window to the right until it has left
+// the screen, as the cat trots away.
+async function walkWindowOff() {
+  const t = tauri()
+  const w = t?.window?.getCurrentWindow()
+  if (!w || !t?.dpi) return
+  const [pos, scale] = await Promise.all([w.outerPosition(), w.scaleFactor()])
+  const edge = ((window.screen as Screen & { availLeft?: number }).availLeft ?? 0) + window.screen.width
+  for (let x = pos.x; x < (edge + 40) * scale; x += 9 * scale) {
+    await w.setPosition(new t.dpi.PhysicalPosition(Math.round(x), pos.y))
+    await new Promise((r) => setTimeout(r, 16))
+  }
+}
+
 async function fitWindow(expanded: boolean | 'play') {
   const t = tauri()
   const w = t?.window?.getCurrentWindow()
@@ -60,15 +75,16 @@ async function fitWindow(expanded: boolean | 'play') {
   await w.setSize(new t.dpi.LogicalSize(nw, nh))
 }
 
-export type Play = 'butterfly' | 'ball' | 'yawn' | 'groom'
+export type Play = 'butterfly' | 'ball' | 'yawn' | 'groom' | 'feed' | 'bye'
 
 // What the cat's face does during each game.
-const playMood: Record<Play, Mood> = { butterfly: 'working', ball: 'alert', yawn: 'yawn', groom: 'happy' }
+const playMood: Partial<Record<Play, Mood>> = { butterfly: 'working', ball: 'alert', yawn: 'yawn', groom: 'happy', bye: 'happy' }
 
-export function Cat({ mood, petting, play = null }: { mood: Mood; petting: boolean; play?: Play | null }) {
-  const face = play ? playMood[play] : mood
+export function Cat({ mood, petting, play = null, walking = false }: { mood: Mood; petting: boolean; play?: Play | null; walking?: boolean }) {
+  // The feeding game changes the face itself as it goes (see feed()).
+  const face = (play && playMood[play]) || mood
   return (
-    <svg viewBox="40 70 440 640" className={`pimpo pimpo-${face}${petting ? ' pimpo-pet' : ''}${play ? ` pimpo-play pimpo-play-${play}` : ''}`} aria-hidden>
+    <svg viewBox="40 70 440 640" className={`pimpo pimpo-${face}${petting ? ' pimpo-pet' : ''}${play ? ` pimpo-play pimpo-play-${play}` : ''}${walking ? ' pimpo-walk' : ''}`} aria-hidden>
       <g className="pimpo-tail">
         <path d="M352 646c86 8 124-58 96-132-10-28-38-24-30 2" fill="none" stroke="#111" strokeWidth="34" strokeLinecap="round" />
       </g>
@@ -82,7 +98,7 @@ export function Cat({ mood, petting, play = null }: { mood: Mood; petting: boole
       <g className="pimpo-head">
         <Head mood={face} />
       </g>
-      {(play === 'butterfly' || play === 'ball' || play === 'groom') && (
+      {(play === 'butterfly' || play === 'ball' || play === 'groom' || (play === 'bye' && !walking)) && (
         // A raised front paw: swiping at the game, or washing the face.
         <g className="pimpo-paw">
           <path d="M214 520c-16-40-30-78-40-112" fill="none" stroke="#111" strokeWidth="44" strokeLinecap="round" />
@@ -108,6 +124,19 @@ export function Cat({ mood, petting, play = null }: { mood: Mood; petting: boole
           </g>
         </g></g>
       )}
+      {play === 'feed' && (
+        // A little fish tossed up; it vanishes in the cat's mouth.
+        <g className="pimpo-treat"><g transform="scale(1.6)">
+          <path d="M-34 0c10-16 36-18 52 0-16 18-42 16-52 0Zm52 0 18-14v28Z" fill="#fff" stroke="#111" strokeWidth="5" strokeLinejoin="round" />
+          <circle cx="-18" cy="-3" r="3.5" fill="#111" />
+        </g></g>
+      )}
+      {play === 'feed' && mood === 'happy' && (
+        <g className="pimpo-love" fill="#e11d48" fontSize="56">
+          <text x="370" y="180">♥</text>
+          <text x="110" y="200">♥</text>
+        </g>
+      )}
       {mood === 'sleep' && !play && (
         <g className="pimpo-z" fill="#888" fontFamily="Inter, sans-serif" fontWeight="700">
           <text x="390" y="150" fontSize="54">z</text>
@@ -127,6 +156,10 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
   const [menu, setMenu] = useState(false)
   const [petting, setPetting] = useState(false)
   const [play, setPlay] = useState<Play | null>(null)
+  const [walking, setWalking] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const busy = useRef(false)
+  const goodbyeRef = useRef<(done: () => void) => void>((done) => done())
   const gameAt = useRef(nextGame())
   const [pos, setPos] = useState<{ right: number; bottom: number }>(() => {
     try { return JSON.parse(store.get('pimpo.mascot.pos') ?? '') } catch { return { right: 20, bottom: window.innerWidth < 768 ? 84 : 20 } }
@@ -141,7 +174,15 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
   const waiting = (state.data?.approvals ?? 0) + (state.data?.broken ?? 0)
 
   useEffect(() => {
-    const sync = () => setOn(mascotOn())
+    const sync = () => {
+      if (mascotOn()) {
+        setLeaving(false)
+        setWalking(false)
+        if (!busy.current) setPlay(null)
+        busy.current = false
+        setOn(true)
+      } else goodbyeRef.current(() => setOn(false))
+    }
     window.addEventListener('pimpo:mascot', sync)
     return () => window.removeEventListener('pimpo:mascot', sync)
   }, [])
@@ -227,13 +268,59 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
   useEffect(() => {
     if (!on) return
     const tick = setInterval(() => {
-      if (play || bubble || menu || mood !== 'idle' || reducedMotion() || Date.now() < gameAt.current) return
+      if (busy.current || play || bubble || menu || mood !== 'idle' || reducedMotion() || Date.now() < gameAt.current) return
       setPlay(games[Math.floor(Math.random() * games.length)])
       gameAt.current = nextGame()
       setTimeout(() => setPlay(null), 7000)
     }, 10_000)
     return () => clearInterval(tick)
   }, [on, play, bubble, menu, mood])
+
+  // feed tosses a fish: the cat looks up, jumps and catches it in the air,
+  // then chews happily and purrs. Nothing else plays meanwhile.
+  const feed = useCallback(() => {
+    if (busy.current) return
+    busy.current = true
+    setMenu(false)
+    setBubble(null)
+    lastActive.current = Date.now()
+    setPlay('feed')
+    setMood('alert')
+    const still = reducedMotion()
+    setTimeout(() => setMood('yawn'), still ? 0 : 650)
+    setTimeout(() => { setMood('happy'); purr() }, still ? 0 : 1050)
+    setTimeout(() => { setPlay(null); setMood('idle'); busy.current = false; gameAt.current = nextGame() }, still ? 3200 : 4600)
+  }, [])
+
+  // goodbye waves a paw, then trots off the screen, then calls done.
+  const goodbye = useCallback((done: () => void) => {
+    if (leaving) return
+    setLeaving(true)
+    busy.current = true
+    setMenu(false)
+    setBubble(null)
+    if (reducedMotion()) {
+      done()
+      return
+    }
+    setMood('happy')
+    setPlay('bye')
+    setTimeout(() => {
+      setWalking(true)
+      if (standalone) walkWindowOff().catch(() => {}).finally(done)
+      else setTimeout(done, 1500)
+    }, 1500)
+  }, [leaving, standalone])
+
+  goodbyeRef.current = goodbye
+
+  // The desktop app asks the floating cat to say goodbye before closing it.
+  useEffect(() => {
+    if (!standalone) return
+    const w = window as unknown as { __pimpoGoodbye?: () => void }
+    w.__pimpoGoodbye = () => goodbye(() => window.location.assign('/desktop/mascot?on=0'))
+    return () => { delete w.__pimpoGoodbye }
+  }, [standalone, goodbye])
 
   // The menu closes on a click anywhere else: another program (the floating
   // window loses focus), the empty space around the cat, or Escape.
@@ -257,7 +344,7 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
     }
   }, [menu])
 
-  const expanded: boolean | 'play' = bubble || menu ? true : play === 'butterfly' || play === 'ball' ? 'play' : false
+  const expanded: boolean | 'play' = bubble || menu ? true : play === 'butterfly' || play === 'ball' || play === 'feed' ? 'play' : false
   useEffect(() => { if (standalone) fitWindow(expanded).catch(() => {}) }, [standalone, expanded])
 
   // The desktop app's main window leaves the cat to its floating window.
@@ -297,7 +384,7 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
   const open = (path: string) => { setMenu(false); setBubble(null); onOpen(path) }
 
   return (
-    <div className="pimpo-root pointer-events-none fixed z-40 flex flex-col items-end" style={standalone ? { right: 8, bottom: 8 } : { right: pos.right, bottom: pos.bottom }}>
+    <div className={`pimpo-root pointer-events-none fixed z-40 flex flex-col items-end${walking && !standalone ? ' pimpo-leaving' : ''}`} style={standalone ? { right: 8, bottom: 8 } : { right: pos.right, bottom: pos.bottom }}>
       {bubble && (
         <div role="status" aria-live="polite" className="pimpo-bubble pointer-events-auto mb-2 w-[min(300px,calc(100vw-32px))] rounded-2xl border border-line bg-surface p-3.5 text-[13px] shadow-[var(--shadow-pop)]">
           <div className="mb-1 flex items-center justify-between gap-2 text-[12px] font-semibold text-ink">
@@ -316,7 +403,11 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
           <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-sunken" onClick={() => open('/')}><Plus size={15} /> {t('common.newTask')}</button>
           <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-sunken" onClick={() => open('/inbox')}><Inbox size={15} /> {t('nav.inbox')}{waiting > 0 && <span className="ml-auto rounded-full bg-change-soft px-1.5 text-[11px] text-change">{waiting}</span>}</button>
           <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-sunken" onClick={() => { store.set('pimpo.mascot.mute', String(Date.now() + 3600_000)); setMenu(false); setBubble(null) }}><BellOff size={15} /> {t('mascot.mute')}</button>
-          {!standalone && <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-ink-2 hover:bg-sunken" onClick={() => { setMenu(false); setMascotOn(false) }}><EyeOff size={15} /> {t('mascot.hide')}</button>}
+          <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 hover:bg-sunken" onClick={feed}><Fish size={15} /> {t('mascot.feed')}</button>
+          <button role="menuitem" type="button" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-ink-2 hover:bg-sunken"
+            onClick={() => standalone ? goodbye(() => window.location.assign('/desktop/mascot?on=0')) : setMascotOn(false)}>
+            <EyeOff size={15} /> {t(standalone ? 'mascot.off' : 'mascot.hide')}
+          </button>
         </div>
       )}
       <button ref={catRef} type="button" aria-label={t('mascot.label')} aria-haspopup="menu" aria-expanded={menu}
@@ -324,7 +415,7 @@ export function Mascot({ standalone = false, onOpen }: { standalone?: boolean; o
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
         onPointerEnter={() => { setPetting(true); lastActive.current = Date.now(); setMood((m) => (m === 'sleep' ? 'idle' : m)) }}
         onPointerLeave={() => setPetting(false)}>
-        <Cat mood={mood} petting={petting} play={play} />
+        <Cat mood={mood} petting={petting && !busy.current} play={play} walking={walking} />
       </button>
     </div>
   )

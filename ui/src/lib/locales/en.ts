@@ -1071,4 +1071,6 @@ export const en: Record<Key, string> = {
   'mascot.setting': 'Pimpo on screen',
   'mascot.settingText': 'The kitten sits in a corner, shows how things are going, tells you what needs you and, now and then, plays with a butterfly or a ball. Drag it anywhere; click it for the menu.',
   'mascot.desktopHint': 'In the desktop app, it stays on screen even with the window closed. You can also turn it on and off from the Pimpo menu in the menu bar.',
+  'mascot.feed': 'Give a treat',
+  'mascot.off': 'Turn Pimpo off',
 }

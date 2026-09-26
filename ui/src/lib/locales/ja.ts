@@ -1071,4 +1071,6 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'mascot.setting': '画面に Pimpo を表示',
   'mascot.settingText': '子猫が画面の隅にいて、状況を表情で伝え、対応が必要なことを知らせ、ときどき蝶やボールで遊びます。ドラッグで好きな場所へ。クリックでメニュー。',
   'mascot.desktopHint': 'デスクトップアプリでは、ウィンドウを閉じても画面に表示されます。メニューバーの Pimpo メニューからもオン・オフできます。',
+  'mascot.feed': 'おやつをあげる',
+  'mascot.off': 'Pimpo をオフにする',
 }
