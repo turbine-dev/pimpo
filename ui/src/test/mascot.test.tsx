@@ -27,6 +27,22 @@ describe('Pimpo', () => {
     expect(mascotOn()).toBe(false)
   })
 
+  it('closes its menu on a click elsewhere, Escape or leaving the window', async () => {
+    mockFetch({ '/api/state': null })
+    wrap()
+    const cat = screen.getByRole('button', { name: 'Pimpo, o mascote' })
+    await userEvent.click(cat)
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    await userEvent.click(document.body)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    await userEvent.click(cat)
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    await userEvent.click(cat)
+    act(() => { window.dispatchEvent(new Event('blur')) })
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
   it('draws its games', () => {
     const { container } = render(<Cat mood="idle" petting={false} play="butterfly" />)
     expect(container.querySelector('.pimpo-butterfly')).not.toBeNull()
