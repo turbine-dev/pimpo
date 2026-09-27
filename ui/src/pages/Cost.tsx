@@ -3,7 +3,7 @@ import { Card } from '../components/ui'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
 import { usd } from '../lib/format'
-import { hasKey, useT } from '../lib/i18n'
+import { hasKey, useT, type TKey } from '../lib/i18n'
 
 export function Cost() {
   const t = useT()
@@ -65,6 +65,12 @@ export function Cost() {
           </div>
         )}
       </Card>
+      {Object.keys(c.by_model ?? {}).length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Bars title={t('cost.byModel')} rows={Object.entries(c.by_model ?? {}).map(([k, v]) => ({ key: k, label: modelName(k), usd: v, sub: t('cost.calls', { count: c.calls_by_model?.[k] ?? 0 }) }))} />
+          <Bars title={t('cost.byJob')} rows={Object.entries(c.by_job ?? {}).map(([k, v]) => ({ key: k, label: t(jobLabel[k] ?? 'cost.exploration'), usd: v }))} />
+        </div>
+      )}
       <Card className="divide-y divide-line">
         <div className="px-5 py-3 text-[14px] font-medium">{t('cost.where')}</div>
         {sources.map(([k, v]) => (
@@ -75,5 +81,30 @@ export function Cost() {
         ))}
       </Card>
     </div>
+  )
+}
+
+const jobLabel: Record<string, TKey> = { explore: 'models.explore', compile: 'models.compile', judge: 'ms.judge' }
+const modelName = (id: string) => (['sonnet', 'opus', 'haiku'].includes(id) ? `Claude Code · ${id}` : id)
+
+// Bars compares where the month's spending went.
+function Bars({ title, rows }: { title: string; rows: { key: string; label: string; usd: number; sub?: string }[] }) {
+  const sorted = [...rows].sort((a, b) => b.usd - a.usd)
+  const top = Math.max(0.0001, ...sorted.map((r) => r.usd))
+  return (
+    <Card className="p-5">
+      <div className="mb-3 text-[14px] font-medium">{title}</div>
+      <ul className="space-y-2.5">
+        {sorted.map((r) => (
+          <li key={r.key} className="text-[13px]">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="min-w-0 truncate">{r.label}{r.sub && <span className="ml-1.5 text-[11.5px] text-ink-3">{r.sub}</span>}</span>
+              <span className="tabular-nums text-ink-2">{usd(r.usd)}</span>
+            </div>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-sunken"><div className="h-full rounded-full bg-accent/75" style={{ width: `${Math.max(2, (r.usd / top) * 100)}%` }} /></div>
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }

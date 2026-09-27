@@ -1129,4 +1129,8 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'ms.problem.network': 'サービスが応答しませんでした。インターネット接続またはアドレスを確認してください。',
   'ms.problem.missing': 'このコンピューターにインストールされていません。',
   'ms.problem.other': 'うまくいきませんでした。',
+  'cost.byModel': 'モデル別',
+  'cost.byJob': '仕事別',
+  'cost.calls_one': '{count} 回',
+  'cost.calls_other': '{count} 回',
 }

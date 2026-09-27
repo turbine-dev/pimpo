@@ -569,6 +569,8 @@ func (a *App) withFallback(ctx context.Context, job, primary string, call func(m
 		resp, err := call(model)
 		if err == nil {
 			a.noteFallback(ctx, job, primary, model, firstErr)
+			// Which model answered, and at what cost, for Custo by model and job.
+			a.Events.Append(ctx, "model.used", "system", map[string]any{"job": job, "model": model, "usd": resp.CostUSD, "fallback": model != primary})
 			return resp, nil
 		}
 		if firstErr == nil {
