@@ -41,7 +41,7 @@ describe('voice in the chat', () => {
     })
     wrap(<Routes><Route path="/" element={<Chat />} /><Route path="/chat/:id" element={<Chat />} /></Routes>)
     await userEvent.click(await screen.findByRole('button', { name: 'Falar' }))
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'o que tenho amanhã', assistant: '' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'o que tenho amanhã', assistant: '', model: 'auto' }))
     state = 'ready'
     await waitFor(() => expect(spoken).toEqual(['Amanhã você tem dentista às 10h.']), { timeout: 4000 })
     await userEvent.click(await screen.findByRole('button', { name: 'Ouvir' }))

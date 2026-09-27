@@ -21,12 +21,13 @@ export function Home() {
   const t = useT()
   const nav = useNavigate()
   const [who, setWho] = useState('')
+  const [model, setModel] = useState('auto')
   const state = useQuery({ queryKey: ['state'], queryFn: api.state })
   const routines = useQuery({ queryKey: ['routines'], queryFn: api.routines })
   const runs = useQuery({ queryKey: ['runs', ''], queryFn: () => api.recentRuns() })
   const chats = useQuery({ queryKey: ['chats'], queryFn: api.chats })
   const start = useMutation({
-    mutationFn: ({ text }: { text: string; spoken: boolean }) => api.newChat(text, who),
+    mutationFn: ({ text }: { text: string; spoken: boolean }) => api.newChat(text, who, model),
     onSuccess: (r, v) => nav(`/chat/${r.chat}`, { state: v.spoken ? { readAloud: r.turn } : undefined }),
   })
 
@@ -53,7 +54,7 @@ export function Home() {
         <h1 className="text-[24px] font-semibold tracking-tight">{greeting}</h1>
       </div>
 
-      <Composer disabled={start.isPending} onSend={(text, spoken) => start.mutate({ text, spoken })} />
+      <Composer disabled={start.isPending} onSend={(text, spoken) => start.mutate({ text, spoken })} model={model} onModel={setModel} />
       {start.error && <p className="mt-2 text-[13px] text-danger">{start.error.message}</p>}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <AssistantPicker value={who} onChange={setWho} />

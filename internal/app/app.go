@@ -89,6 +89,11 @@ type Settings struct {
 	// Fallbacks are tried in order when a job's model fails: explore,
 	// compile and judge.
 	Fallbacks map[string][]string `json:"fallbacks,omitempty"`
+	// AutoOff stops the automatic model choice in chats; AutoLight and
+	// AutoStrong override the models it sends simple and hard requests to.
+	AutoOff    bool   `json:"auto_off,omitempty"`
+	AutoLight  string `json:"auto_light,omitempty"`
+	AutoStrong string `json:"auto_strong,omitempty"`
 }
 
 func (s Settings) fallbacks(job string) []string { return s.Fallbacks[job] }
@@ -334,7 +339,7 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 		}
 		known[m.ID] = true
 	}
-	chosen := []string{s.ExploreModel, s.CompileModel, s.JudgeModel}
+	chosen := []string{s.ExploreModel, s.CompileModel, s.JudgeModel, s.AutoLight, s.AutoStrong}
 	for job, list := range s.Fallbacks {
 		if job != "explore" && job != "compile" && job != "judge" {
 			return server.StatusError{Status: 400, Msg: "fallbacks are for explore, compile or judge"}
@@ -476,7 +481,7 @@ func (a *App) judge(ctx context.Context, question string, item any) (judge.Answe
 	backends := map[string]judge.Judge{
 		"local": judge.Chain{judge.Local{URL: set.LocalJudgeURL}, judge.Ollama{Model: set.OllamaModel}},
 		"jev":   judge.Jev{Key: func(ctx context.Context) (string, error) { return a.secret(ctx, "typesafe.key") }},
-		"llm":   judge.LLM{Model: a.LLM, Name: set.JudgeModel},
+		"llm":   judge.LLM{Model: a.LLM, Name: firstModel(host.ModelOf(ctx), set.JudgeModel)},
 	}
 	_, noJev := a.Vault.Get(ctx, "typesafe.key")
 	usable := func(n string) bool { return n != "jev" || noJev == nil }
@@ -528,7 +533,7 @@ func (c claude) Generate(ctx context.Context, r llm.Request) (llm.Response, erro
 	job := "compile"
 	if r.Model == "" {
 		r.Model = s.CompileModel
-	} else if r.Model == s.JudgeModel {
+	} else if r.Model == s.JudgeModel || r.Model == host.ModelOf(ctx) {
 		job = "judge"
 	}
 	return c.a.withFallback(ctx, job, r.Model, func(model string) (llm.Response, error) {
@@ -544,6 +549,15 @@ func (c claude) Generate(ctx context.Context, r llm.Request) (llm.Response, erro
 		}
 		return llm.ClaudeCLI{}.Generate(ctx, r)
 	})
+}
+
+func firstModel(ms ...string) string {
+	for _, m := range ms {
+		if m != "" {
+			return m
+		}
+	}
+	return ""
 }
 
 // isCodex is the Codex CLI with the owner's ChatGPT login: "codex", or
@@ -754,6 +768,9 @@ func (a *App) converse(ctx context.Context, via, text string) (string, error) {
 		a.Events.Put(ctx, key, "")
 		return i18n.T(ctx, "msg.conv.new"), nil
 	}
+	if m := modelCommand.FindStringSubmatch(text); m != nil {
+		return a.modelCommand(ctx, key, strings.TrimSpace(m[1])), nil
+	}
 	var ids []string
 	conv := ""
 	if raw, _ := a.Events.Get(ctx, key); raw != "" {
@@ -764,7 +781,9 @@ func (a *App) converse(ctx context.Context, via, text string) (string, error) {
 			}
 		}
 	}
-	o := explore.Options{Context: a.history(ctx, ids)}
+	history := a.history(ctx, ids)
+	pick := a.routeModel(ctx, text, history, a.convModel(ctx, key))
+	o := explore.Options{Context: history, Model: pick.Model}
 	exp, err := a.Explore.StartWith(ctx, text, actor(ctx), o)
 	if err != nil {
 		return "", err
@@ -782,6 +801,7 @@ func (a *App) converse(ctx context.Context, via, text string) (string, error) {
 	if show := owner.TypingOf(ctx); show != nil {
 		go a.keepTyping(context.WithoutCancel(ctx), exp, show)
 	}
+	a.noteRouted(ctx, exp, pick)
 	a.Store.AddTurn(ctx, conv, exp)
 	a.Events.Put(ctx, key, conv+"|"+strconv.FormatInt(time.Now().Unix(), 10))
 	if len(ids) > 0 {
@@ -818,6 +838,50 @@ func (a *App) typingEvery() time.Duration {
 		return a.TypingEvery
 	}
 	return 4 * time.Second
+}
+
+var modelCommand = regexp.MustCompile(`(?i)^\s*/(?:model|modelo|modele|modèle|modell|modello|模型)(?:\s+(.*))?\s*$`)
+
+// convModel is the model the owner fixed for a channel's conversations.
+func (a *App) convModel(ctx context.Context, key string) string {
+	m, _ := a.Events.Get(ctx, key+".model")
+	return m
+}
+
+// modelCommand answers /modelo: with nothing, which model answers and the
+// choices; with a name (or "auto"), it fixes that model on this channel.
+func (a *App) modelCommand(ctx context.Context, key, arg string) string {
+	arg = strings.ToLower(arg)
+	s := a.Settings(ctx)
+	options := []string{Auto}
+	if claudeInstalled() {
+		options = append(options, "sonnet", "opus", "haiku")
+	}
+	if llm.CodexBinary() != "" {
+		options = append(options, "codex")
+	}
+	for _, m := range s.Models {
+		options = append(options, m.ID)
+	}
+	if arg == "" {
+		current := a.convModel(ctx, key)
+		if current == "" {
+			current = Auto
+		}
+		return i18n.T(ctx, "msg.model.current", "model", current, "options", strings.Join(options, ", "))
+	}
+	if arg == "automatico" || arg == "automático" || arg == "automatic" {
+		arg = Auto
+	}
+	if !slices.Contains(options, arg) {
+		return i18n.T(ctx, "msg.model.unknown", "model", arg, "options", strings.Join(options, ", "))
+	}
+	if arg == Auto {
+		a.Events.Put(ctx, key+".model", "")
+	} else {
+		a.Events.Put(ctx, key+".model", arg)
+	}
+	return i18n.T(ctx, "msg.model.set", "model", arg)
 }
 
 func channelTitle(via string) string {

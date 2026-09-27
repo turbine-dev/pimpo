@@ -103,12 +103,18 @@ type routineSummary struct {
 	Update *galleryUpdate `json:"gallery_update,omitempty"`
 	// Watch is what wakes the routine instead of a clock, if anything.
 	Watch *runtime.Watch `json:"watch,omitempty"`
+	// Model is the routine's own model for judgments and texts.
+	Model string `json:"model,omitempty"`
+	// Thinks says whether the routine asks a model anything (judgments or
+	// texts); only then does its model matter.
+	Thinks bool `json:"thinks"`
 }
 
 func (a *App) summary(ctx context.Context, r store.Routine) routineSummary {
 	sum := routineSummary{ID: r.ID, Name: r.Body.Name, Description: r.Body.Description, State: r.State, Version: r.Version,
 		Capabilities: r.Body.Manifest.Capabilities, Schedule: r.Schedule(), DefaultSchedule: r.Body.Manifest.Schedule, Runs: []string{},
-		Params: r.Body.Manifest.Params, Values: map[string]any{}}
+		Params: r.Body.Manifest.Params, Values: map[string]any{}, Model: r.Settings.Model,
+		Thinks: len(r.Body.Manifest.Judgments)+len(r.Body.Manifest.Writes) > 0}
 	if sum.Params == nil {
 		sum.Params = []runtime.Param{}
 	}
