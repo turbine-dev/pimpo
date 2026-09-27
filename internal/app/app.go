@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/models"
 	"github.com/denerFernandes/pimpo/internal/runtime"
 	"os/exec"
 	"slices"
@@ -79,7 +80,16 @@ type Settings struct {
 	// settings above may name one as provider:model.
 	Models    []ModelOption `json:"models,omitempty"`
 	OllamaURL string        `json:"ollama_url,omitempty"`
+	// LMStudioURL and CustomURL are where LM Studio and an OpenAI-compatible
+	// server of the owner's answer (without /v1 for LM Studio).
+	LMStudioURL string `json:"lmstudio_url,omitempty"`
+	CustomURL   string `json:"custom_url,omitempty"`
+	// Fallbacks are tried in order when a job's model fails: explore,
+	// compile and judge.
+	Fallbacks map[string][]string `json:"fallbacks,omitempty"`
 }
+
+func (s Settings) fallbacks(job string) []string { return s.Fallbacks[job] }
 
 // ModelOption is an API model with its price in USD per million tokens,
 // which the budget needs before the model may run.
@@ -145,6 +155,8 @@ type App struct {
 	// Router is shared by every run; the demo swaps connectors in it.
 	Router *connector.Router
 	links  map[string]*linkRun
+	// Models finds models for the setup screen; nil uses the shared one.
+	Models *models.Client
 	health channelHealth
 	// DemoJudge replaces the judgment backends in demo mode.
 	DemoJudge judge.Judge
@@ -317,7 +329,17 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 		}
 		known[m.ID] = true
 	}
-	for _, chosen := range []string{s.ExploreModel, s.CompileModel, s.JudgeModel} {
+	chosen := []string{s.ExploreModel, s.CompileModel, s.JudgeModel}
+	for job, list := range s.Fallbacks {
+		if job != "explore" && job != "compile" && job != "judge" {
+			return server.StatusError{Status: 400, Msg: "fallbacks are for explore, compile or judge"}
+		}
+		if len(list) > 4 {
+			return server.StatusError{Status: 400, Msg: "up to four fallbacks per job"}
+		}
+		chosen = append(chosen, list...)
+	}
+	for _, chosen := range chosen {
 		if provider, _, ok := strings.Cut(chosen, ":"); ok && slices.Contains(llm.Providers, provider) && !known[chosen] {
 			return server.StatusError{Status: 400, Msg: chosen + " is not among your models; add it with its price first"}
 		}
@@ -497,22 +519,89 @@ func (a *App) runAgent(ctx context.Context, r llm.AgentRequest) (llm.Response, e
 type claude struct{ a *App }
 
 func (c claude) Generate(ctx context.Context, r llm.Request) (llm.Response, error) {
-	if api, ok, err := c.a.apiModel(ctx, r.Model); ok {
-		if err != nil {
-			return llm.Response{}, err
-		}
-		return api.Generate(ctx, r)
+	s := c.a.Settings(ctx)
+	job := "compile"
+	if r.Model == "" {
+		r.Model = s.CompileModel
+	} else if r.Model == s.JudgeModel {
+		job = "judge"
 	}
-	return llm.ClaudeCLI{}.Generate(ctx, r)
+	return c.a.withFallback(ctx, job, r.Model, func(model string) (llm.Response, error) {
+		r.Model = model
+		if api, ok, err := c.a.apiModel(ctx, model); ok {
+			if err != nil {
+				return llm.Response{}, err
+			}
+			return api.Generate(ctx, r)
+		}
+		return llm.ClaudeCLI{}.Generate(ctx, r)
+	})
 }
+
 func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
-	if api, ok, err := c.a.apiModel(ctx, r.Model); ok {
-		if err != nil {
-			return llm.Response{}, err
-		}
-		return api.Run(ctx, r)
+	if r.Model == "" {
+		r.Model = c.a.Settings(ctx).ExploreModel
 	}
-	return llm.ClaudeCLI{}.Run(ctx, r)
+	return c.a.withFallback(ctx, "explore", r.Model, func(model string) (llm.Response, error) {
+		r.Model = model
+		if api, ok, err := c.a.apiModel(ctx, model); ok {
+			if err != nil {
+				return llm.Response{}, err
+			}
+			return api.Run(ctx, r)
+		}
+		return llm.ClaudeCLI{}.Run(ctx, r)
+	})
+}
+
+// withFallback runs a job on its model and, when the provider fails (a
+// refused key, no credits, a rate or usage limit, an outage, a missing
+// model or CLI), on the next of the job's fallbacks. The owner hears once
+// when a job falls back and once when its model answers again. The
+// owner's own spending limit and a cancelled task are never retried.
+func (a *App) withFallback(ctx context.Context, job, primary string, call func(model string) (llm.Response, error)) (llm.Response, error) {
+	chain := append([]string{primary}, a.Settings(ctx).fallbacks(job)...)
+	var firstErr error
+	for i, model := range chain {
+		if i > 0 && slices.Contains(chain[:i], model) {
+			continue
+		}
+		resp, err := call(model)
+		if err == nil {
+			a.noteFallback(ctx, job, primary, model, firstErr)
+			return resp, nil
+		}
+		if firstErr == nil {
+			firstErr = err
+		}
+		if !retryable(ctx, err) {
+			return resp, err
+		}
+	}
+	return llm.Response{}, firstErr
+}
+
+func retryable(ctx context.Context, err error) bool {
+	if ctx.Err() != nil || errors.Is(err, llm.ErrCostLimit) || errors.Is(err, budget.ErrOverBudget) {
+		return false
+	}
+	return models.Problem(err) != "other"
+}
+
+// noteFallback tells the owner when a job starts or stops using a fallback.
+func (a *App) noteFallback(ctx context.Context, job, primary, used string, why error) {
+	key := "model.fallback." + job
+	was, _ := a.Events.Get(ctx, key)
+	switch {
+	case used != primary && was != used:
+		a.Events.Put(ctx, key, used)
+		a.Events.Append(ctx, "model.fallback", "system", map[string]string{"job": job, "model": primary, "fallback": used, "error": errText(why)})
+		a.Channel.Notify(ctx, explore.Notice{Kind: "failure", Text: i18n.T(ctx, "msg.model.fallback", "model", primary, "backup", used, "why", i18n.T(ctx, "msg.problem."+models.Problem(why)))})
+	case used == primary && was != "":
+		a.Events.Put(ctx, key, "")
+		a.Events.Append(ctx, "model.recovered", "system", map[string]string{"job": job, "model": primary})
+		a.Channel.Notify(ctx, explore.Notice{Kind: "failure", Text: i18n.T(ctx, "msg.model.back", "model", primary)})
+	}
 }
 
 // apiModel resolves a provider:model setting to an API backend; ok is
@@ -523,24 +612,56 @@ func (a *App) apiModel(ctx context.Context, model string) (llm.API, bool, error)
 		return llm.API{}, false, nil
 	}
 	for _, m := range a.Settings(ctx).Models {
-		if m.ID != model {
-			continue
+		if m.ID == model {
+			return a.apiFor(ctx, provider, name, m.PriceIn, m.PriceOut)
 		}
-		api := llm.API{Provider: provider, Model: name, PriceIn: m.PriceIn, PriceOut: m.PriceOut, Base: modelBase[provider]}
-		if provider == "ollama" {
-			if u := a.Settings(ctx).OllamaURL; u != "" {
-				api.Base = strings.TrimRight(u, "/") + "/v1"
-			}
-		} else {
-			key, err := a.secret(ctx, "model."+provider+".key")
-			if err != nil || key == "" {
-				return api, true, fmt.Errorf("add your %s API key in Settings › Models", provider)
-			}
-			api.Key = key
-		}
-		return api, true, nil
 	}
 	return llm.API{}, true, fmt.Errorf("%s has no price yet; add it in Settings › Models", model)
+}
+
+// apiFor reaches one provider's model with its price, key and address.
+func (a *App) apiFor(ctx context.Context, provider, name string, in, out float64) (llm.API, bool, error) {
+	api := llm.API{Provider: provider, Model: name, PriceIn: in, PriceOut: out, Base: modelBase[provider]}
+	base, err := a.modelEndpoint(ctx, provider)
+	if err != nil {
+		return api, true, err
+	}
+	if api.Base == "" {
+		api.Base = base.Base
+	}
+	api.Key = base.Key
+	return api, true, nil
+}
+
+// modelEndpoint is where a provider answers and the key it needs.
+func (a *App) modelEndpoint(ctx context.Context, provider string) (models.Endpoint, error) {
+	s := a.Settings(ctx)
+	e := models.Endpoint{Provider: provider, Base: llm.Bases[provider]}
+	switch provider {
+	case "ollama":
+		if s.OllamaURL != "" {
+			e.Base = strings.TrimRight(s.OllamaURL, "/") + "/v1"
+		}
+	case "lmstudio":
+		if s.LMStudioURL != "" {
+			e.Base = strings.TrimRight(s.LMStudioURL, "/") + "/v1"
+		}
+	case "custom":
+		if s.CustomURL == "" {
+			return e, errors.New("give the address of your OpenAI-compatible server in Settings › Models")
+		}
+		e.Base = strings.TrimRight(s.CustomURL, "/")
+	}
+	if b := modelBase[provider]; b != "" {
+		e.Base = b
+	}
+	p, _ := models.Get(provider)
+	key, _ := a.secret(ctx, "model."+provider+".key")
+	if p.NeedsKey && key == "" {
+		return e, fmt.Errorf("add your %s API key in Settings › Models", p.Name)
+	}
+	e.Key = key
+	return e, nil
 }
 
 // modelBase lets tests point providers at fakes.

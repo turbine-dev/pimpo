@@ -156,8 +156,13 @@ export type ActionRecord = {
 
 export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
-export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string }
+export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>> }
 export type ModelOption = { id: string; price_in: number; price_out: number }
+export type Job = 'explore' | 'compile' | 'judge'
+export type Provider = { id: string; name: string; key_url?: string; needs_key: boolean; local?: boolean }
+export type CatalogModel = { id: string; name: string; price_in: number; price_out: number; priced: boolean; context?: number; free?: boolean }
+export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: string; lmstudio: CatalogModel[]; lmstudio_url: string }
+export type ModelTest = { ok: boolean; text?: string; cost_usd?: number; ms?: number; error?: string; problem?: string }
 
 export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: string; approved?: string }; undoable: boolean; undo_until?: string; undone: boolean }
 export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string }
@@ -214,7 +219,13 @@ export const api = {
   saveAssistant: (a: Assistant) => request<Assistant>('PUT', `/api/assistants/${a.id}`, a),
   deleteAssistant: (id: string) => request<{ deleted: string }>('DELETE', `/api/assistants/${id}`),
   capabilities: () => request<CapabilitySpec[]>('GET', '/api/capabilities'),
-  models: () => request<{ keys: Record<string, boolean>; claude_code: boolean }>('GET', '/api/models'),
+  models: () => request<{ keys: Record<string, boolean>; claude_code: boolean; providers: Provider[] }>('GET', '/api/models'),
+  detectModels: () => request<Found>('GET', '/api/models/detect'),
+  modelCatalog: (provider: string) => request<CatalogModel[]>('GET', `/api/models/catalog/${provider}`),
+  tryModel: async (id: string, price_in: number, price_out: number): Promise<ModelTest> => {
+    const res = await fetch('/api/models/test', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, price_in, price_out }) })
+    return res.json()
+  },
   setModelKey: (provider: string, key: string) => request<{ set: boolean }>('PUT', `/api/models/keys/${provider}`, { key }),
   testModel: (id: string) => request<{ ok: boolean; text: string; cost_usd: number }>('POST', '/api/models/test', { id }),
   system: () => request<SystemState>('GET', '/api/system'),

@@ -30,7 +30,22 @@ type API struct {
 }
 
 // Providers are the API backends Pimpo knows.
-var Providers = []string{"anthropic", "openai", "openrouter", "ollama"}
+var Providers = []string{"anthropic", "openai", "openrouter", "google", "deepseek", "groq", "mistral", "xai", "ollama", "lmstudio", "custom"}
+
+// Bases are the providers' API addresses; all but Anthropic speak the chat
+// completions API OpenAI defined. custom has none: the owner gives it.
+var Bases = map[string]string{
+	"anthropic":  "https://api.anthropic.com/v1",
+	"openai":     "https://api.openai.com/v1",
+	"openrouter": "https://openrouter.ai/api/v1",
+	"google":     "https://generativelanguage.googleapis.com/v1beta/openai",
+	"deepseek":   "https://api.deepseek.com/v1",
+	"groq":       "https://api.groq.com/openai/v1",
+	"mistral":    "https://api.mistral.ai/v1",
+	"xai":        "https://api.x.ai/v1",
+	"ollama":     "http://127.0.0.1:11434/v1",
+	"lmstudio":   "http://127.0.0.1:1234/v1",
+}
 
 // ErrCostLimit stops a call that would go over its budget.
 var ErrCostLimit = errors.New("stopped at the cost limit")
@@ -39,15 +54,10 @@ func (a API) base() string {
 	if a.Base != "" {
 		return strings.TrimRight(a.Base, "/")
 	}
-	switch a.Provider {
-	case "anthropic":
-		return "https://api.anthropic.com/v1"
-	case "openrouter":
-		return "https://openrouter.ai/api/v1"
-	case "ollama":
-		return "http://127.0.0.1:11434/v1"
+	if b, ok := Bases[a.Provider]; ok {
+		return b
 	}
-	return "https://api.openai.com/v1"
+	return Bases["openai"]
 }
 
 func (a API) cost(in, out int) float64 {
