@@ -1,10 +1,12 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useQuery } from '@tanstack/react-query'
-import { X } from 'lucide-react'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { CircleAlert, CircleCheck, Loader2, Stethoscope, TriangleAlert, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { api, type SysComponent, type SystemState } from '../lib/api'
+import { Link } from 'react-router-dom'
+import { api, type Finding, type SysComponent, type SystemState } from '../lib/api'
 import { cn } from '../lib/cn'
-import { useT, type TKey } from '../lib/i18n'
+import { hasKey, useT, type TKey } from '../lib/i18n'
+import { Button } from './ui'
 
 const gb = (b: number) => (b >= 1e12 ? `${(b / 1e12).toFixed(1)} TB` : `${(b / 1e9).toFixed(b >= 1e10 ? 0 : 1)} GB`)
 const mb = (b: number) => `${Math.round(b / 1e6)} MB`
@@ -100,6 +102,8 @@ export function SystemPanel({ open, onOpenChange }: { open: boolean; onOpenChang
               ))}
             </div>
 
+            <Doctor onGo={() => onOpenChange(false)} />
+
             <h3 className="mb-2 mt-6 text-[12px] font-semibold uppercase tracking-wide text-ink-3">{t('sys.parts')}</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               {groups.map(([g, label]) => {
@@ -126,5 +130,52 @@ export function SystemPanel({ open, onOpenChange }: { open: boolean; onOpenChang
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  )
+}
+
+// A finding's name: the app's word for the parts it knows, else the name
+// the server gave (a channel, a model, a service).
+const known: Record<string, TKey> = { disk: 'sys.disk', snapshots: 'snap.title', cloud: 'cloud.title', routines: 'nav.routines', budget: 'settings.budget', mail: 'people.mail', calendar: 'people.calendar' }
+
+// Doctor tests every part for real on demand and says how to fix each
+// failure, failures first.
+function Doctor({ onGo }: { onGo: () => void }) {
+  const t = useT()
+  const run = useMutation({ mutationFn: api.doctor })
+  const list = run.data ?? []
+  const n = (s: Finding['state']) => list.filter((f) => f.state === s).length
+  const icon = { ok: <CircleCheck size={15} className="text-read" />, warn: <TriangleAlert size={15} className="text-change" />, fail: <CircleAlert size={15} className="text-danger" /> }
+  return (
+    <div className="mt-6 rounded-xl border border-line p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-[14px] font-medium"><Stethoscope size={15} /> {t('doc.title')}</div>
+          <p className="text-[12.5px] text-ink-3">{t('doc.text')}</p>
+        </div>
+        <Button size="sm" variant="primary" onClick={() => run.mutate()} disabled={run.isPending}>
+          {run.isPending ? <><Loader2 size={14} className="animate-spin" /> {t('doc.running')}</> : t('doc.run')}
+        </Button>
+      </div>
+      {run.error && <p className="mt-2 text-[12.5px] text-danger">{run.error.message}</p>}
+      {run.data && (
+        <>
+          <p className="mt-3 text-[12.5px] font-medium">{n('fail') + n('warn') === 0 ? t('doc.allGood') : t('doc.summary', { fail: n('fail'), warn: n('warn'), ok: n('ok') })}</p>
+          <ul className="mt-2 divide-y divide-line rounded-lg border border-line">
+            {list.map((f) => (
+              <li key={f.id} className="flex items-start gap-2.5 px-3 py-2 text-[13px]">
+                <span className="mt-0.5 shrink-0">{icon[f.state]}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">{known[f.id] ? t(known[f.id]) : f.name}</div>
+                  {f.fix && hasKey(f.fix) && <div className="text-[12.5px] text-ink-2">{t(f.fix as TKey)}</div>}
+                  {f.detail && f.state !== 'ok' && <div className="break-words text-[11.5px] text-ink-3">{f.detail}</div>}
+                </div>
+                {f.link && f.state !== 'ok' && <Link to={f.link} onClick={onGo} className="shrink-0 text-[12.5px] underline">{t('doc.go')}</Link>}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11.5px] text-ink-3">{t('doc.note')}</p>
+        </>
+      )}
+    </div>
   )
 }

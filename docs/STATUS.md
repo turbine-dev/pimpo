@@ -71,6 +71,10 @@ Asked for after comparing with OpenClaw and Hermes skills (folders of scripts ru
 2. **Routines in a repository**: one folder per routine, export with a local commit, push on click, pull fast-forward only, every change checked (tests, audit, capability diff) and applied only by the owner. Tested end to end with real git repositories.
 3. **Routines using routines** (`routines.run`, `manifest.uses`): the caller must declare everything the helper touches, three levels at most, no loops, helpers' state read-only. Checked live: Claude reused an installed routine when asked.
 
+## From the OpenClaw documentation (2026-09-27)
+
+Ranked with Jev (`tools/jev/decisions_openclaw_docs.py`), then ordered by user value and dependencies, since the formula penalises table stakes: model setup redone (detection of Claude Code, Ollama and LM Studio; eleven providers; prices from OpenRouter's public catalog, never guessed; test before use), fallback models per job, spending by model and job, one conversation per chat channel with typing indicators, and a check-up that tests every part for real. Left out on purpose: a browser tool (against Pimpo's safety model; an MCP browser server can be added), group chats, a Codex backend, and auto-update (waits on the owner's signing and publishing decisions).
+
 ## Languages
 
 The app, server messages (channels, approvals, notices), built-in connector texts, routine dates and money, and the phone/desktop shell page are in ten languages: pt, en, es, fr, de, it, ja, zh, ko, ru, with each language's plural rules. Portuguese is the source; the translations were written by a model and checked for keys, {slots} and plural forms, not reviewed by native speakers yet. Texts speak about Pimpo in the third person; first person is kept only for the owner's own words (example requests, preset rules). The user guide is English only.

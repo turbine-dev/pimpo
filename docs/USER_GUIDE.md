@@ -137,6 +137,10 @@ Browse ready-made routines, filtered by what they can touch. Pimpo checks the au
 
 **Local copies** (Ajustes › Backup): Pimpo copies everything on this computer every day, before each update and before an import, and keeps the last ten. Pick one and choose **Voltar a esta**; it takes effect when Pimpo is closed and reopened, and the current state is copied first, so it can be undone. After an update Pimpo tells you once that the copy from before is there. Going back to a copy restores data, not the previous version of the app.
 
+## Check-up
+
+In **Ocupação do sistema** (the Pimpo menu, or ⌘⇧D), **Verificar tudo** tests every part for real, right now: each chat channel answers, email and calendar can be read, every model a job may use answers one word (API models, up to a cent each; Claude Code is only looked for, so your usage limit is not spent), each service passes its own check, local copies and cloud backups are recent, and there is room on the disk. Problems come first, each with what to do and a link to where to do it.
+
 ## Help, notifications and labs
 
 **Ajuda** (at the bottom of the menu) answers questions about Pimpo itself: it starts a chat, and the agent reads this guide to answer. In **Ajustes › Notificações** choose what reaches you outside the app: task results, failed routines and backup problems can be silenced (they stay in **Precisa de você**); approval requests always arrive. **Ajustes › Laboratório** turns off newer features: organizing memory every night, searching memory by meaning, and exploring the MCP registry.
