@@ -1129,6 +1129,10 @@ export const pt = {
   'ms.problem.network': 'O serviço não respondeu. Confira a internet ou o endereço.',
   'ms.problem.missing': 'Não está instalado neste computador.',
   'ms.problem.other': 'Não funcionou.',
+  'cost.byModel': 'Por modelo',
+  'cost.byJob': 'Por trabalho',
+  'cost.calls_one': '{count} chamada',
+  'cost.calls_other': '{count} chamadas',
 }
 
 export type Key = keyof typeof pt

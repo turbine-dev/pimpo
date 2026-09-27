@@ -1177,4 +1177,10 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'ms.problem.network': 'Сервис не ответил. Проверьте подключение к интернету или адрес.',
   'ms.problem.missing': 'Не установлено на этом компьютере.',
   'ms.problem.other': 'Не получилось.',
+  'cost.byModel': 'По моделям',
+  'cost.byJob': 'По задачам',
+  'cost.calls_one': '{count} вызов',
+  'cost.calls_other': '{count} вызовов',
+  'cost.calls_few': '{count} вызова',
+  'cost.calls_many': '{count} вызовов',
 }

@@ -109,6 +109,13 @@ func TestFallbackModels(t *testing.T) {
 	if resp, err := c.Generate(ctx, llm.Request{Prompt: "x"}); err != nil || resp.Text != "from primary" {
 		t.Fatalf("recovery: %v %v", resp, err)
 	}
+	// Spending lands on the model that answered, fallbacks included.
+	_, cost := ta.do(t, "GET", "/api/cost", nil)
+	byModel := cost["by_model"].(map[string]any)
+	calls := cost["calls_by_model"].(map[string]any)
+	if calls["openai:gpt-5-mini"] != float64(2) || calls["anthropic:claude-sonnet-5"] != float64(1) || byModel["openai:gpt-5-mini"].(float64) <= 0 || cost["by_job"].(map[string]any)["compile"] == nil {
+		t.Fatalf("cost by model %v", cost)
+	}
 	evs, _ := ta.Events.List(ctx, event.Query{Types: []string{owner.EventNotice}})
 	var texts []string
 	for _, e := range evs {

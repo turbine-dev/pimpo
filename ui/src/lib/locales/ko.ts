@@ -1129,4 +1129,8 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'ms.problem.network': '서비스가 응답하지 않았어요. 인터넷 연결이나 주소를 확인하세요.',
   'ms.problem.missing': '이 컴퓨터에 설치되어 있지 않아요.',
   'ms.problem.other': '작동하지 않았어요.',
+  'cost.byModel': '모델별',
+  'cost.byJob': '작업별',
+  'cost.calls_one': '{count}회 호출',
+  'cost.calls_other': '{count}회 호출',
 }

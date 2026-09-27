@@ -1129,4 +1129,8 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'ms.problem.network': '服务没有响应。请检查网络连接或地址。',
   'ms.problem.missing': '这台电脑上没有安装。',
   'ms.problem.other': '没有成功。',
+  'cost.byModel': '按模型',
+  'cost.byJob': '按工作',
+  'cost.calls_one': '{count} 次调用',
+  'cost.calls_other': '{count} 次调用',
 }

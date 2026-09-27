@@ -1153,4 +1153,9 @@ export const es: Record<Key, string> & Record<string, string> = {
   'ms.problem.network': 'El servicio no respondió. Revisa la conexión a internet o la dirección.',
   'ms.problem.missing': 'No está instalado en esta computadora.',
   'ms.problem.other': 'No funcionó.',
+  'cost.byModel': 'Por modelo',
+  'cost.byJob': 'Por trabajo',
+  'cost.calls_one': '{count} llamada',
+  'cost.calls_other': '{count} llamadas',
+  'cost.calls_many': '{count} llamadas',
 }

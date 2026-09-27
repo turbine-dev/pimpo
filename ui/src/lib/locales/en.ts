@@ -1129,4 +1129,8 @@ export const en: Record<Key, string> = {
   'ms.problem.network': 'The service didn’t answer. Check the internet or the address.',
   'ms.problem.missing': 'Not installed on this computer.',
   'ms.problem.other': 'It didn’t work.',
+  'cost.byModel': 'By model',
+  'cost.byJob': 'By job',
+  'cost.calls_one': '{count} call',
+  'cost.calls_other': '{count} calls',
 }
