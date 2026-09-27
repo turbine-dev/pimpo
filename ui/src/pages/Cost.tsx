@@ -85,7 +85,7 @@ export function Cost() {
 }
 
 const jobLabel: Record<string, TKey> = { explore: 'models.explore', compile: 'models.compile', judge: 'ms.judge' }
-const modelName = (id: string) => (['sonnet', 'opus', 'haiku'].includes(id) ? `Claude Code · ${id}` : id)
+const modelName = (id: string) => (['sonnet', 'opus', 'haiku'].includes(id) ? `Claude Code · ${id}` : id === 'codex' ? 'Codex · ChatGPT' : id)
 
 // Bars compares where the month's spending went.
 function Bars({ title, rows }: { title: string; rows: { key: string; label: string; usd: number; sub?: string }[] }) {

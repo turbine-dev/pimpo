@@ -184,6 +184,13 @@ func (a *App) doctor(ctx context.Context) []finding {
 func (a *App) checkModel(ctx context.Context, id string) finding {
 	f := finding{ID: "model:" + id, Group: "brain", Name: id, State: "ok", Link: "/settings#modelos"}
 	api, isAPI, err := a.apiModel(ctx, id)
+	if !isAPI && isCodex(id) {
+		f.Name = "Codex · ChatGPT"
+		if llm.CodexBinary() == "" {
+			f.State, f.Fix = "fail", "doc.fix.codex"
+		}
+		return f
+	}
 	if !isAPI {
 		f.Name = "Claude Code · " + id
 		if !claudeInstalled() {

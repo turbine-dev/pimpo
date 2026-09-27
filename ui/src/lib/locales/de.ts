@@ -1163,4 +1163,13 @@ export const de: Record<Key, string> & Record<string, string> = {
   'doc.fix.cloudOld': 'Das letzte Cloud-Backup ist über eine Woche alt.',
   'doc.fix.routines': 'Einige Routinen wurden nach einem Fehler angehalten. Starte sie erneut oder erstelle sie mit dem Agenten neu.',
   'doc.fix.budget': 'Das heutige Ausgabenlimit ist aufgebraucht: Neue Aufgaben warten bis morgen.',
+  'ms.codexFound': 'In der ChatGPT-App gefunden, angemeldet. Nutzt dein ChatGPT-Abo; die eigenen Werkzeuge von Codex bleiben aus.',
+  'ms.codexNoLogin': 'Gefunden, aber nicht angemeldet. Öffne Codex in der ChatGPT-App und melde dich an.',
+  'ms.codexMissing': 'Nicht gefunden. Es kommt mit der ChatGPT-App.',
+  'ms.ollamaEmpty': 'Läuft unter {url}, aber ohne Modell. Lade eines im Terminal: {cmd} (etwa 2,5 GB).',
+  'ms.lmEmpty': 'Läuft unter {url}, kein Modell geladen. Lade eines in LM Studio.',
+  'ms.qwenCodeText': 'Nutzt Qwen-Modelle über DashScope, das nach Nutzung abrechnet. Um sie hier mit gezählten Kosten zu nutzen, verbinde DashScope mit demselben Schlüssel.',
+  'ms.connectQwen': 'DashScope verbinden',
+  'ms.apps': 'Gefundene Chat-Apps: {list}. Sie lassen andere Programme ihre Modelle nicht nutzen; Pimpo nutzt Codex und Claude Code, die mitgeliefert werden, oder einen Anbieter unten.',
+  'doc.fix.codex': 'Codex wurde nicht gefunden. Installiere die ChatGPT-App oder wähle ein anderes Modell unter Einstellungen › Modelle.',
 }

@@ -260,7 +260,7 @@ function ModelsLink() {
   const models = useQuery({ queryKey: ['models'], queryFn: api.models })
   const s = settings.data
   const cc = ['sonnet', 'opus', 'haiku']
-  const name = (id?: string) => (!id ? '' : cc.includes(id) ? `Claude Code · ${id}` : id)
+  const name = (id?: string) => (!id ? '' : cc.includes(id) ? `Claude Code · ${id}` : id === 'codex' ? 'Codex · ChatGPT' : id)
   const ok = !!s && (!cc.includes(s.explore_model) || !!models.data?.claude_code)
   const spare = s?.fallbacks?.explore?.length ?? 0
   return (

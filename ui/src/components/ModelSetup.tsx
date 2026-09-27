@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { api, type CatalogModel, type Job, type ModelOption, type ModelTest, type Provider, type Settings } from '../lib/api'
 import { cn } from '../lib/cn'
 import { usd } from '../lib/format'
-import { useT, type TKey } from '../lib/i18n'
+import { fill, useT, type TKey } from '../lib/i18n'
 import { Button, Card } from './ui'
 
 const field = 'h-9 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -16,7 +16,7 @@ const jobs: { job: Job; key: 'explore_model' | 'compile_model' | 'judge_model'; 
   { job: 'judge', key: 'judge_model', label: 'ms.judge', text: 'ms.judgeText' },
 ]
 
-const label = (id: string) => (claudeCode.includes(id) ? `Claude Code · ${id}` : id)
+export const label = (id: string) => (claudeCode.includes(id) ? `Claude Code · ${id}` : id === 'codex' ? 'Codex · ChatGPT' : id)
 const price = (t: ReturnType<typeof useT>, m: { price_in: number; price_out: number; free?: boolean }) =>
   m.free || (m.price_in === 0 && m.price_out === 0) ? t('models.free') : t('models.price', { in: m.price_in, out: m.price_out })
 
@@ -42,7 +42,7 @@ export function ModelSetup() {
   const [open, setOpen] = useState<{ provider: Provider; local?: CatalogModel[] } | null>(null)
   if (!s || !info.data) return <Card className="p-5 text-sm text-ink-3">{t('ui.loading')}</Card>
   const mine = s.models ?? []
-  const options = [...(found.data?.claude_code || info.data.claude_code ? claudeCode : []), ...mine.map((m) => m.id)]
+  const options = [...(found.data?.claude_code || info.data.claude_code ? claudeCode : []), ...(found.data?.codex_login ? ['codex'] : []), ...mine.map((m) => m.id)]
   const providers = info.data.providers.filter((p) => !p.local)
   const local = (id: 'ollama' | 'lmstudio') => info.data.providers.find((p) => p.id === id)!
 
@@ -104,20 +104,44 @@ export function ModelSetup() {
             {found.data?.claude_code ? <Check size={16} className="text-read" aria-label={t('ms.detected')} />
               : <a className="text-[12.5px] underline" href="https://docs.anthropic.com/en/docs/claude-code/setup" target="_blank" rel="noreferrer">{t('ms.install')}</a>}
           </li>
+          <li className="flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-medium">Codex · ChatGPT</div>
+              <div className="text-[12.5px] text-ink-3">{found.isLoading ? t('ui.loading') : found.data?.codex_login ? t('ms.codexFound') : found.data?.codex ? t('ms.codexNoLogin') : t('ms.codexMissing')}</div>
+            </div>
+            {found.data?.codex_login && <Button size="sm" onClick={() => save.mutate((x) => ({ ...x, explore_model: 'codex', compile_model: 'codex' }))}>{t('ms.useTasks')}</Button>}
+          </li>
           {(['ollama', 'lmstudio'] as const).map((id) => {
             const list = found.data?.[id] ?? []
             const url = id === 'ollama' ? found.data?.ollama_url : found.data?.lmstudio_url
+            const up = id === 'ollama' ? found.data?.ollama_up : found.data?.lmstudio_up
             return (
               <li key={id} className="flex items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <div className="text-[14px] font-medium">{local(id).name}</div>
-                  <div className="text-[12.5px] text-ink-3">{found.isLoading ? t('ui.loading') : list.length > 0 ? t('ms.localModels', { count: list.length, url: url ?? '' }) : t('ms.localMissing', { url: url ?? '' })}</div>
+                  <div className="text-[12.5px] text-ink-3">
+                    {found.isLoading ? t('ui.loading') : list.length > 0 ? t('ms.localModels', { count: list.length, url: url ?? '' })
+                      : up ? (id === 'ollama' ? fill(t('ms.ollamaEmpty', { url: url ?? '' }), { cmd: <code className="rounded bg-sunken px-1">ollama pull qwen3:4b</code> }) : t('ms.lmEmpty', { url: url ?? '' }))
+                      : t('ms.localMissing', { url: url ?? '' })}
+                  </div>
                 </div>
                 {list.length > 0 && <Button size="sm" onClick={() => setOpen({ provider: local(id), local: list })}>{t('ms.choose')} <ChevronRight size={14} /></Button>}
               </li>
             )
           })}
+          {found.data?.qwen_code && (
+            <li className="flex items-center gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-medium">Qwen Code</div>
+                <div className="text-[12.5px] text-ink-3">{t('ms.qwenCodeText')}</div>
+              </div>
+              {info.data.providers.some((p) => p.id === 'dashscope') && (
+                <Button size="sm" onClick={() => setOpen({ provider: info.data.providers.find((p) => p.id === 'dashscope')! })}>{t('ms.connectQwen')}</Button>
+              )}
+            </li>
+          )}
         </ul>
+        {(found.data?.apps?.length ?? 0) > 0 && <p className="mt-3 text-[12.5px] text-ink-3">{t('ms.apps', { list: found.data!.apps!.join(', ') })}</p>}
         <LocalAddresses s={s} save={save.mutate} />
       </Card>
 

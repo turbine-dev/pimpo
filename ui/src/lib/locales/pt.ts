@@ -1163,6 +1163,15 @@ export const pt = {
   'doc.fix.cloudOld': 'O último backup na nuvem tem mais de uma semana.',
   'doc.fix.routines': 'Há rotinas paradas depois de uma falha. Rode de novo ou refaça com o agente.',
   'doc.fix.budget': 'O limite de gasto de hoje acabou: tarefas novas esperam até amanhã.',
+  'ms.codexFound': 'Encontrado no app do ChatGPT, com login. Usa a sua assinatura do ChatGPT; as ferramentas próprias do Codex ficam desligadas.',
+  'ms.codexNoLogin': 'Encontrado, mas sem login. Abra o Codex no app do ChatGPT e entre com a sua conta.',
+  'ms.codexMissing': 'Não encontrado. Vem com o app do ChatGPT.',
+  'ms.ollamaEmpty': 'Rodando em {url}, mas sem nenhum modelo. Baixe um no Terminal: {cmd} (cerca de 2,5 GB).',
+  'ms.lmEmpty': 'Rodando em {url}, sem modelo carregado. Carregue um no LM Studio.',
+  'ms.qwenCodeText': 'Usa os modelos Qwen pela DashScope, que cobra por uso. Para usá-los aqui, com o custo contado, conecte a DashScope com a mesma chave.',
+  'ms.connectQwen': 'Conectar a DashScope',
+  'ms.apps': 'Apps de conversa encontrados: {list}. Eles não deixam outros programas usarem seus modelos; o Pimpo usa o Codex e o Claude Code, que vêm com eles, ou um provedor abaixo.',
+  'doc.fix.codex': 'O Codex não foi encontrado. Instale o app do ChatGPT ou escolha outro modelo em Ajustes › Modelos.',
 }
 
 export type Key = keyof typeof pt

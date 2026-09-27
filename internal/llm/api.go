@@ -30,7 +30,7 @@ type API struct {
 }
 
 // Providers are the API backends Pimpo knows.
-var Providers = []string{"anthropic", "openai", "openrouter", "google", "deepseek", "groq", "mistral", "xai", "ollama", "lmstudio", "custom"}
+var Providers = []string{"anthropic", "openai", "openrouter", "google", "dashscope", "deepseek", "groq", "mistral", "xai", "ollama", "lmstudio", "custom"}
 
 // Bases are the providers' API addresses; all but Anthropic speak the chat
 // completions API OpenAI defined. custom has none: the owner gives it.
@@ -39,6 +39,7 @@ var Bases = map[string]string{
 	"openai":     "https://api.openai.com/v1",
 	"openrouter": "https://openrouter.ai/api/v1",
 	"google":     "https://generativelanguage.googleapis.com/v1beta/openai",
+	"dashscope":  "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
 	"deepseek":   "https://api.deepseek.com/v1",
 	"groq":       "https://api.groq.com/openai/v1",
 	"mistral":    "https://api.mistral.ai/v1",
