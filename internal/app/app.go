@@ -244,6 +244,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.cloudRoutes()
 	a.snapshotRoutes()
 	a.repoRoutes()
+	a.doctorRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()

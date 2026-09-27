@@ -183,6 +183,8 @@ export class ApiError extends Error {
 export type RepoChange = { id: string; name: string; new: boolean; added: string[]; removed: string[]; tests: number; problems: string[]; hash: string }
 export type RepoView = { path: string; git: boolean; remote: boolean; head?: string; changes: RepoChange[]; broken: Record<string, string>; error?: string }
 
+export type Finding = { id: string; group: string; name: string; state: 'ok' | 'warn' | 'fail'; detail?: string; fix?: string; link?: string }
+
 export type Snapshot = { name: string; label: string; when: string; bytes: number }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -229,6 +231,7 @@ export const api = {
   setModelKey: (provider: string, key: string) => request<{ set: boolean }>('PUT', `/api/models/keys/${provider}`, { key }),
   testModel: (id: string) => request<{ ok: boolean; text: string; cost_usd: number }>('POST', '/api/models/test', { id }),
   system: () => request<SystemState>('GET', '/api/system'),
+  doctor: () => request<Finding[]>('POST', '/api/doctor'),
   repo: () => request<RepoView>('GET', '/api/repo'),
   setRepo: (path: string) => request<RepoView>('PUT', '/api/repo', { path }),
   repoExport: () => request<{ written: number; commit?: string; view: RepoView }>('POST', '/api/repo/export'),
