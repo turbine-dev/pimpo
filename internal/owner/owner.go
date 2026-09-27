@@ -81,6 +81,33 @@ func (c *Channel) Chat(ctx context.Context) (int64, error) {
 	return strconv.ParseInt(v, 10, 64)
 }
 
+type viaKey struct{}
+
+// Via marks a request as coming from a chat channel (telegram, whatsapp,
+// discordchat…), so follow-up messages there continue one conversation.
+func Via(ctx context.Context, channel string) context.Context {
+	return context.WithValue(ctx, viaKey{}, channel)
+}
+
+type typingKey struct{}
+
+// WithTyping gives a request a way to show "typing…" where it came from.
+func WithTyping(ctx context.Context, show func(context.Context) error) context.Context {
+	return context.WithValue(ctx, typingKey{}, show)
+}
+
+// TypingOf is how to show "typing…" for a request, or nil.
+func TypingOf(ctx context.Context) func(context.Context) error {
+	f, _ := ctx.Value(typingKey{}).(func(context.Context) error)
+	return f
+}
+
+// ChannelOf is the chat channel a request came from, or "".
+func ChannelOf(ctx context.Context) string {
+	v, _ := ctx.Value(viaKey{}).(string)
+	return v
+}
+
 // Notify sends a notice to the owner and keeps it in the event log, where
 // the web inbox shows it even when Telegram is not paired.
 func (c *Channel) Notify(ctx context.Context, n explore.Notice) error {
@@ -175,7 +202,14 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 		if text == "" {
 			return
 		}
-		reply, err := c.Handler.Request(people.With(ctx, person), text)
+		rctx := Via(people.With(ctx, person), "telegram")
+		if t, ok := bot.(interface {
+			Typing(context.Context, int64) error
+		}); ok {
+			chat := m.Chat.ID
+			rctx = WithTyping(rctx, func(ctx context.Context) error { return t.Typing(ctx, chat) })
+		}
+		reply, err := c.Handler.Request(rctx, text)
 		if err != nil {
 			reply = i18n.T(ctx, "msg.start.failed", "error", err)
 		}

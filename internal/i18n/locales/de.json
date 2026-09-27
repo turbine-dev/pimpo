@@ -31,6 +31,8 @@
   "msg.approval.batch": "Für den Rest dieses Laufs erlaubt.",
   "msg.approval.deny": "Abgelehnt.",
   "msg.approval.gone": "Diese Anfrage wartet nicht mehr.",
+  "msg.conv.continue": "Verstanden, das Gespräch geht weiter. 🔎",
+  "msg.conv.new": "🆕 Neues Gespräch. Was jetzt kommt, beginnt von vorn.",
   "msg.discarded": "Verworfen.",
   "msg.email.where": "Das Ergebnis kommt über Telegram, WhatsApp oder in „Braucht dich“ an.",
   "msg.explore.failed": "⚠️ Konnte nicht abgeschlossen werden: {request}\n{error}",

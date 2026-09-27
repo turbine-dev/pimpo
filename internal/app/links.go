@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/denerFernandes/pimpo/internal/i18n"
+	ownerpkg "github.com/denerFernandes/pimpo/internal/owner"
 	"slices"
 	"strconv"
 	"strings"
@@ -103,7 +104,12 @@ func (a *App) linkMessage(ctx context.Context, kind string, run *linkRun, in cha
 			return
 		}
 	}
-	out, err := h.Request(pctx, text)
+	rctx := ownerpkg.Via(pctx, kind)
+	if t, ok := run.link.(chatlink.Typer); ok {
+		from := in.From
+		rctx = ownerpkg.WithTyping(rctx, func(ctx context.Context) error { return t.Typing(ctx, from) })
+	}
+	out, err := h.Request(rctx, text)
 	if err != nil {
 		out = i18n.T(ctx, "msg.start.failed", "error", err)
 	}

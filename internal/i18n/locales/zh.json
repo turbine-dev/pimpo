@@ -31,6 +31,8 @@
   "msg.approval.batch": "本次运行接下来的操作都已允许。",
   "msg.approval.deny": "已拒绝。",
   "msg.approval.gone": "此请求已不再等待处理。",
+  "msg.conv.continue": "收到，继续这段对话。🔎",
+  "msg.conv.new": "🆕 新的对话。接下来的内容会重新开始。",
   "msg.discarded": "已舍弃。",
   "msg.email.where": "结果会发到 Telegram、WhatsApp 或“待你处理”。",
   "msg.explore.failed": "⚠️ 未能完成：{request}\n{error}",
