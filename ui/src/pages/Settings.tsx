@@ -7,7 +7,7 @@ import { CloudBackup } from '../components/CloudBackup'
 import { SnapshotsCard } from '../components/SnapshotsCard'
 import { inDesktopApp, mascotOn, setMascotOn } from '../components/Mascot'
 import { Head } from '../components/PimpoArt'
-import { ModelsCard } from '../components/ModelsCard'
+import { ModelSetup } from '../components/ModelSetup'
 import { ProtectionCard } from '../components/ProtectionCard'
 import { PhonePairing } from '../components/PhonePairing'
 import { Button, Card, Switch } from '../components/ui'
@@ -36,6 +36,9 @@ const field = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline
 
 // Settings, split into sections; changes to preferences wait in a bar at
 // the bottom until saved, while cards with their own button save at once.
+const modelFields = ['models', 'explore_model', 'compile_model', 'judge_model', 'fallbacks', 'ollama_url', 'lmstudio_url', 'custom_url'] as const
+const pick = (d: S, keys: readonly (keyof S)[]) => Object.fromEntries(keys.map((k) => [k, d[k]])) as Partial<S>
+
 export function Settings() {
   const t = useT()
   const qc = useQueryClient()
@@ -46,7 +49,13 @@ export function Settings() {
   const state = useQuery({ queryKey: ['state'], queryFn: api.state })
   const [s, setS] = useState<S>()
   const [budget, setBudget] = useState('')
-  useEffect(() => { if (settings.data) setS(settings.data) }, [settings.data])
+  // The model screen saves on its own; its fields follow what it saved
+  // without losing unsaved edits elsewhere on this page.
+  useEffect(() => {
+    const d = settings.data
+    if (!d) return
+    setS((prev) => (!prev ? d : { ...prev, ...pick(d, modelFields) }))
+  }, [settings.data])
   useEffect(() => { if (state.data) setBudget(String(state.data.budget.limit)) }, [state.data])
   const dirty = !!s && !!settings.data && (JSON.stringify(s) !== JSON.stringify(settings.data) || (state.data && budget !== String(state.data.budget.limit)))
   const save = useMutation({
@@ -105,7 +114,7 @@ export function Settings() {
           {section === 'celular' && <PhonePairing />}
 
           {section === 'modelos' && <>
-            <ModelsCard s={s} set={setS} />
+            <ModelSetup />
             <Card className="p-5">
               <div className="text-[15px] font-medium">{t('settings.judges')}</div>
               <p className="mb-3 text-[13px] text-ink-3">{t('set.judgesText')}</p>

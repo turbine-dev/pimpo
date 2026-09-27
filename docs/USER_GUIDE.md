@@ -141,7 +141,14 @@ Browse ready-made routines, filtered by what they can touch. Pimpo checks the au
 
 ## Models
 
-By default Pimpo uses Claude Code with your own subscription. In **Ajustes › Modelos** you can pick another model for each job (tasks and chat, writing routines, judgments): Anthropic, OpenAI or OpenRouter with your API key, or a local model through Ollama. An API model needs its price per million tokens before it runs, because the daily spending limit counts every call with it; **Testar** checks the key with a call capped at one cent. Rules and approvals do not change with the model: every tool call still goes through Pimpo. With Anthropic, the instructions, tool list and conversation so far are kept in the provider's prompt cache between turns, so a long task pays about a tenth for what it already sent; the cost shown includes the cache's own prices.
+**Ajustes › Modelos** (also reached from **Conexões › Inteligência**) says which model does each job: doing tasks and chatting, writing routines, and answering the routines' yes-or-no questions and short texts.
+
+- **On this computer:** Pimpo finds Claude Code (it then uses your Claude subscription) and a running Ollama or LM Studio with their models, which are free and private.
+- **Providers:** Anthropic, OpenAI, Google Gemini, OpenRouter, DeepSeek, Groq, Mistral, xAI, or any server that speaks OpenAI's chat API. Paste the provider's key and its models appear with their prices, taken from OpenRouter's public catalog of list prices. A model the catalog does not know needs its price typed in, because the spending limit counts every call and Pimpo never guesses a price.
+- **Test and use:** each model answers one real word (capped at one cent) before it is added, with the time it took or a plain reason when it fails (key refused, out of credits, usage limit, model not available, service down).
+- **Fallbacks:** each job can have up to four models that take over, in order, when its model fails for a provider reason (for example Claude Code's usage limit). You hear once when a job falls back and once when its model answers again. Your own spending limit is never worked around this way.
+
+Rules and approvals do not change with the model: every tool call still goes through Pimpo. With Anthropic, the instructions, tool list and conversation so far are kept in the provider's prompt cache between turns, so a long task pays about a tenth for what it already sent; the cost shown includes the cache's own prices.
 
 ## Costs
 

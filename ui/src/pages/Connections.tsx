@@ -61,6 +61,7 @@ export function Connections() {
         />
       </Section>
       <Section title={t('conn.secBrain')} text={t('conn.secBrainText')}>
+        <ModelsLink />
         <Setup
           kind="jev"
           icon={<Sparkles size={18} />}
@@ -69,16 +70,6 @@ export function Connections() {
           fields={[{ name: 'key', label: t('conn.jevKey'), placeholder: 'ts_…', secret: true }]}
           help={t('conn.jevHelp')}
         />
-        <Card className="flex items-center gap-4 p-5">
-          <Icon ok={!!by('claude')?.configured}>
-            <Cpu size={18} />
-          </Icon>
-          <div className="flex-1">
-            <div className="text-[15px] font-medium">Claude Code</div>
-            <div className="text-[13px] text-ink-3">{by('claude')?.configured ? t('conn.claudeFound') : t('conn.claudeMissing')}</div>
-          </div>
-          <Link to="/settings#modelos" className="flex items-center gap-1 text-[12.5px] text-ink-3 hover:text-ink">{t('conn.otherModels')} <ChevronRight size={14} /></Link>
-        </Card>
       </Section>
       <Section title={t('conn.secServices')} text={t('conn.secServicesText')}>
         <Catalog />
@@ -258,5 +249,31 @@ function Section({ title, text, children }: { title: string; text: string; child
       <p className="mb-3 text-[13px] text-ink-3">{text}</p>
       <div className="space-y-3">{children}</div>
     </section>
+  )
+}
+
+// ModelsLink shows which model does the work, with the way to change it
+// first in the brain section, since nothing works without one.
+function ModelsLink() {
+  const t = useT()
+  const settings = useQuery({ queryKey: ['settings'], queryFn: api.settings })
+  const models = useQuery({ queryKey: ['models'], queryFn: api.models })
+  const s = settings.data
+  const cc = ['sonnet', 'opus', 'haiku']
+  const name = (id?: string) => (!id ? '' : cc.includes(id) ? `Claude Code · ${id}` : id)
+  const ok = !!s && (!cc.includes(s.explore_model) || !!models.data?.claude_code)
+  const spare = s?.fallbacks?.explore?.length ?? 0
+  return (
+    <Card className="flex items-center gap-4 p-5">
+      <Icon ok={ok}><Cpu size={18} /></Icon>
+      <div className="min-w-0 flex-1">
+        <div className="text-[15px] font-medium">{t('ms.inUse')}</div>
+        <div className="truncate text-[13px] text-ink-3">
+          {s ? `${t('models.explore')}: ${name(s.explore_model)}${spare ? ` · ${t('ms.fallbacks')} ${spare}` : ''}` : t('ui.loading')}
+          {s && !ok && ` — ${t('ms.claudeMissing')}`}
+        </div>
+      </div>
+      <Link to="/settings#modelos"><Button size="sm" variant={ok ? 'secondary' : 'primary'}>{t('conn.setUp')} <ChevronRight size={14} /></Button></Link>
+    </Card>
   )
 }
