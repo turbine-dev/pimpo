@@ -70,6 +70,10 @@ func Read(root string) (map[string]routine.Routine, map[string]string) {
 		return found, broken
 	}
 	for _, e := range entries {
+		if e.Type()&os.ModeSymlink != 0 {
+			broken[e.Name()] = "links are not followed"
+			continue
+		}
 		if !e.IsDir() || strings.HasPrefix(e.Name(), ".") {
 			continue
 		}
@@ -88,9 +92,28 @@ func Read(root string) (map[string]routine.Routine, map[string]string) {
 	return found, broken
 }
 
+// readFile reads one file of a routine folder: a regular file, not a link
+// (which could point at any file of the owner's), and of a sane size.
+func readFile(path string) ([]byte, error) {
+	st, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !st.Mode().IsRegular() {
+		return nil, fmt.Errorf("%s is not a regular file", filepath.Base(path))
+	}
+	if st.Size() > 1<<20 {
+		return nil, fmt.Errorf("%s is larger than 1 MB", filepath.Base(path))
+	}
+	return os.ReadFile(path)
+}
+
 func readOne(dir string) (routine.Routine, error) {
 	var r routine.Routine
-	raw, err := os.ReadFile(filepath.Join(dir, "routine.json"))
+	if st, err := os.Lstat(dir); err != nil || !st.IsDir() {
+		return r, errors.New("not a folder")
+	}
+	raw, err := readFile(filepath.Join(dir, "routine.json"))
 	if err != nil {
 		return r, errors.New("routine.json is missing")
 	}
@@ -98,12 +121,12 @@ func readOne(dir string) (routine.Routine, error) {
 	if err := json.Unmarshal(raw, &m); err != nil {
 		return r, fmt.Errorf("routine.json: %v", err)
 	}
-	code, err := os.ReadFile(filepath.Join(dir, "routine.js"))
+	code, err := readFile(filepath.Join(dir, "routine.js"))
 	if err != nil {
 		return r, errors.New("routine.js is missing")
 	}
 	r = routine.Routine{Name: m.Name, Description: m.Description, Manifest: m.Manifest, Code: string(code)}
-	if raw, err := os.ReadFile(filepath.Join(dir, "tests.json")); err == nil {
+	if raw, err := readFile(filepath.Join(dir, "tests.json")); err == nil {
 		if err := json.Unmarshal(raw, &r.Tests); err != nil {
 			return r, fmt.Errorf("tests.json: %v", err)
 		}
