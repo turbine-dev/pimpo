@@ -31,6 +31,8 @@
   "msg.approval.batch": "Разрешено до конца этого запуска.",
   "msg.approval.deny": "Запрещено.",
   "msg.approval.gone": "Этот запрос больше не ждёт ответа.",
+  "msg.conv.continue": "Понятно, продолжаем разговор. 🔎",
+  "msg.conv.new": "🆕 Новый разговор. Дальше всё начинается заново.",
   "msg.discarded": "Отклонено.",
   "msg.email.where": "Результат придёт в Telegram, WhatsApp или в раздел «Ждёт вас».",
   "msg.explore.failed": "⚠️ Не удалось завершить: {request}\n{error}",

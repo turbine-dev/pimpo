@@ -31,6 +31,8 @@
   "msg.approval.batch": "Permitido para o resto desta execução.",
   "msg.approval.deny": "Negado.",
   "msg.approval.gone": "Este pedido já não está esperando.",
+  "msg.conv.continue": "Entendido, seguindo a conversa. 🔎",
+  "msg.conv.new": "🆕 Nova conversa. O que vem a seguir começa do zero.",
   "msg.discarded": "Descartado.",
   "msg.email.where": "O resultado chega no Telegram, no WhatsApp ou em Precisa de você.",
   "msg.explore.failed": "⚠️ Não deu para terminar: {request}\n{error}",

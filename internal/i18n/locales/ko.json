@@ -31,6 +31,8 @@
   "msg.approval.batch": "이번 실행이 끝날 때까지 허용했어요.",
   "msg.approval.deny": "거부했어요.",
   "msg.approval.gone": "이 요청은 더 이상 대기 중이 아니에요.",
+  "msg.conv.continue": "알겠어요, 대화를 이어 갈게요. 🔎",
+  "msg.conv.new": "🆕 새 대화예요. 이제부터는 처음부터 시작해요.",
   "msg.discarded": "버렸어요.",
   "msg.email.where": "결과는 Telegram, WhatsApp 또는 “확인 필요”로 와요.",
   "msg.explore.failed": "⚠️ 끝내지 못했어요: {request}\n{error}",

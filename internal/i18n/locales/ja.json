@@ -31,6 +31,8 @@
   "msg.approval.batch": "今回の実行が終わるまで許可しました。",
   "msg.approval.deny": "拒否しました。",
   "msg.approval.gone": "この依頼はもう対応待ちではありません。",
+  "msg.conv.continue": "了解です。会話を続けます。🔎",
+  "msg.conv.new": "🆕 新しい会話です。ここからは最初から始まります。",
   "msg.discarded": "破棄しました。",
   "msg.email.where": "結果は Telegram、WhatsApp、または「要対応」に届きます。",
   "msg.explore.failed": "⚠️ 完了できませんでした：{request}\n{error}",

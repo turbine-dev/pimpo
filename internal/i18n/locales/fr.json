@@ -31,6 +31,8 @@
   "msg.approval.batch": "Autorisé pour le reste de cette exécution.",
   "msg.approval.deny": "Refusé.",
   "msg.approval.gone": "Cette demande n’est plus en attente.",
+  "msg.conv.continue": "Compris, la conversation continue. 🔎",
+  "msg.conv.new": "🆕 Nouvelle conversation. La suite repart de zéro.",
   "msg.discarded": "Écarté.",
   "msg.email.where": "Le résultat arrive sur Telegram, sur WhatsApp ou dans À traiter.",
   "msg.explore.failed": "⚠️ Impossible de terminer : {request}\n{error}",

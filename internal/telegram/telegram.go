@@ -124,6 +124,11 @@ func (b Bot) Me(ctx context.Context) (username string, err error) {
 }
 
 // Send posts a message with optional rows of inline buttons.
+// Typing shows "typing…" in a chat for about five seconds.
+func (b Bot) Typing(ctx context.Context, chat int64) error {
+	return b.call(ctx, "sendChatAction", map[string]any{"chat_id": chat, "action": "typing"}, nil)
+}
+
 func (b Bot) Send(ctx context.Context, chat int64, text string, rows ...[]Button) (Message, error) {
 	body := map[string]any{"chat_id": chat, "text": text, "disable_web_page_preview": true}
 	if len(rows) > 0 {

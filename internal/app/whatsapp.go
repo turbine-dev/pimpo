@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/denerFernandes/pimpo/internal/owner"
 	"io"
 	"net/http"
 	"strings"
@@ -112,7 +113,7 @@ func (a *App) whatsappMessage(ctx context.Context, m whatsapp.Inbound) {
 	if text == "" {
 		return
 	}
-	out, err := h.Request(pctx, text)
+	out, err := h.Request(owner.Via(pctx, "whatsapp"), text)
 	if err != nil {
 		out = i18n.T(ctx, "msg.start.failed", "error", err)
 	}

@@ -74,6 +74,11 @@ func (s *Signal) Send(ctx context.Context, to, text string) error {
 	return s.rpc(ctx, "send", map[string]any{"recipient": []string{to}, "message": text}, nil)
 }
 
+// Typing shows the typing indicator to a person.
+func (s *Signal) Typing(ctx context.Context, to string) error {
+	return s.rpc(ctx, "sendTyping", map[string]any{"recipient": []string{to}}, nil)
+}
+
 // Run reads the daemon's event stream.
 func (s *Signal) Run(ctx context.Context, on func(Inbound)) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", s.base()+"/api/v1/events", nil)

@@ -170,24 +170,42 @@ func (d *Discord) Run(ctx context.Context, on func(Inbound)) error {
 	}
 }
 
-func (d *Discord) Send(ctx context.Context, to, text string) error {
+// dm is the private channel with a person, opened once.
+func (d *Discord) dm(ctx context.Context, to string) (string, error) {
 	d.mu.Lock()
 	ch := d.dms[to]
 	d.mu.Unlock()
-	if ch == "" {
-		var dm struct {
-			ID string `json:"id"`
-		}
-		if err := d.rest(ctx, "POST", "/users/@me/channels", map[string]string{"recipient_id": to}, &dm); err != nil {
-			return err
-		}
-		ch = dm.ID
-		d.mu.Lock()
-		if d.dms == nil {
-			d.dms = map[string]string{}
-		}
-		d.dms[to] = ch
-		d.mu.Unlock()
+	if ch != "" {
+		return ch, nil
+	}
+	var dm struct {
+		ID string `json:"id"`
+	}
+	if err := d.rest(ctx, "POST", "/users/@me/channels", map[string]string{"recipient_id": to}, &dm); err != nil {
+		return "", err
+	}
+	d.mu.Lock()
+	if d.dms == nil {
+		d.dms = map[string]string{}
+	}
+	d.dms[to] = dm.ID
+	d.mu.Unlock()
+	return dm.ID, nil
+}
+
+// Typing shows "typing…" in the private channel for about ten seconds.
+func (d *Discord) Typing(ctx context.Context, to string) error {
+	ch, err := d.dm(ctx, to)
+	if err != nil {
+		return err
+	}
+	return d.rest(ctx, "POST", "/channels/"+ch+"/typing", map[string]string{}, nil)
+}
+
+func (d *Discord) Send(ctx context.Context, to, text string) error {
+	ch, err := d.dm(ctx, to)
+	if err != nil {
+		return err
 	}
 	for _, part := range chunks(text, 1900) {
 		if err := d.rest(ctx, "POST", "/channels/"+ch+"/messages", map[string]string{"content": part}, nil); err != nil {

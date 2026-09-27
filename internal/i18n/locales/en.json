@@ -31,6 +31,8 @@
   "msg.approval.batch": "Allowed for the rest of this run.",
   "msg.approval.deny": "Denied.",
   "msg.approval.gone": "This request is no longer waiting.",
+  "msg.conv.continue": "Got it, continuing the conversation. 🔎",
+  "msg.conv.new": "🆕 New conversation. What comes next starts fresh.",
   "msg.discarded": "Discarded.",
   "msg.email.where": "The result arrives on Telegram, WhatsApp or in Needs you.",
   "msg.explore.failed": "⚠️ Couldn’t finish: {request}\n{error}",

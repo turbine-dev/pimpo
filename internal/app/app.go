@@ -11,7 +11,9 @@ import (
 	"github.com/denerFernandes/pimpo/internal/models"
 	"github.com/denerFernandes/pimpo/internal/runtime"
 	"os/exec"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -157,7 +159,9 @@ type App struct {
 	links  map[string]*linkRun
 	// Models finds models for the setup screen; nil uses the shared one.
 	Models *models.Client
-	health channelHealth
+	// TypingEvery renews "typing…" on chat channels; 0 means 4 seconds.
+	TypingEvery time.Duration
+	health      channelHealth
 	// DemoJudge replaces the judgment backends in demo mode.
 	DemoJudge judge.Judge
 
@@ -712,10 +716,104 @@ type handler struct{ a *App }
 func actor(ctx context.Context) string { return "human:" + people.From(ctx) }
 
 func (h handler) Request(ctx context.Context, text string) (string, error) {
-	if _, err := h.a.Explore.Start(ctx, text, actor(ctx)); err != nil {
+	via := owner.ChannelOf(ctx)
+	if via == "" {
+		if _, err := h.a.Explore.Start(ctx, text, actor(ctx)); err != nil {
+			return "", err
+		}
+		return i18n.T(ctx, "msg.request.started"), nil
+	}
+	return h.a.converse(ctx, via, text)
+}
+
+// convQuiet is how long a chat-channel conversation waits for the next
+// message before a new one starts.
+const convQuiet = 3 * time.Hour
+
+var newConversation = regexp.MustCompile(`(?i)^\s*/?(new|novo|nova|nuevo|nueva|nouveau|neu|nuovo|reset)(\s+(conversa|conversation|chat))?\s*[.!]?\s*$`)
+
+// converse continues the owner's conversation on a chat channel: messages
+// there are turns of one of the app's chats (listed in the app too), so a
+// follow-up like "and tomorrow?" knows what came before. /new starts over;
+// so do three quiet hours.
+func (a *App) converse(ctx context.Context, via, text string) (string, error) {
+	person := people.From(ctx)
+	key := "conv." + via + "." + person
+	if newConversation.MatchString(text) {
+		a.Events.Put(ctx, key, "")
+		return i18n.T(ctx, "msg.conv.new"), nil
+	}
+	var ids []string
+	conv := ""
+	if raw, _ := a.Events.Get(ctx, key); raw != "" {
+		id, at, _ := strings.Cut(raw, "|")
+		if sec, err := strconv.ParseInt(at, 10, 64); err == nil && time.Since(time.Unix(sec, 0)) < convQuiet {
+			if _, turns, err := a.Store.Chat(ctx, id); err == nil {
+				conv, ids = id, turns
+			}
+		}
+	}
+	o := explore.Options{Context: a.history(ctx, ids)}
+	exp, err := a.Explore.StartWith(ctx, text, actor(ctx), o)
+	if err != nil {
 		return "", err
 	}
+	if conv == "" {
+		title := channelTitle(via) + " · " + text
+		if r := []rune(title); len(r) > 60 {
+			title = string(r[:59]) + "…"
+		}
+		conv = chatID()
+		if err := a.Store.CreateChat(ctx, store.Chat{ID: conv, Title: title, Person: chatPerson(person)}); err != nil {
+			return "", err
+		}
+	}
+	if show := owner.TypingOf(ctx); show != nil {
+		go a.keepTyping(context.WithoutCancel(ctx), exp, show)
+	}
+	a.Store.AddTurn(ctx, conv, exp)
+	a.Events.Put(ctx, key, conv+"|"+strconv.FormatInt(time.Now().Unix(), 10))
+	if len(ids) > 0 {
+		return i18n.T(ctx, "msg.conv.continue"), nil
+	}
 	return i18n.T(ctx, "msg.request.started"), nil
+}
+
+// keepTyping shows "typing…" on the channel while the task runs, renewing
+// it before it fades, for at most ten minutes.
+func (a *App) keepTyping(ctx context.Context, exploration string, show func(context.Context) error) {
+	deadline := time.Now().Add(10 * time.Minute)
+	for time.Now().Before(deadline) {
+		if e, err := a.Store.Exploration(ctx, exploration); err != nil || e.State != store.ExplorationRunning {
+			return
+		}
+		tctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err := show(tctx)
+		cancel()
+		if err != nil {
+			return
+		}
+		select {
+		case <-time.After(a.typingEvery()):
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// typingEvery is how often "typing…" is renewed; tests make it quick.
+func (a *App) typingEvery() time.Duration {
+	if a.TypingEvery > 0 {
+		return a.TypingEvery
+	}
+	return 4 * time.Second
+}
+
+func channelTitle(via string) string {
+	if name, ok := channelNames[via]; ok {
+		return name
+	}
+	return map[string]string{"whatsapp": "WhatsApp"}[via]
 }
 
 func (h handler) Button(ctx context.Context, action, id string) (string, error) {

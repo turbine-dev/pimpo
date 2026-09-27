@@ -29,6 +29,11 @@ type Link interface {
 	Check(ctx context.Context) error
 }
 
+// Typer is a link that can show "typing…" to a person for a few seconds.
+type Typer interface {
+	Typing(ctx context.Context, to string) error
+}
+
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
 // Keep runs a link again after it fails, waiting longer each time. status
