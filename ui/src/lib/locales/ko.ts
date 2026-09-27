@@ -1163,4 +1163,13 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'doc.fix.cloudOld': '마지막 클라우드 백업이 일주일도 더 지났어요.',
   'doc.fix.routines': '실패 후 멈춘 루틴이 있어요. 다시 실행하거나 에이전트로 다시 만드세요.',
   'doc.fix.budget': '오늘 사용 한도를 다 썼어요. 새 작업은 내일까지 기다려요.',
+  'ms.codexFound': 'ChatGPT 앱에서 찾았고 로그인되어 있어요. ChatGPT 구독을 사용하며, Codex 자체 도구는 꺼 둬요.',
+  'ms.codexNoLogin': '찾았지만 로그인되어 있지 않아요. ChatGPT 앱에서 Codex를 열고 로그인하세요.',
+  'ms.codexMissing': '찾을 수 없어요. ChatGPT 앱에 함께 들어 있어요.',
+  'ms.ollamaEmpty': '{url}에서 실행 중이지만 모델이 없어요. 터미널에서 받으세요: {cmd} (약 2.5GB)',
+  'ms.lmEmpty': '{url}에서 실행 중이지만 불러온 모델이 없어요. LM Studio에서 불러오세요.',
+  'ms.qwenCodeText': '사용량만큼 요금이 드는 DashScope로 Qwen 모델을 써요. 여기서 비용을 세면서 쓰려면 같은 키로 DashScope를 연결하세요.',
+  'ms.connectQwen': 'DashScope 연결',
+  'ms.apps': '찾은 채팅 앱: {list}. 다른 프로그램이 이 앱들의 모델을 쓰게 해 주지 않아요. Pimpo는 함께 제공되는 Codex와 Claude Code, 또는 아래 제공자를 사용해요.',
+  'doc.fix.codex': 'Codex를 찾을 수 없어요. ChatGPT 앱을 설치하거나 설정 › 모델에서 다른 모델을 고르세요.',
 }

@@ -12,7 +12,9 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -38,6 +40,7 @@ var Providers = []Provider{
 	{"openai", "OpenAI", "https://platform.openai.com/api-keys", true, false},
 	{"google", "Google Gemini", "https://aistudio.google.com/apikey", true, false},
 	{"openrouter", "OpenRouter", "https://openrouter.ai/settings/keys", true, false},
+	{"dashscope", "Qwen (Alibaba DashScope)", "https://modelstudio.console.alibabacloud.com/?tab=api#/api", true, false},
 	{"deepseek", "DeepSeek", "https://platform.deepseek.com/api_keys", true, false},
 	{"groq", "Groq", "https://console.groq.com/keys", true, false},
 	{"mistral", "Mistral", "https://console.mistral.ai/api-keys", true, false},
@@ -149,7 +152,8 @@ func (c *Client) get(ctx context.Context, url string, header map[string]string, 
 var ErrKey = errors.New("the provider refused the key")
 
 // orPrefix is how OpenRouter names each provider's models.
-var orPrefix = map[string]string{"anthropic": "anthropic/", "openai": "openai/", "google": "google/", "deepseek": "deepseek/", "mistral": "mistralai/", "xai": "x-ai/"}
+// DashScope serves Qwen and other open models, so any prefix may match.
+var orPrefix = map[string]string{"anthropic": "anthropic/", "openai": "openai/", "google": "google/", "deepseek": "deepseek/", "mistral": "mistralai/", "xai": "x-ai/", "dashscope": ""}
 
 var dated = regexp.MustCompile(`-(\d{8}|\d{4}-\d{2}-\d{2})$`)
 
@@ -273,15 +277,41 @@ type Found struct {
 	ClaudeCode string  `json:"claude_code,omitempty"`
 	Ollama     []Model `json:"ollama"`
 	OllamaURL  string  `json:"ollama_url"`
-	LMStudio   []Model `json:"lmstudio"`
-	LMURL      string  `json:"lmstudio_url"`
+	// OllamaUp and LMUp tell a server with no models from one not running.
+	OllamaUp bool    `json:"ollama_up"`
+	LMStudio []Model `json:"lmstudio"`
+	LMURL    string  `json:"lmstudio_url"`
+	LMUp     bool    `json:"lmstudio_up"`
+	// Codex is the Codex CLI (in the ChatGPT app, or installed); CodexLogin
+	// says a ChatGPT login is saved for it.
+	Codex      string `json:"codex,omitempty"`
+	CodexLogin bool   `json:"codex_login"`
+	// QwenCode is the Qwen Code CLI; Apps are chat apps found, which offer
+	// no way for other programs to use their models.
+	QwenCode string   `json:"qwen_code,omitempty"`
+	Apps     []string `json:"apps"`
 }
 
 // Detect looks for the Claude Code CLI and for Ollama and LM Studio
 // answering at their addresses, quickly: a server that is not running is
 // just absent.
 func (c *Client) Detect(ctx context.Context, ollamaURL, lmURL string) Found {
-	f := Found{Ollama: []Model{}, LMStudio: []Model{}, OllamaURL: ollamaURL, LMURL: lmURL}
+	f := Found{Ollama: []Model{}, LMStudio: []Model{}, OllamaURL: ollamaURL, LMURL: lmURL, Apps: []string{}}
+	f.Codex = llm.CodexBinary()
+	if home, err := os.UserHomeDir(); err == nil {
+		_, err := os.Stat(filepath.Join(home, ".codex", "auth.json"))
+		f.CodexLogin = f.Codex != "" && err == nil
+		for _, app := range []struct{ name, path string }{{"ChatGPT", "/Applications/ChatGPT.app"}, {"Qwen", "/Applications/Qwen.app"}, {"Claude", "/Applications/Claude.app"}} {
+			if _, err := os.Stat(app.path); err == nil {
+				f.Apps = append(f.Apps, app.name)
+			} else if _, err := os.Stat(filepath.Join(home, strings.TrimPrefix(app.path, "/"))); err == nil {
+				f.Apps = append(f.Apps, app.name)
+			}
+		}
+	}
+	if p, err := exec.LookPath("qwen"); err == nil {
+		f.QwenCode = p
+	}
 	if f.OllamaURL == "" {
 		f.OllamaURL = strings.TrimSuffix(llm.Bases["ollama"], "/v1")
 	}
@@ -302,19 +332,20 @@ func (c *Client) Detect(ctx context.Context, ollamaURL, lmURL string) Found {
 			}
 		}
 	}()
-	probe := func(provider, base string, into *[]Model) {
+	probe := func(provider, base string, into *[]Model, up *bool) {
 		defer wg.Done()
 		if !reachable(base) {
 			return
 		}
+		*up = true
 		ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 		defer cancel()
 		if ms, err := c.List(ctx, Endpoint{Provider: provider, Base: strings.TrimRight(base, "/") + "/v1"}); err == nil {
 			*into = ms
 		}
 	}
-	go probe("ollama", f.OllamaURL, &f.Ollama)
-	go probe("lmstudio", f.LMURL, &f.LMStudio)
+	go probe("ollama", f.OllamaURL, &f.Ollama, &f.OllamaUp)
+	go probe("lmstudio", f.LMURL, &f.LMStudio, &f.LMUp)
 	wg.Wait()
 	return f
 }

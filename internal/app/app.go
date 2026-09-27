@@ -539,9 +539,16 @@ func (c claude) Generate(ctx context.Context, r llm.Request) (llm.Response, erro
 			}
 			return api.Generate(ctx, r)
 		}
+		if isCodex(model) {
+			return llm.CodexCLI{}.Generate(ctx, r)
+		}
 		return llm.ClaudeCLI{}.Generate(ctx, r)
 	})
 }
+
+// isCodex is the Codex CLI with the owner's ChatGPT login: "codex", or
+// "codex:<model>" for a model the account offers.
+func isCodex(model string) bool { return model == "codex" || strings.HasPrefix(model, "codex:") }
 
 func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
 	if r.Model == "" {
@@ -554,6 +561,9 @@ func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, erro
 				return llm.Response{}, err
 			}
 			return api.Run(ctx, r)
+		}
+		if isCodex(model) {
+			return llm.CodexCLI{}.Run(ctx, r)
 		}
 		return llm.ClaudeCLI{}.Run(ctx, r)
 	})

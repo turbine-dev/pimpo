@@ -1163,4 +1163,13 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'doc.fix.cloudOld': '上一次云备份已超过一周。',
   'doc.fix.routines': '有例程在失败后停止了。请重新运行，或让智能体重新制作。',
   'doc.fix.budget': '今天的花费上限已用完：新任务将等到明天。',
+  'ms.codexFound': '在 ChatGPT 应用中找到，已登录。使用你的 ChatGPT 订阅；Codex 自带的工具保持关闭。',
+  'ms.codexNoLogin': '已找到，但未登录。在 ChatGPT 应用中打开 Codex 并登录。',
+  'ms.codexMissing': '未找到。它随 ChatGPT 应用提供。',
+  'ms.ollamaEmpty': '正在 {url} 运行，但没有任何模型。在终端下载一个：{cmd}（约 2.5 GB）。',
+  'ms.lmEmpty': '正在 {url} 运行，未加载模型。请在 LM Studio 中加载一个。',
+  'ms.qwenCodeText': '通过按量计费的 DashScope 使用 Qwen 模型。要在这里使用并计算费用，请用同一个密钥连接 DashScope。',
+  'ms.connectQwen': '连接 DashScope',
+  'ms.apps': '找到的聊天应用：{list}。它们不允许其他程序使用其模型；Pimpo 使用随附的 Codex 和 Claude Code，或下面的提供商。',
+  'doc.fix.codex': '未找到 Codex。请安装 ChatGPT 应用，或在 设置 › 模型 中选择其他模型。',
 }

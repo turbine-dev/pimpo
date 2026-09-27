@@ -161,7 +161,7 @@ export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
 export type Provider = { id: string; name: string; key_url?: string; needs_key: boolean; local?: boolean }
 export type CatalogModel = { id: string; name: string; price_in: number; price_out: number; priced: boolean; context?: number; free?: boolean }
-export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: string; lmstudio: CatalogModel[]; lmstudio_url: string }
+export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: string; ollama_up?: boolean; lmstudio: CatalogModel[]; lmstudio_url: string; lmstudio_up?: boolean; codex?: string; codex_login?: boolean; qwen_code?: string; apps?: string[] }
 export type ModelTest = { ok: boolean; text?: string; cost_usd?: number; ms?: number; error?: string; problem?: string }
 
 export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: string; approved?: string }; undoable: boolean; undo_until?: string; undone: boolean }
