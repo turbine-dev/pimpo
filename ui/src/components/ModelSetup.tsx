@@ -1,12 +1,12 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, ChevronRight, Cpu, ExternalLink, HardDrive, Loader2, Plus, Search, Trash2, X } from 'lucide-react'
+import { Check, ChevronRight, Cpu, ExternalLink, HardDrive, Loader2, Plus, Search, Sparkles, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { api, type CatalogModel, type Job, type ModelOption, type ModelTest, type Provider, type Settings } from '../lib/api'
 import { cn } from '../lib/cn'
 import { usd } from '../lib/format'
 import { fill, useT, type TKey } from '../lib/i18n'
-import { Button, Card } from './ui'
+import { Button, Card, Switch } from './ui'
 
 const field = 'h-9 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
 const claudeCode = ['sonnet', 'opus', 'haiku']
@@ -19,6 +19,16 @@ const jobs: { job: Job; key: 'explore_model' | 'compile_model' | 'judge_model'; 
 export const label = (id: string) => (claudeCode.includes(id) ? `Claude Code · ${id}` : id === 'codex' ? 'Codex · ChatGPT' : id)
 const price = (t: ReturnType<typeof useT>, m: { price_in: number; price_out: number; free?: boolean }) =>
   m.free || (m.price_in === 0 && m.price_out === 0) ? t('models.free') : t('models.price', { in: m.price_in, out: m.price_out })
+
+// useModelOptions lists the models the owner can choose from: Claude Code
+// when installed, Codex when signed in, and their own tested models.
+export function useModelOptions() {
+  const s = useQuery({ queryKey: ['settings'], queryFn: api.settings })
+  const info = useQuery({ queryKey: ['models'], queryFn: api.models })
+  const found = useQuery({ queryKey: ['models', 'detect'], queryFn: api.detectModels, staleTime: 60_000 })
+  const options = [...(found.data?.claude_code || info.data?.claude_code ? claudeCode : []), ...(found.data?.codex_login ? ['codex'] : []), ...(s.data?.models ?? []).map((m) => m.id)]
+  return { options, auto: info.data?.auto, settings: s.data }
+}
 
 // useSettings saves each change at once, on top of the latest saved settings.
 function useSettings() {
@@ -91,6 +101,8 @@ export function ModelSetup() {
         </div>
         {save.error && <p className="mt-3 text-[12.5px] text-danger">{save.error.message}</p>}
       </Card>
+
+      <AutoChoice s={s} options={options} save={save.mutate} />
 
       <Card className="p-5">
         <div className="mb-1 flex items-center gap-2 text-[15px] font-medium"><HardDrive size={16} /> {t('ms.here')}</div>
@@ -170,6 +182,48 @@ export function ModelSetup() {
       {mine.length > 0 && <Mine s={s} save={save.mutate} />}
       {open && <Picker provider={open.provider} local={open.local} onClose={() => setOpen(null)} save={save.mutate} s={s} />}
     </div>
+  )
+}
+
+// AutoChoice is how Pimpo picks a model for each chat request: quick ones
+// go to a light model, heavy ones to a strong one, the rest stay on the
+// tasks model.
+function AutoChoice({ s, options, save }: { s: Settings; options: string[]; save: (c: (s: Settings) => Settings) => void }) {
+  const t = useT()
+  const qc = useQueryClient()
+  const info = useQuery({ queryKey: ['models'], queryFn: api.models })
+  const auto = info.data?.auto
+  const on = !s.auto_off
+  const change = (c: (s: Settings) => Settings) => { save(c); setTimeout(() => qc.invalidateQueries({ queryKey: ['models'] }), 300) }
+  const pick = (key: 'auto_light' | 'auto_strong', derived: string | undefined, l: TKey, text: TKey) => (
+    <div className="grid gap-2 sm:grid-cols-[1fr_1.4fr] sm:items-start">
+      <div>
+        <div className="text-[13.5px] font-medium">{t(l)}</div>
+        <div className="text-[12px] text-ink-3">{t(text)}</div>
+      </div>
+      <select className={cn(field, 'w-full')} value={s[key] ?? ''} aria-label={t(l)} onChange={(e) => change((x) => ({ ...x, [key]: e.target.value }))}>
+        <option value="">{derived ? t('ms.autoDerived', { model: label(derived) }) : t('ms.autoNone')}</option>
+        {options.filter((o) => o !== s.explore_model).map((o) => <option key={o} value={o}>{label(o)}</option>)}
+      </select>
+    </div>
+  )
+  return (
+    <Card className="p-5">
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center gap-2 text-[15px] font-medium"><Sparkles size={16} /> {t('ms.auto')}</div>
+          <p className="text-[13px] text-ink-3">{t('ms.autoText', { model: label(s.explore_model) })}</p>
+        </div>
+        <Switch on={on} label={t('ms.auto')} onChange={() => change((x) => ({ ...x, auto_off: on }))} className="mt-0.5" />
+      </div>
+      {on && (
+        <div className="mt-4 space-y-4">
+          {pick('auto_light', s.auto_light ? undefined : auto?.light, 'ms.autoLight', 'ms.autoLightText')}
+          {pick('auto_strong', s.auto_strong ? undefined : auto?.strong, 'ms.autoStrong', 'ms.autoStrongText')}
+          <p className="text-[12px] text-ink-3">{t(auto?.weigher === 'jev' ? 'ms.autoByJev' : 'ms.autoByRules')} {t('ms.autoBudget')}</p>
+        </div>
+      )}
+    </Card>
   )
 }
 

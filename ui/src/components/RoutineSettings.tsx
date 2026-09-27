@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Clock, MapPin, Search, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { Check, Clock, Cpu, MapPin, Search, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { capabilityLabel } from './RoutineCard'
@@ -7,6 +7,7 @@ import { api, type Place, type RoutineParam, type RoutineSummary, type Watch } f
 import { cn } from '../lib/cn'
 import { cronText, when } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
+import { label, useModelOptions } from './ModelSetup'
 import { Button, Card } from './ui'
 
 const field = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -60,10 +61,13 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
   useEffect(() => { setSched(parseCron(s.schedule)); setValues(s.values ?? {}) }, [s.schedule, s.values])
   const [every, setEvery] = useState(s.watch?.every || '10m')
   useEffect(() => { setEvery(s.watch?.every || '10m') }, [s.watch?.every])
+  const [model, setModel] = useState(s.model ?? '')
+  useEffect(() => { setModel(s.model ?? '') }, [s.model])
+  const models = useModelOptions()
   const cron = s.watch && !s.schedule ? '' : toCron(sched)
-  const dirty = cron !== s.schedule || JSON.stringify(values) !== JSON.stringify(s.values ?? {}) || (!!s.watch && every !== (s.watch.every || '10m'))
+  const dirty = cron !== s.schedule || JSON.stringify(values) !== JSON.stringify(s.values ?? {}) || (!!s.watch && every !== (s.watch.every || '10m')) || model !== (s.model ?? '')
   const save = useMutation({
-    mutationFn: () => api.saveRoutineSettings(s.id, cron, values, s.watch ? every : ''),
+    mutationFn: () => api.saveRoutineSettings(s.id, cron, values, s.watch ? every : '', model),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['routine', s.id] }); qc.invalidateQueries({ queryKey: ['routines'] }) },
   })
 
@@ -86,7 +90,17 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
         {params.map((p) => (
           <Field key={p.name} p={p} value={values[p.name]} onChange={(v) => setValues({ ...values, [p.name]: v })} />
         ))}
-        {params.length === 0 && (
+        {s.thinks && (
+          <label className="block">
+            <span className="mb-1.5 flex items-center gap-1.5 text-[13px] font-medium text-ink-2"><Cpu size={14} /> {t('rs.model')}</span>
+            <select value={model} onChange={(e) => setModel(e.target.value)} className={input} aria-label={t('rs.model')}>
+              <option value="">{t('rs.modelDefault', { model: label(models.settings?.judge_model || 'haiku') })}</option>
+              {[...(model && !models.options.includes(model) ? [model] : []), ...models.options].map((o) => <option key={o} value={o}>{label(o)}</option>)}
+            </select>
+            <span className="mt-1 block text-[12px] text-ink-3">{t('rs.modelText')}</span>
+          </label>
+        )}
+        {params.length === 0 && !s.thinks && (
           <p className="text-[13px] text-ink-3">
             {t('rs.onlySchedule')}{!s.gallery_update && onRedo && <> {t('rs.makeAdjustable')} <button type="button" className="underline" onClick={onRedo}>{t('rs.redo')}</button></>}
           </p>

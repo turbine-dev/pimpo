@@ -300,6 +300,22 @@ func (h *Host) addCost(ctx context.Context, usd float64, source string) {
 // AddCost books a model call made on this run's behalf.
 func (h *Host) AddCost(ctx context.Context, usd float64, source string) { h.addCost(ctx, usd, source) }
 
+type modelKey struct{}
+
+// WithModel runs a routine's judgments and texts on a model of its own.
+func WithModel(ctx context.Context, model string) context.Context {
+	if model == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, modelKey{}, model)
+}
+
+// ModelOf is the routine's own model for judgments and texts, or "".
+func ModelOf(ctx context.Context) string {
+	m, _ := ctx.Value(modelKey{}).(string)
+	return m
+}
+
 func (h *Host) Calls() []trace.Call {
 	h.mu.Lock()
 	defer h.mu.Unlock()

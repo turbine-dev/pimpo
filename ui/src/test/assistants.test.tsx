@@ -36,6 +36,6 @@ describe('Assistants', () => {
     wrap(<Routes><Route path="/" element={<Chat />} /><Route path="/chat/:id" element={<Chat />} /></Routes>)
     await userEvent.click(await screen.findByRole('radio', { name: /Finanças/ }))
     await userEvent.type(screen.getByLabelText('Escreva uma mensagem…'), 'Quais contas vencem?{Enter}')
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'Quais contas vencem?', assistant: 'financas' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'Quais contas vencem?', assistant: 'financas', model: 'auto' }))
   })
 })

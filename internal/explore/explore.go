@@ -119,6 +119,9 @@ type Options struct {
 	Quiet bool
 	// Assistant, when set, gives the agent a role and limits its tools.
 	Assistant *Assistant
+	// Model overrides the model for this request (chosen by the owner or
+	// by the automatic choice).
+	Model string
 }
 
 // Assistant is a named role for the agent with the capabilities it may use.
@@ -225,7 +228,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		System:     explorerPrompt(now) + s.knownFacts(e.Person) + role,
 		Prompt:     prompt,
 		MCPURL:     fmt.Sprintf("%s/mcp/explore/%s?key=%s", s.BaseURL, e.ID, key),
-		Model:      s.Model,
+		Model:      firstNonEmpty(o.Model, s.Model),
 		MaxCostUSD: s.maxCost(ctx),
 		MaxTurns:   40,
 	})
@@ -545,4 +548,13 @@ Do the owner's request once, right now, using ONLY the pimpo tools. This run is 
 - Every subjective decision MUST be recorded with decide, one call per item, yes or no, BEFORE you act on it: is this email important? is it a promotion or newsletter? does it need a reply? Record the items you leave out too (yes=false). The automatic routine can only repeat decisions you recorded; unrecorded ones are lost. Objective checks (dates, amounts, senders the owner named) need no decide.
 - If something cannot be done with these tools, say so plainly.
 Finish with a short summary in the owner's language of what you did and what the routine will do each time.`, now.Format("Monday, 2006-01-02 15:04 MST"))
+}
+
+func firstNonEmpty(vs ...string) string {
+	for _, v := range vs {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }

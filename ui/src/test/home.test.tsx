@@ -29,7 +29,7 @@ describe('Home', () => {
     expect(screen.getByText('a seguir')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Agenda de amanhã/ })).toHaveAttribute('href', '/chat/c1')
     await userEvent.type(screen.getByLabelText('Escreva uma mensagem…'), 'o que tenho amanhã?{Enter}')
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'o que tenho amanhã?', assistant: '' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'o que tenho amanhã?', assistant: '', model: 'auto' }))
     expect(await screen.findByText('conversa aberta')).toBeInTheDocument()
   })
 })

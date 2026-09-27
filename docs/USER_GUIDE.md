@@ -154,6 +154,12 @@ In **Ocupação do sistema** (the Pimpo menu, or ⌘⇧D), **Verificar tudo** te
 - **Test and use:** each model answers one real word (capped at one cent) before it is added, with the time it took or a plain reason when it fails (key refused, out of credits, usage limit, model not available, service down).
 - **Fallbacks:** each job can have up to four models that take over, in order, when its model fails for a provider reason (for example Claude Code's usage limit). You hear once when a job falls back and once when its model answers again. Your own spending limit is never worked around this way.
 
+**Choosing the model in a chat.** The pill under the message box picks the model for that conversation: **Automático** (the default) or any model above. Under each answer you see which model replied and why, for example "Claude Code · haiku · automático: pedido simples".
+
+- **Automatic choice** (Ajustes › Modelos › Escolha automática nas conversas): each request is weighed before it is answered. Quick ones (a fact, one calendar item, a short reply) go to a light model, heavy ones (many steps across services, a long or delicate text) to a strong one, and everything else stays on the tasks model. Jev weighs the request when it is set up, and only a clear verdict (60% or more) moves it; otherwise a few simple rules do, and any doubt stays on the tasks model. With Claude Code the light model is haiku and the strong one opus; with provider models, the cheapest and the dearest of your list. You can pick them yourself, or turn the automatic choice off. After 80% of the daily spending limit the strong model is no longer used.
+- **Channels:** on Telegram, WhatsApp and the others, send `/modelo` to see the model in use, `/modelo opus` (or any model of your list) to fix one, and `/modelo auto` to go back to the automatic choice.
+- **Routines** run without a model, except for their yes-or-no questions and short texts. A routine that has them shows **Modelo dos julgamentos e textos** in its settings; leave it on the default (the model for judgments) or pick another for that routine alone.
+
 Rules and approvals do not change with the model: every tool call still goes through Pimpo. With Anthropic, the instructions, tool list and conversation so far are kept in the provider's prompt cache between turns, so a long task pays about a tenth for what it already sent; the cost shown includes the cache's own prices.
 
 ## Costs

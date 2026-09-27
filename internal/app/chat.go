@@ -65,6 +65,8 @@ type chatTurn struct {
 	CreatedAt time.Time    `json:"created_at"`
 	Actions   []chatAction `json:"actions"`
 	Done      *chatDone    `json:"done,omitempty"`
+	// Model is which model answered and why it was chosen.
+	Model *routed `json:"model,omitempty"`
 }
 
 func chatID() string {
@@ -102,7 +104,7 @@ func (a *App) turn(ctx context.Context, id string) (chatTurn, error) {
 	if err != nil {
 		return chatTurn{}, err
 	}
-	t := chatTurn{ID: e.ID, Request: e.Request, State: e.State, Summary: e.Summary, Error: e.Error, CostUSD: e.CostUSD, Routine: e.Routine, CreatedAt: e.CreatedAt, Actions: rehearsed(ctx, e)}
+	t := chatTurn{ID: e.ID, Request: e.Request, State: e.State, Summary: e.Summary, Error: e.Error, CostUSD: e.CostUSD, Routine: e.Routine, CreatedAt: e.CreatedAt, Actions: rehearsed(ctx, e), Model: a.routedOf(ctx, e.ID)}
 	if raw, _ := a.Events.Get(ctx, doneKey(id)); raw != "" {
 		var d chatDone
 		if json.Unmarshal([]byte(raw), &d) == nil {
@@ -150,12 +152,18 @@ func (a *App) getChat(w http.ResponseWriter, r *http.Request) {
 			turns = append(turns, t)
 		}
 	}
-	server.WriteJSON(w, 200, map[string]any{"chat": c, "turns": turns})
+	model := a.chatModel(r.Context(), c.ID)
+	if model == "" {
+		model = Auto
+	}
+	server.WriteJSON(w, 200, map[string]any{"chat": c, "turns": turns, "model": model})
 }
 
 type chatMessageBody struct {
 	Text      string `json:"text"`
 	Assistant string `json:"assistant"`
+	// Model is the conversation's model: "auto", a model id, or "" to keep it.
+	Model string `json:"model"`
 }
 
 func readMessage(r *http.Request) (chatMessageBody, error) {
@@ -208,12 +216,21 @@ func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	if !a.usableModel(ctx, m.Model) {
+		a.Store.DeleteChat(ctx, c.ID)
+		server.WriteError(w, server.StatusError{Status: 400, Msg: m.Model + " is not among your models"})
+		return
+	}
+	a.setChatModel(ctx, c.ID, m.Model)
+	pick := a.routeModel(ctx, text, "", m.Model)
+	o.Model = pick.Model
 	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), text, actor(ctx), o)
 	if err != nil {
 		a.Store.DeleteChat(ctx, c.ID)
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
+	a.noteRouted(ctx, exp, pick)
 	a.Store.AddTurn(ctx, c.ID, exp)
 	server.WriteJSON(w, 201, map[string]string{"chat": c.ID, "turn": exp})
 }
@@ -262,16 +279,27 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	o, err := a.chatOptions(ctx, c.Assistant, a.history(ctx, ids))
+	history := a.history(ctx, ids)
+	o, err := a.chatOptions(ctx, c.Assistant, history)
 	if err != nil {
 		server.WriteError(w, err)
 		return
 	}
+	if m.Model != "" {
+		if !a.usableModel(ctx, m.Model) {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: m.Model + " is not among your models"})
+			return
+		}
+		a.setChatModel(ctx, c.ID, m.Model)
+	}
+	pick := a.routeModel(ctx, m.Text, history, a.chatModel(ctx, c.ID))
+	o.Model = pick.Model
 	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), m.Text, actor(ctx), o)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
+	a.noteRouted(ctx, exp, pick)
 	a.Store.AddTurn(ctx, c.ID, exp)
 	server.WriteJSON(w, 201, map[string]string{"chat": c.ID, "turn": exp})
 }

@@ -322,6 +322,7 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 		Schedule   string         `json:"schedule"`
 		Params     map[string]any `json:"params"`
 		WatchEvery string         `json:"watch_every"`
+		Model      string         `json:"model"`
 	}
 	if err := server.Decode(r, &req); err != nil {
 		server.WriteError(w, err)
@@ -364,7 +365,14 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	settings := store.Settings{Schedule: req.Schedule, Params: req.Params, WatchEvery: req.WatchEvery}
+	if req.Model == Auto {
+		req.Model = ""
+	}
+	if !a.usableModel(ctx, req.Model) {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: req.Model + " is not among your models"})
+		return
+	}
+	settings := store.Settings{Schedule: req.Schedule, Params: req.Params, WatchEvery: req.WatchEvery, Model: req.Model}
 	if err := a.Store.SetRoutineSettings(ctx, rt.ID, settings); err != nil {
 		server.WriteError(w, err)
 		return

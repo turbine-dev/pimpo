@@ -134,6 +134,9 @@ type Settings struct {
 	Params   map[string]any `json:"params,omitempty"`
 	// WatchEvery overrides how often a watching routine checks.
 	WatchEvery string `json:"watch_every,omitempty"`
+	// Model is the model for this routine's judgments and texts; "" uses
+	// the one set for judgments.
+	Model string `json:"model,omitempty"`
 }
 
 // Watch is what the routine waits for, with the owner's interval, or nil.

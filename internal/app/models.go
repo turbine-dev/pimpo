@@ -33,7 +33,13 @@ func (a *App) modelRoutes() {
 			v, _ := a.secret(r.Context(), "model."+p+".key")
 			keys[p] = v != ""
 		}
-		server.WriteJSON(w, 200, map[string]any{"keys": keys, "claude_code": claudeInstalled(), "providers": models.Providers})
+		light, strong := a.autoModels(r.Context())
+		weigher := "rules"
+		if _, ok := tierChooser(a); ok {
+			weigher = "jev"
+		}
+		auto := map[string]string{"light": light, "strong": strong, "base": a.Settings(r.Context()).ExploreModel, "weigher": weigher}
+		server.WriteJSON(w, 200, map[string]any{"keys": keys, "claude_code": claudeInstalled(), "providers": models.Providers, "auto": auto})
 	})
 	// detect finds Claude Code and local model servers on this computer.
 	a.Server.Handle("GET /api/models/detect", func(w http.ResponseWriter, r *http.Request) {

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowUp, Check, Loader2, Mic, Repeat, Square, Trash2, Volume2, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { ModelPicker, useRoutedText } from '../components/ModelPicker'
 import { Logo } from '../components/Shell'
 import { Button, RiskBadge } from '../components/ui'
 import { api, type ChatTurn } from '../lib/api'
@@ -28,6 +29,10 @@ export function Chat() {
   })
   const assistants = useQuery({ queryKey: ['assistants'], queryFn: api.assistants })
   const [who, setWho] = useState('')
+  const [model, setModel] = useState('auto')
+  const [picked, setPicked] = useState(false)
+  useEffect(() => { if (!picked) setModel(chat.data?.model ?? 'auto') }, [chat.data?.model, picked])
+  useEffect(() => { setPicked(false) }, [id])
   const emojiOf = (a?: string) => assistants.data?.find((x) => x.id === a)?.emoji
   const current = assistants.data?.find((x) => x.id === chat.data?.chat.assistant)
   const turns = chat.data?.turns ?? []
@@ -36,8 +41,8 @@ export function Chat() {
   const location = useLocation()
   const [readAloud, setReadAloud] = useState<string>((location.state as { readAloud?: string } | null)?.readAloud ?? '')
   const send = useMutation({
-    mutationFn: ({ text }: { text: string; spoken: boolean }) => (id ? api.sendChat(id, text) : api.newChat(text, who)),
-    onSuccess: (r, v) => { if (v.spoken) setReadAloud(r.turn); if (!id) nav(`/chat/${r.chat}`); refresh() },
+    mutationFn: ({ text }: { text: string; spoken: boolean }) => (id ? api.sendChat(id, text, picked ? model : '') : api.newChat(text, who, model)),
+    onSuccess: (r, v) => { if (v.spoken) setReadAloud(r.turn); setPicked(false); if (!id) nav(`/chat/${r.chat}`); refresh() },
   })
   useEffect(() => {
     const done = turns.find((x) => x.id === readAloud && x.state !== 'running')
@@ -93,7 +98,7 @@ export function Chat() {
         )}
       </div>
       {send.error && <p className="mb-2 text-center text-[13px] text-danger">{send.error.message}</p>}
-      <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} />
+      <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} model={model} onModel={(m) => { setModel(m); setPicked(true) }} />
     </div>
   )
 }
@@ -129,7 +134,7 @@ export function Suggestions({ onPick, disabled, className }: { onPick: (text: st
   )
 }
 
-export function Composer({ disabled, onSend }: { disabled: boolean; onSend: (text: string, spoken: boolean) => void }) {
+export function Composer({ disabled, onSend, model, onModel }: { disabled: boolean; onSend: (text: string, spoken: boolean) => void; model?: string; onModel?: (model: string) => void }) {
   const t = useT()
   const [text, setText] = useState('')
   const [spoken, setSpoken] = useState(false)
@@ -155,21 +160,25 @@ export function Composer({ disabled, onSend }: { disabled: boolean; onSend: (tex
     }
   }
   return (
-    <form className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-2xl border border-line bg-surface p-2 shadow-[var(--shadow-card)] focus-within:border-accent"
+    <form className="mx-auto w-full max-w-3xl rounded-2xl border border-line bg-surface p-2 shadow-[var(--shadow-card)] focus-within:border-accent"
       onSubmit={(e) => { e.preventDefault(); go() }}>
-      {dictation.supported && (
-        <button type="button" onClick={() => (dictation.listening ? dictation.stop() : dictation.start())} aria-label={t(dictation.listening ? 'voice.stop' : 'voice.speak')}
-          title={dictation.error || undefined}
-          className={cn('grid size-9 shrink-0 place-items-center rounded-xl transition', dictation.listening ? 'animate-pulse-soft bg-danger text-white' : dictation.error ? 'text-danger hover:bg-sunken' : 'text-ink-3 hover:bg-sunken hover:text-ink')}>
-          {dictation.listening ? <Square size={14} /> : <Mic size={16} />}
-        </button>
-      )}
       <textarea value={text} onChange={(e) => { setText(e.target.value); setSpoken(false) }} onKeyDown={key} rows={1} placeholder={t('chat.placeholder')} aria-label={t('chat.placeholder')}
-        className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[14px] outline-none [field-sizing:content]" />
-      <button type="submit" aria-label={t('chat.send')} disabled={!text.trim() || disabled}
-        className="grid size-9 shrink-0 place-items-center rounded-xl bg-ink text-bg transition disabled:opacity-30">
-        {disabled ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
-      </button>
+        className="block max-h-40 min-h-10 w-full resize-none bg-transparent px-2 py-2 text-[14px] outline-none [field-sizing:content]" />
+      <div className="flex items-center gap-1">
+        {dictation.supported && (
+          <button type="button" onClick={() => (dictation.listening ? dictation.stop() : dictation.start())} aria-label={t(dictation.listening ? 'voice.stop' : 'voice.speak')}
+            title={dictation.error || undefined}
+            className={cn('grid size-8 shrink-0 place-items-center rounded-xl transition', dictation.listening ? 'animate-pulse-soft bg-danger text-white' : dictation.error ? 'text-danger hover:bg-sunken' : 'text-ink-3 hover:bg-sunken hover:text-ink')}>
+            {dictation.listening ? <Square size={14} /> : <Mic size={16} />}
+          </button>
+        )}
+        {onModel && <ModelPicker value={model ?? 'auto'} onChange={onModel} />}
+        <div className="flex-1" />
+        <button type="submit" aria-label={t('chat.send')} disabled={!text.trim() || disabled}
+          className="grid size-8 shrink-0 place-items-center rounded-xl bg-ink text-bg transition disabled:opacity-30">
+          {disabled ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={16} />}
+        </button>
+      </div>
     </form>
   )
 }
@@ -180,6 +189,7 @@ function Turn({ chat, turn: x, onChange }: { chat: string; turn: ChatTurn; onCha
   const act = useMutation({ mutationFn: () => api.chatDo(chat, x.id), onSuccess: onChange })
   const compile = useMutation({ mutationFn: () => api.compile(x.id), onSuccess: () => { onChange(); qc.invalidateQueries({ queryKey: ['routines'] }) } })
   const failed = x.done?.results.filter((r) => !r.ok) ?? []
+  const routed = useRoutedText()(x.model)
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
@@ -236,6 +246,7 @@ function Turn({ chat, turn: x, onChange }: { chat: string; turn: ChatTurn; onCha
                 <Button size="sm" variant="ghost" onClick={() => speak(x.summary!)} aria-label={t('voice.listen')}><Volume2 size={13} /> {t('voice.listen')}</Button>
               )}
               <span>{t('chat.cost', { cost: usd(x.cost_usd) })}</span>
+              {routed && <span title={x.model?.by === 'jev' ? t('mp.weighedJev') : x.model?.by === 'rules' ? t('mp.weighedRules') : undefined}>· {routed}</span>}
               {compile.error && <span className="text-danger">{compile.error.message}</span>}
             </div>
           )}
