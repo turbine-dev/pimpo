@@ -57,7 +57,7 @@ func (c audioCap) Call(ctx context.Context, _, _ string, args any) (any, error) 
 	if in.Language == "" {
 		in.Language = "pt-BR"
 	}
-	audio, secs, err := speech.Speak(ctx, spoken(in.Text), in.Language)
+	audio, secs, voice, err := c.a.speak(ctx, spoken(in.Text), in.Language)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,34 @@ func (c audioCap) Call(ctx context.Context, _, _ string, args any) (any, error) 
 	// The inbox keeps every recording, with a player.
 	c.a.Events.Append(ctx, owner.EventNotice, "system", map[string]any{"text": "🎧 " + in.Title, "audio": id, "to": people.Norm(people.From(ctx)), "kind": ""})
 	delivered = append(delivered, "inbox")
-	return map[string]any{"ok": true, "delivered": delivered, "failed": failed, "seconds": int(secs)}, nil
+	return map[string]any{"ok": true, "delivered": delivered, "failed": failed, "seconds": int(secs), "voice": voice}, nil
+}
+
+// speak reads with a downloaded voice for the language when there is one,
+// or with the system's; it says which voice read.
+func (a *App) speak(ctx context.Context, text, language string) ([]byte, float64, string, error) {
+	if m := a.local(); a.Home != "" {
+		if v, ok := m.VoiceFor(language); ok {
+			if r := []rune(text); len(r) > speech.MaxText {
+				text = string(r[:speech.MaxText])
+			}
+			ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+			defer cancel()
+			dir, err := os.MkdirTemp("", "pimpo-voice-")
+			if err != nil {
+				return nil, 0, "", err
+			}
+			defer os.RemoveAll(dir)
+			wav := filepath.Join(dir, "speech.wav")
+			if err := m.Synthesize(ctx, v, language, text, wav); err != nil {
+				return nil, 0, "", err
+			}
+			b, secs, err := speech.Encode(ctx, wav)
+			return b, secs, v.Name, err
+		}
+	}
+	b, secs, err := speech.Speak(ctx, text, language)
+	return b, secs, "system", err
 }
 
 var markdown = strings.NewReplacer("**", "", "__", "", "##", "", "#", "", "`", "", "* ", "", "- ", "")

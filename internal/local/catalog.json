@@ -1,0 +1,272 @@
+{
+  "about": "Models Pimpo can download to run on this computer. Every file is checked against its sha256 before it is unpacked. A catalog.json in the local models folder (~/.pimpo/local) replaces this one.",
+  "engines": {
+    "darwin/arm64": {
+      "id": "sherpa-onnx",
+      "kind": "engine",
+      "name": "sherpa-onnx 1.13.8",
+      "about": "reads the voices",
+      "size": 20314448,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-v1.13.8-osx-arm64-shared.tar.bz2",
+      "sha256": "b10e5c7e2c30ea03de9c442655d14860d9edc475c6251d58a8f5f06e913a1d56",
+      "folder": "sherpa-onnx-v1.13.8-osx-arm64-shared"
+    },
+    "darwin/amd64": {
+      "id": "sherpa-onnx",
+      "kind": "engine",
+      "name": "sherpa-onnx 1.13.8",
+      "about": "reads the voices",
+      "size": 22846038,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-v1.13.8-osx-x64-shared.tar.bz2",
+      "sha256": "54aad64acee9d2d596535a6080d6f22602a720af5460e1d50461b1e1b06bee40",
+      "folder": "sherpa-onnx-v1.13.8-osx-x64-shared"
+    }
+  },
+  "voices": [
+    {
+      "id": "kokoro-multi",
+      "kind": "voice",
+      "name": "Kokoro",
+      "about": "Kokoro v1.0",
+      "languages": [
+        "pt-BR",
+        "en-US",
+        "en-GB",
+        "es-ES",
+        "fr-FR",
+        "it-IT"
+      ],
+      "size": 132303094,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2",
+      "sha256": "4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e",
+      "folder": "kokoro-int8-multi-lang-v1_0",
+      "quality": 3,
+      "voice": {
+        "type": "kokoro",
+        "model": "model.int8.onnx",
+        "speakers": {
+          "pt-BR": 42,
+          "en-US": 3,
+          "en-GB": 21,
+          "es-ES": 28,
+          "fr-FR": 30,
+          "it-IT": 35
+        },
+        "langs": {
+          "pt-BR": "pt-br",
+          "en-US": "en",
+          "en-GB": "en",
+          "es-ES": "es",
+          "fr-FR": "fr",
+          "it-IT": "it"
+        }
+      }
+    },
+    {
+      "id": "piper-pt_BR-faber-medium",
+      "kind": "voice",
+      "name": "Faber",
+      "about": "Piper",
+      "languages": [
+        "pt-BR"
+      ],
+      "size": 67183065,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-pt_BR-faber-medium.tar.bz2",
+      "sha256": "7add3f923ad6bc25ca8a192805fd1a64d1b3893e4611c4a9719545a825039a83",
+      "folder": "vits-piper-pt_BR-faber-medium",
+      "quality": 2,
+      "voice": {
+        "type": "piper",
+        "model": "pt_BR-faber-medium.onnx"
+      }
+    },
+    {
+      "id": "piper-pt_BR-cadu-medium",
+      "kind": "voice",
+      "name": "Cadu",
+      "about": "Piper",
+      "languages": [
+        "pt-BR"
+      ],
+      "size": 67207562,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-pt_BR-cadu-medium.tar.bz2",
+      "sha256": "aba78157d4b89acc17ddef15a70f4b2474f4c189d4de6035002ac7fec9d5d303",
+      "folder": "vits-piper-pt_BR-cadu-medium",
+      "quality": 2,
+      "voice": {
+        "type": "piper",
+        "model": "pt_BR-cadu-medium.onnx"
+      }
+    },
+    {
+      "id": "piper-pt_PT-tugao-medium",
+      "kind": "voice",
+      "name": "Tugão",
+      "about": "Piper",
+      "languages": [
+        "pt-PT"
+      ],
+      "size": 67195014,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-pt_PT-tugao-medium.tar.bz2",
+      "sha256": "6b4f0a7bfc957bef26d6ac0703a8fa1ba659c8ab2df8b294f20206551859070c",
+      "folder": "vits-piper-pt_PT-tugao-medium",
+      "quality": 2,
+      "voice": {
+        "type": "piper",
+        "model": "pt_PT-tugao-medium.onnx"
+      }
+    },
+    {
+      "id": "piper-en_US-lessac-medium",
+      "kind": "voice",
+      "name": "Lessac",
+      "about": "Piper",
+      "languages": [
+        "en-US"
+      ],
+      "size": 67230653,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-en_US-lessac-medium.tar.bz2",
+      "sha256": "9e3febfacf0abf4270172d2958bcec246032b7e88efc2720840cc80c93de334e",
+      "folder": "vits-piper-en_US-lessac-medium",
+      "quality": 2,
+      "voice": {
+        "type": "piper",
+        "model": "en_US-lessac-medium.onnx"
+      }
+    },
+    {
+      "id": "piper-es_ES-davefx-medium",
+      "kind": "voice",
+      "name": "Davefx",
+      "about": "Piper",
+      "languages": [
+        "es-ES"
+      ],
+      "size": 67184952,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-es_ES-davefx-medium.tar.bz2",
+      "sha256": "a3f6beb54a9cb893279f72978a22f807a4d9fc9c7848157b524d5cc7b7f58b22",
+      "folder": "vits-piper-es_ES-davefx-medium",
+      "quality": 2,
+      "voice": {
+        "type": "piper",
+        "model": "es_ES-davefx-medium.onnx"
+      }
+    },
+    {
+      "id": "piper-es_MX-claude-high",
+      "kind": "voice",
+      "name": "Claude",
+      "about": "Piper",
+      "languages": [
+        "es-MX"
+      ],
+      "size": 67207890,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-es_MX-claude-high.tar.bz2",
+      "sha256": "ec33fb689c248fe64810aab564cba97babf0f506672cfd404928d46e751a4721",
+      "folder": "vits-piper-es_MX-claude-high",
+      "quality": 2,
+      "voice": {
+        "type": "piper",
+        "model": "es_MX-claude-high.onnx"
+      }
+    },
+    {
+      "id": "piper-fr_FR-siwis-medium",
+      "kind": "voice",
+      "name": "Siwis",
+      "about": "Piper",
+      "languages": [
+        "fr-FR"
+      ],
+      "size": 67207459,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-fr_FR-siwis-medium.tar.bz2",
+      "sha256": "375909aa30842b3a4efa10b1beb1d761af792960ae6873b4d53889f96c66195b",
+      "folder": "vits-piper-fr_FR-siwis-medium",
+      "quality": 2,
+      "voice": {
+        "type": "piper",
+        "model": "fr_FR-siwis-medium.onnx"
+      }
+    },
+    {
+      "id": "piper-de_DE-thorsten-medium",
+      "kind": "voice",
+      "name": "Thorsten",
+      "about": "Piper",
+      "languages": [
+        "de-DE"
+      ],
+      "size": 67214254,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-de_DE-thorsten-medium.tar.bz2",
+      "sha256": "50487d9c95fdf2191f31d2588569381063ba1591dcd4c7d4bdd30f12b2191714",
+      "folder": "vits-piper-de_DE-thorsten-medium",
+      "quality": 2,
+      "voice": {
+        "type": "piper",
+        "model": "de_DE-thorsten-medium.onnx"
+      }
+    },
+    {
+      "id": "piper-it_IT-paola-medium",
+      "kind": "voice",
+      "name": "Paola",
+      "about": "Piper",
+      "languages": [
+        "it-IT"
+      ],
+      "size": 67221173,
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-it_IT-paola-medium.tar.bz2",
+      "sha256": "7541f75778afa164e44e34baaef63befad7698595df26a95ca944b63ef1a16b4",
+      "folder": "vits-piper-it_IT-paola-medium",
+      "quality": 2,
+      "voice": {
+        "type": "piper",
+        "model": "it_IT-paola-medium.onnx"
+      }
+    }
+  ],
+  "suggestions": [
+    {
+      "model": "qwen3:1.7b",
+      "about": "quick answers and yes/no questions",
+      "size": 1468006400,
+      "min_ram": 4294967296
+    },
+    {
+      "model": "llama3.2:3b",
+      "about": "light, good at following instructions",
+      "size": 2097152000,
+      "min_ram": 8589934592
+    },
+    {
+      "model": "qwen3:4b",
+      "about": "tasks with tools, in many languages",
+      "size": 2726297600,
+      "min_ram": 8589934592
+    },
+    {
+      "model": "gemma3:4b",
+      "about": "writing and summaries",
+      "size": 3460300800,
+      "min_ram": 8589934592
+    },
+    {
+      "model": "qwen3:8b",
+      "about": "better tasks with tools",
+      "size": 5452595200,
+      "min_ram": 17179869184
+    },
+    {
+      "model": "gemma3:12b",
+      "about": "careful writing",
+      "size": 8493465600,
+      "min_ram": 25769803776
+    },
+    {
+      "model": "qwen3:14b",
+      "about": "the strongest that fits 32 GB",
+      "size": 9751756800,
+      "min_ram": 34359738368
+    }
+  ]
+}

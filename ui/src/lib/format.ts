@@ -55,3 +55,10 @@ export function cronText(expr: string) {
   if (/^\d+$/.test(dom) && mon === '*' && dow === '*' && at) return tr('cron.monthly', { dom, at })
   return expr
 }
+
+// size writes a byte count the way people read it.
+export function size(n: number) {
+  if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1).replace('.0', '')} GB`
+  if (n >= 1024 ** 2) return `${Math.round(n / 1024 ** 2)} MB`
+  return `${Math.max(1, Math.round(n / 1024))} KB`
+}

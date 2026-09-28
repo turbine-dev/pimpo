@@ -106,7 +106,7 @@ Pimpo can run on a machine that is always on (a home server, a VPS) while the de
 
 ## Audio
 
-A routine or task can read a text aloud and send it to you as audio (`audio.send`): a podcast of the day's news, a briefing to hear on the way. The voice is your Mac's own, in the language you choose (Portuguese, English, Spanish, French and the other languages macOS has), so the text never leaves the computer; for better voices, add Premium or Enhanced ones in System Settings › Accessibility › Spoken Content and Pimpo picks them. The recording arrives on Telegram with a player; other channels get a note, and **Precisa de você › Áudios recentes** keeps the last ones.
+A routine or task can read a text aloud and send it to you as audio (`audio.send`): a podcast of the day's news, a briefing to hear on the way. The voice is your Mac's own, in the language you choose (Portuguese, English, Spanish, French and the other languages macOS has), so the text never leaves the computer; for better voices, add Premium or Enhanced ones in System Settings › Accessibility › Spoken Content and Pimpo picks them. With a voice downloaded in **Ajustes › Modelos › Baixar modelos** (Kokoro, natural voices in Portuguese, English, Spanish, French and Italian, or a Piper voice per language), Pimpo reads with it instead, still on this computer; **Ouvir** plays a sample in each language. The recording arrives on Telegram with a player; other channels get a note, and **Precisa de você › Áudios recentes** keeps the last ones.
 
 ## Reminders
 
@@ -173,6 +173,15 @@ In **Ocupação do sistema** (the Pimpo menu, or ⌘⇧D), **Verificar tudo** te
 - **Routines** run without a model, except for their yes-or-no questions and short texts. A routine that has them shows **Modelo dos julgamentos e textos** in its settings; leave it on the default (the model for judgments) or pick another for that routine alone, and its thinking level beside it.
 
 Rules and approvals do not change with the model: every tool call still goes through Pimpo. With Anthropic, the instructions, tool list and conversation so far are kept in the provider's prompt cache between turns, so a long task pays about a tenth for what it already sent; the cost shown includes the cache's own prices.
+
+## Downloading models
+
+**Ajustes › Modelos › Baixar modelos** downloads models that run on this computer and shows each download as it happens, with its size, progress and a cancel button:
+
+- **Voices** for reading aloud (the voice engine comes with the first one). Every file comes from a pinned address and is checked against its SHA-256 before it is unpacked, and unpacks only inside its own folder (`~/.pimpo/local`). They are not included in backups; download them again on a new computer.
+- **Language models** through Ollama (which must be installed and open), with suggestions that fit this computer's memory, or any model name. Once downloaded, choose it under **Neste computador › Ollama**.
+
+The list comes from a JSON catalog built into Pimpo (`internal/local/catalog.json`). A `catalog.json` of your own in `~/.pimpo/local` replaces it; every entry needs an https address, its size and its SHA-256.
 
 ## Costs
 

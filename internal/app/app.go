@@ -36,6 +36,7 @@ import (
 	"github.com/denerFernandes/pimpo/internal/host"
 	"github.com/denerFernandes/pimpo/internal/judge"
 	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/local"
 	"github.com/denerFernandes/pimpo/internal/memory"
 	"github.com/denerFernandes/pimpo/internal/oauth"
 	"github.com/denerFernandes/pimpo/internal/ocr"
@@ -164,7 +165,9 @@ type App struct {
 	MailInsecure bool
 	// Router is shared by every run; the demo swaps connectors in it.
 	Router *connector.Router
-	links  map[string]*linkRun
+	// localModels downloads and keeps models that run on this computer.
+	localModels *local.Manager
+	links       map[string]*linkRun
 	// Models finds models for the setup screen; nil uses the shared one.
 	Models *models.Client
 	// TypingEvery renews "typing…" on chat channels; 0 means 4 seconds.
@@ -254,6 +257,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.repoRoutes()
 	a.reminderRoutes()
 	a.mediaRoutes()
+	a.localRoutes()
 	a.doctorRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()
