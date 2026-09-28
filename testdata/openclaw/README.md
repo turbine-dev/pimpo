@@ -4,6 +4,11 @@ Traces for the compiler proof, one per routine that people report running most w
 
     go run ./cmd/proof -dir testdata/openclaw -out docs/proof/openclaw
 
+To try the routines in Pimpo, export the accepted ones and import them paused:
+
+    go run ./cmd/proof -out docs/proof/openclaw -reuse -export /tmp/oc-routines
+    pimpo routines import /tmp/oc-routines
+
 | Trace | Routine | Source |
 |---|---|---|
 | oc-01 | Morning brief: weather, calendar, important mail, Todoist | both; the most mentioned |

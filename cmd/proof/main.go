@@ -21,6 +21,7 @@ import (
 	// join the catalog the compiler sees, as they do in the app.
 	_ "github.com/denerFernandes/pimpo/internal/connector/services"
 	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/denerFernandes/pimpo/internal/repo"
 	"github.com/denerFernandes/pimpo/internal/routine"
 	"github.com/denerFernandes/pimpo/internal/trace"
 )
@@ -43,7 +44,22 @@ func main() {
 	workers := flag.Int("workers", 3, "parallel compilations")
 	only := flag.String("only", "", "run only traces whose id contains one of these, comma-separated")
 	attempts := flag.Int("attempts", 3, "compile attempts, with feedback, as the app makes")
+	export := flag.String("export", "", "also write the accepted routines that pass the holdout to this folder, in the repository layout (pimpo routines import reads it)")
+	reuse := flag.Bool("reuse", false, "compile nothing: export from the results already in -out")
 	flag.Parse()
+	if *reuse {
+		var saved []result
+		b, err := os.ReadFile(filepath.Join(*out, "results.json"))
+		if err == nil {
+			err = json.Unmarshal(b, &saved)
+		}
+		if err != nil || *export == "" {
+			fmt.Fprintln(os.Stderr, "-reuse needs -export and a results.json in -out:", err)
+			os.Exit(1)
+		}
+		exportRoutines(*export, saved)
+		return
+	}
 
 	paths, _ := filepath.Glob(filepath.Join(*dir, "*.json"))
 	sort.Strings(paths)
@@ -72,6 +88,9 @@ func main() {
 	}
 	wg.Wait()
 	write(*out, results)
+	if *export != "" {
+		exportRoutines(*export, results)
+	}
 }
 
 func run(c compiler.Compiler, t trace.Trace) result {
@@ -146,6 +165,27 @@ func write(dir string, results []result) {
 	fmt.Fprintf(&md, "\n**Gate (first attempt accepted and passes the holdout): %d/%d.** First attempt accepted: %d. After one retry: %d accepted, %d also pass the holdout. Total cost $%.2f.\n", gate, len(kept), first, final, finalHold, cost)
 	os.WriteFile(filepath.Join(dir, "README.md"), []byte(md.String()), 0o644)
 	fmt.Print("\n" + md.String())
+}
+
+// exportRoutines writes each accepted routine that also passed the
+// holdout; its id is the trace's, without the numbering.
+func exportRoutines(dir string, results []result) {
+	n := 0
+	for _, r := range results {
+		if !r.Accepted || r.Holdout == nil || !r.Holdout.Passed {
+			continue
+		}
+		id := r.ID
+		if parts := strings.SplitN(id, "-", 3); len(parts) == 3 {
+			id = parts[2]
+		}
+		if err := repo.Write(dir, id, r.Attempts[len(r.Attempts)-1].Routine); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			continue
+		}
+		n++
+	}
+	fmt.Printf("Wrote %d routines to %s\n", n, dir)
 }
 
 func mark(ok bool) string {
