@@ -182,7 +182,7 @@ Rules and approvals do not change with the model: every tool call still goes thr
 - **Speech to text** (optional): a Whisper model (base, small or turbo) understands your Telegram voice notes and dictation in the app right here; without one, Pimpo uses whisper.cpp if it is installed. Voice notes in OGG need ffmpeg (`brew install ffmpeg`).
 - **Language models** through Ollama (which must be installed and open), with suggestions that fit this computer's memory, or any model name. Once downloaded, choose it under **Neste computador › Ollama**.
 
-The list comes from a JSON catalog built into Pimpo (`internal/local/catalog.json`). A `catalog.json` of your own in `~/.pimpo/local` replaces it; every entry needs an https address, its size and its SHA-256.
+From the terminal, `pimpo local list` shows the catalog and what is installed, and `pimpo local install ID` downloads with the same checks. The list comes from a JSON catalog built into Pimpo (`internal/local/catalog.json`). A `catalog.json` of your own in `~/.pimpo/local` replaces it; every entry needs an https address, its size and its SHA-256.
 
 ## Costs
 
