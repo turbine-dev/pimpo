@@ -188,3 +188,43 @@ func TestCatalog(t *testing.T) {
 		t.Fatal("a missing owner catalog is not an error")
 	}
 }
+
+// An item of loose files downloads each, checks each, and becomes the
+// transcriber; one bad file fails the whole item.
+func TestLooseFiles(t *testing.T) {
+	srv := serve(t, 0)
+	withCatalog(t, srv.URL, nil)
+	oldT := Transcribers
+	defer func() { Transcribers = oldT }()
+	file := func(name string, bad bool) File {
+		b, _ := os.ReadFile(filepath.Join("testdata", name))
+		s := sum(b)
+		if bad {
+			s = strings.Repeat("1", 64)
+		}
+		return File{Name: name, URL: srv.URL + "/" + name, SHA256: s, Size: int64(len(b))}
+	}
+	spec := &TranscriberSpec{Type: "whisper", Encoder: "enc.onnx", Decoder: "dec.onnx", Tokens: "tok.txt"}
+	Transcribers = []Item{
+		{ID: "whisper-t", Kind: "transcriber", Name: "T", Size: 30, Quality: 1, Transcriber: spec, Files: []File{file("enc.onnx", false), file("dec.onnx", false), file("tok.txt", false)}},
+		{ID: "whisper-bad", Kind: "transcriber", Name: "Bad", Size: 30, Quality: 2, Transcriber: spec, Files: []File{file("enc.onnx", false), file("dec.onnx", true)}},
+	}
+	m := &Manager{Dir: t.TempDir()}
+	j, _ := m.Install("whisper-t")
+	if j = wait(t, m, j.ID); j.State != "done" {
+		t.Fatalf("%+v", j)
+	}
+	if b, _ := os.ReadFile(filepath.Join(m.Dir, "whisper-t", "dec.onnx")); string(b) != "decoder-bytes" {
+		t.Fatalf("dec %q", b)
+	}
+	j, _ = m.Install("whisper-bad")
+	if j = wait(t, m, j.ID); j.State != "failed" || !strings.Contains(j.Error, "dec.onnx") {
+		t.Fatalf("%+v", j)
+	}
+	if tr, ok := m.Transcriber(); !ok || tr.ID != "whisper-t" {
+		t.Fatalf("transcriber %v", tr)
+	}
+	if _, err := os.Stat(filepath.Join(m.Dir, "whisper-bad")); err == nil {
+		t.Fatal("kept a failed item")
+	}
+}

@@ -3,16 +3,20 @@ package app
 import (
 	"context"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/denerFernandes/pimpo/internal/llm"
 	"github.com/denerFernandes/pimpo/internal/local"
 	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/speech"
+	"github.com/denerFernandes/pimpo/internal/voice"
 )
 
 // Models to download and run on this computer: voices for reading aloud,
@@ -70,6 +74,11 @@ func (a *App) localRoutes() {
 			voices = append(voices, localItem{v, m.Installed(v)})
 		}
 		out["voices"] = voices
+		trs := []localItem{}
+		for _, t := range local.Transcribers {
+			trs = append(trs, localItem{t, m.Installed(t)})
+		}
+		out["transcribers"] = trs
 		ollama := map[string]any{"url": a.ollamaBase(r.Context())}
 		if found := a.modelClient().Detect(r.Context(), a.Settings(r.Context()).OllamaURL, "x"); found.OllamaUp {
 			ollama["up"] = true
@@ -126,6 +135,8 @@ func (a *App) localRoutes() {
 		var req struct {
 			Language string `json:"language"`
 			Text     string `json:"text"`
+			// For is chat or routines: whose voice to hear.
+			For string `json:"for"`
 		}
 		if err := server.Decode(r, &req); err != nil {
 			server.WriteError(w, err)
@@ -134,7 +145,15 @@ func (a *App) localRoutes() {
 		if req.Text == "" || len(req.Text) > 400 {
 			req.Text = sampleText(req.Language)
 		}
-		audio, secs, voice, err := a.speak(r.Context(), req.Text, req.Language)
+		v := a.Settings(r.Context()).routineVoice()
+		if req.For == "chat" {
+			v = a.Settings(r.Context()).chatVoice()
+		}
+		if v.Engine == "browser" {
+			server.WriteError(w, server.StatusError{Status: 409, Msg: "the chat reads with the browser's voice"})
+			return
+		}
+		audio, secs, voice, err := a.speakWith(r.Context(), v, req.Text, req.Language)
 		if err != nil {
 			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 			return
@@ -162,4 +181,78 @@ func sampleText(lang string) string {
 		return "Buongiorno! Ecco le storie più votate di oggi su Hacker News."
 	}
 	return "Bom dia! Estas são as histórias com mais pontos hoje no Hacker News."
+}
+
+func (a *App) speechRoutes() {
+	// voice says what can read aloud here, for Settings.
+	a.Server.Handle("GET /api/voice", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, oerr := a.Vault.Get(ctx, "model.openai.key")
+		_, eerr := a.Vault.Get(ctx, "voice.elevenlabs.key")
+		out := map[string]any{"openai_key": oerr == nil, "elevenlabs_key": eerr == nil, "openai_voices": speech.OpenAIVoices, "openai_prices": speech.OpenAIPrices}
+		if eerr == nil && a.Settings(ctx).Voice == "elevenlabs" {
+			if c, err := a.cloudVoice(ctx, Settings{Voice: "elevenlabs"}); err == nil {
+				if vs, err := c.ElevenVoices(ctx); err == nil {
+					out["elevenlabs_voices"] = vs
+				} else {
+					out["elevenlabs_error"] = err.Error()
+				}
+			}
+		}
+		server.WriteJSON(w, 200, out)
+	})
+	a.Server.Handle("PUT /api/voice/elevenlabs-key", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Key string `json:"key"`
+		}
+		if err := server.Decode(r, &req); err != nil {
+			server.WriteError(w, err)
+			return
+		}
+		var err error
+		if key := strings.TrimSpace(req.Key); key == "" {
+			err = a.Vault.Delete(r.Context(), "voice.elevenlabs.key")
+		} else {
+			if _, verr := (speech.Cloud{Provider: "elevenlabs", Key: key, Base: a.VoiceAPI["elevenlabs"]}).ElevenVoices(r.Context()); verr != nil {
+				server.WriteError(w, server.StatusError{Status: 400, Msg: verr.Error()})
+				return
+			}
+			err = a.Vault.Set(r.Context(), "voice.elevenlabs.key", key)
+		}
+		if err != nil {
+			server.WriteError(w, err)
+			return
+		}
+		a.Events.Append(r.Context(), "voice.key", actor(r.Context()), map[string]string{"provider": "elevenlabs"})
+		server.WriteJSON(w, 200, map[string]bool{"ok": true})
+	})
+}
+
+// transcribeLocal turns speech into text with a downloaded Whisper model;
+// ok is false when none is downloaded.
+func (a *App) transcribeLocal(ctx context.Context, audio []byte, lang string) (string, bool, error) {
+	if a.Home == "" {
+		return "", false, nil
+	}
+	m := a.local()
+	t, ok := m.Transcriber()
+	if !ok {
+		return "", false, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	defer cancel()
+	dir, err := os.MkdirTemp("", "pimpo-listen-")
+	if err != nil {
+		return "", true, err
+	}
+	defer os.RemoveAll(dir)
+	in, wav := filepath.Join(dir, "in.audio"), filepath.Join(dir, "in.wav")
+	if err := os.WriteFile(in, audio, 0o600); err != nil {
+		return "", true, err
+	}
+	if err := voice.ToWAV16(ctx, in, wav); err != nil {
+		return "", true, err
+	}
+	text, err := m.Transcribe(ctx, t, wav, lang)
+	return text, true, err
 }

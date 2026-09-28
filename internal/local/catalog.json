@@ -1,5 +1,5 @@
 {
-  "about": "Models Pimpo can download to run on this computer. Every file is checked against its sha256 before it is unpacked. A catalog.json in the local models folder (~/.pimpo/local) replaces this one.",
+  "about": "Models Pimpo can download (voices, speech-to-text, and language models through Ollama) to run on this computer. Every file is checked against its sha256 before it is unpacked. A catalog.json in the local models folder (~/.pimpo/local) replaces this one.",
   "engines": {
     "darwin/arm64": {
       "id": "sherpa-onnx",
@@ -267,6 +267,110 @@
       "about": "the strongest that fits 32 GB",
       "size": 9751756800,
       "min_ram": 34359738368
+    }
+  ],
+  "transcribers": [
+    {
+      "id": "whisper-base",
+      "kind": "transcriber",
+      "name": "Whisper base",
+      "about": "Whisper · fast",
+      "size": 160609290,
+      "quality": 1,
+      "files": [
+        {
+          "name": "base-encoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-encoder.int8.onnx",
+          "sha256": "0b8fb1304b6109976038efff5ace81720e00386f3ff6b54ee8c75291ca0a1e11",
+          "size": 29120534
+        },
+        {
+          "name": "base-decoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-decoder.int8.onnx",
+          "sha256": "9759d217388a01b3a4c7c15533201067b48ae819c4daafc8624e64b9409dc02d",
+          "size": 130672026
+        },
+        {
+          "name": "base-tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-base/resolve/main/base-tokens.txt",
+          "sha256": "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126",
+          "size": 816730
+        }
+      ],
+      "transcriber": {
+        "type": "whisper",
+        "encoder": "base-encoder.int8.onnx",
+        "decoder": "base-decoder.int8.onnx",
+        "tokens": "base-tokens.txt"
+      }
+    },
+    {
+      "id": "whisper-small",
+      "kind": "transcriber",
+      "name": "Whisper small",
+      "about": "Whisper · more accurate",
+      "size": 375485327,
+      "quality": 2,
+      "files": [
+        {
+          "name": "small-encoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-encoder.int8.onnx",
+          "sha256": "4cbe7b22fa9026b843b60a68640c747de05bafb1a11b57edc0e66c232d9f33a9",
+          "size": 112442483
+        },
+        {
+          "name": "small-decoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-decoder.int8.onnx",
+          "sha256": "acad50b5c782696e91b55914cc5ab4f756f1532f76e22aa6fc615f39fb69a8ee",
+          "size": 262226114
+        },
+        {
+          "name": "small-tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-small/resolve/main/small-tokens.txt",
+          "sha256": "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126",
+          "size": 816730
+        }
+      ],
+      "transcriber": {
+        "type": "whisper",
+        "encoder": "small-encoder.int8.onnx",
+        "decoder": "small-decoder.int8.onnx",
+        "tokens": "small-tokens.txt"
+      }
+    },
+    {
+      "id": "whisper-turbo",
+      "kind": "transcriber",
+      "name": "Whisper turbo",
+      "about": "Whisper large-v3 turbo · the most accurate",
+      "size": 1036613791,
+      "quality": 3,
+      "files": [
+        {
+          "name": "turbo-encoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-turbo/resolve/main/turbo-encoder.int8.onnx",
+          "sha256": "b02dcdf54f348741e93fe732b67d933c8dcb6735655f710640143081db38878b",
+          "size": 674716297
+        },
+        {
+          "name": "turbo-decoder.int8.onnx",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-turbo/resolve/main/turbo-decoder.int8.onnx",
+          "sha256": "20accd02388482eb3a46bd615631adfdc85e1eb2c7db9ea3f02a40ffe6b81547",
+          "size": 361080764
+        },
+        {
+          "name": "turbo-tokens.txt",
+          "url": "https://huggingface.co/csukuangfj/sherpa-onnx-whisper-turbo/resolve/main/turbo-tokens.txt",
+          "sha256": "b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126",
+          "size": 816730
+        }
+      ],
+      "transcriber": {
+        "type": "whisper",
+        "encoder": "turbo-encoder.int8.onnx",
+        "decoder": "turbo-decoder.int8.onnx",
+        "tokens": "turbo-tokens.txt"
+      }
     }
   ]
 }

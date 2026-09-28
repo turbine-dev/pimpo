@@ -81,3 +81,30 @@ export function speak(text: string) {
   u.lang = localeTag()
   window.speechSynthesis.speak(u)
 }
+
+let playing: HTMLAudioElement | null = null
+
+// readAloud reads an answer with the chat's voice chosen in Settings: the
+// browser's own, or one Pimpo makes (downloaded, system or cloud). When
+// Pimpo cannot read it, the browser's voice does.
+export async function readAloud(text: string, chatVoice?: string) {
+  if (!text) return
+  if (chatVoice === 'browser') return speak(text)
+  window.speechSynthesis?.cancel()
+  playing?.pause()
+  try {
+    const res = await fetch('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ text, language: localeTag() }) })
+    if (!res.ok) throw new Error(res.statusText)
+    const url = URL.createObjectURL(await res.blob())
+    playing = new Audio(url)
+    playing.onended = () => URL.revokeObjectURL(url)
+    await playing.play()
+  } catch {
+    speak(text)
+  }
+}
+
+export function stopReading() {
+  playing?.pause()
+  window.speechSynthesis?.cancel()
+}

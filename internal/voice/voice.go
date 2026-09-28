@@ -75,3 +75,22 @@ func (w Whisper) Transcribe(ctx context.Context, audio []byte) (string, error) {
 	}
 	return text, nil
 }
+
+// ToWAV16 converts any recording (a Telegram voice note, a browser's
+// recording) to 16 kHz mono WAV, with ffmpeg or, for the formats it
+// reads, macOS's afconvert.
+func ToWAV16(ctx context.Context, in, out string) error {
+	if p := find("ffmpeg"); p != "" {
+		if b, err := exec.CommandContext(ctx, p, "-nostdin", "-loglevel", "error", "-y", "-i", in, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", out).CombinedOutput(); err != nil {
+			return fmt.Errorf("could not read the audio: %s", strings.TrimSpace(string(b)))
+		}
+		return nil
+	}
+	if p := find("afconvert"); p != "" {
+		if b, err := exec.CommandContext(ctx, p, "-f", "WAVE", "-d", "LEI16@16000", "-c", "1", in, out).CombinedOutput(); err != nil {
+			return fmt.Errorf("could not read the audio (install ffmpeg for voice notes): %s", strings.TrimSpace(string(b)))
+		}
+		return nil
+	}
+	return errors.New("reading audio needs ffmpeg (brew install ffmpeg)")
+}

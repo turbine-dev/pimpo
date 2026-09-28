@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/denerFernandes/pimpo/internal/budget"
 	"github.com/denerFernandes/pimpo/internal/connector"
 	"github.com/denerFernandes/pimpo/internal/event"
 	"github.com/denerFernandes/pimpo/internal/host"
@@ -105,14 +106,60 @@ func (c audioCap) Call(ctx context.Context, _, _ string, args any) (any, error) 
 	return map[string]any{"ok": true, "delivered": delivered, "failed": failed, "seconds": int(secs), "voice": voice}, nil
 }
 
-// speak reads with a downloaded voice for the language when there is one,
-// or with the system's; it says which voice read.
+// speak reads text with the voice the owner chose: a downloaded voice, the
+// system's, or a cloud provider's, whose cost counts toward the daily
+// limit. It says which voice read.
 func (a *App) speak(ctx context.Context, text, language string) ([]byte, float64, string, error) {
-	if m := a.local(); a.Home != "" {
-		if v, ok := m.VoiceFor(language); ok {
-			if r := []rune(text); len(r) > speech.MaxText {
-				text = string(r[:speech.MaxText])
-			}
+	return a.speakWith(ctx, a.Settings(ctx).routineVoice(), text, language)
+}
+
+// voiceChoice is an engine with its cloud model and voice.
+type voiceChoice struct{ Engine, Model, Name string }
+
+func (s Settings) routineVoice() voiceChoice { return voiceChoice{s.Voice, s.VoiceModel, s.VoiceName} }
+
+// chatVoice is the chat's own choice, or the routines' when it has none.
+func (s Settings) chatVoice() voiceChoice {
+	if s.ChatVoice == "" {
+		return s.routineVoice()
+	}
+	return voiceChoice{s.ChatVoice, s.ChatVoiceModel, s.ChatVoiceName}
+}
+
+func (a *App) speakWith(ctx context.Context, v voiceChoice, text, language string) ([]byte, float64, string, error) {
+	if r := []rune(text); len(r) > speech.MaxText {
+		text = string(r[:speech.MaxText])
+	}
+	s := Settings{Voice: v.Engine, VoiceModel: v.Model, VoiceName: v.Name}
+	switch s.Voice {
+	case "openai", "elevenlabs":
+		c, err := a.cloudVoice(ctx, s)
+		if err != nil {
+			return nil, 0, "", err
+		}
+		cost := c.Cost(text)
+		if err := a.Budget.CheckFor(ctx, cost); err != nil {
+			return nil, 0, "", err
+		}
+		b, secs, err := c.Speak(ctx, text)
+		if err != nil {
+			return nil, 0, "", err
+		}
+		a.Budget.Record(ctx, budget.Cost{USD: cost, Source: "audio", Ref: "voice:" + s.Voice})
+		name := "OpenAI " + firstModel(s.VoiceName, "nova")
+		if s.Voice == "elevenlabs" {
+			name = "ElevenLabs"
+			a.Events.Append(ctx, "voice.used", "system", map[string]any{"provider": "elevenlabs", "chars": len([]rune(text))})
+		}
+		return b, secs, name, nil
+	}
+	if a.Home != "" && s.Voice != "system" {
+		m := a.local()
+		v, ok := m.VoiceFor(language)
+		if !ok && s.Voice == "local" {
+			return nil, 0, "", fmt.Errorf("no downloaded voice reads %s; get one in Settings › Models › Download models", language)
+		}
+		if ok {
 			ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 			defer cancel()
 			dir, err := os.MkdirTemp("", "pimpo-voice-")
@@ -130,6 +177,24 @@ func (a *App) speak(ctx context.Context, text, language string) ([]byte, float64
 	}
 	b, secs, err := speech.Speak(ctx, text, language)
 	return b, secs, "system", err
+}
+
+// cloudVoice is the cloud provider the owner chose, with its key.
+func (a *App) cloudVoice(ctx context.Context, s Settings) (speech.Cloud, error) {
+	c := speech.Cloud{Provider: s.Voice, Model: s.VoiceModel, Voice: s.VoiceName, Base: a.VoiceAPI[s.Voice]}
+	name := "model.openai.key"
+	if s.Voice == "elevenlabs" {
+		name = "voice.elevenlabs.key"
+	}
+	key, err := a.Vault.Get(ctx, name)
+	if err != nil || key == "" {
+		if s.Voice == "openai" {
+			return c, errors.New("the OpenAI voice uses your OpenAI key; add it in Settings › Models › Providers")
+		}
+		return c, errors.New("add your ElevenLabs key in Settings › Models › Voice")
+	}
+	c.Key = key
+	return c, nil
 }
 
 var markdown = strings.NewReplacer("**", "", "__", "", "##", "", "#", "", "`", "", "* ", "", "- ", "")
@@ -207,6 +272,32 @@ func modTime(p string) time.Time {
 }
 
 func (a *App) mediaRoutes() {
+	// speak reads a chat answer aloud with the chat's voice and sends the
+	// audio back; nothing is kept.
+	a.Server.Handle("POST /api/speak", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Text     string `json:"text"`
+			Language string `json:"language"`
+		}
+		if err := server.Decode(r, &req); err != nil {
+			server.WriteError(w, err)
+			return
+		}
+		v := a.Settings(r.Context()).chatVoice()
+		if v.Engine == "browser" {
+			server.WriteError(w, server.StatusError{Status: 409, Msg: "the chat reads with the browser's voice"})
+			return
+		}
+		audio, secs, voice, err := a.speakWith(r.Context(), v, spoken(req.Text), firstModel(req.Language, "pt-BR"))
+		if err != nil {
+			server.WriteError(w, server.StatusError{Status: 422, Msg: err.Error()})
+			return
+		}
+		w.Header().Set("Content-Type", "audio/mp4")
+		w.Header().Set("X-Pimpo-Voice", voice)
+		w.Header().Set("X-Pimpo-Seconds", fmt.Sprintf("%.1f", secs))
+		w.Write(audio)
+	})
 	// media lists the latest recordings still kept, newest first.
 	a.Server.Handle("GET /api/media", func(w http.ResponseWriter, r *http.Request) {
 		evs, _ := a.Events.List(r.Context(), event.Query{Types: []string{owner.EventNotice}, Newest: true, Limit: 300})

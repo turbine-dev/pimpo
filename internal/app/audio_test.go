@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os/exec"
 	"strings"
 	"testing"
@@ -48,5 +49,49 @@ func TestAudioSend(t *testing.T) {
 	}
 	if s := spoken("**Oi** veja https://x.com/a e `code`"); strings.Contains(s, "http") || strings.Contains(s, "*") || strings.Contains(s, "`") {
 		t.Fatalf("spoken %q", s)
+	}
+}
+
+// With OpenAI chosen, audio.send reads through it with the owner's OpenAI
+// key, counts the exact cost, and stops at the daily limit.
+func TestCloudVoice(t *testing.T) {
+	if _, err := exec.LookPath("afconvert"); err != nil {
+		t.Skip("no afconvert")
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer sk-test" {
+			w.WriteHeader(401)
+			return
+		}
+		w.Write(make([]byte, 48000))
+	}))
+	defer srv.Close()
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ta.Home, ta.VoiceAPI = t.TempDir(), map[string]string{"openai": srv.URL}
+	ctx := context.Background()
+	s := ta.Settings(ctx)
+	s.Voice, s.VoiceModel, s.VoiceName = "openai", "tts-1-hd", "nova"
+	if code, out := ta.do(t, "PUT", "/api/settings", s); code != 200 {
+		t.Fatalf("%d %v", code, out)
+	}
+	if _, err := (audioCap{ta.App}).Call(ctx, "audio.send", "", map[string]any{"title": "x", "text": "Bom dia", "language": "pt-BR"}); err == nil || !strings.Contains(err.Error(), "OpenAI key") {
+		t.Fatalf("without a key: %v", err)
+	}
+	ta.Vault.Set(ctx, "model.openai.key", "sk-test")
+	text := strings.Repeat("Bom dia. ", 100) // 900 characters
+	out, err := (audioCap{ta.App}).Call(ctx, "audio.send", "", map[string]any{"title": "x", "text": text, "language": "pt-BR"})
+	if err != nil || out.(map[string]any)["voice"] != "OpenAI nova" {
+		t.Fatalf("%v %v", out, err)
+	}
+	if spent, _ := ta.Budget.Today(ctx); spent < 0.0269 || spent > 0.0271 {
+		t.Fatalf("spent %v, want 900 chars at $30/M", spent)
+	}
+	ta.do(t, "PUT", "/api/budget", map[string]float64{"daily_usd": 0.03})
+	if _, err := (audioCap{ta.App}).Call(ctx, "audio.send", "", map[string]any{"title": "x", "text": text, "language": "pt-BR"}); err == nil {
+		t.Fatal("read past the daily limit")
+	}
+	s.Voice, s.VoiceModel = "openai", "gpt-9"
+	if code, _ := ta.do(t, "PUT", "/api/settings", s); code != 400 {
+		t.Fatal("accepted an unknown voice model")
 	}
 }
