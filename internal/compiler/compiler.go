@@ -265,7 +265,11 @@ func prompt(t trace.Trace, previous []byte, feedback []string) string {
 		}
 		fmt.Fprintf(&b, "- %s [%s]%s -> %s\n", s.Signature, s.Risk, scope, s.Returns)
 	}
-	fmt.Fprintf(&b, "\nThe user asked: %q\nRecorded at: %s\n\nRecorded calls, in order:\n", t.Request, t.Now)
+	fmt.Fprintf(&b, "\nThe user asked: %q\nRecorded at: %s\n", t.Request, t.Now)
+	if t.Event != nil {
+		fmt.Fprintf(&b, "The recorded run was started with this event (the routine gets it as event): %s\n", compact(mustJSON(t.Event)))
+	}
+	b.WriteString("\nRecorded calls, in order:\n")
 	for i, c := range t.Calls {
 		fmt.Fprintf(&b, "%d. %s(%s)", i+1, c.Capability, compact(c.Args))
 		if len(c.Result) > 0 {

@@ -1,0 +1,58 @@
+{
+ "id": "oc-22-habit-answer",
+ "request": "Toda noite às 21h me pergunta se eu treinei hoje (Sim ou Não) e, quando eu responder, me diz quantos treinos fiz nos últimos 7 dias.",
+ "now": "2026-09-24T21:00:00-03:00",
+ "calls": [
+  {
+   "capability": "ask.owner",
+   "args": {
+    "question": "Treinou hoje?",
+    "options": [
+     "Sim",
+     "Não"
+    ],
+    "key": "treino"
+   },
+   "result": {
+    "asked": "q1"
+   }
+  }
+ ],
+ "outcome": "Uma pergunta por noite com Sim/Não; ao responder, uma mensagem com o total de treinos dos últimos 7 dias.",
+ "expect": [
+  {
+   "capability": "ask.owner",
+   "count": 1,
+   "contains": [
+    "Sim",
+    "Não"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T21:05:00-03:00",
+  "responses": [],
+  "event": {
+   "answer": {
+    "key": "treino",
+    "question": "Treinou hoje?",
+    "choice": "Sim",
+    "index": 0,
+    "asked": "2026-10-08T21:00:00-03:00"
+   }
+  },
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 1,
+    "contains": [
+     "1"
+    ]
+   },
+   {
+    "capability": "ask.owner",
+    "count": 0
+   }
+  ]
+ }
+}

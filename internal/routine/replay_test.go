@@ -87,3 +87,14 @@ func TestWatchInTheWorld(t *testing.T) {
 		t.Fatal(o.Problems)
 	}
 }
+
+func TestStateComparesInstants(t *testing.T) {
+	a := sameInstants([]any{map[string]any{"date": "2026-09-28T00:00:00-03:00", "n": 1.0}, "texto"})
+	b := sameInstants([]any{map[string]any{"date": "2026-09-28T00:00:00.000-03:00", "n": 1.0}, "texto"})
+	if string(mustJSON(a)) != string(mustJSON(b)) {
+		t.Fatalf("%s != %s", mustJSON(a), mustJSON(b))
+	}
+	if string(mustJSON(sameInstants("2026-09-28T00:00:00-03:00"))) == string(mustJSON(sameInstants("2026-09-28T00:00:00-02:00"))) {
+		t.Fatal("different instants compared equal")
+	}
+}

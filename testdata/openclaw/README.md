@@ -32,5 +32,7 @@ To try the routines in Pimpo, export the accepted ones and import them paused:
 | oc-19 | Price drop through a JSON API | Hermes pricing monitor |
 | oc-20 | Price on a shop's web page (web.read) | Hermes pricing monitor |
 | oc-21 | Hacker News as a spoken podcast (audio.send) | owner's request |
+| oc-22 | Habit check-in that counts the answers (ask.owner) | OpenClaw habit tracker |
+| oc-23 | A shop's new-order webhook | OpenClaw webhooks |
 
 Not covered, because Pimpo lacks the capability: server metrics and publishing content. (Routines that wait for the owner's answer now use ask.owner; chained routines use routines.run.)
