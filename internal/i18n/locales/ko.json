@@ -76,6 +76,8 @@
   "msg.problem.network": "서비스 중단",
   "msg.problem.other": "예상치 못한 오류",
   "msg.problem.rate": "사용 한도 도달",
+  "msg.reminder": "⏰ 알림: {text}",
+  "msg.reminder.late": "⏰ 알림 ({when} 예정이었으나 Pimpo가 닫혀 있었습니다): {text}",
   "msg.repo.changes_one": "📦 저장소에서 루틴 {count}개가 바뀌었어요. 테스트는 이미 실행했어요. 루틴 › 저장소에서 확인하고 켜세요.",
   "msg.repo.changes_other": "📦 저장소에서 루틴 {count}개가 바뀌었어요. 테스트는 이미 실행했어요. 루틴 › 저장소에서 확인하고 켜세요.",
   "msg.request.started": "알겠어요. 지금 작업 중이고, 결과는 여기로 와요. 🔎",

@@ -76,6 +76,8 @@
   "msg.problem.network": "服务不可用",
   "msg.problem.other": "意外错误",
   "msg.problem.rate": "达到使用上限",
+  "msg.reminder": "⏰ 提醒：{text}",
+  "msg.reminder.late": "⏰ 提醒（原定 {when}，当时 Pimpo 已关闭）：{text}",
   "msg.repo.changes_one": "📦 你的仓库中有 {count} 个例程发生了变化。测试已运行；请在 例程 › 仓库 中查看并启用。",
   "msg.repo.changes_other": "📦 你的仓库中有 {count} 个例程发生了变化。测试已运行；请在 例程 › 仓库 中查看并启用。",
   "msg.request.started": "收到，正在处理，结果会发到这里。🔎",

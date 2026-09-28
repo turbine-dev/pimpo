@@ -76,6 +76,8 @@
   "msg.problem.network": "le service est indisponible",
   "msg.problem.other": "erreur inattendue",
   "msg.problem.rate": "limite d’utilisation atteinte",
+  "msg.reminder": "⏰ Rappel : {text}",
+  "msg.reminder.late": "⏰ Rappel (prévu le {when}, Pimpo était fermé) : {text}",
   "msg.repo.changes_one": "📦 {count} routine a changé dans votre dépôt. Les tests ont déjà tourné ; vérifiez-la et activez-la dans Routines › Dépôt.",
   "msg.repo.changes_other": "📦 {count} routines ont changé dans votre dépôt. Les tests ont déjà tourné ; vérifiez-les et activez-les dans Routines › Dépôt.",
   "msg.request.started": "C’est noté. C’est en cours ; le résultat arrivera ici. 🔎",

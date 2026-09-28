@@ -1222,6 +1222,8 @@ export const pt = {
   'ms.ocMore': "e mais {count}; use a busca",
   'ms.ocPrice': "custo pelo opencode",
   'doc.fix.opencode': "O opencode não foi encontrado. Instale-o ou escolha outro modelo em Ajustes › Modelos.",
+  'rem.title': "Lembretes",
+  'rem.cancel': "Cancelar o lembrete “{text}”",
 }
 
 export type Key = keyof typeof pt

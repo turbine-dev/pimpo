@@ -1222,4 +1222,6 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'ms.ocMore': "외 {count}개, 검색을 사용하세요",
   'ms.ocPrice': "opencode가 알려 준 비용",
   'doc.fix.opencode': "opencode를 찾을 수 없습니다. 설치하거나 설정 › 모델에서 다른 모델을 고르세요.",
+  'rem.title': "알림",
+  'rem.cancel': "“{text}” 알림 취소",
 }

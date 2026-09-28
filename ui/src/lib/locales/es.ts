@@ -1247,4 +1247,6 @@ export const es: Record<Key, string> & Record<string, string> = {
   'ms.ocMore': "y {count} más; usa la búsqueda",
   'ms.ocPrice': "costo informado por opencode",
   'doc.fix.opencode': "No se encontró opencode. Instálalo o elige otro modelo en Ajustes › Modelos.",
+  'rem.title': "Recordatorios",
+  'rem.cancel': "Cancelar el recordatorio «{text}»",
 }

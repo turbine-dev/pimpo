@@ -1222,4 +1222,6 @@ export const en: Record<Key, string> = {
   'ms.ocMore': "and {count} more; use search",
   'ms.ocPrice': "cost from opencode",
   'doc.fix.opencode': "opencode wasn’t found. Install it or choose another model in Settings › Models.",
+  'rem.title': "Reminders",
+  'rem.cancel': "Cancel the reminder “{text}”",
 }

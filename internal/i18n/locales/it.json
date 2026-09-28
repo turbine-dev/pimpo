@@ -76,6 +76,8 @@
   "msg.problem.network": "il servizio non è raggiungibile",
   "msg.problem.other": "errore imprevisto",
   "msg.problem.rate": "limite di utilizzo raggiunto",
+  "msg.reminder": "⏰ Promemoria: {text}",
+  "msg.reminder.late": "⏰ Promemoria (previsto per {when}, Pimpo era chiuso): {text}",
   "msg.repo.changes_one": "📦 {count} routine è cambiata nel tuo repository. I test sono già stati eseguiti; controllala e attivala in Routine › Repository.",
   "msg.repo.changes_other": "📦 {count} routine sono cambiate nel tuo repository. I test sono già stati eseguiti; controllale e attivale in Routine › Repository.",
   "msg.request.started": "Ricevuto. Al lavoro ora; il risultato arriverà qui. 🔎",

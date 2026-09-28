@@ -1222,4 +1222,6 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'ms.ocMore': "还有 {count} 个，请使用搜索",
   'ms.ocPrice': "费用由 opencode 报告",
   'doc.fix.opencode': "未找到 opencode。请安装它，或在 设置 › 模型 中选择其他模型。",
+  'rem.title': "提醒",
+  'rem.cancel': "取消提醒“{text}”",
 }

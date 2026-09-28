@@ -1222,4 +1222,6 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'ms.ocMore': "ほか {count} 件。検索を使ってください",
   'ms.ocPrice': "費用は opencode 報告",
   'doc.fix.opencode': "opencode が見つかりません。インストールするか、設定 › モデル で別のモデルを選んでください。",
+  'rem.title': "リマインダー",
+  'rem.cancel': "リマインダー「{text}」を取り消す",
 }

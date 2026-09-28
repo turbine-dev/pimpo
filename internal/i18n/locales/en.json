@@ -76,6 +76,8 @@
   "msg.problem.network": "the service is down",
   "msg.problem.other": "unexpected error",
   "msg.problem.rate": "usage limit reached",
+  "msg.reminder": "⏰ Reminder: {text}",
+  "msg.reminder.late": "⏰ Reminder (due {when}, Pimpo was closed): {text}",
   "msg.repo.changes_one": "📦 {count} routine changed in your repository. Its tests already ran; review and turn it on in Routines › Repository.",
   "msg.repo.changes_other": "📦 {count} routines changed in your repository. Their tests already ran; review and turn them on in Routines › Repository.",
   "msg.request.started": "Got it. Working on it now; the result will arrive here. 🔎",

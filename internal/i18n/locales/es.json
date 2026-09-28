@@ -76,6 +76,8 @@
   "msg.problem.network": "el servicio está caído",
   "msg.problem.other": "error inesperado",
   "msg.problem.rate": "límite de uso alcanzado",
+  "msg.reminder": "⏰ Recordatorio: {text}",
+  "msg.reminder.late": "⏰ Recordatorio (era para {when}, Pimpo estaba cerrado): {text}",
   "msg.repo.changes_one": "📦 {count} rutina cambió en tu repositorio. Las pruebas ya se ejecutaron; revísala y actívala en Rutinas › Repositorio.",
   "msg.repo.changes_other": "📦 {count} rutinas cambiaron en tu repositorio. Las pruebas ya se ejecutaron; revísalas y actívalas en Rutinas › Repositorio.",
   "msg.request.started": "Entendido. Trabajando en ello; el resultado llegará aquí. 🔎",

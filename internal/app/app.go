@@ -252,6 +252,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.cloudRoutes()
 	a.snapshotRoutes()
 	a.repoRoutes()
+	a.reminderRoutes()
 	a.doctorRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()
@@ -278,6 +279,7 @@ func (a *App) Start(ctx context.Context) error {
 	go a.healthLoop(ctx, time.Minute)
 	a.announceUpgrade(ctx)
 	go a.repoLoop(ctx, 15*time.Minute)
+	go a.reminderLoop(ctx, 20*time.Second)
 	a.restartListener(ctx)
 	return nil
 }
@@ -430,6 +432,7 @@ func (a *App) router() *connector.Router {
 		&telegramcap.Owner{Bot: botSender{a}, Chat: a.personChat},
 		whatsappCap{a},
 		notifyCap{a},
+		reminderCap{a},
 	)
 	for _, k := range services.All() {
 		r.Add(k.Connector(a.catalogConfig))

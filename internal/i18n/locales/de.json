@@ -76,6 +76,8 @@
   "msg.problem.network": "der Dienst ist nicht erreichbar",
   "msg.problem.other": "unerwarteter Fehler",
   "msg.problem.rate": "Nutzungslimit erreicht",
+  "msg.reminder": "⏰ Erinnerung: {text}",
+  "msg.reminder.late": "⏰ Erinnerung (fällig {when}, Pimpo war geschlossen): {text}",
   "msg.repo.changes_one": "📦 {count} Routine hat sich in deinem Repository geändert. Die Tests sind schon gelaufen; prüfe und aktiviere sie unter Routinen › Repository.",
   "msg.repo.changes_other": "📦 {count} Routinen haben sich in deinem Repository geändert. Die Tests sind schon gelaufen; prüfe und aktiviere sie unter Routinen › Repository.",
   "msg.request.started": "Verstanden. Wird jetzt erledigt; das Ergebnis kommt hier an. 🔎",
