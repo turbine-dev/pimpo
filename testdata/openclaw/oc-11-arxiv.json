@@ -1,0 +1,106 @@
+{
+ "id": "oc-11-arxiv",
+ "request": "Todo dia às 8h, olha os artigos novos de IA no arXiv e anota no Obsidian, na nota Pesquisa/arXiv.md, título e link dos que forem sobre agentes de IA.",
+ "now": "2026-09-24T08:00:00-03:00",
+ "calls": [
+  {
+   "capability": "rss.read",
+   "args": {
+    "url": "https://rss.arxiv.org/rss/cs.AI",
+    "max": 50
+   },
+   "result": [
+    {
+     "title": "Planning with Tool-Using Language Agents",
+     "link": "https://arxiv.org/abs/2609.01001",
+     "published": "2026-09-24T04:00:00Z",
+     "summary": "We study agents that call tools..."
+    },
+    {
+     "title": "A Survey of Graph Neural Networks for Chemistry",
+     "link": "https://arxiv.org/abs/2609.01002",
+     "published": "2026-09-24T04:00:00Z",
+     "summary": "GNNs for molecules."
+    },
+    {
+     "title": "Memory for Long-Horizon Web Agents",
+     "link": "https://arxiv.org/abs/2609.01003",
+     "published": "2026-09-24T04:00:00Z",
+     "summary": "Agents that browse..."
+    }
+   ]
+  },
+  {
+   "capability": "obsidian.append",
+   "args": {
+    "note": "Pesquisa/arXiv.md",
+    "text": "## 2026-09-24\n- [Planning with Tool-Using Language Agents](https://arxiv.org/abs/2609.01001)\n- [Memory for Long-Horizon Web Agents](https://arxiv.org/abs/2609.01003)"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "judgments": {
+  "about_agents": {
+   "2609.01001": 0.96,
+   "2609.01002": 0.03,
+   "2609.01003": 0.93
+  }
+ },
+ "outcome": "Uma entrada na nota Pesquisa/arXiv.md com título e link dos artigos sobre agentes.",
+ "expect": [
+  {
+   "capability": "obsidian.append",
+   "count": 1,
+   "contains": [
+    "Pesquisa/arXiv.md",
+    "Planning with Tool-Using Language Agents",
+    "2609.01003"
+   ],
+   "not_contains": [
+    "Graph Neural Networks"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T08:00:00-03:00",
+  "responses": [
+   {
+    "capability": "rss.read",
+    "result": [
+     {
+      "title": "Self-Correcting Coding Agents",
+      "link": "https://arxiv.org/abs/2610.02001",
+      "published": "2026-10-08T04:00:00Z",
+      "summary": "Agents fix their code."
+     },
+     {
+      "title": "Diffusion Models for Audio",
+      "link": "https://arxiv.org/abs/2610.02002",
+      "published": "2026-10-08T04:00:00Z",
+      "summary": "Audio generation."
+     }
+    ]
+   }
+  ],
+  "judgments": {
+   "about_agents": {
+    "2610.02001": 0.95,
+    "2610.02002": 0.02
+   }
+  },
+  "expect": [
+   {
+    "capability": "obsidian.append",
+    "count": 1,
+    "contains": [
+     "Self-Correcting Coding Agents"
+    ],
+    "not_contains": [
+     "Diffusion Models for Audio"
+    ]
+   }
+  ]
+ }
+}

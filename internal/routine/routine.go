@@ -67,6 +67,9 @@ func Check(ctx context.Context, r Routine, name string, s trace.Scenario) Outcom
 	h := newScenarioHost(s)
 	h.now = now
 	out := Outcome{Scenario: name}
+	if w := r.Manifest.Watch; w != nil && s.World && s.Event == nil {
+		s.Event = watchEvent(r, s, *w, now)
+	}
 	res, err := runtime.Run(ctx, r.Code, r.Manifest, h, runtime.Options{Now: now, Timeout: 5 * time.Second, Params: s.Params, Event: s.Event, State: s.State, Library: library(ctx)})
 	if err != nil {
 		out.Problems = append(out.Problems, "run failed: "+err.Error())
@@ -85,6 +88,30 @@ func Check(ctx context.Context, r Routine, name string, s trace.Scenario) Outcom
 	}
 	out.Passed = len(out.Problems) == 0
 	return out
+}
+
+// watchEvent is what the scheduler would wake a watching routine with in
+// this world: the watched capability asked with the watch's arguments,
+// every item new, since a scenario starts with nothing seen.
+func watchEvent(r Routine, s trace.Scenario, w runtime.Watch, now time.Time) map[string]any {
+	name, _, _ := strings.Cut(w.Capability, ":")
+	params, err := r.Manifest.ResolveParams(s.Params)
+	if err != nil {
+		params = map[string]any{}
+	}
+	args := normalize(w.ArgsWith(params))
+	items := []any{}
+	for _, resp := range s.Responses {
+		if c, _, _ := strings.Cut(resp.Capability, ":"); c != name {
+			continue
+		}
+		var v any
+		json.Unmarshal(resp.Result, &v)
+		if list, ok := filterResponse(name, args, v, now, true).([]any); ok {
+			items = append(items, list...)
+		}
+	}
+	return map[string]any{"items": items}
 }
 
 // toOwner are the ways of telling the owner something; an expectation on
@@ -193,6 +220,8 @@ type scenarioHost struct {
 	texts     map[string]map[string]string
 	writes    []Write
 	now       time.Time
+	// strict applies every search filter; see trace.Scenario.World.
+	strict bool
 }
 
 // searchable capabilities answer queries over a set of items, so replay
@@ -200,9 +229,12 @@ type scenarioHost struct {
 var searchable = map[string]bool{"gmail.search": true, "calendar.events": true}
 
 func newScenarioHost(s trace.Scenario) *scenarioHost {
-	h := &scenarioHost{world: map[string][]any{}, responses: map[string][]json.RawMessage{}, last: map[string]json.RawMessage{}, judgments: s.Judgments, texts: s.Writes}
+	h := &scenarioHost{world: map[string][]any{}, responses: map[string][]json.RawMessage{}, last: map[string]json.RawMessage{}, judgments: s.Judgments, texts: s.Writes, strict: s.World}
 	seen := map[string]bool{}
 	for _, r := range s.Responses {
+		// A response may name the capability with its scope, as the
+		// manifest does (http.getJSON:brapi.dev); calls arrive by name.
+		r.Capability, _, _ = strings.Cut(r.Capability, ":")
 		h.responses[r.Capability] = append(h.responses[r.Capability], r.Result)
 		if !searchable[r.Capability] {
 			continue
@@ -233,7 +265,7 @@ func (h *scenarioHost) Call(_ context.Context, name, _ string, args any) (any, e
 		return map[string]any{"ok": true}, nil
 	}
 	if list, ok := h.world[name]; ok {
-		return filterResponse(name, normalize(args), append([]any{}, list...), h.now), nil
+		return filterResponse(name, normalize(args), append([]any{}, list...), h.now, h.strict), nil
 	}
 	var raw json.RawMessage
 	if q := h.responses[name]; len(q) > 0 {
@@ -248,7 +280,7 @@ func (h *scenarioHost) Call(_ context.Context, name, _ string, args any) (any, e
 	if err := json.Unmarshal(raw, &v); err != nil {
 		return nil, err
 	}
-	return filterResponse(name, normalize(args), v, h.now), nil
+	return filterResponse(name, normalize(args), v, h.now, h.strict), nil
 }
 
 // normalize turns goja's exported values into plain JSON types.

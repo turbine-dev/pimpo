@@ -54,6 +54,12 @@ type Scenario struct {
 	// the values it must have kept after this one (key -> value).
 	State       map[string]any `json:"state,omitempty"`
 	ExpectState map[string]any `json:"expect_state,omitempty"`
+	// World says the responses are what the service holds, not its answer
+	// to the routine's own question: the replay of an exploration and a
+	// holdout are, a routine's tests are not. Searches over the world
+	// apply every filter the routine asked for, dates and categories
+	// included.
+	World bool `json:"-"`
 }
 
 // Response is a canned result for one call to a read capability. Calls to
@@ -83,12 +89,15 @@ func Load(path string) (Trace, error) {
 	if t.ID == "" || t.Request == "" || len(t.Calls) == 0 || len(t.Expect) == 0 {
 		return t, fmt.Errorf("trace %s: id, request, calls and expect are required", path)
 	}
+	if t.Holdout != nil {
+		t.Holdout.World = true
+	}
 	return t, nil
 }
 
 // Replay is the scenario recorded in the trace itself.
 func (t Trace) Replay() Scenario {
-	s := Scenario{Now: t.Now, Judgments: t.Judgments, Expect: t.Expect}
+	s := Scenario{Now: t.Now, Judgments: t.Judgments, Expect: t.Expect, World: true}
 	for _, c := range t.Calls {
 		if len(c.Result) > 0 {
 			s.Responses = append(s.Responses, Response{Capability: c.Capability, Result: c.Result})

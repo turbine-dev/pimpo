@@ -1,0 +1,136 @@
+{
+ "id": "oc-08-weekly-report",
+ "request": "Toda sexta às 17h, me manda no Telegram um resumo da semana: as issues e PRs do acme/app fechados nos últimos 7 dias e as tarefas do Todoist que ficaram atrasadas.",
+ "now": "2026-09-25T17:00:00-03:00",
+ "calls": [
+  {
+   "capability": "github.issues",
+   "args": {
+    "repo": "acme/app",
+    "state": "closed",
+    "max": 50
+   },
+   "result": [
+    {
+     "number": 405,
+     "title": "Corrigir cálculo de frete",
+     "state": "closed",
+     "author": "dev1",
+     "labels": [],
+     "url": "https://github.com/acme/app/issues/405",
+     "updated": "2026-09-24T15:00:00Z",
+     "pull_request": false
+    },
+    {
+     "number": 401,
+     "title": "Migrar para Postgres 17",
+     "state": "closed",
+     "author": "dev1",
+     "labels": [],
+     "url": "https://github.com/acme/app/issues/401",
+     "updated": "2026-09-22T11:00:00Z",
+     "pull_request": true
+    },
+    {
+     "number": 380,
+     "title": "Atualizar logo",
+     "state": "closed",
+     "author": "dev1",
+     "labels": [],
+     "url": "https://github.com/acme/app/issues/380",
+     "updated": "2026-09-10T09:00:00Z",
+     "pull_request": false
+    }
+   ]
+  },
+  {
+   "capability": "todoist.tasks",
+   "args": {
+    "filter": "overdue"
+   },
+   "result": [
+    {
+     "id": "w1",
+     "content": "Revisar contrato de aluguel",
+     "due": {
+      "date": "2026-09-22"
+     },
+     "priority": 3,
+     "project_id": "p1",
+     "labels": []
+    }
+   ]
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "📊 Semana:\nFechados no acme/app: #405 Corrigir cálculo de frete · PR #401 Migrar para Postgres 17\nAtrasadas: Revisar contrato de aluguel"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Uma mensagem com o que foi fechado no repositório nos últimos 7 dias e as tarefas atrasadas.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "Corrigir cálculo de frete",
+    "Migrar para Postgres 17",
+    "Revisar contrato de aluguel"
+   ],
+   "not_contains": [
+    "Atualizar logo"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-09T17:00:00-03:00",
+  "responses": [
+   {
+    "capability": "github.issues",
+    "result": [
+     {
+      "number": 440,
+      "title": "Paginação na busca",
+      "state": "closed",
+      "author": "dev1",
+      "labels": [],
+      "url": "https://github.com/acme/app/issues/440",
+      "updated": "2026-10-08T10:00:00Z",
+      "pull_request": false
+     },
+     {
+      "number": 420,
+      "title": "Erro antigo",
+      "state": "closed",
+      "author": "dev1",
+      "labels": [],
+      "url": "https://github.com/acme/app/issues/420",
+      "updated": "2026-09-28T10:00:00Z",
+      "pull_request": false
+     }
+    ]
+   },
+   {
+    "capability": "todoist.tasks",
+    "result": []
+   }
+  ],
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 1,
+    "contains": [
+     "Paginação na busca"
+    ],
+    "not_contains": [
+     "Erro antigo",
+     "Revisar contrato de aluguel"
+    ]
+   }
+  ]
+ }
+}

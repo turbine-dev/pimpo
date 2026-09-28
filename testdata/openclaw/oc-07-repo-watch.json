@@ -1,0 +1,113 @@
+{
+ "id": "oc-07-repo-watch",
+ "request": "A cada 6 horas, olha o repositório acme/app no GitHub e me avisa no Discord das issues e PRs abertas que tiveram atividade nas últimas 6 horas, com o link.",
+ "now": "2026-09-24T18:00:00-03:00",
+ "calls": [
+  {
+   "capability": "github.issues",
+   "args": {
+    "repo": "acme/app",
+    "state": "open",
+    "max": 50
+   },
+   "result": [
+    {
+     "number": 412,
+     "title": "Login quebra no Safari",
+     "state": "open",
+     "author": "dev1",
+     "labels": [],
+     "url": "https://github.com/acme/app/issues/412",
+     "updated": "2026-09-24T19:40:00Z",
+     "pull_request": false
+    },
+    {
+     "number": 411,
+     "title": "Adicionar modo escuro",
+     "state": "open",
+     "author": "dev2",
+     "labels": [],
+     "url": "https://github.com/acme/app/issues/411",
+     "updated": "2026-09-24T16:10:00Z",
+     "pull_request": true
+    },
+    {
+     "number": 398,
+     "title": "Melhorar docs de instalação",
+     "state": "open",
+     "author": "dev1",
+     "labels": [],
+     "url": "https://github.com/acme/app/issues/398",
+     "updated": "2026-09-20T12:00:00Z",
+     "pull_request": false
+    }
+   ]
+  },
+  {
+   "capability": "discord.send",
+   "args": {
+    "text": "🐙 acme/app nas últimas 6h:\n• #412 Login quebra no Safari — https://github.com/acme/app/issues/412\n• PR #411 Adicionar modo escuro — https://github.com/acme/app/issues/411"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Um aviso no Discord com as issues e PRs abertas atualizadas nas últimas 6 horas; nada quando não houver.",
+ "expect": [
+  {
+   "capability": "discord.send",
+   "count": 1,
+   "contains": [
+    "Login quebra no Safari",
+    "issues/412",
+    "Adicionar modo escuro"
+   ],
+   "not_contains": [
+    "Melhorar docs de instalação"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T12:00:00-03:00",
+  "responses": [
+   {
+    "capability": "github.issues",
+    "result": [
+     {
+      "number": 430,
+      "title": "Crash ao exportar PDF",
+      "state": "open",
+      "author": "dev1",
+      "labels": [],
+      "url": "https://github.com/acme/app/issues/430",
+      "updated": "2026-10-08T13:20:00Z",
+      "pull_request": false
+     },
+     {
+      "number": 429,
+      "title": "Refatorar módulo de pagamentos",
+      "state": "open",
+      "author": "dev1",
+      "labels": [],
+      "url": "https://github.com/acme/app/issues/429",
+      "updated": "2026-10-07T09:00:00Z",
+      "pull_request": true
+     }
+    ]
+   }
+  ],
+  "expect": [
+   {
+    "capability": "discord.send",
+    "count": 1,
+    "contains": [
+     "Crash ao exportar PDF"
+    ],
+    "not_contains": [
+     "Refatorar módulo de pagamentos"
+    ]
+   }
+  ]
+ }
+}

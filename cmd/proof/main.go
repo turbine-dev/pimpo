@@ -10,12 +10,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/denerFernandes/pimpo/internal/compiler"
+	// The services' capabilities (RSS, GitHub, Todoist, Home Assistant…)
+	// join the catalog the compiler sees, as they do in the app.
+	_ "github.com/denerFernandes/pimpo/internal/connector/services"
 	"github.com/denerFernandes/pimpo/internal/llm"
 	"github.com/denerFernandes/pimpo/internal/routine"
 	"github.com/denerFernandes/pimpo/internal/trace"
@@ -37,12 +41,13 @@ func main() {
 	out := flag.String("out", "docs/proof", "where to write the report")
 	model := flag.String("model", "sonnet", "model for the compiler")
 	workers := flag.Int("workers", 3, "parallel compilations")
-	only := flag.String("only", "", "run only traces whose id contains this")
+	only := flag.String("only", "", "run only traces whose id contains one of these, comma-separated")
+	attempts := flag.Int("attempts", 3, "compile attempts, with feedback, as the app makes")
 	flag.Parse()
 
 	paths, _ := filepath.Glob(filepath.Join(*dir, "*.json"))
 	sort.Strings(paths)
-	c := compiler.Compiler{Model: llm.ClaudeCLI{Model: *model}, Attempts: 2}
+	c := compiler.Compiler{Model: llm.ClaudeCLI{Model: *model}, Attempts: *attempts}
 	results := make([]result, len(paths))
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, *workers)
@@ -52,7 +57,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		if *only != "" && !strings.Contains(t.ID, *only) {
+		if *only != "" && !slices.ContainsFunc(strings.Split(*only, ","), func(o string) bool { return strings.Contains(t.ID, o) }) {
 			continue
 		}
 		wg.Add(1)
@@ -71,7 +76,7 @@ func main() {
 
 func run(c compiler.Compiler, t trace.Trace) result {
 	start := time.Now()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
 	attempts, err := c.Compile(ctx, t)
 	r := result{ID: t.ID, Attempts: attempts, Seconds: time.Since(start).Seconds()}
@@ -85,7 +90,10 @@ func run(c compiler.Compiler, t trace.Trace) result {
 		if t.Holdout == nil || a.Invalid != "" {
 			return nil
 		}
-		o := routine.Check(ctx, a.Routine, "holdout", *t.Holdout)
+		// The holdout gets its own time, so a long compile does not fail it.
+		hctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		o := routine.Check(hctx, a.Routine, "holdout", *t.Holdout)
 		return &o
 	}
 	first := attempts[0]

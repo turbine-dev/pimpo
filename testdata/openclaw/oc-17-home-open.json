@@ -1,0 +1,91 @@
+{
+ "id": "oc-17-home-open",
+ "request": "Todo dia às 23h, confere no Home Assistant se ficou alguma porta ou janela aberta e me avisa no Telegram quais são. Se estiver tudo fechado, não precisa avisar.",
+ "now": "2026-09-24T23:00:00-03:00",
+ "calls": [
+  {
+   "capability": "ha.states",
+   "args": {
+    "domain": "binary_sensor"
+   },
+   "result": [
+    {
+     "entity_id": "binary_sensor.porta_da_frente",
+     "state": "off",
+     "name": "Porta da frente",
+     "changed": "2026-09-24T21:00:00Z"
+    },
+    {
+     "entity_id": "binary_sensor.janela_da_sala",
+     "state": "on",
+     "name": "Janela da sala",
+     "changed": "2026-09-24T21:00:00Z"
+    },
+    {
+     "entity_id": "binary_sensor.porta_da_varanda",
+     "state": "on",
+     "name": "Porta da varanda",
+     "changed": "2026-09-24T21:00:00Z"
+    },
+    {
+     "entity_id": "binary_sensor.movimento_corredor",
+     "state": "off",
+     "name": "Movimento corredor",
+     "changed": "2026-09-24T21:00:00Z"
+    }
+   ]
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "🚪 Ficou aberto: Janela da sala, Porta da varanda"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Um aviso listando as portas e janelas abertas; silêncio quando tudo está fechado.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "Janela da sala",
+    "Porta da varanda"
+   ],
+   "not_contains": [
+    "Porta da frente",
+    "Movimento corredor"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T23:00:00-03:00",
+  "responses": [
+   {
+    "capability": "ha.states",
+    "result": [
+     {
+      "entity_id": "binary_sensor.porta_da_frente",
+      "state": "off",
+      "name": "Porta da frente",
+      "changed": "2026-09-24T21:00:00Z"
+     },
+     {
+      "entity_id": "binary_sensor.janela_da_sala",
+      "state": "off",
+      "name": "Janela da sala",
+      "changed": "2026-09-24T21:00:00Z"
+     }
+    ]
+   }
+  ],
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 0
+   }
+  ]
+ }
+}

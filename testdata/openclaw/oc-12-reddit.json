@@ -1,0 +1,123 @@
+{
+ "id": "oc-12-reddit",
+ "request": "Todo dia às 20h, me manda no Telegram os 3 posts mais votados do dia em r/LocalLLaMA e em r/selfhosted, com link.",
+ "now": "2026-09-24T20:00:00-03:00",
+ "calls": [
+  {
+   "capability": "rss.read",
+   "args": {
+    "url": "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day",
+    "max": 3
+   },
+   "result": [
+    {
+     "title": "Qwen 4 32B runs on a single 4090",
+     "link": "https://www.reddit.com/r/LocalLLaMA/comments/a1",
+     "published": "2026-09-24T12:00:00Z",
+     "summary": ""
+    },
+    {
+     "title": "My llama.cpp benchmark results",
+     "link": "https://www.reddit.com/r/LocalLLaMA/comments/a2",
+     "published": "2026-09-24T10:00:00Z",
+     "summary": ""
+    },
+    {
+     "title": "Best embedding model in 2026?",
+     "link": "https://www.reddit.com/r/LocalLLaMA/comments/a3",
+     "published": "2026-09-24T09:00:00Z",
+     "summary": ""
+    }
+   ]
+  },
+  {
+   "capability": "rss.read",
+   "args": {
+    "url": "https://www.reddit.com/r/selfhosted/top/.rss?t=day",
+    "max": 3
+   },
+   "result": [
+    {
+     "title": "I replaced Google Photos with Immich",
+     "link": "https://www.reddit.com/r/selfhosted/comments/b1",
+     "published": "2026-09-24T13:00:00Z",
+     "summary": ""
+    },
+    {
+     "title": "Homelab tour 2026",
+     "link": "https://www.reddit.com/r/selfhosted/comments/b2",
+     "published": "2026-09-24T11:00:00Z",
+     "summary": ""
+    },
+    {
+     "title": "Caddy vs Traefik",
+     "link": "https://www.reddit.com/r/selfhosted/comments/b3",
+     "published": "2026-09-24T08:00:00Z",
+     "summary": ""
+    }
+   ]
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "🧵 r/LocalLLaMA: Qwen 4 32B runs on a single 4090 · My llama.cpp benchmark results · Best embedding model in 2026?\n🏠 r/selfhosted: I replaced Google Photos with Immich · Homelab tour 2026 · Caddy vs Traefik"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Uma mensagem com os 3 posts do topo do dia de cada subreddit, com links.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "Qwen 4 32B",
+    "comments/a1",
+    "Immich",
+    "Caddy vs Traefik"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T20:00:00-03:00",
+  "responses": [
+   {
+    "capability": "rss.read",
+    "result": [
+     {
+      "title": "New 8B model tops the leaderboard",
+      "link": "https://www.reddit.com/r/LocalLLaMA/comments/c1",
+      "published": "2026-10-08T12:00:00Z",
+      "summary": ""
+     }
+    ]
+   },
+   {
+    "capability": "rss.read",
+    "result": [
+     {
+      "title": "Backups: 3-2-1 explained",
+      "link": "https://www.reddit.com/r/selfhosted/comments/d1",
+      "published": "2026-10-08T12:00:00Z",
+      "summary": ""
+     }
+    ]
+   }
+  ],
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 1,
+    "contains": [
+     "New 8B model tops the leaderboard",
+     "3-2-1"
+    ],
+    "not_contains": [
+     "Immich"
+    ]
+   }
+  ]
+ }
+}

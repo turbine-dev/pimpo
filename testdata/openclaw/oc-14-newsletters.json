@@ -1,0 +1,192 @@
+{
+ "id": "oc-14-newsletters",
+ "request": "Todo dia às 18h, junta as newsletters que chegaram hoje numa mensagem só no Telegram (remetente e assunto) e arquiva os e-mails originais.",
+ "now": "2026-09-24T18:00:00-03:00",
+ "calls": [
+  {
+   "capability": "gmail.search",
+   "args": {
+    "query": "in:inbox",
+    "days": 1,
+    "max": 50
+   },
+   "result": [
+    {
+     "id": "nl1",
+     "from": "hello@thenews.cc",
+     "from_name": "the news",
+     "to": "eu@exemplo.com",
+     "subject": "☕ Quinta-feira, 24",
+     "snippet": "Bom dia! Hoje...",
+     "date": "2026-09-24T06:00:00-03:00",
+     "labels": [
+      "INBOX",
+      "UNREAD",
+      "CATEGORY_UPDATES"
+     ],
+     "replied": false,
+     "unread": true
+    },
+    {
+     "id": "nl2",
+     "from": "dan@tldrnewsletter.com",
+     "from_name": "TLDR",
+     "to": "eu@exemplo.com",
+     "subject": "TLDR AI 2026-09-24",
+     "snippet": "Top stories in AI",
+     "date": "2026-09-24T07:00:00-03:00",
+     "labels": [
+      "INBOX",
+      "UNREAD",
+      "CATEGORY_UPDATES"
+     ],
+     "replied": false,
+     "unread": true
+    },
+    {
+     "id": "nl3",
+     "from": "carla@acme.com",
+     "from_name": "Carla",
+     "to": "eu@exemplo.com",
+     "subject": "Reunião amanhã",
+     "snippet": "Podemos mudar para 15h?",
+     "date": "2026-09-24T11:00:00-03:00",
+     "labels": [
+      "INBOX",
+      "UNREAD"
+     ],
+     "replied": false,
+     "unread": true
+    }
+   ]
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "📰 Newsletters de hoje:\n• the news — ☕ Quinta-feira, 24\n• TLDR — TLDR AI 2026-09-24"
+   },
+   "result": {
+    "ok": true
+   }
+  },
+  {
+   "capability": "gmail.archive",
+   "args": {
+    "id": "nl1"
+   },
+   "result": {
+    "ok": true
+   }
+  },
+  {
+   "capability": "gmail.archive",
+   "args": {
+    "id": "nl2"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "judgments": {
+  "newsletter": {
+   "nl1": 0.97,
+   "nl2": 0.98,
+   "nl3": 0.02
+  }
+ },
+ "outcome": "Uma mensagem com as newsletters do dia e cada uma arquivada; os outros e-mails ficam onde estão.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "TLDR AI 2026-09-24",
+    "the news"
+   ],
+   "not_contains": [
+    "Reunião amanhã"
+   ]
+  },
+  {
+   "capability": "gmail.archive",
+   "count": 2,
+   "contains": [
+    "nl1",
+    "nl2"
+   ],
+   "not_contains": [
+    "nl3"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T18:00:00-03:00",
+  "responses": [
+   {
+    "capability": "gmail.search",
+    "result": [
+     {
+      "id": "hn1",
+      "from": "news@morningbrew.com",
+      "from_name": "Morning Brew",
+      "to": "eu@exemplo.com",
+      "subject": "Markets today",
+      "snippet": "Stocks...",
+      "date": "2026-10-08T06:00:00-03:00",
+      "labels": [
+       "INBOX",
+       "UNREAD",
+       "CATEGORY_UPDATES"
+      ],
+      "replied": false,
+      "unread": true
+     },
+     {
+      "id": "hn2",
+      "from": "chefe@acme.com",
+      "from_name": "Chefe",
+      "to": "eu@exemplo.com",
+      "subject": "Prazo do relatório",
+      "snippet": "Até amanhã.",
+      "date": "2026-10-08T09:00:00-03:00",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "unread": true
+     }
+    ]
+   }
+  ],
+  "judgments": {
+   "newsletter": {
+    "hn1": 0.96,
+    "hn2": 0.02
+   }
+  },
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 1,
+    "contains": [
+     "Markets today"
+    ],
+    "not_contains": [
+     "Prazo do relatório"
+    ]
+   },
+   {
+    "capability": "gmail.archive",
+    "count": 1,
+    "contains": [
+     "hn1"
+    ],
+    "not_contains": [
+     "hn2"
+    ]
+   }
+  ]
+ }
+}

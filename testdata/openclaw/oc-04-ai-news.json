@@ -1,0 +1,114 @@
+{
+ "id": "oc-04-ai-news",
+ "request": "Toda segunda às 9h, me manda no Telegram as notícias sobre inteligência artificial que mais bombaram no Hacker News, com o link de cada uma.",
+ "now": "2026-09-28T09:00:00-03:00",
+ "calls": [
+  {
+   "capability": "rss.read",
+   "args": {
+    "url": "https://hnrss.org/best",
+    "max": 30
+   },
+   "result": [
+    {
+     "title": "Open-weight model beats GPT on coding benchmark",
+     "link": "https://news.ycombinator.com/item?id=1001",
+     "published": "2026-09-27T14:00:00Z",
+     "summary": ""
+    },
+    {
+     "title": "The history of the Unix pipe",
+     "link": "https://news.ycombinator.com/item?id=1002",
+     "published": "2026-09-27T10:00:00Z",
+     "summary": ""
+    },
+    {
+     "title": "Anthropic publishes interpretability results",
+     "link": "https://news.ycombinator.com/item?id=1003",
+     "published": "2026-09-26T18:00:00Z",
+     "summary": ""
+    },
+    {
+     "title": "Show HN: A tiny SQLite GUI",
+     "link": "https://news.ycombinator.com/item?id=1004",
+     "published": "2026-09-26T09:00:00Z",
+     "summary": ""
+    }
+   ]
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "🤖 IA no Hacker News:\n• Open-weight model beats GPT on coding benchmark — https://news.ycombinator.com/item?id=1001\n• Anthropic publishes interpretability results — https://news.ycombinator.com/item?id=1003"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "judgments": {
+  "about_ai": {
+   "id=1001": 0.97,
+   "id=1002": 0.02,
+   "id=1003": 0.95,
+   "id=1004": 0.04
+  }
+ },
+ "outcome": "Uma mensagem com os títulos e links das histórias de IA do feed de melhores do Hacker News; as outras ficam de fora.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "Open-weight model beats GPT",
+    "item?id=1001",
+    "Anthropic publishes interpretability results"
+   ],
+   "not_contains": [
+    "Unix pipe",
+    "SQLite GUI"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-12T09:00:00-03:00",
+  "responses": [
+   {
+    "capability": "rss.read",
+    "result": [
+     {
+      "title": "Why we left Kubernetes",
+      "link": "https://news.ycombinator.com/item?id=2001",
+      "published": "2026-10-11T14:00:00Z",
+      "summary": ""
+     },
+     {
+      "title": "LLM agents that write their own tools",
+      "link": "https://news.ycombinator.com/item?id=2002",
+      "published": "2026-10-11T12:00:00Z",
+      "summary": ""
+     }
+    ]
+   }
+  ],
+  "judgments": {
+   "about_ai": {
+    "id=2001": 0.03,
+    "id=2002": 0.96
+   }
+  },
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 1,
+    "contains": [
+     "LLM agents that write their own tools",
+     "item?id=2002"
+    ],
+    "not_contains": [
+     "Kubernetes"
+    ]
+   }
+  ]
+ }
+}

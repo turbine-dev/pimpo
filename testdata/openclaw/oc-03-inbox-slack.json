@@ -1,0 +1,166 @@
+{
+ "id": "oc-03-inbox-slack",
+ "request": "Dias úteis às 9h, manda no meu Slack um resumo dos e-mails que chegaram ontem: remetente e assunto, sem promoções nem redes sociais.",
+ "now": "2026-09-24T09:00:00-03:00",
+ "calls": [
+  {
+   "capability": "gmail.search",
+   "args": {
+    "query": "in:inbox after:2026/09/23 before:2026/09/24",
+    "days": 2,
+    "max": 50
+   },
+   "result": [
+    {
+     "id": "s1",
+     "from": "rh@acme.com",
+     "from_name": "RH Acme",
+     "to": "eu@exemplo.com",
+     "subject": "Nova política de home office",
+     "snippet": "A partir de outubro...",
+     "date": "2026-09-23T11:00:00-03:00",
+     "labels": [
+      "INBOX"
+     ],
+     "replied": false,
+     "unread": false
+    },
+    {
+     "id": "s2",
+     "from": "promo@viagens.com",
+     "from_name": "Viagens.com",
+     "to": "eu@exemplo.com",
+     "subject": "Pacotes com 40% off",
+     "snippet": "Ofertas.",
+     "date": "2026-09-23T12:00:00-03:00",
+     "labels": [
+      "INBOX",
+      "CATEGORY_PROMOTIONS"
+     ],
+     "replied": false,
+     "unread": false
+    },
+    {
+     "id": "s3",
+     "from": "notification@linkedin.com",
+     "from_name": "LinkedIn",
+     "to": "eu@exemplo.com",
+     "subject": "5 pessoas viram seu perfil",
+     "snippet": "Veja quem.",
+     "date": "2026-09-23T15:00:00-03:00",
+     "labels": [
+      "INBOX",
+      "CATEGORY_SOCIAL"
+     ],
+     "replied": false,
+     "unread": false
+    },
+    {
+     "id": "s4",
+     "from": "tiago@fornecedor.com",
+     "from_name": "Tiago Rocha",
+     "to": "eu@exemplo.com",
+     "subject": "Proposta revisada",
+     "snippet": "Segue a proposta com o desconto.",
+     "date": "2026-09-23T18:20:00-03:00",
+     "labels": [
+      "INBOX"
+     ],
+     "replied": false,
+     "unread": false
+    }
+   ]
+  },
+  {
+   "capability": "slack.send",
+   "args": {
+    "text": "📬 E-mails de ontem:\n• RH Acme — Nova política de home office\n• Tiago Rocha — Proposta revisada"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Uma mensagem no Slack com remetente e assunto dos e-mails de ontem, sem promoções nem redes sociais.",
+ "expect": [
+  {
+   "capability": "slack.send",
+   "count": 1,
+   "contains": [
+    "Nova política de home office",
+    "Proposta revisada",
+    "Tiago Rocha"
+   ],
+   "not_contains": [
+    "40% off",
+    "viram seu perfil"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T09:00:00-03:00",
+  "responses": [
+   {
+    "capability": "gmail.search",
+    "result": [
+     {
+      "id": "hs1",
+      "from": "financeiro@acme.com",
+      "from_name": "Financeiro",
+      "to": "eu@exemplo.com",
+      "subject": "Fechamento de setembro",
+      "snippet": "Planilha anexa.",
+      "date": "2026-10-07T10:00:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": false,
+      "unread": false
+     },
+     {
+      "id": "hs2",
+      "from": "deals@loja.com",
+      "from_name": "Loja",
+      "to": "eu@exemplo.com",
+      "subject": "Semana do cliente",
+      "snippet": "Descontos.",
+      "date": "2026-10-07T11:00:00-03:00",
+      "labels": [
+       "INBOX",
+       "CATEGORY_PROMOTIONS"
+      ],
+      "replied": false,
+      "unread": false
+     },
+     {
+      "id": "hs3",
+      "from": "velho@acme.com",
+      "from_name": "Velho",
+      "to": "eu@exemplo.com",
+      "subject": "Assunto de anteontem",
+      "snippet": "x",
+      "date": "2026-10-06T10:00:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": false,
+      "unread": false
+     }
+    ]
+   }
+  ],
+  "expect": [
+   {
+    "capability": "slack.send",
+    "count": 1,
+    "contains": [
+     "Fechamento de setembro"
+    ],
+    "not_contains": [
+     "Semana do cliente",
+     "Assunto de anteontem"
+    ]
+   }
+  ]
+ }
+}
