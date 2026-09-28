@@ -253,6 +253,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.snapshotRoutes()
 	a.repoRoutes()
 	a.reminderRoutes()
+	a.mediaRoutes()
 	a.doctorRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()
@@ -433,6 +434,7 @@ func (a *App) router() *connector.Router {
 		whatsappCap{a},
 		notifyCap{a},
 		reminderCap{a},
+		audioCap{a},
 	)
 	for _, k := range services.All() {
 		r.Add(k.Connector(a.catalogConfig))

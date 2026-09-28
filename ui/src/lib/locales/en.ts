@@ -1224,4 +1224,5 @@ export const en: Record<Key, string> = {
   'doc.fix.opencode': "opencode wasn’t found. Install it or choose another model in Settings › Models.",
   'rem.title': "Reminders",
   'rem.cancel': "Cancel the reminder “{text}”",
+  'inbox.audio': "Recent recordings",
 }

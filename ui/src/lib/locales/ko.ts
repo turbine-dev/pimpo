@@ -1224,4 +1224,5 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'doc.fix.opencode': "opencode를 찾을 수 없습니다. 설치하거나 설정 › 모델에서 다른 모델을 고르세요.",
   'rem.title': "알림",
   'rem.cancel': "“{text}” 알림 취소",
+  'inbox.audio': "최근 음성",
 }

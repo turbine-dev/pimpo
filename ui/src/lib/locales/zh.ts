@@ -1224,4 +1224,5 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'doc.fix.opencode': "未找到 opencode。请安装它，或在 设置 › 模型 中选择其他模型。",
   'rem.title': "提醒",
   'rem.cancel': "取消提醒“{text}”",
+  'inbox.audio': "最近的音频",
 }

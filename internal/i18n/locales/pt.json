@@ -36,6 +36,7 @@
   "msg.approval.batch": "Permitido para o resto desta execução.",
   "msg.approval.deny": "Negado.",
   "msg.approval.gone": "Este pedido já não está esperando.",
+  "msg.audio.ready": "🎧 {title} (~{minutes} min) está pronto. Ouça no Pimpo, em Precisa de você.",
   "msg.conv.continue": "Entendido, seguindo a conversa. 🔎",
   "msg.conv.new": "🆕 Nova conversa. O que vem a seguir começa do zero.",
   "msg.discarded": "Descartado.",

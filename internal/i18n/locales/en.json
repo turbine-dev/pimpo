@@ -36,6 +36,7 @@
   "msg.approval.batch": "Allowed for the rest of this run.",
   "msg.approval.deny": "Denied.",
   "msg.approval.gone": "This request is no longer waiting.",
+  "msg.audio.ready": "🎧 {title} (~{minutes} min) is ready. Listen in Pimpo, under Needs you.",
   "msg.conv.continue": "Got it, continuing the conversation. 🔎",
   "msg.conv.new": "🆕 New conversation. What comes next starts fresh.",
   "msg.discarded": "Discarded.",

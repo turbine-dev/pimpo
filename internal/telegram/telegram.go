@@ -9,7 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -208,4 +210,66 @@ func (b Bot) Poll(ctx context.Context, offset int64, handle func(Update)) error 
 		}
 	}
 	return ctx.Err()
+}
+
+// SendAudio sends an audio file the chat shows with a player, its title
+// and a caption.
+func (b Bot) SendAudio(ctx context.Context, chat int64, filename string, audio []byte, title, caption string, seconds int) (Message, error) {
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	mw.WriteField("chat_id", strconv.FormatInt(chat, 10))
+	if title != "" {
+		mw.WriteField("title", title)
+		mw.WriteField("performer", "Pimpo")
+	}
+	if caption != "" {
+		if r := []rune(caption); len(r) > 1000 {
+			caption = string(r[:999]) + "…"
+		}
+		mw.WriteField("caption", caption)
+	}
+	if seconds > 0 {
+		mw.WriteField("duration", strconv.Itoa(seconds))
+	}
+	fw, err := mw.CreateFormFile("audio", filename)
+	if err != nil {
+		return Message{}, err
+	}
+	fw.Write(audio)
+	mw.Close()
+	base := b.BaseURL
+	if base == "" {
+		base = "https://api.telegram.org"
+	}
+	client := b.HTTP
+	if client == nil {
+		client = &http.Client{Timeout: 3 * time.Minute}
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/bot"+b.Token+"/sendAudio", &buf)
+	if err != nil {
+		return Message{}, err
+	}
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	resp, err := client.Do(req)
+	if err != nil {
+		var uerr interface{ Unwrap() error }
+		if errors.As(err, &uerr) {
+			return Message{}, fmt.Errorf("telegram sendAudio: %w", uerr.Unwrap())
+		}
+		return Message{}, errors.New("telegram sendAudio failed")
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(resp.Body)
+	var env struct {
+		OK          bool    `json:"ok"`
+		Result      Message `json:"result"`
+		Description string  `json:"description"`
+	}
+	if err := json.Unmarshal(raw, &env); err != nil {
+		return Message{}, fmt.Errorf("telegram sendAudio: unreadable response (%d)", resp.StatusCode)
+	}
+	if !env.OK {
+		return Message{}, fmt.Errorf("telegram sendAudio: %s", env.Description)
+	}
+	return env.Result, nil
 }

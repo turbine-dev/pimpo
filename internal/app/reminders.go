@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
 	"github.com/denerFernandes/pimpo/internal/connector"
 	"github.com/denerFernandes/pimpo/internal/i18n"
 	"github.com/denerFernandes/pimpo/internal/people"
@@ -34,15 +33,6 @@ type reminder struct {
 }
 
 const remindersKey = "reminders"
-
-func init() {
-	capability.Register(capability.Spec{Name: "reminder.set", Risk: capability.Notify, Signature: "reminder.set({at, text}) or reminder.set({in, text})",
-		Returns: "{id, at}; at is an ISO 8601 time with its offset, in is a delay such as 30m, 2h or 1d; the message goes to the person who asked, once",
-		Schema:  `{"type":"object","required":["text"],"properties":{"at":{"type":"string","description":"ISO 8601 time with offset, e.g. 2026-09-29T09:00:00-03:00"},"in":{"type":"string","description":"delay from now: 30m, 2h, 1d"},"text":{"type":"string","description":"what to remind, as it should be read"}}}`})
-	capability.Register(capability.Spec{Name: "reminder.list", Risk: capability.Read, Signature: "reminder.list()", Returns: "[{id, at, text}] the pending reminders, soonest first"})
-	capability.Register(capability.Spec{Name: "reminder.cancel", Risk: capability.Reversible, Signature: "reminder.cancel({id})", Returns: "{ok}",
-		Schema: `{"type":"object","required":["id"],"properties":{"id":{"type":"string"}}}`})
-}
 
 var remindersMu sync.Mutex
 

@@ -1249,4 +1249,5 @@ export const it: Record<Key, string> & Record<string, string> = {
   'doc.fix.opencode': "opencode non è stato trovato. Installalo o scegli un altro modello in Impostazioni › Modelli.",
   'rem.title': "Promemoria",
   'rem.cancel': "Annulla il promemoria “{text}”",
+  'inbox.audio': "Registrazioni recenti",
 }

@@ -36,6 +36,7 @@
   "msg.approval.batch": "이번 실행이 끝날 때까지 허용했어요.",
   "msg.approval.deny": "거부했어요.",
   "msg.approval.gone": "이 요청은 더 이상 대기 중이 아니에요.",
+  "msg.audio.ready": "🎧 {title} (약 {minutes}분) 준비됐습니다. Pimpo의 ‘확인 필요’에서 들어 보세요.",
   "msg.conv.continue": "알겠어요, 대화를 이어 갈게요. 🔎",
   "msg.conv.new": "🆕 새 대화예요. 이제부터는 처음부터 시작해요.",
   "msg.discarded": "버렸어요.",

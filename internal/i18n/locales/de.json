@@ -36,6 +36,7 @@
   "msg.approval.batch": "Für den Rest dieses Laufs erlaubt.",
   "msg.approval.deny": "Abgelehnt.",
   "msg.approval.gone": "Diese Anfrage wartet nicht mehr.",
+  "msg.audio.ready": "🎧 {title} (~{minutes} Min.) ist fertig. Anhören in Pimpo unter Braucht dich.",
   "msg.conv.continue": "Verstanden, das Gespräch geht weiter. 🔎",
   "msg.conv.new": "🆕 Neues Gespräch. Was jetzt kommt, beginnt von vorn.",
   "msg.discarded": "Verworfen.",

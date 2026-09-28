@@ -1249,4 +1249,5 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'doc.fix.opencode': "opencode est introuvable. Installez-le ou choisissez un autre modèle dans Réglages › Modèles.",
   'rem.title': "Rappels",
   'rem.cancel': "Annuler le rappel « {text} »",
+  'inbox.audio': "Enregistrements récents",
 }

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BellOff, ShieldQuestion, Sparkles } from 'lucide-react'
+import { AlertTriangle, BellOff, Headphones, ShieldQuestion, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api } from '../lib/api'
@@ -16,8 +16,9 @@ export function Inbox() {
   const run = useMutation({ mutationFn: (id: string) => api.routineAction(id, 'run'), onSettled: () => qc.invalidateQueries({ queryKey: ['routines'] }) })
   const approvals = useQuery({ queryKey: ['approvals'], queryFn: api.approvals, refetchInterval: 10_000 })
   const answer = useMutation({ mutationFn: ({ id, a }: { id: string; a: 'once' | 'run' | 'always' | 'deny' }) => api.answer(id, a), onSettled: () => qc.invalidateQueries({ queryKey: ['approvals'] }) })
+  const media = useQuery({ queryKey: ['media'], queryFn: api.media, refetchInterval: 60_000 })
   const broken = (routines.data ?? []).filter((r) => r.state === 'broken')
-  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0)
+  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0) + (media.data?.length ?? 0)
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -29,6 +30,19 @@ export function Inbox() {
         </EmptyState>
       )}
       <div className="space-y-3">
+        {(media.data ?? []).length > 0 && (
+          <Card className="p-4">
+            <div className="mb-2 flex items-center gap-2 text-[14px] font-medium"><Headphones size={15} /> {t('inbox.audio')}</div>
+            <ul className="space-y-3">
+              {media.data!.map((m) => (
+                <li key={m.id}>
+                  <div className="mb-1 flex items-baseline justify-between gap-3 text-[13px]"><span className="min-w-0 truncate">{m.title}</span><span className="shrink-0 text-[12px] text-ink-3">{relative(m.at)}</span></div>
+                  <audio controls preload="none" src={`/api/media/${m.id}`} className="w-full" aria-label={m.title} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
         {(approvals.data ?? []).map((ap) => (
           <Card key={ap.id} className={`flex flex-wrap items-center gap-4 p-4 ${ap.action.risk >= 3 ? 'border-danger/40' : 'border-change/40'}`}>
             <div className={`grid size-10 place-items-center rounded-xl ${ap.action.risk >= 3 ? 'bg-danger-soft text-danger' : 'bg-change-soft text-change'}`}>
