@@ -165,3 +165,28 @@ func duration(ctx context.Context, path string) float64 {
 }
 
 func has(name string) bool { _, err := exec.LookPath(name); return err == nil }
+
+// Encode turns any audio file the system can read (a WAV from a local
+// voice) into M4A (AAC), with its length in seconds.
+func Encode(ctx context.Context, in string) ([]byte, float64, error) {
+	out := strings.TrimSuffix(in, filepath.Ext(in)) + ".m4a"
+	var stderr bytes.Buffer
+	var cmd *exec.Cmd
+	switch {
+	case has("afconvert"):
+		cmd = exec.CommandContext(ctx, "afconvert", "-f", "m4af", "-d", "aac", "-b", "64000", in, out)
+	case has("ffmpeg"):
+		cmd = exec.CommandContext(ctx, "ffmpeg", "-y", "-loglevel", "error", "-i", in, "-c:a", "aac", "-b:a", "64k", out)
+	default:
+		return nil, 0, errors.New("converting audio needs afconvert (macOS) or ffmpeg")
+	}
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return nil, 0, fmt.Errorf("converting audio: %v %s", err, strings.TrimSpace(stderr.String()))
+	}
+	b, err := os.ReadFile(out)
+	if err != nil {
+		return nil, 0, err
+	}
+	return b, duration(ctx, out), nil
+}

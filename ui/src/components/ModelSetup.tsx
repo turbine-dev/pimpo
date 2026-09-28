@@ -6,6 +6,7 @@ import { api, EFFORTS, type CatalogModel, type Effort, type Job, type ModelOptio
 import { cn } from '../lib/cn'
 import { usd } from '../lib/format'
 import { fill, useT, type TKey } from '../lib/i18n'
+import { LocalModels } from './LocalModels'
 import { Button, Card, Switch } from './ui'
 
 const field = 'h-9 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -186,6 +187,8 @@ export function ModelSetup() {
         {(found.data?.apps?.length ?? 0) > 0 && <p className="mt-3 text-[12.5px] text-ink-3">{t('ms.apps', { list: found.data!.apps!.join(', ') })}</p>}
         <LocalAddresses s={s} save={save.mutate} />
       </Card>
+
+      <LocalModels />
 
       <Card className="p-5">
         <div className="mb-1 text-[15px] font-medium">{t('ms.providers')}</div>
