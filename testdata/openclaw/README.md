@@ -30,5 +30,6 @@ To try the routines in Pimpo, export the accepted ones and import them paused:
 | oc-17 | Doors and windows left open (Home Assistant) | OpenClaw (self-healing home server) |
 | oc-18 | Habit check-in question | OpenClaw |
 | oc-19 | Price drop through a JSON API | Hermes pricing monitor |
+| oc-20 | Price on a shop's web page (web.read) | Hermes pricing monitor |
 
-Not covered, because Pimpo lacks the capability: one-shot reminders ("in 30 minutes"), reading web pages that are not JSON, a routine that waits for the owner's answer, chained routines, server metrics, publishing content.
+Not covered, because Pimpo lacks the capability: a routine that waits for the owner's answer, chained routines, server metrics, publishing content.

@@ -32,7 +32,7 @@ func (a approver) Ask(ctx context.Context, act policy.Action, reason string) (bo
 // remember turns "always" into a lasting permission: a known host for web
 // reads, a specific rule for everything else.
 func (a *App) remember(ctx context.Context, act policy.Action) {
-	if act.Capability == "http.getJSON" && act.Scope != "" {
+	if (act.Capability == "http.getJSON" || act.Capability == "web.read") && act.Scope != "" {
 		a.Rules.AllowHost(ctx, act.Scope, true, "human:owner")
 		return
 	}

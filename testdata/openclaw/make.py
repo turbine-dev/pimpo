@@ -463,6 +463,30 @@ T.append({
     },
 })
 
+# 20. Price on a shop's page (Hermes pricing monitor), read as a web page.
+def page(price, title="Processador AMD Ryzen 7 5700X3D AM4 | KaBuM!"):
+    return {"url": "https://www.kabum.com.br/produto/520369", "title": title, "description": "", "truncated": False,
+            "text": "Processador AMD Ryzen 7 5700X3D\nÀ vista no PIX\nR$ " + price.replace(".", ",") + "\nEm até 10x sem juros",
+            "data": [{"@type": "Product", "name": "Processador AMD Ryzen 7 5700X3D", "offers": {"@type": "Offer", "price": price, "priceCurrency": "BRL", "availability": "https://schema.org/InStock"}}],
+            "links": []}
+
+T.append({
+    "id": "oc-20-price-page",
+    "request": "De hora em hora, olha o preço do Ryzen 7 5700X3D na página https://www.kabum.com.br/produto/520369 e me avisa no Telegram se ficar abaixo de R$ 1.100, com o link.",
+    "now": "2026-09-24T12:00:00-03:00",
+    "calls": [
+        {"capability": "web.read", "args": {"url": "https://www.kabum.com.br/produto/520369"}, "result": page("1049.90")},
+        sent("telegram.send", "💸 Ryzen 7 5700X3D por R$ 1.049,90 (abaixo de R$ 1.100): https://www.kabum.com.br/produto/520369"),
+    ],
+    "outcome": "Um aviso com o preço e o link quando fica abaixo de R$ 1.100; nada acima disso.",
+    "expect": [expect("telegram.send", 1, ["1.049,90", "kabum.com.br/produto/520369"])],
+    "holdout": {
+        "now": "2026-10-08T12:00:00-03:00",
+        "responses": [{"capability": "web.read", "result": page("1249.00")}],
+        "expect": [expect("telegram.send", 0)],
+    },
+})
+
 out = here
 for t in T:
     with open(os.path.join(out, t["id"] + ".json"), "w") as f:

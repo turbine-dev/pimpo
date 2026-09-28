@@ -1,0 +1,87 @@
+{
+ "id": "oc-20-price-page",
+ "request": "De hora em hora, olha o preço do Ryzen 7 5700X3D na página https://www.kabum.com.br/produto/520369 e me avisa no Telegram se ficar abaixo de R$ 1.100, com o link.",
+ "now": "2026-09-24T12:00:00-03:00",
+ "calls": [
+  {
+   "capability": "web.read",
+   "args": {
+    "url": "https://www.kabum.com.br/produto/520369"
+   },
+   "result": {
+    "url": "https://www.kabum.com.br/produto/520369",
+    "title": "Processador AMD Ryzen 7 5700X3D AM4 | KaBuM!",
+    "description": "",
+    "truncated": false,
+    "text": "Processador AMD Ryzen 7 5700X3D\nÀ vista no PIX\nR$ 1049,90\nEm até 10x sem juros",
+    "data": [
+     {
+      "@type": "Product",
+      "name": "Processador AMD Ryzen 7 5700X3D",
+      "offers": {
+       "@type": "Offer",
+       "price": "1049.90",
+       "priceCurrency": "BRL",
+       "availability": "https://schema.org/InStock"
+      }
+     }
+    ],
+    "links": []
+   }
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "💸 Ryzen 7 5700X3D por R$ 1.049,90 (abaixo de R$ 1.100): https://www.kabum.com.br/produto/520369"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Um aviso com o preço e o link quando fica abaixo de R$ 1.100; nada acima disso.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "1.049,90",
+    "kabum.com.br/produto/520369"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T12:00:00-03:00",
+  "responses": [
+   {
+    "capability": "web.read",
+    "result": {
+     "url": "https://www.kabum.com.br/produto/520369",
+     "title": "Processador AMD Ryzen 7 5700X3D AM4 | KaBuM!",
+     "description": "",
+     "truncated": false,
+     "text": "Processador AMD Ryzen 7 5700X3D\nÀ vista no PIX\nR$ 1249,00\nEm até 10x sem juros",
+     "data": [
+      {
+       "@type": "Product",
+       "name": "Processador AMD Ryzen 7 5700X3D",
+       "offers": {
+        "@type": "Offer",
+        "price": "1249.00",
+        "priceCurrency": "BRL",
+        "availability": "https://schema.org/InStock"
+       }
+      }
+     ],
+     "links": []
+    }
+   }
+  ],
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 0
+   }
+  ]
+ }
+}
