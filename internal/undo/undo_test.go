@@ -62,3 +62,24 @@ func TestUndoEachKind(t *testing.T) {
 		}
 	}
 }
+
+// A connector's change that says how to undo itself is undone by calling
+// that step.
+func TestUndoStep(t *testing.T) {
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "v.db"))
+	defer ev.Close()
+	var called []string
+	u := &Undo{Events: ev, Call: func(_ context.Context, name string, args any) (any, error) {
+		called = append(called, name+" "+args.(map[string]any)["id"].(string))
+		return nil, nil
+	}}
+	ctx := context.Background()
+	rec := host.ActionRecord{Source: "routine:x#1", Capability: "apple.reminders.add", Result: []byte(`{"id":"r1","undo":{"capability":"apple.reminders.delete","args":{"id":"r1"}}}`)}
+	e, _ := ev.Append(ctx, host.ActionEvent, rec.Source, rec)
+	if err := u.Undo(ctx, e.ID, "human:owner"); err != nil || len(called) != 1 || called[0] != "apple.reminders.delete r1" {
+		t.Fatalf("%v %v", err, called)
+	}
+	if err := u.Undo(ctx, e.ID, "human:owner"); !errors.Is(err, ErrAlreadyUndone) {
+		t.Fatalf("second undo: %v", err)
+	}
+}

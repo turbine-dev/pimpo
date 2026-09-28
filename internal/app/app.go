@@ -248,7 +248,9 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		return nil, err
 	}
 	router.Add(a.Outbox)
-	a.Undo = &undo.Undo{Events: events, Outbox: a.Outbox, Mail: a.mailOps}
+	a.Undo = &undo.Undo{Events: events, Outbox: a.Outbox, Mail: a.mailOps, Call: func(ctx context.Context, name string, args any) (any, error) {
+		return a.Router.Call(ctx, name, "", args)
+	}}
 	env := host.Env{Router: router, Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide),
 		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
 		RoleOf: func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) }}
