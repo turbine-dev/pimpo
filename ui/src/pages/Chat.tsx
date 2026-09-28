@@ -5,11 +5,11 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ModelPicker, useRoutedText } from '../components/ModelPicker'
 import { Logo } from '../components/Shell'
 import { Button, RiskBadge } from '../components/ui'
-import { api, type ChatTurn } from '../lib/api'
+import { api, type ChatTurn, type Settings } from '../lib/api'
 import { cn } from '../lib/cn'
 import { relative, usd } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
-import { canSpeak, speak, useDictation } from '../lib/voice'
+import { readAloud as listen, useDictation } from '../lib/voice'
 
 const suggestions: TKey[] = ['chat.s1', 'chat.s2', 'chat.s3', 'chat.s4']
 
@@ -40,6 +40,7 @@ export function Chat() {
   const busy = turns.some((x) => x.state === 'running')
   const refresh = () => { qc.invalidateQueries({ queryKey: ['chat', id] }); qc.invalidateQueries({ queryKey: ['chats'] }) }
   const location = useLocation()
+  const settings = useQuery({ queryKey: ['settings'], queryFn: api.settings })
   const [readAloud, setReadAloud] = useState<string>((location.state as { readAloud?: string } | null)?.readAloud ?? '')
   const send = useMutation({
     mutationFn: ({ text }: { text: string; spoken: boolean }) => (id ? api.sendChat(id, text, picked ? model : '', picked ? effort : '') : api.newChat(text, who, model, effort)),
@@ -48,7 +49,7 @@ export function Chat() {
   useEffect(() => {
     const done = turns.find((x) => x.id === readAloud && x.state !== 'running')
     if (done) {
-      speak(done.summary || done.error || '')
+      listen(done.summary || done.error || '', settings.data?.chat_voice)
       setReadAloud('')
     }
   }, [turns, readAloud])
@@ -243,8 +244,8 @@ function Turn({ chat, turn: x, onChange }: { chat: string; turn: ChatTurn; onCha
                 </Button>
               )}
               {x.state === 'compiling' && <Loader2 size={13} className="animate-spin" />}
-              {canSpeak() && x.summary && (
-                <Button size="sm" variant="ghost" onClick={() => speak(x.summary!)} aria-label={t('voice.listen')}><Volume2 size={13} /> {t('voice.listen')}</Button>
+              {x.summary && (
+                <Button size="sm" variant="ghost" onClick={() => listen(x.summary!, qc.getQueryData<Settings>(['settings'])?.chat_voice)} aria-label={t('voice.listen')}><Volume2 size={13} /> {t('voice.listen')}</Button>
               )}
               {x.cost_usd > 0 && <span>{t('chat.cost', { cost: usd(x.cost_usd) })}</span>}
               {routed && <span title={x.model?.by === 'jev' ? t('mp.weighedJev') : x.model?.by === 'rules' ? t('mp.weighedRules') : undefined}>· {routed}</span>}

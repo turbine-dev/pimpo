@@ -48,8 +48,28 @@ type Item struct {
 	Folder string `json:"folder"`
 	// Voice is how the engine reads with it.
 	Voice *VoiceSpec `json:"voice,omitempty"`
+	// Files are loose files to fetch instead of an archive (URL, Folder).
+	Files []File `json:"files,omitempty"`
+	// Transcriber is how the engine turns speech into text with it.
+	Transcriber *TranscriberSpec `json:"transcriber,omitempty"`
 	// Quality ranks voices of a language: higher reads better.
 	Quality int `json:"quality,omitempty"`
+}
+
+// File is one file of an item, with its own checksum.
+type File struct {
+	Name   string `json:"name"`
+	URL    string `json:"url"`
+	SHA256 string `json:"sha256"`
+	Size   int64  `json:"size"`
+}
+
+// TranscriberSpec is how sherpa-onnx loads a speech-to-text model.
+type TranscriberSpec struct {
+	Type    string `json:"type"` // whisper
+	Encoder string `json:"encoder"`
+	Decoder string `json:"decoder"`
+	Tokens  string `json:"tokens"`
 }
 
 // VoiceSpec is how sherpa-onnx loads a voice.
@@ -70,16 +90,18 @@ var embedded []byte
 // voices, and language models to suggest for Ollama. It comes from
 // catalog.json, built in, or from the owner's own in the models folder.
 type Catalog struct {
-	About       string          `json:"about,omitempty"`
-	Engines     map[string]Item `json:"engines"`
-	Voices      []Item          `json:"voices"`
-	Suggestions []Suggestion    `json:"suggestions"`
+	About        string          `json:"about,omitempty"`
+	Engines      map[string]Item `json:"engines"`
+	Voices       []Item          `json:"voices"`
+	Transcribers []Item          `json:"transcribers"`
+	Suggestions  []Suggestion    `json:"suggestions"`
 }
 
 var (
-	engines     map[string]Item
-	Voices      []Item
-	Suggestions []Suggestion
+	engines      map[string]Item
+	Voices       []Item
+	Transcribers []Item
+	Suggestions  []Suggestion
 )
 
 func init() {
@@ -94,8 +116,26 @@ func Use(raw []byte) error {
 	if err := json.Unmarshal(raw, &c); err != nil {
 		return err
 	}
+	sized := func(items []Item) {
+		for i := range items {
+			if len(items[i].Files) > 0 {
+				items[i].Size = 0
+				for _, f := range items[i].Files {
+					items[i].Size += f.Size
+				}
+			}
+		}
+	}
+	sized(c.Voices)
+	sized(c.Transcribers)
 	check := func(it Item) error {
-		if it.ID == "" || it.URL == "" || it.Folder == "" || it.Size <= 0 || !sha.MatchString(it.SHA256) || !strings.HasPrefix(it.URL, "https://") {
+		if len(it.Files) > 0 {
+			for _, f := range it.Files {
+				if f.Name == "" || strings.ContainsAny(f.Name, "/\\") || strings.HasPrefix(f.Name, ".") || f.Size <= 0 || !sha.MatchString(f.SHA256) || !strings.HasPrefix(f.URL, "https://") {
+					return fmt.Errorf("entry %q: every file needs a plain name, an https url, size and a sha256", it.ID)
+				}
+			}
+		} else if it.ID == "" || it.URL == "" || it.Folder == "" || it.Size <= 0 || !sha.MatchString(it.SHA256) || !strings.HasPrefix(it.URL, "https://") {
 			return fmt.Errorf("entry %q needs id, an https url, folder, size and a sha256", it.ID)
 		}
 		if strings.ContainsAny(it.ID, "/\\.") {
@@ -116,7 +156,15 @@ func Use(raw []byte) error {
 			return fmt.Errorf("voice %q needs languages and a piper or kokoro voice with its model", v.ID)
 		}
 	}
-	engines, Voices, Suggestions = c.Engines, c.Voices, c.Suggestions
+	for _, tr := range c.Transcribers {
+		if err := check(tr); err != nil {
+			return err
+		}
+		if tr.Transcriber == nil || tr.Transcriber.Type != "whisper" || len(tr.Files) == 0 {
+			return fmt.Errorf("transcriber %q needs whisper files", tr.ID)
+		}
+	}
+	engines, Voices, Transcribers, Suggestions = c.Engines, c.Voices, c.Transcribers, c.Suggestions
 	return nil
 }
 
@@ -261,7 +309,7 @@ func Find(id string) (Item, bool) {
 	if e, ok := Engine(); ok && id == e.ID {
 		return e, true
 	}
-	for _, v := range Voices {
+	for _, v := range append(append([]Item{}, Voices...), Transcribers...) {
 		if v.ID == id {
 			return v, true
 		}
@@ -301,10 +349,10 @@ func (m *Manager) Install(id string) (Job, error) {
 	}
 	need := it.Size * 3
 	var eng Item
-	if it.Kind == "voice" {
+	if it.Kind == "voice" || it.Kind == "transcriber" {
 		e, ok := Engine()
 		if !ok {
-			return Job{}, errors.New("local voices need a Mac; this machine has no engine build")
+			return Job{}, errors.New("local voices and transcription need a Mac; this machine has no engine build")
 		}
 		if !m.Installed(e) {
 			eng = e
@@ -332,6 +380,9 @@ func (m *Manager) Install(id string) (Job, error) {
 func (m *Manager) fetch(ctx context.Context, job string, it Item, base int64) error {
 	if err := os.MkdirAll(m.Dir, 0o700); err != nil {
 		return err
+	}
+	if len(it.Files) > 0 {
+		return m.fetchFiles(ctx, job, it, base)
 	}
 	part := filepath.Join(m.Dir, it.ID+".part")
 	defer os.Remove(part)
@@ -664,4 +715,125 @@ func lastLine(s string) string {
 
 var execCommand = func(ctx context.Context, name string, args ...string) *exec.Cmd {
 	return exec.CommandContext(ctx, name, args...)
+}
+
+// fetchFiles downloads an item made of loose files, each checked, into its
+// folder.
+func (m *Manager) fetchFiles(ctx context.Context, job string, it Item, base int64) error {
+	dest := m.folder(it)
+	tmp := dest + ".unpacking"
+	os.RemoveAll(tmp)
+	if err := os.MkdirAll(tmp, 0o755); err != nil {
+		return err
+	}
+	for _, f := range it.Files {
+		if err := m.download(ctx, job, f.URL, filepath.Join(tmp, f.Name), f.Size, f.SHA256, base); err != nil {
+			os.RemoveAll(tmp)
+			return fmt.Errorf("%s: %w", f.Name, err)
+		}
+		base += f.Size
+	}
+	os.RemoveAll(dest)
+	if err := os.Rename(tmp, dest); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dest, ".complete"), []byte(it.ID), 0o600)
+}
+
+// download fetches one file to path, checking its size and checksum.
+func (m *Manager) download(ctx context.Context, job, url, path string, size int64, want string, base int64) error {
+	m.update(job, func(j *Job) { j.State = "downloading" })
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := m.client().Do(req)
+	if err != nil {
+		return fmt.Errorf("download failed: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("download answered %d", resp.StatusCode)
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	h := sha256.New()
+	buf := make([]byte, 256<<10)
+	var n int64
+	for {
+		k, rerr := resp.Body.Read(buf)
+		if k > 0 {
+			f.Write(buf[:k])
+			h.Write(buf[:k])
+			n += int64(k)
+			if n > size+1<<20 {
+				return errors.New("the file is larger than it should be")
+			}
+			done := base + n
+			m.update(job, func(j *Job) { j.Done = done })
+		}
+		if rerr == io.EOF {
+			break
+		}
+		if rerr != nil {
+			return fmt.Errorf("download interrupted: %w", rerr)
+		}
+	}
+	m.update(job, func(j *Job) { j.State = "verifying" })
+	if got := hex.EncodeToString(h.Sum(nil)); got != want {
+		return fmt.Errorf("the file does not match its published checksum (got %s…)", got[:12])
+	}
+	return nil
+}
+
+// Transcriber is the best installed speech-to-text model.
+func (m *Manager) Transcriber() (Item, bool) {
+	e, ok := Engine()
+	if !ok || !m.Installed(e) {
+		return Item{}, false
+	}
+	var best Item
+	found := false
+	for _, t := range Transcribers {
+		if m.Installed(t) && (!found || t.Quality > best.Quality) {
+			best, found = t, true
+		}
+	}
+	return best, found
+}
+
+// Transcribe turns a 16 kHz mono WAV into text; lang is a language code
+// (pt, en) or "" to detect it.
+func (m *Manager) Transcribe(ctx context.Context, t Item, wav, lang string) (string, error) {
+	e, _ := Engine()
+	bin := filepath.Join(m.folder(e), "bin", "sherpa-onnx-offline")
+	dir := m.folder(t)
+	sp := t.Transcriber
+	args := []string{"--whisper-encoder=" + filepath.Join(dir, sp.Encoder), "--whisper-decoder=" + filepath.Join(dir, sp.Decoder),
+		"--tokens=" + filepath.Join(dir, sp.Tokens), "--whisper-task=transcribe", "--num-threads=4"}
+	if lang != "" {
+		args = append(args, "--whisper-language="+lang)
+	}
+	out, err := execCommand(ctx, bin, append(args, wav)...).CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("%s: %v %s", t.Name, err, lastLine(string(out)))
+	}
+	for _, l := range strings.Split(string(out), "\n") {
+		l = strings.TrimSpace(l)
+		if !strings.HasPrefix(l, "{") {
+			continue
+		}
+		var r struct {
+			Text string `json:"text"`
+		}
+		if json.Unmarshal([]byte(l), &r) == nil {
+			if text := strings.TrimSpace(r.Text); text != "" {
+				return text, nil
+			}
+		}
+	}
+	return "", errors.New("no words were made out")
 }

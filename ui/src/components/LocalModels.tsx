@@ -74,6 +74,20 @@ export function LocalModels() {
         </div>
       )}
 
+      {d.engine && (d.transcribers?.length ?? 0) > 0 && (
+        <>
+          <div className="mb-2 text-[13.5px] font-medium">{t('lm.transcribers')}</div>
+          <p className="mb-2 text-[12.5px] text-ink-3">{t('lm.transcribersText')}{engineNeeded > 0 && <> {t('lm.engineFirst', { size: size(engineNeeded) })}</>}</p>
+          <ul className="mb-5 divide-y divide-line rounded-xl border border-line">
+            {d.transcribers!.map((v) => (
+              <VoiceRow key={v.id} v={v} job={jobFor(v.id)} busy={install.isPending}
+                onGet={() => setAsk({ title: v.name, bytes: v.size + engineNeeded, go: () => install.mutate(v.id) })}
+                onRemove={() => remove.mutate(v.id)} />
+            ))}
+          </ul>
+        </>
+      )}
+
       <div className="mb-2 text-[13.5px] font-medium">{t('lm.llms')}</div>
       {!d.ollama.up ? (
         <p className="text-[12.5px] text-ink-3">{t('lm.noOllama', { url: d.ollama.url })} <a className="underline" href="https://ollama.com/download" target="_blank" rel="noreferrer">ollama.com</a></p>
@@ -144,12 +158,12 @@ function VoiceRow({ v, job, busy, onGet, onRemove }: { v: LocalItem; job?: Local
 }
 
 // Sample reads a sentence in a language with the voice Pimpo would use.
-function Sample({ language }: { language: string }) {
+export function Sample({ language, forWhat = 'routines' }: { language: string; forWhat?: 'chat' | 'routines' }) {
   const t = useT()
   const audio = useRef<HTMLAudioElement>(null)
   const [voice, setVoice] = useState('')
   const play = useMutation({
-    mutationFn: () => api.voiceSample(language),
+    mutationFn: () => api.voiceSample(language, forWhat),
     onSuccess: (r) => { setVoice(r.voice); if (audio.current) { audio.current.src = `/api/media/${r.id}`; audio.current.play().catch(() => {}) } },
   })
   return (

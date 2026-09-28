@@ -1,12 +1,12 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Brain, Check, ChevronRight, Cpu, ExternalLink, HardDrive, Loader2, Plus, Search, Sparkles, Trash2, X } from 'lucide-react'
+import { AudioLines, Brain, Check, ChevronRight, Cpu, ExternalLink, HardDrive, Loader2, Plus, Search, Sparkles, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { api, EFFORTS, type CatalogModel, type Effort, type Job, type ModelOption, type ModelTest, type Provider, type Settings } from '../lib/api'
 import { cn } from '../lib/cn'
 import { usd } from '../lib/format'
 import { fill, useT, type TKey } from '../lib/i18n'
-import { LocalModels } from './LocalModels'
+import { LocalModels, Sample } from './LocalModels'
 import { Button, Card, Switch } from './ui'
 
 const field = 'h-9 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -188,6 +188,8 @@ export function ModelSetup() {
         <LocalAddresses s={s} save={save.mutate} />
       </Card>
 
+      <VoiceChoice s={s} save={save.mutate} />
+
       <LocalModels />
 
       <Card className="p-5">
@@ -256,6 +258,79 @@ function AutoChoice({ s, options, save }: { s: Settings; options: string[]; save
           {pick('auto_strong', s.auto_strong ? undefined : auto?.strong, 'ms.autoStrong', 'ms.autoStrongText')}
           <p className="text-[12px] text-ink-3">{t('ms.autoEffort')} {t(auto?.weigher === 'jev' ? 'ms.autoByJev' : 'ms.autoByRules')} {t('ms.autoBudget')}</p>
         </div>
+      )}
+    </Card>
+  )
+}
+
+// VoiceChoice picks the default voices: for routines' audio (like the
+// podcast) and for listening to answers in the chat.
+function VoiceChoice({ s, save }: { s: Settings; save: (c: (s: Settings) => Settings) => void }) {
+  const t = useT()
+  const qc = useQueryClient()
+  const v = useQuery({ queryKey: ['voice', s.voice, s.chat_voice], queryFn: api.voice })
+  const [key, setKey] = useState('')
+  const setEleven = useMutation({ mutationFn: api.setElevenLabsKey, onSuccess: () => { setKey(''); qc.invalidateQueries({ queryKey: ['voice'] }) } })
+  const lang = s.locale || 'pt-BR'
+  const set = (patch: Partial<Settings>) => save((x) => ({ ...x, ...patch }))
+  const uses = (e?: string) => (e || 'auto')
+  const eleven = uses(s.voice) === 'elevenlabs' || s.chat_voice === 'elevenlabs'
+  const openai = uses(s.voice) === 'openai' || s.chat_voice === 'openai'
+  const row = (who: 'routines' | 'chat') => {
+    const engine = who === 'routines' ? uses(s.voice) : (s.chat_voice ?? '')
+    const model = who === 'routines' ? s.voice_model : s.chat_voice_model
+    const name = who === 'routines' ? s.voice_name : s.chat_voice_name
+    const patch = (e: string, m = '', n = '') => set(who === 'routines' ? { voice: e as Settings['voice'], voice_model: m, voice_name: n } : { chat_voice: e, chat_voice_model: m, chat_voice_name: n })
+    const engines = who === 'routines' ? ['auto', 'local', 'system', 'openai', 'elevenlabs'] : ['', 'browser', 'auto', 'local', 'system', 'openai', 'elevenlabs']
+    return (
+      <div className="grid gap-2 sm:grid-cols-[1fr_2fr] sm:items-center">
+        <div>
+          <div className="text-[13.5px] font-medium">{t(who === 'routines' ? 'vc.routines' : 'vc.chat')}</div>
+          <div className="text-[12px] text-ink-3">{t(who === 'routines' ? 'vc.routinesText' : 'vc.chatText')}</div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select className={cn(field, 'min-w-[200px]')} value={engine} aria-label={t(who === 'routines' ? 'vc.routines' : 'vc.chat')} onChange={(e) => patch(e.target.value)}>
+            {engines.map((k) => <option key={k} value={k}>{t(`vc.engine.${k || 'same'}` as TKey)}</option>)}
+          </select>
+          {engine === 'openai' && (
+            <>
+              <select className={field} value={model || 'tts-1'} aria-label={t('vc.model')} onChange={(e) => patch(engine, e.target.value, name)}>
+                {Object.entries(v.data?.openai_prices ?? { 'tts-1': 15, 'tts-1-hd': 30 }).map(([m, p]) => <option key={m} value={m}>{t('vc.openaiModel', { model: m, price: (p / 1000).toFixed(3) })}</option>)}
+              </select>
+              <select className={field} value={name || 'nova'} aria-label={t('vc.voice')} onChange={(e) => patch(engine, model, e.target.value)}>
+                {(v.data?.openai_voices ?? ['nova']).map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </>
+          )}
+          {engine === 'elevenlabs' && (v.data?.elevenlabs_voices?.length ?? 0) > 0 && (
+            <select className={field} value={name || ''} aria-label={t('vc.voice')} onChange={(e) => patch(engine, model, e.target.value)}>
+              <option value="">{t('vc.pickVoice')}</option>
+              {v.data!.elevenlabs_voices!.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+            </select>
+          )}
+          {engine !== 'browser' && <Sample language={lang} forWhat={who} />}
+        </div>
+        <p className="text-[12px] text-ink-3 sm:col-start-2">{t(`vc.about.${engine || 'same'}` as TKey)}</p>
+      </div>
+    )
+  }
+  return (
+    <Card className="p-5">
+      <div className="mb-1 flex items-center gap-2 text-[15px] font-medium"><AudioLines size={16} /> {t('vc.title')}</div>
+      <p className="mb-4 text-[13px] text-ink-3">{t('vc.text')}</p>
+      <div className="space-y-4">
+        {row('routines')}
+        {row('chat')}
+      </div>
+      {openai && v.data && !v.data.openai_key && <p className="mt-3 text-[12.5px] text-danger">{t('vc.needOpenAI')}</p>}
+      {eleven && (
+        <form className="mt-3 flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); setEleven.mutate(key.trim()) }}>
+          <input type="password" autoComplete="off" className={cn(field, 'min-w-[240px] flex-1')} value={key} onChange={(e) => setKey(e.target.value)}
+            placeholder={v.data?.elevenlabs_key ? t('models.keySaved') : t('vc.elevenKey')} aria-label={t('vc.elevenKey')} />
+          <Button type="submit" size="sm" disabled={!key.trim() || setEleven.isPending}>{setEleven.isPending ? <Loader2 size={13} className="animate-spin" /> : t('ms.connectSee')}</Button>
+          <a className="text-[12.5px] underline" href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noreferrer">{t('ms.getKey')}</a>
+          {(setEleven.error || v.data?.elevenlabs_error) && <p className="w-full text-[12.5px] text-danger">{setEleven.error?.message ?? v.data?.elevenlabs_error}</p>}
+        </form>
       )}
     </Card>
   )

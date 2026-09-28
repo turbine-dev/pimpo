@@ -48,6 +48,7 @@ import (
 	"github.com/denerFernandes/pimpo/internal/remote"
 	"github.com/denerFernandes/pimpo/internal/scheduler"
 	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/denerFernandes/pimpo/internal/speech"
 	"github.com/denerFernandes/pimpo/internal/store"
 	"github.com/denerFernandes/pimpo/internal/telegram"
 	"github.com/denerFernandes/pimpo/internal/undo"
@@ -93,6 +94,18 @@ type Settings struct {
 	// Efforts are how hard each job's model thinks by default (explore,
 	// compile, judge): low, medium, high or max; missing is the model's own.
 	Efforts map[string]string `json:"efforts,omitempty"`
+	// Voice is what reads audio aloud: auto (a downloaded voice for the
+	// language, else the system's), local, system, openai or elevenlabs;
+	// VoiceModel and VoiceName pick the cloud model and voice.
+	Voice      string `json:"voice,omitempty"`
+	VoiceModel string `json:"voice_model,omitempty"`
+	VoiceName  string `json:"voice_name,omitempty"`
+	// ChatVoice reads answers aloud in the chat: "" is the same voice as
+	// routines, browser is the browser's own (instant), or any engine
+	// above with its ChatVoiceModel and ChatVoiceName.
+	ChatVoice      string `json:"chat_voice,omitempty"`
+	ChatVoiceModel string `json:"chat_voice_model,omitempty"`
+	ChatVoiceName  string `json:"chat_voice_name,omitempty"`
 	// AutoOff stops the automatic model choice in chats; AutoLight and
 	// AutoStrong override the models it sends simple and hard requests to.
 	AutoOff    bool   `json:"auto_off,omitempty"`
@@ -149,6 +162,9 @@ type App struct {
 	Agent llm.Agent
 	// TelegramAPI points at a self-hosted Bot API server; empty means Telegram's.
 	TelegramAPI string
+	// VoiceAPI replaces a cloud voice provider's address (openai,
+	// elevenlabs); tests only.
+	VoiceAPI map[string]string
 	// WhatsAppAPI replaces the Graph API; tests only.
 	WhatsAppAPI string
 	// VoiceModel is the whisper.cpp model used for voice notes.
@@ -214,7 +230,11 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	}
 	a.Channel.ReadPhoto = ocr.Tesseract{}.Read
 	a.Channel.Transcribe = func(ctx context.Context, audio []byte) (string, error) {
-		return voice.Whisper{Model: a.VoiceModel, Language: strings.SplitN(a.Settings(ctx).Locale, "-", 2)[0]}.Transcribe(ctx, audio)
+		lang := strings.SplitN(a.Settings(ctx).Locale, "-", 2)[0]
+		if text, ok, err := a.transcribeLocal(ctx, audio, lang); ok {
+			return text, err
+		}
+		return voice.Whisper{Model: a.VoiceModel, Language: lang}.Transcribe(ctx, audio)
 	}
 	i18n.Locale = func(ctx context.Context) string { return a.Settings(ctx).Locale }
 	a.Approvals = &approval.Manager{Events: events, Notify: a.Channel, Describe: describeAction, Responsible: func(ctx context.Context, person string) (string, string) {
@@ -258,6 +278,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.reminderRoutes()
 	a.mediaRoutes()
 	a.localRoutes()
+	a.speechRoutes()
 	a.doctorRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()
@@ -356,6 +377,20 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 			return server.StatusError{Status: 400, Msg: "prices are USD per million tokens, from 0 to 1000"}
 		}
 		known[m.ID] = true
+	}
+	for _, v := range []voiceChoice{s.routineVoice(), {s.ChatVoice, s.ChatVoiceModel, s.ChatVoiceName}} {
+		switch v.Engine {
+		case "", "auto", "local", "system", "openai", "elevenlabs":
+		case "browser":
+			if v != (voiceChoice{s.ChatVoice, s.ChatVoiceModel, s.ChatVoiceName}) {
+				return server.StatusError{Status: 400, Msg: "only the chat can read with the browser's voice"}
+			}
+		default:
+			return server.StatusError{Status: 400, Msg: "voice is auto, local, system, openai or elevenlabs"}
+		}
+		if v.Engine == "openai" && v.Model != "" && speech.OpenAIPrices[v.Model] == 0 {
+			return server.StatusError{Status: 400, Msg: "the OpenAI voice model is tts-1 or tts-1-hd"}
+		}
 	}
 	for job, e := range s.Efforts {
 		if job != "explore" && job != "compile" && job != "judge" {

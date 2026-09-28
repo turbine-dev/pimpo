@@ -162,16 +162,16 @@ export type ActionRecord = {
 
 export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
-export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>> }
+export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
 export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
 export type Provider = { id: string; name: string; key_url?: string; needs_key: boolean; local?: boolean }
 export type CatalogModel = { id: string; name: string; price_in: number; price_out: number; priced: boolean; context?: number; free?: boolean }
 export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: string; ollama_up?: boolean; lmstudio: CatalogModel[]; lmstudio_url: string; lmstudio_up?: boolean; codex?: string; codex_login?: boolean; opencode?: string; qwen_code?: string; apps?: string[] }
 export type Reminder = { id: string; at: string; text: string }
-export type LocalItem = { id: string; kind: 'engine' | 'voice'; name: string; about?: string; languages?: string[]; size: number; installed: boolean; quality?: number }
+export type LocalItem = { id: string; kind: 'engine' | 'voice' | 'transcriber'; name: string; about?: string; languages?: string[]; size: number; installed: boolean; quality?: number }
 export type LocalJob = { id: string; item: string; name: string; state: 'downloading' | 'verifying' | 'unpacking' | 'done' | 'failed' | 'cancelled'; done: number; total: number; detail?: string; error?: string; started: string }
-export type LocalView = { engine?: LocalItem; voices: LocalItem[]; jobs: LocalJob[]; free: number; memory: number; suggestions: { model: string; about: string; size: number; min_ram: number }[]; ollama: { url: string; up?: boolean; models?: CatalogModel[] } }
+export type LocalView = { engine?: LocalItem; voices: LocalItem[]; transcribers?: LocalItem[]; jobs: LocalJob[]; free: number; memory: number; suggestions: { model: string; about: string; size: number; min_ram: number }[]; ollama: { url: string; up?: boolean; models?: CatalogModel[] } }
 export type OpencodeModel = { id: string; provider: string; name: string; subscription: boolean }
 export type ModelTest = { ok: boolean; text?: string; cost_usd?: number; ms?: number; error?: string; problem?: string }
 
@@ -234,13 +234,15 @@ export const api = {
   capabilities: () => request<CapabilitySpec[]>('GET', '/api/capabilities'),
   models: () => request<{ keys: Record<string, boolean>; claude_code: boolean; providers: Provider[]; auto?: { light: string; strong: string; base: string; weigher: 'jev' | 'rules' } }>('GET', '/api/models'),
   detectModels: () => request<Found>('GET', '/api/models/detect'),
+  voice: () => request<{ openai_key: boolean; elevenlabs_key: boolean; openai_voices: string[]; openai_prices: Record<string, number>; elevenlabs_voices?: { id: string; name: string }[]; elevenlabs_error?: string }>('GET', '/api/voice'),
+  setElevenLabsKey: (key: string) => request<{ ok: boolean }>('PUT', '/api/voice/elevenlabs-key', { key }),
   local: () => request<LocalView>('GET', '/api/local'),
   installLocal: (id: string) => request<LocalJob>('POST', `/api/local/install/${id}`),
   removeLocal: (id: string) => request<{ ok: boolean }>('DELETE', `/api/local/${id}`),
   cancelDownload: (id: string) => request<{ ok: boolean }>('POST', `/api/local/jobs/${id}/cancel`),
   pullOllama: (model: string) => request<LocalJob>('POST', '/api/local/ollama/pull', { model }),
   removeOllama: (model: string) => request<{ ok: boolean }>('DELETE', `/api/local/ollama/${model}`),
-  voiceSample: (language: string) => request<{ id: string; seconds: number; voice: string }>('POST', '/api/local/sample', { language }),
+  voiceSample: (language: string, forWhat: 'chat' | 'routines' = 'routines') => request<{ id: string; seconds: number; voice: string }>('POST', '/api/local/sample', { language, for: forWhat }),
   media: () => request<{ id: string; title: string; at: string }[]>('GET', '/api/media'),
   reminders: () => request<Reminder[]>('GET', '/api/reminders'),
   cancelReminder: (id: string) => request<{ ok: boolean }>('DELETE', `/api/reminders/${id}`),
