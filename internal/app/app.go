@@ -620,15 +620,18 @@ func (a *App) withFallback(ctx context.Context, job, primary string, call func(m
 		resp, err := call(model)
 		if err == nil {
 			a.noteFallback(ctx, job, primary, model, firstErr)
-			// Which model answered, and at what cost, for Custo by model and job.
-			a.Events.Append(ctx, "model.used", "system", map[string]any{"job": job, "model": model, "usd": resp.CostUSD, "fallback": model != primary})
+			reported := resp.CostUSD
+			resp = a.billed(ctx, job, model, resp)
+			// Which model answered, and at what cost, for Custo by model and
+			// job; a subscription's calls are there at their API equivalent.
+			a.Events.Append(ctx, "model.used", "system", map[string]any{"job": job, "model": model, "usd": reported, "fallback": model != primary, "subscription": resp.CostUSD == 0 && reported > 0})
 			return resp, nil
 		}
 		if firstErr == nil {
 			firstErr = err
 		}
 		if !retryable(ctx, err) {
-			return resp, err
+			return a.billed(ctx, job, model, resp), err
 		}
 	}
 	return llm.Response{}, firstErr

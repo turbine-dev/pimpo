@@ -1212,4 +1212,7 @@ export const en: Record<Key, string> = {
   'ms.effortModel': "Thinking: default",
   'ms.autoEffort': "Thinking follows the same weighing: low on simple requests, high on hard ones.",
   'ms.effortDefault': "Default",
+  'cost.subTitle': "Through your subscription",
+  'cost.subAmounts': "≈ {today} today · ≈ {month} this month",
+  'cost.subText': "Claude Code and Codex are using your subscription, so no money is spent. This is what it would cost on the API, for reference only, and it does not count toward the daily limit.",
 }

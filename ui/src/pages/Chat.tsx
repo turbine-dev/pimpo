@@ -246,7 +246,7 @@ function Turn({ chat, turn: x, onChange }: { chat: string; turn: ChatTurn; onCha
               {canSpeak() && x.summary && (
                 <Button size="sm" variant="ghost" onClick={() => speak(x.summary!)} aria-label={t('voice.listen')}><Volume2 size={13} /> {t('voice.listen')}</Button>
               )}
-              <span>{t('chat.cost', { cost: usd(x.cost_usd) })}</span>
+              {x.cost_usd > 0 && <span>{t('chat.cost', { cost: usd(x.cost_usd) })}</span>}
               {routed && <span title={x.model?.by === 'jev' ? t('mp.weighedJev') : x.model?.by === 'rules' ? t('mp.weighedRules') : undefined}>· {routed}</span>}
               {compile.error && <span className="text-danger">{compile.error.message}</span>}
             </div>

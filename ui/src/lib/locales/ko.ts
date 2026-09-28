@@ -1212,4 +1212,7 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'ms.effortModel': "사고: 기본",
   'ms.autoEffort': "사고 수준도 같은 판단을 따릅니다. 간단한 요청은 낮음, 어려운 요청은 높음.",
   'ms.effortDefault': "기본",
+  'cost.subTitle': "구독으로 사용",
+  'cost.subAmounts': "오늘 ≈ {today} · 이번 달 ≈ {month}",
+  'cost.subText': "Claude Code와 Codex는 구독을 사용하므로 돈이 나가지 않습니다. API로 했을 때의 참고 금액이며 일일 한도에 포함되지 않습니다.",
 }

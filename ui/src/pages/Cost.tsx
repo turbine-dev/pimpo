@@ -49,6 +49,20 @@ export function Cost() {
           <div className="mt-1.5 text-[12px] text-ink-3">{t('cost.pace')}</div>
         </Card>
       </div>
+      {(c.subscription?.month ?? 0) > 0 && (
+        <Card className="p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <div className="text-[14px] font-medium">{t('cost.subTitle')}</div>
+            <div className="text-[13px] tabular-nums text-ink-2">{t('cost.subAmounts', { today: usd(c.subscription!.today), month: usd(c.subscription!.month) })}</div>
+          </div>
+          <p className="mt-1 text-[12.5px] text-ink-3">{t('cost.subText')}</p>
+          <ul className="mt-3 space-y-1 text-[13px]">
+            {Object.entries(c.subscription!.by_model).sort(([, a], [, b]) => b - a).map(([k, v]) => (
+              <li key={k} className="flex justify-between gap-3"><span>{modelName(k)} <span className="text-[11.5px] text-ink-3">{t('cost.calls', { count: c.calls_by_model?.[k] ?? 0 })}</span></span><span className="tabular-nums text-ink-3">≈ {usd(v)}</span></li>
+            ))}
+          </ul>
+        </Card>
+      )}
       <Card className="p-5">
         <div className="mb-4 text-[14px] font-medium">{t('cost.days')}</div>
         {!spent ? (
