@@ -1321,4 +1321,12 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'wh.rotate': "Nouvelle adresse",
   'rs.byWebhook': "Démarre quand le webhook de cette routine est appelé (voir plus bas).",
   'inbox.asked': "Demandé {when}",
+  'conn.spotifyText': "Voir ce qui joue, lancer un titre, une playlist ou un podcast, mettre en pause et régler le volume. Le contrôle demande Spotify Premium.",
+  'conn.spotifyRefused': "Spotify a refusé : {reason}",
+  'conn.spotifyStep1': "Sur {link}, créez une app (n’importe quel nom) et cochez Web API.",
+  'conn.spotifyStep2': "Dans Redirect URIs, ajoutez exactement {uri}.",
+  'conn.spotifyStep3': "Copiez le Client ID de l’app, collez-le ici et connectez-vous. Pas besoin du secret.",
+  'conn.spotifyId': "Client ID Spotify",
+  'conn.spotifySignIn': "Se connecter avec Spotify",
+  'conn.disconnect': "Déconnecter",
 }

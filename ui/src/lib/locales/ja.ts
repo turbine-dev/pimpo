@@ -1296,4 +1296,12 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'wh.rotate': "アドレスを変更",
   'rs.byWebhook': "このルーティンの Webhook が呼ばれると始まります（下を参照）。",
   'inbox.asked': "{when}に質問",
+  'conn.spotifyText': "再生中の曲の確認、曲・プレイリスト・ポッドキャストの再生、一時停止、音量調整ができます。操作には Spotify Premium が必要です。",
+  'conn.spotifyRefused': "Spotify が拒否しました: {reason}",
+  'conn.spotifyStep1': "{link} でアプリを作成し（名前は自由）、Web API にチェックします。",
+  'conn.spotifyStep2': "Redirect URIs に {uri} をそのまま追加します。",
+  'conn.spotifyStep3': "アプリの Client ID をコピーしてここに貼り、ログインします。シークレットは不要です。",
+  'conn.spotifyId': "Spotify の Client ID",
+  'conn.spotifySignIn': "Spotify でログイン",
+  'conn.disconnect': "接続を解除",
 }

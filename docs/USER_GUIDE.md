@@ -116,6 +116,10 @@ Any routine can be started by another service calling a secret address: on its p
 
 With Google connected, tasks and routines can read a range of a spreadsheet and add rows to it (`sheets.read`, `sheets.append`): log expenses, habits or orders, or read a list to act on. Name the spreadsheet by its address. Turn on the Google Sheets API in your Google Cloud project; if you connected Google before this, sign in again to allow spreadsheets. Added rows can be undone in **Atividade**.
 
+## Spotify
+
+**Conexões › Spotify** lets tasks and routines see what is playing, play a song, playlist, album, artist or podcast by name, pause and set the volume, on any of your Spotify devices ("toca meu podcast de notícias na caixa da sala às 8h", "pausa a música quando começar uma reunião"). Create an app at developer.spotify.com, add the address Pimpo shows under Redirect URIs, and paste its Client ID; no secret is needed. Controlling playback needs Spotify Premium.
+
 ## Apple Reminders, Notes and Calendar
 
 On a Mac, **Conexões › Lembretes, Notas e Calendário da Apple** lets tasks and routines use Apple's own apps: add a reminder that rings on your iPhone and Watch, mark one done, list the open ones; search your notes and add to a note in Pimpo's folder; read the Mac's Calendar. Give the Notes folder Pimpo writes in (created if missing) and, if you like, the default Reminders list. The first time, macOS asks to let Pimpo use each app (System Settings › Privacy & Security › Automation). Reminders added and notes changed can be undone in **Atividade**. When this is connected, "me lembra amanhã às 9h" goes to the Reminders app.

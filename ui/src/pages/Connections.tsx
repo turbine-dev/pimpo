@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, CalendarDays, Check, ChevronRight, Cpu, Mail, MessageCircle, Sparkles } from 'lucide-react'
+import { Bot, CalendarDays, Check, ChevronRight, Cpu, Mail, MessageCircle, Music, Sparkles } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Card } from '../components/ui'
@@ -72,9 +72,51 @@ export function Connections() {
         />
       </Section>
       <Section title={t('conn.secServices')} text={t('conn.secServicesText')}>
+        <SpotifySignIn />
         <Catalog />
       </Section>
     </div>
+  )
+}
+
+// SpotifySignIn connects the owner's Spotify with their own app's Client
+// ID (PKCE, no secret).
+function SpotifySignIn() {
+  const t = useT()
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['spotify'], queryFn: api.spotify })
+  const [open, setOpen] = useState(false)
+  const [id, setId] = useState('')
+  const result = new URLSearchParams(location.search).get('spotify')
+  const start = useMutation({ mutationFn: () => api.spotifyStart(id.trim()), onSuccess: (r) => { location.href = r.url } })
+  const off = useMutation({ mutationFn: api.spotifyOff, onSuccess: () => qc.invalidateQueries({ queryKey: ['spotify'] }) })
+  const connected = !!q.data?.connected
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-4">
+        <Icon ok={connected}><Music size={18} /></Icon>
+        <div className="flex-1">
+          <div className="text-[15px] font-medium">Spotify</div>
+          <div className="text-[13px] text-ink-3">{t('conn.spotifyText')}</div>
+        </div>
+        {connected
+          ? <><span className="flex items-center gap-1 text-[12px] font-medium text-read"><Check size={13} /> {t('conn.connected')}</span><Button size="sm" variant="ghost" onClick={() => off.mutate()}>{t('conn.disconnect')}</Button></>
+          : <Button size="sm" onClick={() => setOpen(!open)}>{t('conn.setUp')}</Button>}
+      </div>
+      {result && result !== 'ok' && <p className="mt-3 text-[13px] text-danger">{t('conn.spotifyRefused', { reason: result })}</p>}
+      {open && !connected && (
+        <form className="mt-4 space-y-3 border-t border-line pt-4" onSubmit={(e) => { e.preventDefault(); start.mutate() }}>
+          <ol className="list-decimal space-y-1 pl-5 text-[13px] text-ink-2">
+            <li>{fill(t('conn.spotifyStep1'), { link: <a className="underline" href="https://developer.spotify.com/dashboard" target="_blank" rel="noreferrer">developer.spotify.com</a> })}</li>
+            <li>{fill(t('conn.spotifyStep2'), { uri: <code className="rounded bg-sunken px-1 text-[12px]">{q.data?.redirect}</code> })}</li>
+            <li>{t('conn.spotifyStep3')}</li>
+          </ol>
+          <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Client ID" aria-label={t('conn.spotifyId')} className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+          {start.error && <p className="text-[13px] text-danger">{start.error.message}</p>}
+          <Button variant="primary" type="submit" disabled={(!id.trim() && !q.data?.client_id) || start.isPending}>{t('conn.spotifySignIn')}</Button>
+        </form>
+      )}
+    </Card>
   )
 }
 

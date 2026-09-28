@@ -28,6 +28,7 @@ import (
 	"github.com/denerFernandes/pimpo/internal/connector/mail"
 	"github.com/denerFernandes/pimpo/internal/connector/services"
 	"github.com/denerFernandes/pimpo/internal/connector/sheets"
+	"github.com/denerFernandes/pimpo/internal/connector/spotify"
 	"github.com/denerFernandes/pimpo/internal/connector/telegramcap"
 	"github.com/denerFernandes/pimpo/internal/connector/web"
 	"github.com/denerFernandes/pimpo/internal/desktop"
@@ -184,6 +185,8 @@ type App struct {
 	MailInsecure bool
 	// Router is shared by every run; the demo swaps connectors in it.
 	Router *connector.Router
+	// Spotify controls the owner's Spotify.
+	Spotify *spotify.Spotify
 	// localModels downloads and keeps models that run on this computer.
 	localModels *local.Manager
 	links       map[string]*linkRun
@@ -286,6 +289,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.speechRoutes()
 	a.webhookRoutes()
 	a.questionRoutes()
+	a.spotifyRoutes()
 	a.doctorRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()
@@ -482,6 +486,7 @@ func (a *App) router() *connector.Router {
 		reminderCap{a},
 		audioCap{a},
 		askCap{a},
+		a.spotify(),
 		&sheets.Sheets{Token: func(ctx context.Context) (string, error) { return a.Google.Token(ctx) }, Granted: func(ctx context.Context) bool { return a.Google.Granted(ctx, oauth.SheetsScope) }, API: a.SheetsAPI},
 	)
 	for _, k := range services.All() {
