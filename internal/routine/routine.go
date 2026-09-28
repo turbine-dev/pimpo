@@ -79,7 +79,7 @@ func Check(ctx context.Context, r Routine, name string, s trace.Scenario) Outcom
 		got, ok := res.State[key]
 		if !ok {
 			out.Problems = append(out.Problems, fmt.Sprintf("state %q was not kept", key))
-		} else if string(mustJSON(got)) != string(mustJSON(Decode(mustJSON(want)))) {
+		} else if string(mustJSON(sameInstants(normalize(got)))) != string(mustJSON(sameInstants(normalize(Decode(mustJSON(want)))))) {
 			out.Problems = append(out.Problems, fmt.Sprintf("state %q is %s, want %s", key, mustJSON(got), mustJSON(want)))
 		}
 	}
@@ -472,4 +472,30 @@ func Audit(ctx context.Context, r Routine) (used []string, problems []string) {
 	sort.Strings(used)
 	sort.Strings(problems)
 	return used, problems
+}
+
+// sameInstants writes every timestamp in one form, so a state that keeps
+// "2026-09-28T00:00:00-03:00" matches an expectation of
+// "2026-09-28T00:00:00.000-03:00": the same instant.
+func sameInstants(v any) any {
+	switch x := v.(type) {
+	case string:
+		if t, err := time.Parse(time.RFC3339Nano, x); err == nil && len(x) >= 20 {
+			return t.UTC().Format(time.RFC3339Nano)
+		}
+		return x
+	case []any:
+		out := make([]any, len(x))
+		for i, e := range x {
+			out[i] = sameInstants(e)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(x))
+		for k, e := range x {
+			out[k] = sameInstants(e)
+		}
+		return out
+	}
+	return v
 }

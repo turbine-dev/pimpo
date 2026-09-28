@@ -23,6 +23,9 @@ type Trace struct {
 	// Outcome is what the user approved at the end of the exploration.
 	Outcome string   `json:"outcome"`
 	Expect  []Expect `json:"expect"`
+	// Event is what started the recorded run, for a routine started by
+	// something else than a clock (a webhook's call, an answer).
+	Event any `json:"event,omitempty"`
 	// Holdout is a second scenario the compiler never sees. A routine that
 	// only memorized the recording fails it.
 	Holdout *Scenario `json:"holdout,omitempty"`
@@ -97,7 +100,7 @@ func Load(path string) (Trace, error) {
 
 // Replay is the scenario recorded in the trace itself.
 func (t Trace) Replay() Scenario {
-	s := Scenario{Now: t.Now, Judgments: t.Judgments, Expect: t.Expect, World: true}
+	s := Scenario{Now: t.Now, Judgments: t.Judgments, Expect: t.Expect, World: true, Event: t.Event}
 	for _, c := range t.Calls {
 		if len(c.Result) > 0 {
 			s.Responses = append(s.Responses, Response{Capability: c.Capability, Result: c.Result})

@@ -521,6 +521,41 @@ T.append({
     },
 })
 
+# 22. Habit check-in that acts on the answer (ask.owner).
+T.append({
+    "id": "oc-22-habit-answer",
+    "request": "Toda noite às 21h me pergunta se eu treinei hoje (Sim ou Não) e, quando eu responder, me diz quantos treinos fiz nos últimos 7 dias.",
+    "now": "2026-09-24T21:00:00-03:00",
+    "calls": [{"capability": "ask.owner", "args": {"question": "Treinou hoje?", "options": ["Sim", "Não"], "key": "treino"}, "result": {"asked": "q1"}}],
+    "outcome": "Uma pergunta por noite com Sim/Não; ao responder, uma mensagem com o total de treinos dos últimos 7 dias.",
+    "expect": [expect("ask.owner", 1, ["Sim", "Não"])],
+    "holdout": {
+        "now": "2026-10-08T21:05:00-03:00",
+        "responses": [],
+        "event": {"answer": {"key": "treino", "question": "Treinou hoje?", "choice": "Sim", "index": 0, "asked": "2026-10-08T21:00:00-03:00"}},
+        "expect": [expect("telegram.send", 1, ["1"]), expect("ask.owner", 0)],
+    },
+})
+
+# 23. A shop's webhook tells about a new order.
+T.append({
+    "id": "oc-23-order-webhook",
+    "request": "Quando minha loja mandar o webhook de pedido novo, me avisa no Telegram com o nome do cliente, o valor e os itens.",
+    "now": "2026-09-24T14:12:00-03:00",
+    "event": {"webhook": {"method": "POST", "query": {}, "received": "2026-09-24T14:12:00-03:00",
+        "body": {"order_id": "1042", "customer": {"name": "Marina Souza"}, "total": 189.9, "currency": "BRL", "items": [{"name": "Caneca Pimpo", "qty": 2}, {"name": "Camiseta", "qty": 1}]}}},
+    "calls": [sent("telegram.send", "🛒 Pedido 1042 de Marina Souza: R$ 189,90 — 2× Caneca Pimpo, 1× Camiseta")],
+    "outcome": "Uma mensagem para cada pedido que a loja manda, com cliente, valor e itens.",
+    "expect": [expect("telegram.send", 1, ["Marina Souza", "189,90", "Caneca Pimpo"])],
+    "holdout": {
+        "now": "2026-10-08T10:00:00-03:00",
+        "responses": [],
+        "event": {"webhook": {"method": "POST", "query": {}, "received": "2026-10-08T10:00:00-03:00",
+            "body": {"order_id": "1107", "customer": {"name": "Rafael Lima"}, "total": 54.5, "currency": "BRL", "items": [{"name": "Adesivos", "qty": 5}]}}},
+        "expect": [expect("telegram.send", 1, ["Rafael Lima", "54,50", "Adesivos"], ["Marina"])],
+    },
+})
+
 out = here
 for t in T:
     with open(os.path.join(out, t["id"] + ".json"), "w") as f:

@@ -1,0 +1,92 @@
+{
+ "id": "oc-23-order-webhook",
+ "request": "Quando minha loja mandar o webhook de pedido novo, me avisa no Telegram com o nome do cliente, o valor e os itens.",
+ "now": "2026-09-24T14:12:00-03:00",
+ "event": {
+  "webhook": {
+   "method": "POST",
+   "query": {},
+   "received": "2026-09-24T14:12:00-03:00",
+   "body": {
+    "order_id": "1042",
+    "customer": {
+     "name": "Marina Souza"
+    },
+    "total": 189.9,
+    "currency": "BRL",
+    "items": [
+     {
+      "name": "Caneca Pimpo",
+      "qty": 2
+     },
+     {
+      "name": "Camiseta",
+      "qty": 1
+     }
+    ]
+   }
+  }
+ },
+ "calls": [
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "🛒 Pedido 1042 de Marina Souza: R$ 189,90 — 2× Caneca Pimpo, 1× Camiseta"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Uma mensagem para cada pedido que a loja manda, com cliente, valor e itens.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "Marina Souza",
+    "189,90",
+    "Caneca Pimpo"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T10:00:00-03:00",
+  "responses": [],
+  "event": {
+   "webhook": {
+    "method": "POST",
+    "query": {},
+    "received": "2026-10-08T10:00:00-03:00",
+    "body": {
+     "order_id": "1107",
+     "customer": {
+      "name": "Rafael Lima"
+     },
+     "total": 54.5,
+     "currency": "BRL",
+     "items": [
+      {
+       "name": "Adesivos",
+       "qty": 5
+      }
+     ]
+    }
+   }
+  },
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 1,
+    "contains": [
+     "Rafael Lima",
+     "54,50",
+     "Adesivos"
+    ],
+    "not_contains": [
+     "Marina"
+    ]
+   }
+  ]
+ }
+}
