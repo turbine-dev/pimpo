@@ -1215,4 +1215,11 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'cost.subTitle': "구독으로 사용",
   'cost.subAmounts': "오늘 ≈ {today} · 이번 달 ≈ {month}",
   'cost.subText': "Claude Code와 Codex는 구독을 사용하므로 돈이 나가지 않습니다. API로 했을 때의 참고 금액이며 일일 한도에 포함되지 않습니다.",
+  'ms.ocText': "opencode에 로그인한 제공자(GitHub Copilot, OpenCode Go, OpenRouter 등)를 사용합니다. Pimpo의 도구만 사용할 수 있습니다.",
+  'ms.ocPick': "Pimpo가 사용할 모델을 고르세요. 구독 모델은 돈이 들지 않고, 나머지 비용은 opencode가 알려 줍니다.",
+  'ms.ocPlan': "구독",
+  'ms.ocAdd': "추가",
+  'ms.ocMore': "외 {count}개, 검색을 사용하세요",
+  'ms.ocPrice': "opencode가 알려 준 비용",
+  'doc.fix.opencode': "opencode를 찾을 수 없습니다. 설치하거나 설정 › 모델에서 다른 모델을 고르세요.",
 }

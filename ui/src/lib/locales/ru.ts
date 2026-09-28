@@ -1265,4 +1265,11 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'cost.subTitle': "По подписке",
   'cost.subAmounts': "≈ {today} сегодня · ≈ {month} за месяц",
   'cost.subText': "Claude Code и Codex работают по вашей подписке, деньги не тратятся. Это стоимость того же через API, только для справки; в дневной лимит не входит.",
+  'ms.ocText': "Использует провайдеров, в которые вы вошли в opencode: GitHub Copilot, OpenCode Go, OpenRouter и другие. Доступны только инструменты Pimpo.",
+  'ms.ocPick': "Выберите модели, которые может использовать Pimpo. Модели по подписке не тратят деньги; стоимость остальных сообщает opencode.",
+  'ms.ocPlan': "подписка",
+  'ms.ocAdd': "Добавить",
+  'ms.ocMore': "и ещё {count}; воспользуйтесь поиском",
+  'ms.ocPrice': "стоимость от opencode",
+  'doc.fix.opencode': "opencode не найден. Установите его или выберите другую модель в Настройки › Модели.",
 }

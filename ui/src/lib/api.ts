@@ -167,7 +167,8 @@ export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
 export type Provider = { id: string; name: string; key_url?: string; needs_key: boolean; local?: boolean }
 export type CatalogModel = { id: string; name: string; price_in: number; price_out: number; priced: boolean; context?: number; free?: boolean }
-export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: string; ollama_up?: boolean; lmstudio: CatalogModel[]; lmstudio_url: string; lmstudio_up?: boolean; codex?: string; codex_login?: boolean; qwen_code?: string; apps?: string[] }
+export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: string; ollama_up?: boolean; lmstudio: CatalogModel[]; lmstudio_url: string; lmstudio_up?: boolean; codex?: string; codex_login?: boolean; opencode?: string; qwen_code?: string; apps?: string[] }
+export type OpencodeModel = { id: string; provider: string; name: string; subscription: boolean }
 export type ModelTest = { ok: boolean; text?: string; cost_usd?: number; ms?: number; error?: string; problem?: string }
 
 export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: string; approved?: string }; undoable: boolean; undo_until?: string; undone: boolean }
@@ -229,6 +230,7 @@ export const api = {
   capabilities: () => request<CapabilitySpec[]>('GET', '/api/capabilities'),
   models: () => request<{ keys: Record<string, boolean>; claude_code: boolean; providers: Provider[]; auto?: { light: string; strong: string; base: string; weigher: 'jev' | 'rules' } }>('GET', '/api/models'),
   detectModels: () => request<Found>('GET', '/api/models/detect'),
+  opencodeModels: () => request<OpencodeModel[]>('GET', '/api/models/opencode'),
   modelCatalog: (provider: string) => request<CatalogModel[]>('GET', `/api/models/catalog/${provider}`),
   tryModel: async (id: string, price_in: number, price_out: number): Promise<ModelTest> => {
     const res = await fetch('/api/models/test', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, price_in, price_out }) })

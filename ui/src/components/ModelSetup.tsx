@@ -32,7 +32,7 @@ export function EffortSelect({ value, onChange, fallback, className }: { value: 
   )
 }
 
-export const label = (id: string) => (claudeCode.includes(id) ? `Claude Code · ${id}` : id === 'codex' ? 'Codex · ChatGPT' : id)
+export const label = (id: string) => (claudeCode.includes(id) ? `Claude Code · ${id}` : id === 'codex' ? 'Codex · ChatGPT' : id.startsWith('opencode:') ? `opencode · ${id.slice(9)}` : id)
 const price = (t: ReturnType<typeof useT>, m: { price_in: number; price_out: number; free?: boolean }) =>
   m.free || (m.price_in === 0 && m.price_out === 0) ? t('models.free') : t('models.price', { in: m.price_in, out: m.price_out })
 
@@ -66,6 +66,7 @@ export function ModelSetup() {
   const info = useQuery({ queryKey: ['models'], queryFn: api.models })
   const found = useQuery({ queryKey: ['models', 'detect'], queryFn: api.detectModels })
   const [open, setOpen] = useState<{ provider: Provider; local?: CatalogModel[] } | null>(null)
+  const [oc, setOc] = useState(false)
   if (!s || !info.data) return <Card className="p-5 text-sm text-ink-3">{t('ui.loading')}</Card>
   const mine = s.models ?? []
   const options = [...(found.data?.claude_code || info.data.claude_code ? claudeCode : []), ...(found.data?.codex_login ? ['codex'] : []), ...mine.map((m) => m.id)]
@@ -161,6 +162,15 @@ export function ModelSetup() {
               </li>
             )
           })}
+          {found.data?.opencode && (
+            <li className="flex items-center gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-medium">opencode</div>
+                <div className="text-[12.5px] text-ink-3">{t('ms.ocText')}</div>
+              </div>
+              <Button size="sm" onClick={() => setOc(true)}>{t('ms.choose')} <ChevronRight size={14} /></Button>
+            </li>
+          )}
           {found.data?.qwen_code && (
             <li className="flex items-center gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
@@ -200,6 +210,7 @@ export function ModelSetup() {
       </Card>
 
       {mine.length > 0 && <Mine s={s} save={save.mutate} />}
+      {oc && <OpencodePicker s={s} save={save.mutate} onClose={() => setOc(false)} />}
       {open && <Picker provider={open.provider} local={open.local} onClose={() => setOpen(null)} save={save.mutate} s={s} />}
     </div>
   )
@@ -283,7 +294,7 @@ function Mine({ s, save }: { s: Settings; save: (c: (s: Settings) => Settings) =
         {mine.map((m) => (
           <li key={m.id} className="flex flex-wrap items-center gap-3 px-3 py-2 text-[13px]">
             <code className="min-w-0 flex-1 truncate font-mono text-[12.5px]">{m.id}</code>
-            <span className="text-[12px] tabular-nums text-ink-3">{price(t, m)}</span>
+            <span className="text-[12px] tabular-nums text-ink-3">{m.id.startsWith('opencode:') ? t('ms.ocPrice') : price(t, m)}</span>
             <Button size="sm" variant="ghost" onClick={() => test.mutate(m)} disabled={test.isPending}>{test.isPending && test.variables?.id === m.id ? <Loader2 size={13} className="animate-spin" /> : t('common.test')}</Button>
             <Button size="sm" variant="ghost" aria-label={t('models.remove', { id: m.id })} onClick={() => remove(m.id)}><Trash2 size={13} /></Button>
           </li>
@@ -302,6 +313,66 @@ function TestResult({ r }: { r: ModelTest }) {
       <div className="font-medium">{t(`ms.problem.${r.problem ?? 'other'}` as TKey)}</div>
       {r.error && <div className="mt-0.5 break-words opacity-80">{r.error}</div>}
     </div>
+  )
+}
+
+// OpencodePicker lists the models of the providers the owner signed in to
+// in opencode; a plan's models (Copilot, OpenCode Go) cost no money.
+function OpencodePicker({ s, save, onClose }: { s: Settings; save: (c: (s: Settings) => Settings) => void; onClose: () => void }) {
+  const t = useT()
+  const q = useQuery({ queryKey: ['models', 'opencode'], queryFn: api.opencodeModels, retry: false })
+  const [search, setSearch] = useState('')
+  const mine = new Set((s.models ?? []).map((m) => m.id))
+  const list = (q.data ?? []).filter((m) => m.id.toLowerCase().includes(search.toLowerCase()))
+  const groups = [...new Set(list.map((m) => m.provider))]
+  const add = (id: string) => save((x) => ({ ...x, models: [...(x.models ?? []).filter((y) => y.id !== id), { id, price_in: 0, price_out: 0 }] }))
+  return (
+    <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" />
+        <Dialog.Content className="fixed left-1/2 top-[6vh] z-50 flex max-h-[88vh] w-[min(680px,calc(100vw-24px))] -translate-x-1/2 flex-col rounded-2xl border border-line bg-surface shadow-[var(--shadow-pop)] focus:outline-none">
+          <div className="flex items-start justify-between gap-4 border-b border-line p-5">
+            <div>
+              <Dialog.Title className="text-[17px] font-semibold tracking-tight">opencode</Dialog.Title>
+              <Dialog.Description className="text-[13px] text-ink-3">{t('ms.ocPick')}</Dialog.Description>
+            </div>
+            <Dialog.Close className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-3 hover:bg-sunken" aria-label={t('common.close')}><X size={16} /></Dialog.Close>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+            {q.isLoading ? <p className="flex items-center gap-2 text-[13px] text-ink-3"><Loader2 size={14} className="animate-spin" /> {t('ms.loadingModels')}</p>
+              : q.error ? <p className="text-[13px] text-danger">{q.error.message}</p> : (
+              <>
+                <label className="relative mb-3 block">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+                  <input className={cn(field, 'w-full pl-8')} value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('ms.search')} aria-label={t('ms.search')} />
+                </label>
+                {groups.map((g) => {
+                  const items = list.filter((m) => m.provider === g)
+                  return (
+                    <div key={g} className="mb-4">
+                      <div className="mb-1.5 flex items-center gap-2 text-[12px] font-medium uppercase tracking-wide text-ink-3">
+                        {g}{items[0]?.subscription && <span className="rounded-full bg-read/15 px-2 py-0.5 normal-case tracking-normal text-read">{t('ms.ocPlan')}</span>}
+                      </div>
+                      <ul className="divide-y divide-line rounded-xl border border-line">
+                        {items.slice(0, 60).map((m) => (
+                          <li key={m.id} className="flex items-center gap-3 px-3 py-2 text-[13px]">
+                            <code className="min-w-0 flex-1 truncate font-mono text-[12.5px]">{m.name}</code>
+                            {mine.has(m.id) ? <span className="flex items-center gap-1 text-[12px] text-read"><Check size={13} /> {t('ms.added')}</span>
+                              : <Button size="sm" onClick={() => add(m.id)}><Plus size={13} /> {t('ms.ocAdd')}</Button>}
+                          </li>
+                        ))}
+                      </ul>
+                      {items.length > 60 && <p className="mt-1 text-[12px] text-ink-3">{t('ms.ocMore', { count: items.length - 60 })}</p>}
+                    </div>
+                  )
+                })}
+                {list.length === 0 && <p className="text-[13px] text-ink-3">{t('mcp.none')}</p>}
+              </>
+            )}
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 

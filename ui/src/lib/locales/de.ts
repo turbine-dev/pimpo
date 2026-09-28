@@ -1215,4 +1215,11 @@ export const de: Record<Key, string> & Record<string, string> = {
   'cost.subTitle': "Über dein Abo",
   'cost.subAmounts': "≈ {today} heute · ≈ {month} diesen Monat",
   'cost.subText': "Claude Code und Codex nutzen dein Abo, es wird also kein Geld ausgegeben. Das ist, was es über die API kosten würde, nur zur Orientierung, und es zählt nicht zum Tageslimit.",
+  'ms.ocText': "Nutzt die Anbieter, bei denen du in opencode angemeldet bist: GitHub Copilot, OpenCode Go, OpenRouter und mehr. Nur Pimpos Werkzeuge stehen zur Verfügung.",
+  'ms.ocPick': "Wähle die Modelle, die Pimpo nutzen darf. Abo-Modelle kosten kein Geld; die Kosten der anderen meldet opencode.",
+  'ms.ocPlan': "Abo",
+  'ms.ocAdd': "Hinzufügen",
+  'ms.ocMore': "und {count} weitere; nutze die Suche",
+  'ms.ocPrice': "Kosten laut opencode",
+  'doc.fix.opencode': "opencode wurde nicht gefunden. Installiere es oder wähle ein anderes Modell unter Einstellungen › Modelle.",
 }

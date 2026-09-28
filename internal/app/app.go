@@ -334,6 +334,14 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 	known := map[string]bool{}
 	for _, m := range s.Models {
 		provider, name, _ := strings.Cut(m.ID, ":")
+		if llm.IsOpencode(m.ID) {
+			// opencode reports each call's cost itself.
+			if !strings.Contains(name, "/") {
+				return server.StatusError{Status: 400, Msg: "an opencode model is opencode:provider/model"}
+			}
+			known[m.ID] = true
+			continue
+		}
 		if !slices.Contains(llm.Providers, provider) || strings.TrimSpace(name) == "" {
 			return server.StatusError{Status: 400, Msg: "a model is provider:name, with provider anthropic, openai, openrouter or ollama"}
 		}
@@ -562,6 +570,9 @@ func (c claude) Generate(ctx context.Context, r llm.Request) (llm.Response, erro
 			}
 			return api.Generate(ctx, r)
 		}
+		if llm.IsOpencode(model) {
+			return llm.OpencodeCLI{}.Generate(ctx, r)
+		}
 		if isCodex(model) {
 			return llm.CodexCLI{}.Generate(ctx, r)
 		}
@@ -597,6 +608,9 @@ func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, erro
 				return llm.Response{}, err
 			}
 			return api.Run(ctx, r)
+		}
+		if llm.IsOpencode(model) {
+			return llm.OpencodeCLI{}.Run(ctx, r)
 		}
 		if isCodex(model) {
 			return llm.CodexCLI{}.Run(ctx, r)

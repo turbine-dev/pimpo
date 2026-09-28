@@ -226,3 +226,28 @@ func TestClaudeCLIEffort(t *testing.T) {
 		t.Fatalf("args %s", args)
 	}
 }
+
+func TestReadOpencode(t *testing.T) {
+	out := []byte(`{"type":"step_start","sessionID":"ses_1","part":{"type":"step-start"}}
+{"type":"text","sessionID":"ses_1","part":{"type":"text","text":"Vou ver."}}
+{"type":"step_finish","sessionID":"ses_1","part":{"reason":"tool-calls","cost":0.001}}
+{"type":"step_start","sessionID":"ses_1","part":{"type":"step-start"}}
+{"type":"text","sessionID":"ses_1","part":{"type":"text","text":"Faz 23 graus."}}
+{"type":"step_finish","sessionID":"ses_1","part":{"reason":"stop","cost":0.002}}
+`)
+	resp, session, failure := readOpencode(out)
+	if resp.Text != "Faz 23 graus." || session != "ses_1" || failure != "" || math.Abs(resp.CostUSD-0.003) > 1e-9 {
+		t.Fatalf("%+v %q %q", resp, session, failure)
+	}
+	_, _, failure = readOpencode([]byte(`{"type":"error","sessionID":"s","error":{"name":"APIError","data":{"message":"model not found"}}}`))
+	if failure != "model not found" {
+		t.Fatalf("failure %q", failure)
+	}
+	if string(extractJSON("Aqui:\n```json\n{\"city\":\"Paris\"}\n```")) != `{"city":"Paris"}` || string(extractJSON(`Resposta: {"a":1} pronto`)) != `{"a":1}` {
+		t.Fatal("extractJSON")
+	}
+	cfg := string(opencodeConfig("sys", "http://x/mcp"))
+	if !strings.Contains(cfg, `"*":"deny"`) || !strings.Contains(cfg, `"pimpo_*":"allow"`) || !strings.Contains(cfg, `"prompt":"sys"`) {
+		t.Fatalf("config %s", cfg)
+	}
+}

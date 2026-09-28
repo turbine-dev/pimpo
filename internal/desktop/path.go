@@ -38,7 +38,7 @@ func ShellPath() {
 // those that exist, newest Node version first.
 func knownDirs() []string {
 	home, _ := os.UserHomeDir()
-	dirs := []string{filepath.Join(home, ".claude", "local"), filepath.Join(home, ".local", "bin")}
+	dirs := []string{filepath.Join(home, ".claude", "local"), filepath.Join(home, ".local", "bin"), filepath.Join(home, ".opencode", "bin"), filepath.Join(home, ".kimi-code", "bin")}
 	nvm, _ := filepath.Glob(filepath.Join(home, ".nvm", "versions", "node", "*", "bin"))
 	sort.Sort(sort.Reverse(sort.StringSlice(nvm)))
 	dirs = append(dirs, nvm...)

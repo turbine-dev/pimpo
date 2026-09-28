@@ -6,6 +6,7 @@ import (
 	"slices"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -184,6 +185,13 @@ func (a *App) doctor(ctx context.Context) []finding {
 func (a *App) checkModel(ctx context.Context, id string) finding {
 	f := finding{ID: "model:" + id, Group: "brain", Name: id, State: "ok", Link: "/settings#modelos"}
 	api, isAPI, err := a.apiModel(ctx, id)
+	if !isAPI && llm.IsOpencode(id) {
+		f.Name = "opencode · " + strings.TrimPrefix(id, "opencode:")
+		if llm.OpencodeBinary() == "" {
+			f.State, f.Fix = "fail", "doc.fix.opencode"
+		}
+		return f
+	}
 	if !isAPI && isCodex(id) {
 		f.Name = "Codex · ChatGPT"
 		if llm.CodexBinary() == "" {

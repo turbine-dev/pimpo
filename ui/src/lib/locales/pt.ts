@@ -1215,6 +1215,13 @@ export const pt = {
   'cost.subTitle': "Pela assinatura",
   'cost.subAmounts': "≈ {today} hoje · ≈ {month} no mês",
   'cost.subText': "O Claude Code e o Codex estão usando a sua assinatura, então não sai dinheiro. O valor é o equivalente se fosse pela API, só para referência, e não conta no limite diário.",
+  'ms.ocText': "Usa os provedores em que você entrou no opencode: GitHub Copilot, OpenCode Go, OpenRouter e outros. Só as ferramentas do Pimpo ficam disponíveis.",
+  'ms.ocPick': "Escolha os modelos que o Pimpo pode usar. Os de assinatura não gastam dinheiro; o custo dos outros vem do próprio opencode.",
+  'ms.ocPlan': "assinatura",
+  'ms.ocAdd': "Adicionar",
+  'ms.ocMore': "e mais {count}; use a busca",
+  'ms.ocPrice': "custo pelo opencode",
+  'doc.fix.opencode': "O opencode não foi encontrado. Instale-o ou escolha outro modelo em Ajustes › Modelos.",
 }
 
 export type Key = keyof typeof pt
