@@ -1295,6 +1295,7 @@ export const pt = {
   'wh.event': "O que for enviado (JSON, formulário ou texto) chega à rotina em event.webhook, com method, query e body.",
   'wh.rotate': "Trocar endereço",
   'rs.byWebhook': "Começa quando o webhook desta rotina é chamado (veja abaixo).",
+  'inbox.asked': "Perguntado {when}",
 }
 
 export type Key = keyof typeof pt

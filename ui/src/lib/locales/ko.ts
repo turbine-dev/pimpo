@@ -1295,4 +1295,5 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'wh.event': "보낸 내용(JSON, 양식, 텍스트)은 event.webhook(method, query, body)으로 루틴에 전달됩니다.",
   'wh.rotate': "주소 바꾸기",
   'rs.byWebhook': "이 루틴의 웹훅이 호출되면 시작됩니다(아래 참고).",
+  'inbox.asked': "{when}에 질문",
 }

@@ -130,6 +130,14 @@ var ErrBlocked = errors.New("blocked by a rule")
 type destinationsKey struct{}
 
 // DestinationsFrom returns the destinations of the run ctx belongs to.
+type sourceKey struct{}
+
+// SourceOf is who makes a call: routine:<id>#<run>, exploration:<id>…
+func SourceOf(ctx context.Context) string {
+	s, _ := ctx.Value(sourceKey{}).(string)
+	return s
+}
+
 func DestinationsFrom(ctx context.Context) []string {
 	d, _ := ctx.Value(destinationsKey{}).([]string)
 	return d
@@ -140,6 +148,7 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	person := people.Norm(h.Person)
 	ctx = people.With(ctx, person)
 	ctx = context.WithValue(ctx, destinationsKey{}, h.Destinations)
+	ctx = context.WithValue(ctx, sourceKey{}, h.Source)
 	rec := ActionRecord{Source: h.Source, Capability: name, Scope: scope, Risk: spec.Risk.String(), Args: args}
 	if person != people.OwnerID {
 		rec.Person = person

@@ -31,6 +31,8 @@
   "effort.low": "basso",
   "effort.max": "massimo",
   "effort.medium": "medio",
+  "msg.answer.gone": "Questa domanda ha già avuto risposta o è scaduta.",
+  "msg.answer.noted": "✅ Annotato: {choice}",
   "msg.approval.always": "Consentito. Non verrà più chiesto.",
   "msg.approval.approve": "Consentito.",
   "msg.approval.batch": "Consentito per il resto di questa esecuzione.",

@@ -31,6 +31,8 @@
   "effort.low": "bas",
   "effort.max": "maximum",
   "effort.medium": "moyen",
+  "msg.answer.gone": "Cette question a déjà reçu une réponse ou a expiré.",
+  "msg.answer.noted": "✅ Noté : {choice}",
   "msg.approval.always": "Autorisé. Cela ne sera plus demandé.",
   "msg.approval.approve": "Autorisé.",
   "msg.approval.batch": "Autorisé pour le reste de cette exécution.",

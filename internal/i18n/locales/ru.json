@@ -31,6 +31,8 @@
   "effort.low": "низкий",
   "effort.max": "максимум",
   "effort.medium": "средний",
+  "msg.answer.gone": "На этот вопрос уже ответили, или он истёк.",
+  "msg.answer.noted": "✅ Записано: {choice}",
   "msg.approval.always": "Разрешено. Этот вопрос больше не появится.",
   "msg.approval.approve": "Разрешено.",
   "msg.approval.batch": "Разрешено до конца этого запуска.",

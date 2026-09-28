@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BellOff, Headphones, ShieldQuestion, Sparkles } from 'lucide-react'
+import { AlertTriangle, BellOff, Headphones, MessageCircleQuestion, ShieldQuestion, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api } from '../lib/api'
@@ -17,8 +17,10 @@ export function Inbox() {
   const approvals = useQuery({ queryKey: ['approvals'], queryFn: api.approvals, refetchInterval: 10_000 })
   const answer = useMutation({ mutationFn: ({ id, a }: { id: string; a: 'once' | 'run' | 'always' | 'deny' }) => api.answer(id, a), onSettled: () => qc.invalidateQueries({ queryKey: ['approvals'] }) })
   const media = useQuery({ queryKey: ['media'], queryFn: api.media, refetchInterval: 60_000 })
+  const questions = useQuery({ queryKey: ['questions'], queryFn: api.questions, refetchInterval: 15_000 })
+  const reply = useMutation({ mutationFn: ({ id, i }: { id: string; i: number }) => api.answerQuestion(id, i), onSettled: () => qc.invalidateQueries({ queryKey: ['questions'] }) })
   const broken = (routines.data ?? []).filter((r) => r.state === 'broken')
-  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0) + (media.data?.length ?? 0)
+  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0) + (media.data?.length ?? 0) + (questions.data?.length ?? 0)
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -30,6 +32,18 @@ export function Inbox() {
         </EmptyState>
       )}
       <div className="space-y-3">
+        {(questions.data ?? []).map((q) => (
+          <Card key={q.id} className="flex flex-wrap items-center gap-4 border-explore/40 p-4">
+            <div className="grid size-10 place-items-center rounded-xl bg-explore-soft text-explore"><MessageCircleQuestion size={18} /></div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-medium">{q.question}</div>
+              <div className="text-[12.5px] text-ink-3">{t('inbox.asked', { when: relative(q.asked) })}</div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {q.options.map((o, i) => <Button key={o} size="sm" variant={i === 0 ? 'primary' : 'secondary'} disabled={reply.isPending} onClick={() => reply.mutate({ id: q.id, i })}>{o}</Button>)}
+            </div>
+          </Card>
+        ))}
         {(media.data ?? []).length > 0 && (
           <Card className="p-4">
             <div className="mb-2 flex items-center gap-2 text-[14px] font-medium"><Headphones size={15} /> {t('inbox.audio')}</div>

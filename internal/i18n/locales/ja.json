@@ -31,6 +31,8 @@
   "effort.low": "低",
   "effort.max": "最大",
   "effort.medium": "中",
+  "msg.answer.gone": "その質問は回答済みか、期限切れです。",
+  "msg.answer.noted": "✅ 記録しました: {choice}",
   "msg.approval.always": "許可しました。今後は確認しません。",
   "msg.approval.approve": "許可しました。",
   "msg.approval.batch": "今回の実行が終わるまで許可しました。",

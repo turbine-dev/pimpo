@@ -1295,4 +1295,5 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'wh.event': "送られた内容（JSON、フォーム、テキスト）は event.webhook（method、query、body）としてルーティンに届きます。",
   'wh.rotate': "アドレスを変更",
   'rs.byWebhook': "このルーティンの Webhook が呼ばれると始まります（下を参照）。",
+  'inbox.asked': "{when}に質問",
 }

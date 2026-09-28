@@ -116,6 +116,10 @@ Any routine can be started by another service calling a secret address: on its p
 
 On a Mac, **Conexões › Lembretes, Notas e Calendário da Apple** lets tasks and routines use Apple's own apps: add a reminder that rings on your iPhone and Watch, mark one done, list the open ones; search your notes and add to a note in Pimpo's folder; read the Mac's Calendar. Give the Notes folder Pimpo writes in (created if missing) and, if you like, the default Reminders list. The first time, macOS asks to let Pimpo use each app (System Settings › Privacy & Security › Automation). Reminders added and notes changed can be undone in **Atividade**. When this is connected, "me lembra amanhã às 9h" goes to the Reminders app.
 
+## Routines that ask you
+
+A routine can ask you something and act on your answer: "toda noite me pergunta se treinei e conta os treinos da semana", "pergunta antes de arquivar". The question arrives with its options as buttons on Telegram, numbered on the other channels, and in **Precisa de você**; your answer runs the routine again, which records it or does what you chose. A new question replaces the same one still unanswered, and a question expires after 24 hours.
+
 ## Reminders
 
 Ask in any chat, in the app or on a channel: "daqui a 30 minutos me lembra de conferir o deploy", "amanhã às 9h me lembra de ligar para a Ana". Pimpo sets a reminder that goes out once, where your notices go, and is gone; nothing is turned into a routine. Pending reminders are listed at the top of **Rotinas**, where each can be cancelled. One that falls due while Pimpo is closed goes out when it opens, saying it is late. What repeats ("toda segunda…") is a routine instead.

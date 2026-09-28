@@ -31,6 +31,8 @@
   "effort.low": "low",
   "effort.max": "max",
   "effort.medium": "medium",
+  "msg.answer.gone": "That question was already answered or has expired.",
+  "msg.answer.noted": "✅ Noted: {choice}",
   "msg.approval.always": "Allowed. This won’t be asked again.",
   "msg.approval.approve": "Allowed.",
   "msg.approval.batch": "Allowed for the rest of this run.",
