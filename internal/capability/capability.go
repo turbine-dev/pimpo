@@ -63,6 +63,8 @@ func init() {
 		{Name: "gmail.unsubscribe", Risk: Irreversible, Signature: "gmail.unsubscribe({id})", Returns: "{ok, method}; asks the sender to stop sending (one-click link or unsubscribe email); only for messages where can_unsubscribe is true"},
 		{Name: "gmail.send", Risk: Irreversible, Signature: "gmail.send({to, subject, body})", Returns: "{ok}; sends an email to someone else"},
 		{Name: "http.getJSON", Risk: Read, Signature: "http.getJSON(url)", Returns: "the parsed JSON body; only hosts named in the manifest scope are reachable", Scoped: true},
+		{Name: "web.read", Risk: Read, Signature: "web.read({url})", Returns: "{url, title, description, text, truncated, data: [JSON-LD objects, e.g. a Product with offers.price], links: [{text, url}]}; a web page as readable text; only hosts named in the manifest scope are reachable", Scoped: true, ScopeArg: "url",
+			Schema: `{"type":"object","required":["url"],"properties":{"url":{"type":"string","description":"https URL of a web page"}}}`},
 		{Name: "telegram.send", Risk: Notify, Signature: "telegram.send({text})", Returns: "{ok}; sends a message to the owner only"},
 		{Name: "notify.send", Risk: Notify, Signature: "notify.send({text})", Returns: "{ok, delivered: [destination]}; sends to the destinations the owner chose for this routine (Telegram bots, WhatsApp, Slack, Discord, email), or to the owner's usual channel. Prefer this over telegram.send", Schema: `{"type":"object","required":["text"],"properties":{"text":{"type":"string"}}}`},
 		{Name: "whatsapp.send", Risk: Notify, Signature: "whatsapp.send({text})", Returns: "{ok}; sends a WhatsApp message to the owner only"},

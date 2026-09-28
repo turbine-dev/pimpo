@@ -1,4 +1,5 @@
-// Package web lets routines read JSON from hosts their manifest names.
+// Package web lets routines read JSON and web pages from hosts their
+// manifest names.
 package web
 
 import (
@@ -20,9 +21,14 @@ type Web struct {
 	AllowPrivate bool
 }
 
-func (w *Web) Capabilities() []string { return []string{"http.getJSON"} }
+func (w *Web) Capabilities() []string { return []string{"http.getJSON", "web.read"} }
 
-func (w *Web) Call(ctx context.Context, _, scope string, args any) (any, error) {
+func (w *Web) Call(ctx context.Context, name, scope string, args any) (any, error) {
+	if name == "web.read" {
+		m, _ := args.(map[string]any)
+		u, _ := m["url"].(string)
+		return w.read(ctx, u, scope)
+	}
 	raw, _ := args.(string)
 	u, err := url.Parse(raw)
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
