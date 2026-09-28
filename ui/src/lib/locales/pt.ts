@@ -1296,6 +1296,14 @@ export const pt = {
   'wh.rotate': "Trocar endereço",
   'rs.byWebhook': "Começa quando o webhook desta rotina é chamado (veja abaixo).",
   'inbox.asked': "Perguntado {when}",
+  'conn.spotifyText': "Ver o que está tocando, tocar uma música, playlist ou podcast, pausar e ajustar o volume. Controlar precisa do Spotify Premium.",
+  'conn.spotifyRefused': "O Spotify recusou: {reason}",
+  'conn.spotifyStep1': "Em {link}, crie um app (qualquer nome) e marque Web API.",
+  'conn.spotifyStep2': "Em Redirect URIs, adicione exatamente {uri}.",
+  'conn.spotifyStep3': "Copie o Client ID do app, cole aqui e entre com a sua conta. Não precisa da chave secreta.",
+  'conn.spotifyId': "Client ID do Spotify",
+  'conn.spotifySignIn': "Entrar com Spotify",
+  'conn.disconnect': "Desconectar",
 }
 
 export type Key = keyof typeof pt
