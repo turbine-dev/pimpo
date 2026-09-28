@@ -133,6 +133,7 @@ Browse ready-made routines, filtered by what they can touch. Pimpo checks the au
 - **Ajustes › Exportar e importar tudo** creates one file with everything, the keys sealed with a passphrase you choose. Import it on another computer. What was there before is kept aside.
 - `pimpo export file.pimpo` and `pimpo import file.pimpo` do the same from the terminal.
 - `pimpo snapshots` and `pimpo restore` go back to an automatic daily snapshot.
+- `pimpo routines import FOLDER` installs routines from a folder in the repository's layout (`routines/<id>/`), after the same checks as the repository: manifest, their own tests and an audit. They arrive paused; review their settings and resume each one. `--active` installs them running.
 - Coming from OpenClaw or Hermes? Use **Ajustes › Trazer do OpenClaw ou do Hermes**, or `pimpo migrate openclaw`.
 
 **Local copies** (Ajustes › Backup): Pimpo copies everything on this computer every day, before each update and before an import, and keeps the last ten. Pick one and choose **Voltar a esta**; it takes effect when Pimpo is closed and reopened, and the current state is copied first, so it can be undone. After an update Pimpo tells you once that the copy from before is there. Going back to a copy restores data, not the previous version of the app.

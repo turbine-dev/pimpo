@@ -58,11 +58,13 @@ func run(args []string) error {
 		return exportCmd(args, os.Stdout)
 	case "import":
 		return importCmd(args, os.Stdout)
+	case "routines":
+		return routinesCmd(args, os.Stdout)
 	case "version":
 		fmt.Println(version)
 		return nil
 	}
-	return fmt.Errorf("unknown command %q (try: serve, export, import, protect, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
+	return fmt.Errorf("unknown command %q (try: serve, export, import, routines, protect, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
 }
 
 func dataDir(flagValue string) string {
