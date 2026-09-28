@@ -104,6 +104,10 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 
 Pimpo can run on a machine that is always on (a home server, a VPS) while the desktop app just opens it. On that machine, generate a link in **Ajustes › Abrir no celular** as for a phone. On your computer, click the Pimpo icon in the menu bar, choose **Conectar a outro Pimpo…** and paste the link. The Pimpo on your computer then stops, so the same Telegram bot and the same routines never run twice; its data stays where it was. **Usar o Pimpo deste computador** in the same menu brings it back. While connected elsewhere, notifications come from that Pimpo's channels (Telegram and others), not from this computer.
 
+## Reminders
+
+Ask in any chat, in the app or on a channel: "daqui a 30 minutos me lembra de conferir o deploy", "amanhã às 9h me lembra de ligar para a Ana". Pimpo sets a reminder that goes out once, where your notices go, and is gone; nothing is turned into a routine. Pending reminders are listed at the top of **Rotinas**, where each can be cancelled. One that falls due while Pimpo is closed goes out when it opens, saying it is late. What repeats ("toda segunda…") is a routine instead.
+
 ## Other chat channels
 
 Messages you send on Telegram, WhatsApp, Discord, Slack or Signal continue one conversation, so a follow-up like "and tomorrow?" knows what came before. Each conversation also appears under Conversas in the app, where you can pick it up. Send /new (or /novo) to start over; after three quiet hours a new conversation starts on its own. While a task runs, Telegram, Discord and Signal show Pimpo typing (Slack and WhatsApp do not offer that to bots in direct messages).

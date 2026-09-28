@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownToLine, Loader2, Plus, Repeat, Sparkles, X } from 'lucide-react'
+import { AlarmClock, ArrowDownToLine, Loader2, Plus, Repeat, Sparkles, X } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -10,7 +10,7 @@ import { SinceYesterday } from '../components/SinceYesterday'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api, type Exploration } from '../lib/api'
 import { cn } from '../lib/cn'
-import { relative } from '../lib/format'
+import { relative, when } from '../lib/format'
 import { useT } from '../lib/i18n'
 
 export function Routines({ onNew }: { onNew: () => void }) {
@@ -57,6 +57,8 @@ export function Routines({ onNew }: { onNew: () => void }) {
         </div>
       )}
 
+      <Reminders />
+
       {(imported.data?.length ?? 0) > 0 && <ImportedTasks items={imported.data!} />}
 
       {routines.isPending ? null : list.length === 0 ? (
@@ -72,6 +74,31 @@ export function Routines({ onNew }: { onNew: () => void }) {
       )}
       </>}
     </div>
+  )
+}
+
+// Reminders are the one-time messages waiting for their time.
+function Reminders() {
+  const t = useT()
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['reminders'], queryFn: api.reminders, refetchInterval: 30_000 })
+  const cancel = useMutation({ mutationFn: api.cancelReminder, onSuccess: () => qc.invalidateQueries({ queryKey: ['reminders'] }) })
+  const list = q.data ?? []
+  if (list.length === 0) return null
+  return (
+    <Card className="mb-6 p-4">
+      <div className="mb-2 flex items-center gap-2 text-[14px] font-medium"><AlarmClock size={15} /> {t('rem.title')}</div>
+      <ul className="divide-y divide-line">
+        {list.map((r) => (
+          <li key={r.id} className="flex items-center gap-3 py-2 text-[13.5px]">
+            <span className="w-36 shrink-0 text-[12.5px] tabular-nums text-ink-3">{when(r.at)}</span>
+            <span className="min-w-0 flex-1">{r.text}</span>
+            <button type="button" aria-label={t('rem.cancel', { text: r.text })} onClick={() => cancel.mutate(r.id)}
+              className="grid size-7 place-items-center rounded-lg text-ink-3 hover:bg-sunken hover:text-ink"><X size={14} /></button>
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }
 

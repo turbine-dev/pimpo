@@ -76,6 +76,8 @@
   "msg.problem.network": "サービスが停止しています",
   "msg.problem.other": "予期しないエラー",
   "msg.problem.rate": "利用上限に達しました",
+  "msg.reminder": "⏰ リマインダー: {text}",
+  "msg.reminder.late": "⏰ リマインダー（{when} の予定でしたが Pimpo が閉じていました）: {text}",
   "msg.repo.changes_one": "📦 リポジトリでルーティンが {count} 件変更されました。テストは実行済みです。ルーティン › リポジトリ で確認して有効にしてください。",
   "msg.repo.changes_other": "📦 リポジトリでルーティンが {count} 件変更されました。テストは実行済みです。ルーティン › リポジトリ で確認して有効にしてください。",
   "msg.request.started": "了解しました。今から取りかかります。結果はここに届きます。🔎",

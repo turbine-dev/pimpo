@@ -76,6 +76,8 @@
   "msg.problem.network": "o serviço está fora do ar",
   "msg.problem.other": "erro inesperado",
   "msg.problem.rate": "limite de uso atingido",
+  "msg.reminder": "⏰ Lembrete: {text}",
+  "msg.reminder.late": "⏰ Lembrete (era para {when}, o Pimpo estava fechado): {text}",
   "msg.repo.changes_one": "📦 {count} rotina mudou no seu repositório. Os testes já rodaram; revise e ative em Rotinas › Repositório.",
   "msg.repo.changes_other": "📦 {count} rotinas mudaram no seu repositório. Os testes já rodaram; revise e ative em Rotinas › Repositório.",
   "msg.request.started": "Entendido. Fazendo agora; o resultado chega aqui. 🔎",

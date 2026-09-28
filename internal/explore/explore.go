@@ -250,6 +250,11 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	t := &trace.Trace{ID: e.ID, Request: prompt, Now: now.Format(time.RFC3339), Calls: h.Calls(), Judgments: h.Judgments(), Questions: h.Questions(), Outcome: strings.TrimSpace(resp.Text)}
 	t.Expect = DeriveExpect(t.Calls)
 	e.Trace, e.Summary, e.State = t, t.Outcome, store.ExplorationReady
+	oneOff := oneOff(t.Calls)
+	if oneOff {
+		// A reminder is done once it is set; there is nothing to repeat.
+		e.State = store.ExplorationDone
+	}
 	s.Store.SaveExploration(ctx, e)
 	s.Env.Events.Append(ctx, EventFinished, "system", map[string]any{"exploration": e.ID, "calls": len(t.Calls), "cost_usd": e.CostUSD})
 	if o.Quiet {
@@ -265,8 +270,23 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		s.Notify.Notify(ctx, Notice{Text: text, To: e.Person, Kind: "task"})
 		return
 	}
+	if oneOff {
+		s.Notify.Notify(ctx, Notice{Text: text, To: e.Person, Kind: "task"})
+		return
+	}
 	text += "\n\n" + i18n.T(ctx, "msg.explore.offer")
 	s.Notify.Notify(ctx, Notice{Text: text, Actions: []Action{{i18n.T(ctx, "btn.compile"), "compile:" + e.ID}, {i18n.T(ctx, "btn.discard"), "discard:" + e.ID}}, To: e.Person, Kind: "task"})
+}
+
+// oneOff says the exploration set a reminder: a one-time request whose
+// work is already scheduled, not something a routine should repeat.
+func oneOff(calls []trace.Call) bool {
+	for _, c := range calls {
+		if c.Capability == "reminder.set" && c.Error == "" {
+			return true
+		}
+	}
+	return false
 }
 
 // failedReads names the capabilities read when every read failed, or ""
@@ -554,8 +574,9 @@ Do the owner's request once, right now, using ONLY the pimpo tools. This run is 
 - Changes (archive, label) are simulated while exploring: call them exactly as you would for real.
 - telegram_send really sends to the owner: send the final result there, exactly as the owner should receive it every time.
 - Every subjective decision MUST be recorded with decide, one call per item, yes or no, BEFORE you act on it: is this email important? is it a promotion or newsletter? does it need a reply? Record the items you leave out too (yes=false). The automatic routine can only repeat decisions you recorded; unrecorded ones are lost. Objective checks (dates, amounts, senders the owner named) need no decide.
+- A one-time reminder ("in 30 minutes remind me to…", "tomorrow at 9 remind me…") is reminder_set with at (ISO 8601 with the offset shown above) or in (30m, 2h, 1d); it is sent once by itself, so no routine is needed. What repeats ("every Monday…") is a routine instead.
 - If something cannot be done with these tools, say so plainly.
-Finish with a short summary in the owner's language of what you did and what the routine will do each time.`, now.Format("Monday, 2006-01-02 15:04 MST"))
+Finish with a short summary in the owner's language of what you did and what the routine will do each time.`, now.Format("Monday, 2006-01-02 15:04 MST (-07:00)"))
 }
 
 func firstNonEmpty(vs ...string) string {
