@@ -344,22 +344,35 @@ func (a *App) cost(w http.ResponseWriter, r *http.Request) {
 		bySource[key] += c.USD
 	}
 	// By model and by job, from each answered call this month.
-	byModel, byJob := map[string]float64{}, map[string]float64{}
+	byModel, byJob, subByModel := map[string]float64{}, map[string]float64{}, map[string]float64{}
 	calls := map[string]int{}
+	subToday, subMonth := 0.0, 0.0
+	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, zone)
 	used, _ := a.Events.List(ctx, event.Query{Types: []string{"model.used"}})
 	for _, e := range used {
 		if e.Time.Before(monthStart) {
 			continue
 		}
 		var u struct {
-			Job   string  `json:"job"`
-			Model string  `json:"model"`
-			USD   float64 `json:"usd"`
+			Job          string  `json:"job"`
+			Model        string  `json:"model"`
+			USD          float64 `json:"usd"`
+			Subscription bool    `json:"subscription"`
 		}
 		e.Decode(&u)
+		calls[u.Model]++
+		// A subscription's calls cost no money: their API equivalent is
+		// shown apart.
+		if u.Subscription {
+			subByModel[u.Model] += u.USD
+			subMonth += u.USD
+			if !e.Time.Before(dayStart) {
+				subToday += u.USD
+			}
+			continue
+		}
 		byModel[u.Model] += u.USD
 		byJob[u.Job] += u.USD
-		calls[u.Model]++
 	}
 	days := float64(now.Day())
 	daysInMonth := float64(time.Date(now.Year(), now.Month()+1, 0, 0, 0, 0, 0, zone).Day())
@@ -369,6 +382,7 @@ func (a *App) cost(w http.ResponseWriter, r *http.Request) {
 		"projected_month": month / days * daysInMonth,
 		"by_day":          byDay, "by_source": bySource,
 		"by_model": byModel, "by_job": byJob, "calls_by_model": calls,
+		"subscription": map[string]any{"today": subToday, "month": subMonth, "by_model": subByModel},
 	})
 }
 

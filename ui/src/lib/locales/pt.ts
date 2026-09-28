@@ -1212,6 +1212,9 @@ export const pt = {
   'ms.effortModel': "Raciocínio: padrão",
   'ms.autoEffort': "O nível de raciocínio segue a mesma avaliação: baixo nos pedidos simples, alto nos difíceis.",
   'ms.effortDefault': "Padrão",
+  'cost.subTitle': "Pela assinatura",
+  'cost.subAmounts': "≈ {today} hoje · ≈ {month} no mês",
+  'cost.subText': "O Claude Code e o Codex estão usando a sua assinatura, então não sai dinheiro. O valor é o equivalente se fosse pela API, só para referência, e não conta no limite diário.",
 }
 
 export type Key = keyof typeof pt

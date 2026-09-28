@@ -166,4 +166,4 @@ Rules and approvals do not change with the model: every tool call still goes thr
 
 ## Costs
 
-**Custo** shows what you spent today, this month and on what. The daily limit (Ajustes) is checked before every model call; routines barely spend anything.
+**Custo** shows what you spent today, this month and on what. Claude Code signed in with a Claude plan and Codex signed in with ChatGPT are paid by your subscription: they spend no money and do not count toward the daily limit. **Pela assinatura** shows what the same work would have cost on the API, for reference. The daily limit (Ajustes) is checked before every model call; routines barely spend anything.

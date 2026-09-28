@@ -1212,4 +1212,7 @@ export const de: Record<Key, string> & Record<string, string> = {
   'ms.effortModel': "Denken: Standard",
   'ms.autoEffort': "Die Denkstufe folgt derselben Bewertung: niedrig bei einfachen, hoch bei schwierigen Anfragen.",
   'ms.effortDefault': "Standard",
+  'cost.subTitle': "Über dein Abo",
+  'cost.subAmounts': "≈ {today} heute · ≈ {month} diesen Monat",
+  'cost.subText': "Claude Code und Codex nutzen dein Abo, es wird also kein Geld ausgegeben. Das ist, was es über die API kosten würde, nur zur Orientierung, und es zählt nicht zum Tageslimit.",
 }

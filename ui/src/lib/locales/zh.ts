@@ -1212,4 +1212,7 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'ms.effortModel': "思考：默认",
   'ms.autoEffort': "思考级别遵循同一评估：简单请求为低，困难请求为高。",
   'ms.effortDefault': "默认",
+  'cost.subTitle': "通过订阅",
+  'cost.subAmounts': "今天 ≈ {today} · 本月 ≈ {month}",
+  'cost.subText': "Claude Code 和 Codex 使用的是你的订阅，不花钱。这是通过 API 的等价费用，仅供参考，不计入每日限额。",
 }

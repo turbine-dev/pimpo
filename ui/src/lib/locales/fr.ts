@@ -1237,4 +1237,7 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'ms.effortModel': "Réflexion : défaut",
   'ms.autoEffort': "La réflexion suit la même évaluation : basse pour les demandes simples, élevée pour les difficiles.",
   'ms.effortDefault': "Défaut",
+  'cost.subTitle': "Par votre abonnement",
+  'cost.subAmounts': "≈ {today} aujourd’hui · ≈ {month} ce mois-ci",
+  'cost.subText': "Claude Code et Codex utilisent votre abonnement : aucun argent n’est dépensé. C’est ce que coûterait l’API, à titre indicatif, et cela ne compte pas dans la limite quotidienne.",
 }

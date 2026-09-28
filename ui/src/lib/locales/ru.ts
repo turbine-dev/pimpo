@@ -1262,4 +1262,7 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'ms.effortModel': "Рассуждение: по умолч.",
   'ms.autoEffort': "Уровень рассуждения следует той же оценке: низкий для простых запросов, высокий для сложных.",
   'ms.effortDefault': "По умолч.",
+  'cost.subTitle': "По подписке",
+  'cost.subAmounts': "≈ {today} сегодня · ≈ {month} за месяц",
+  'cost.subText': "Claude Code и Codex работают по вашей подписке, деньги не тратятся. Это стоимость того же через API, только для справки; в дневной лимит не входит.",
 }

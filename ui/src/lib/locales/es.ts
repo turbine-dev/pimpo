@@ -1237,4 +1237,7 @@ export const es: Record<Key, string> & Record<string, string> = {
   'ms.effortModel': "Razonamiento: predet.",
   'ms.autoEffort': "El razonamiento sigue la misma evaluación: bajo en pedidos simples, alto en los difíciles.",
   'ms.effortDefault': "Predet.",
+  'cost.subTitle': "Por tu suscripción",
+  'cost.subAmounts': "≈ {today} hoy · ≈ {month} este mes",
+  'cost.subText': "Claude Code y Codex usan tu suscripción, así que no se gasta dinero. Es lo que costaría por la API, solo como referencia, y no cuenta en el límite diario.",
 }

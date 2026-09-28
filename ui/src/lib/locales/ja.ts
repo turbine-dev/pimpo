@@ -1212,4 +1212,7 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'ms.effortModel': "思考: 既定",
   'ms.autoEffort': "思考レベルも同じ判定に従います。簡単な依頼は低、難しい依頼は高。",
   'ms.effortDefault': "既定",
+  'cost.subTitle': "サブスクリプション経由",
+  'cost.subAmounts': "今日 ≈ {today} · 今月 ≈ {month}",
+  'cost.subText': "Claude Code と Codex はサブスクリプションを使っているため、お金はかかりません。API で同じことをした場合の目安で、1日の上限には含まれません。",
 }
