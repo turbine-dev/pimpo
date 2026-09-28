@@ -1332,4 +1332,6 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'vc.about.browser': "Голос самого браузера: начинает сразу, без файла.",
   'lm.transcribers': "Распознавание речи (по желанию)",
   'lm.transcribersText': "Чтобы понимать ваши голосовые из Telegram и диктовку в приложении прямо здесь, не отправляя аудио наружу. Чем больше модель, тем точнее и медленнее.",
+  'voice.preparing': "подготовка…",
+  'voice.stopListening': "Стоп",
 }

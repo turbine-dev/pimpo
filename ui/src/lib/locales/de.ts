@@ -1282,4 +1282,6 @@ export const de: Record<Key, string> & Record<string, string> = {
   'vc.about.browser': "Die Stimme des Browsers: startet sofort, ohne Datei.",
   'lm.transcribers': "Sprache zu Text (optional)",
   'lm.transcribersText': "Versteht deine Telegram-Sprachnachrichten und das Diktat in der App hier vor Ort, ohne Audio zu senden. Größer ist genauer und langsamer.",
+  'voice.preparing': "wird vorbereitet…",
+  'voice.stopListening': "Stopp",
 }

@@ -1282,4 +1282,6 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'vc.about.browser': "浏览器自带的语音：立即开始，不生成文件。",
   'lm.transcribers': "语音转文字（可选）",
   'lm.transcribersText': "在本机理解你的 Telegram 语音消息和应用内听写，不把音频发出去。越大越准确，也越慢。",
+  'voice.preparing': "准备中…",
+  'voice.stopListening': "停止",
 }

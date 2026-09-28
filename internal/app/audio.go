@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -288,11 +289,24 @@ func (a *App) mediaRoutes() {
 			server.WriteError(w, server.StatusError{Status: 409, Msg: "the chat reads with the browser's voice"})
 			return
 		}
-		audio, secs, voice, err := a.speakWith(r.Context(), v, spoken(req.Text), firstModel(req.Language, "pt-BR"))
+		text, lang := spoken(req.Text), firstModel(req.Language, "pt-BR")
+		if strings.TrimSpace(text) == "" {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: "nothing to read"})
+			return
+		}
+		key := speechKey(v, lang, text)
+		if audio, ok := a.cachedSpeech(key); ok {
+			w.Header().Set("Content-Type", "audio/mp4")
+			w.Header().Set("X-Pimpo-Cache", "hit")
+			w.Write(audio)
+			return
+		}
+		audio, secs, voice, err := a.speakWith(r.Context(), v, text, lang)
 		if err != nil {
 			server.WriteError(w, server.StatusError{Status: 422, Msg: err.Error()})
 			return
 		}
+		a.cacheSpeech(key, audio)
 		w.Header().Set("Content-Type", "audio/mp4")
 		w.Header().Set("X-Pimpo-Voice", voice)
 		w.Header().Set("X-Pimpo-Seconds", fmt.Sprintf("%.1f", secs))
@@ -338,4 +352,47 @@ func (a *App) mediaRoutes() {
 		w.Header().Set("Content-Type", "audio/mp4")
 		http.ServeContent(w, r, id+".m4a", st.ModTime(), f)
 	})
+}
+
+// Readings for the chat are kept, so listening again, or to a sentence
+// already read, starts at once and costs nothing. The key is the voice,
+// the language and the text; the oldest go past speechKeep files.
+const speechKeep = 400
+
+func speechKey(v voiceChoice, lang, text string) string {
+	h := sha256.Sum256([]byte(v.Engine + "\x00" + v.Model + "\x00" + v.Name + "\x00" + lang + "\x00" + text))
+	return hex.EncodeToString(h[:16])
+}
+
+func (a *App) speechCache() string { return filepath.Join(a.Home, "cache", "speech") }
+
+func (a *App) cachedSpeech(key string) ([]byte, bool) {
+	if a.Home == "" {
+		return nil, false
+	}
+	p := filepath.Join(a.speechCache(), key+".m4a")
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return nil, false
+	}
+	now := time.Now()
+	os.Chtimes(p, now, now) // recently heard stays longest
+	return b, true
+}
+
+func (a *App) cacheSpeech(key string, audio []byte) {
+	if a.Home == "" {
+		return
+	}
+	dir := a.speechCache()
+	if os.MkdirAll(dir, 0o700) != nil {
+		return
+	}
+	os.WriteFile(filepath.Join(dir, key+".m4a"), audio, 0o600)
+	if files, _ := filepath.Glob(filepath.Join(dir, "*.m4a")); len(files) > speechKeep {
+		sort.Slice(files, func(i, j int) bool { return modTime(files[i]).Before(modTime(files[j])) })
+		for _, f := range files[:len(files)-speechKeep] {
+			os.Remove(f)
+		}
+	}
 }

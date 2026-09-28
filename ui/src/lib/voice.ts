@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { localeTag } from './i18n'
 
 type Recognition = {
@@ -82,29 +82,118 @@ export function speak(text: string) {
   window.speechSynthesis.speak(u)
 }
 
+// Reading aloud with Pimpo's voices, as it goes: the text is read a few
+// sentences at a time, the first as soon as it is ready while the next are
+// made, so listening starts in about a second. Pimpo keeps what it read,
+// so hearing it again starts at once.
+
+export type Reading = { key: string; phase: 'loading' | 'playing' } | null
+
+let reading: Reading = null
+let run = 0
 let playing: HTMLAudioElement | null = null
+let stopPlaying: (() => void) | null = null
+const listeners = new Set<() => void>()
+
+function setReading(r: Reading) {
+  reading = r
+  listeners.forEach((f) => f())
+}
+
+// useReading is what is being read now, for the buttons.
+export function useReading(): Reading {
+  const [, bump] = useReducer((x: number) => x + 1, 0)
+  useEffect(() => {
+    listeners.add(bump)
+    return () => { listeners.delete(bump) }
+  }, [])
+  return reading
+}
+
+// sentences splits text into pieces to read: the first short, so it starts
+// soon; the rest a few sentences each.
+export function sentences(text: string, first = 140, rest = 320): string[] {
+  const parts = text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?…:;])\s+/)
+  const out: string[] = []
+  let cur = ''
+  for (const p of parts) {
+    const limit = out.length === 0 ? first : rest
+    if (cur && (cur + ' ' + p).length > limit) {
+      out.push(cur)
+      cur = p
+    } else {
+      cur = cur ? cur + ' ' + p : p
+    }
+  }
+  if (cur) out.push(cur)
+  return out.flatMap((c) => (c.length > rest * 2 ? c.match(new RegExp(`.{1,${rest}}(\\s|$)`, 'g')) ?? [c] : [c])).map((c) => c.trim()).filter(Boolean)
+}
+
+function speakPiece(text: string): Promise<Blob> {
+  return fetch('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ text, language: localeTag() }) })
+    .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(r.statusText))))
+}
+
+function play(blob: Blob): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob)
+    const a = new Audio(url)
+    playing = a
+    const done = () => { URL.revokeObjectURL(url); stopPlaying = null; resolve() }
+    stopPlaying = () => { a.pause(); done() }
+    a.onended = done
+    a.onerror = () => { URL.revokeObjectURL(url); reject(new Error('audio')) }
+    a.play().catch(reject)
+  })
+}
 
 // readAloud reads an answer with the chat's voice chosen in Settings: the
 // browser's own, or one Pimpo makes (downloaded, system or cloud). When
-// Pimpo cannot read it, the browser's voice does.
-export async function readAloud(text: string, chatVoice?: string) {
+// Pimpo cannot read it, the browser's voice does. key names what is read,
+// for the buttons.
+export async function readAloud(text: string, chatVoice?: string, key = text) {
+  stopReading()
   if (!text) return
   if (chatVoice === 'browser') return speak(text)
-  window.speechSynthesis?.cancel()
-  playing?.pause()
+  const mine = ++run
+  setReading({ key, phase: 'loading' })
+  const parts = sentences(text)
+  const made: (Promise<Blob> | undefined)[] = []
+  const get = (i: number) => (made[i] ??= speakPiece(parts[i]))
+  let i = 0
   try {
-    const res = await fetch('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ text, language: localeTag() }) })
-    if (!res.ok) throw new Error(res.statusText)
-    const url = URL.createObjectURL(await res.blob())
-    playing = new Audio(url)
-    playing.onended = () => URL.revokeObjectURL(url)
-    await playing.play()
+    for (; i < parts.length; i++) {
+      const blob = await get(i)
+      if (mine !== run) return
+      if (i + 1 < parts.length) get(i + 1) // the next is made while this one plays
+      setReading({ key, phase: 'playing' })
+      await play(blob)
+      if (mine !== run) return
+    }
   } catch {
-    speak(text)
+    if (mine === run) speak(parts.slice(i).join(' '))
+  } finally {
+    if (mine === run) setReading(null)
   }
 }
 
 export function stopReading() {
+  run++
+  stopPlaying?.()
   playing?.pause()
-  window.speechSynthesis?.cancel()
+  playing = null
+  if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+  if (reading) setReading(null)
+}
+
+const warmed = new Set<string>()
+
+// warmReading makes the first piece of an answer ahead of time, so Listen
+// starts at once; only free voices are warmed, never a paid one.
+export function warmReading(text: string, engine: string) {
+  if (!text || !['auto', 'local', 'system'].includes(engine)) return
+  const first = sentences(text)[0]
+  if (!first || warmed.has(first)) return
+  warmed.add(first)
+  speakPiece(first).catch(() => warmed.delete(first))
 }
