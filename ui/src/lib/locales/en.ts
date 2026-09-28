@@ -1295,4 +1295,5 @@ export const en: Record<Key, string> = {
   'wh.event': "Whatever is sent (JSON, form or text) reaches the routine as event.webhook, with method, query and body.",
   'wh.rotate': "New address",
   'rs.byWebhook': "Starts when this routine's webhook is called (see below).",
+  'inbox.asked': "Asked {when}",
 }

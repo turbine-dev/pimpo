@@ -282,6 +282,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.localRoutes()
 	a.speechRoutes()
 	a.webhookRoutes()
+	a.questionRoutes()
 	a.doctorRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()
@@ -477,6 +478,7 @@ func (a *App) router() *connector.Router {
 		notifyCap{a},
 		reminderCap{a},
 		audioCap{a},
+		askCap{a},
 	)
 	for _, k := range services.All() {
 		r.Add(k.Connector(a.catalogConfig))
@@ -1045,6 +1047,12 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 			return "", err
 		}
 		return i18n.T(ctx, "msg.routine.redo"), nil
+	case "answer":
+		qid, i, err := parseAnswer(id)
+		if err != nil {
+			return "", err
+		}
+		return h.a.answer(ctx, qid, i)
 	case "approve", "always", "deny", "batch":
 		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run}[action]
 		if ans == approval.Always && people.From(ctx) != people.OwnerID {
@@ -1075,6 +1083,9 @@ func (h handler) allowed(ctx context.Context, action, id string) error {
 		if e, err := h.a.Store.Exploration(ctx, id); err == nil && e.Person == person {
 			return nil
 		}
+	case "answer":
+		// answer checks that the question is theirs.
+		return nil
 	}
 	return errors.New(i18n.T(ctx, "msg.ownerOnly"))
 }

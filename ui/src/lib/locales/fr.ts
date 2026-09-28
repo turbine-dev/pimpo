@@ -1320,4 +1320,5 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'wh.event': "Ce qui est envoyé (JSON, formulaire ou texte) arrive à la routine dans event.webhook, avec method, query et body.",
   'wh.rotate': "Nouvelle adresse",
   'rs.byWebhook': "Démarre quand le webhook de cette routine est appelé (voir plus bas).",
+  'inbox.asked': "Demandé {when}",
 }

@@ -1295,4 +1295,5 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'wh.event': "发送的内容（JSON、表单或文本）会以 event.webhook（含 method、query、body）传给例程。",
   'wh.rotate': "更换地址",
   'rs.byWebhook': "调用此例程的 Webhook 时开始（见下方）。",
+  'inbox.asked': "{when}提问",
 }

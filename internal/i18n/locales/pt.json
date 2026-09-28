@@ -31,6 +31,8 @@
   "effort.low": "baixo",
   "effort.max": "máximo",
   "effort.medium": "médio",
+  "msg.answer.gone": "Essa pergunta já foi respondida ou expirou.",
+  "msg.answer.noted": "✅ Anotado: {choice}",
   "msg.approval.always": "Permitido. Isto não será perguntado de novo.",
   "msg.approval.approve": "Permitido.",
   "msg.approval.batch": "Permitido para o resto desta execução.",

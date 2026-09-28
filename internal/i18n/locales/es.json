@@ -31,6 +31,8 @@
   "effort.low": "bajo",
   "effort.max": "máximo",
   "effort.medium": "medio",
+  "msg.answer.gone": "Esa pregunta ya se respondió o caducó.",
+  "msg.answer.noted": "✅ Anotado: {choice}",
   "msg.approval.always": "Permitido. No se volverá a preguntar.",
   "msg.approval.approve": "Permitido.",
   "msg.approval.batch": "Permitido durante el resto de esta ejecución.",

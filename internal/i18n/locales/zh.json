@@ -31,6 +31,8 @@
   "effort.low": "低",
   "effort.max": "最大",
   "effort.medium": "中",
+  "msg.answer.gone": "这个问题已经回答过或已过期。",
+  "msg.answer.noted": "✅ 已记录：{choice}",
   "msg.approval.always": "已允许。以后不会再问。",
   "msg.approval.approve": "已允许。",
   "msg.approval.batch": "本次运行接下来的操作都已允许。",

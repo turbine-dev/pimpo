@@ -33,4 +33,4 @@ To try the routines in Pimpo, export the accepted ones and import them paused:
 | oc-20 | Price on a shop's web page (web.read) | Hermes pricing monitor |
 | oc-21 | Hacker News as a spoken podcast (audio.send) | owner's request |
 
-Not covered, because Pimpo lacks the capability: a routine that waits for the owner's answer, chained routines, server metrics, publishing content.
+Not covered, because Pimpo lacks the capability: server metrics and publishing content. (Routines that wait for the owner's answer now use ask.owner; chained routines use routines.run.)

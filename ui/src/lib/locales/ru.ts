@@ -1345,4 +1345,5 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'wh.event': "Всё отправленное (JSON, форма или текст) приходит в сценарий как event.webhook с полями method, query и body.",
   'wh.rotate': "Новый адрес",
   'rs.byWebhook': "Запускается, когда вызывают вебхук этого сценария (см. ниже).",
+  'inbox.asked': "Спрошено {when}",
 }
