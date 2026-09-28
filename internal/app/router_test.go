@@ -220,3 +220,26 @@ func TestEffortCommandOnAChannel(t *testing.T) {
 		t.Fatalf("seen %v", seen)
 	}
 }
+
+// opencode models join the owner's list without a price, can be chosen,
+// and stay out of the price-based light and strong models.
+func TestOpencodeModels(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ctx := t.Context()
+	s := ta.Settings(ctx)
+	s.Models = []ModelOption{{ID: "opencode:deepseek/deepseek-flash"}, {ID: "openai:gpt-5-mini", PriceIn: 0.25, PriceOut: 2}, {ID: "openai:gpt-5", PriceIn: 2, PriceOut: 10}}
+	s.ExploreModel = "openai:gpt-5"
+	if code, out := ta.do(t, "PUT", "/api/settings", s); code != 200 {
+		t.Fatalf("%d %v", code, out)
+	}
+	if !ta.usableModel(ctx, "opencode:deepseek/deepseek-flash") || ta.usableModel(ctx, "opencode:x/other") {
+		t.Fatal("usable models")
+	}
+	if light, _ := ta.autoModels(ctx); light != "openai:gpt-5-mini" {
+		t.Fatalf("light %q", light)
+	}
+	s.Models = append(s.Models, ModelOption{ID: "opencode:nomodel"})
+	if code, _ := ta.do(t, "PUT", "/api/settings", s); code != 400 {
+		t.Fatal("accepted an opencode model without provider/model")
+	}
+}

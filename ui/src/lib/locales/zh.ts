@@ -1215,4 +1215,11 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'cost.subTitle': "通过订阅",
   'cost.subAmounts': "今天 ≈ {today} · 本月 ≈ {month}",
   'cost.subText': "Claude Code 和 Codex 使用的是你的订阅，不花钱。这是通过 API 的等价费用，仅供参考，不计入每日限额。",
+  'ms.ocText': "使用你在 opencode 中登录的提供商：GitHub Copilot、OpenCode Go、OpenRouter 等。它只能使用 Pimpo 的工具。",
+  'ms.ocPick': "选择 Pimpo 可以使用的模型。订阅类模型不花钱；其他模型的费用由 opencode 报告。",
+  'ms.ocPlan': "订阅",
+  'ms.ocAdd': "添加",
+  'ms.ocMore': "还有 {count} 个，请使用搜索",
+  'ms.ocPrice': "费用由 opencode 报告",
+  'doc.fix.opencode': "未找到 opencode。请安装它，或在 设置 › 模型 中选择其他模型。",
 }

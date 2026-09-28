@@ -41,6 +41,20 @@ func (a *App) modelRoutes() {
 		auto := map[string]string{"light": light, "strong": strong, "base": a.Settings(r.Context()).ExploreModel, "weigher": weigher}
 		server.WriteJSON(w, 200, map[string]any{"keys": keys, "claude_code": claudeInstalled(), "providers": models.Providers, "auto": auto})
 	})
+	// opencode lists the models of the providers signed in to in opencode.
+	a.Server.Handle("GET /api/models/opencode", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+		defer cancel()
+		list, err := llm.OpencodeModels(ctx)
+		if err != nil {
+			server.WriteError(w, server.StatusError{Status: 404, Msg: err.Error()})
+			return
+		}
+		if list == nil {
+			list = []llm.OpencodeModel{}
+		}
+		server.WriteJSON(w, 200, list)
+	})
 	// detect finds Claude Code and local model servers on this computer.
 	a.Server.Handle("GET /api/models/detect", func(w http.ResponseWriter, r *http.Request) {
 		s := a.Settings(r.Context())

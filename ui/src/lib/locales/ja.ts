@@ -1215,4 +1215,11 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'cost.subTitle': "サブスクリプション経由",
   'cost.subAmounts': "今日 ≈ {today} · 今月 ≈ {month}",
   'cost.subText': "Claude Code と Codex はサブスクリプションを使っているため、お金はかかりません。API で同じことをした場合の目安で、1日の上限には含まれません。",
+  'ms.ocText': "opencode でサインインしたプロバイダー（GitHub Copilot、OpenCode Go、OpenRouter など）を使います。使えるのは Pimpo のツールだけです。",
+  'ms.ocPick': "Pimpo が使えるモデルを選んでください。サブスクリプションのモデルは費用がかからず、その他の費用は opencode が報告します。",
+  'ms.ocPlan': "サブスク",
+  'ms.ocAdd': "追加",
+  'ms.ocMore': "ほか {count} 件。検索を使ってください",
+  'ms.ocPrice': "費用は opencode 報告",
+  'doc.fix.opencode': "opencode が見つかりません。インストールするか、設定 › モデル で別のモデルを選んでください。",
 }

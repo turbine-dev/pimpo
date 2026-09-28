@@ -149,6 +149,10 @@ func (a *App) autoModels(ctx context.Context) (light, strong string) {
 	if _, name, ok := strings.Cut(s.ExploreModel, ":"); ok && name != "" && (light == "" || strong == "") {
 		var cheap, dear *ModelOption
 		for i, m := range s.Models {
+			// opencode models carry no price of their own; opencode reports it.
+			if llm.IsOpencode(m.ID) {
+				continue
+			}
 			p := m.PriceIn + m.PriceOut
 			if cheap == nil || p < cheap.PriceIn+cheap.PriceOut {
 				cheap = &s.Models[i]
@@ -233,7 +237,7 @@ func (a *App) usableModel(ctx context.Context, model string) bool {
 	if model == "" || model == Auto || slices.Contains([]string{"sonnet", "opus", "haiku"}, model) || isCodex(model) {
 		return true
 	}
-	if p, _, ok := strings.Cut(model, ":"); ok && slices.Contains(llm.Providers, p) {
+	if p, _, ok := strings.Cut(model, ":"); ok && (slices.Contains(llm.Providers, p) || llm.IsOpencode(model)) {
 		for _, m := range a.Settings(ctx).Models {
 			if m.ID == model {
 				return true

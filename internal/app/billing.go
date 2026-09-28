@@ -29,6 +29,9 @@ var onSubscription = func(model string) bool {
 			out, _ := exec.Command(bin, "login", "status").CombinedOutput()
 			return strings.Contains(string(out), "ChatGPT")
 		})
+	case llm.IsOpencode(model):
+		provider, _, _ := strings.Cut(strings.TrimPrefix(model, "opencode:"), "/")
+		return subscriptionLogin("opencode:"+provider, func() bool { return llm.OpencodeSubscription(context.Background(), provider) })
 	case isClaudeCode(model):
 		return subscriptionLogin("claude", func() bool {
 			out, err := exec.Command("claude", "auth", "status").Output()

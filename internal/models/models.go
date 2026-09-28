@@ -286,6 +286,8 @@ type Found struct {
 	// says a ChatGPT login is saved for it.
 	Codex      string `json:"codex,omitempty"`
 	CodexLogin bool   `json:"codex_login"`
+	// Opencode is the opencode CLI, whose signed-in providers Pimpo can use.
+	Opencode string `json:"opencode,omitempty"`
 	// QwenCode is the Qwen Code CLI; Apps are chat apps found, which offer
 	// no way for other programs to use their models.
 	QwenCode string   `json:"qwen_code,omitempty"`
@@ -309,6 +311,7 @@ func (c *Client) Detect(ctx context.Context, ollamaURL, lmURL string) Found {
 			}
 		}
 	}
+	f.Opencode = llm.OpencodeBinary()
 	if p, err := exec.LookPath("qwen"); err == nil {
 		f.QwenCode = p
 	}
