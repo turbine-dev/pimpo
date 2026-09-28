@@ -612,7 +612,7 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'conn.google': '使用 Google 登录',
   'conn.googleText': '一次连接邮件和日程，无需应用专用密码。使用你自己的 OAuth 客户端：数据不会经过 Pimpo 的服务器。',
   'conn.googleRefused': 'Google 拒绝了：{reason}',
-  'conn.googleStep1': '在 {link} 中创建一个项目，并启用 Gmail、Google Calendar 和 Google Drive API（Drive 仅用于备份）。',
+  'conn.googleStep1': "在 {link} 中创建项目，并开启 Gmail、Google Calendar、Google Drive（仅用于备份）和 Google Sheets（用于表格例程）API。如果之前已连接，请重新登录以允许访问表格。",
   'conn.googleStep2': '创建一个 {type} 凭据，类型为 {kind}。',
   'conn.googleClientType': 'OAuth 客户端 ID',
   'conn.googleAppKind': '桌面应用',

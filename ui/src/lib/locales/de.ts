@@ -612,7 +612,7 @@ export const de: Record<Key, string> & Record<string, string> = {
   'conn.google': 'Mit Google anmelden',
   'conn.googleText': 'E-Mail und Kalender in einem Schritt, ohne App-Passwort. Es nutzt deinen eigenen OAuth-Client: Nichts läuft über Server von Pimpo.',
   'conn.googleRefused': 'Google hat abgelehnt: {reason}',
-  'conn.googleStep1': 'Erstelle in der {link} ein Projekt und aktiviere die APIs für Gmail, Google Kalender und Google Drive (Drive nur für Backups).',
+  'conn.googleStep1': "Lege in {link} ein Projekt an und aktiviere die APIs Gmail, Google Calendar, Google Drive (nur für Backups) und Google Sheets (Routinen mit Tabellen). Warst du schon verbunden, melde dich erneut an, um Tabellen zu erlauben.",
   'conn.googleStep2': 'Erstelle eine Anmeldedaten-Art {type} vom Typ {kind}.',
   'conn.googleClientType': 'OAuth-Client-ID',
   'conn.googleAppKind': 'Desktop-App',

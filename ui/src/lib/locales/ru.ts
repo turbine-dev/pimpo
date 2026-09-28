@@ -636,7 +636,7 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'conn.google': 'Войти через Google',
   'conn.googleText': 'Почта и календарь сразу, без пароля приложения. Используется ваш собственный клиент OAuth: ничего не проходит через серверы Pimpo.',
   'conn.googleRefused': 'Google отказал: {reason}',
-  'conn.googleStep1': 'В {link} создайте проект и включите API Gmail, Google Calendar и Google Drive (Drive нужен только для резервных копий).',
+  'conn.googleStep1': "В {link} создайте проект и включите API Gmail, Google Calendar, Google Drive (только для резервных копий) и Google Sheets (сценарии с таблицами). Если вы уже подключались, войдите снова, чтобы разрешить таблицы.",
   'conn.googleStep2': 'Создайте учётные данные {type} типа {kind}.',
   'conn.googleClientType': 'OAuth client ID',
   'conn.googleAppKind': 'Desktop app',

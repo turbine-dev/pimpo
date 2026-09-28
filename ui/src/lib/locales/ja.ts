@@ -612,7 +612,7 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'conn.google': 'Google でログイン',
   'conn.googleText': 'メールとカレンダーをまとめて接続でき、アプリパスワードは不要です。自分の OAuth クライアントを使うので、Pimpo のサーバーを経由するものはありません。',
   'conn.googleRefused': 'Google に拒否されました：{reason}',
-  'conn.googleStep1': '{link} でプロジェクトを作成し、Gmail、Google Calendar、Google Drive の API を有効にします（Drive はバックアップ専用です）。',
+  'conn.googleStep1': "{link} でプロジェクトを作り、Gmail、Google Calendar、Google Drive（バックアップ用）、Google Sheets（スプレッドシートを使うルーティン用）の API を有効にします。接続済みの場合は、スプレッドシートを許可するためにもう一度ログインしてください。",
   'conn.googleStep2': '種類が {kind} の {type} 認証情報を作成します。',
   'conn.googleClientType': 'OAuth クライアント ID',
   'conn.googleAppKind': 'デスクトップアプリ',

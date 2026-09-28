@@ -612,7 +612,7 @@ export const pt = {
   'conn.google': 'Entrar com Google',
   'conn.googleText': 'E-mail e agenda de uma vez, sem senha de app. Usa o seu próprio cliente OAuth: nada passa por servidores do Pimpo.',
   'conn.googleRefused': 'O Google recusou: {reason}',
-  'conn.googleStep1': 'No {link}, crie um projeto e ative as APIs Gmail, Google Calendar e Google Drive (o Drive é só para os backups).',
+  'conn.googleStep1': "No {link}, crie um projeto e ative as APIs Gmail, Google Calendar, Google Drive (só para os backups) e Google Sheets (para rotinas com planilhas). Se você já tinha conectado, entre de novo para liberar as planilhas.",
   'conn.googleStep2': 'Crie uma credencial {type} do tipo {kind}.',
   'conn.googleClientType': 'ID do cliente OAuth',
   'conn.googleAppKind': 'App para computador',
