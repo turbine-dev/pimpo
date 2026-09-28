@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -65,7 +66,11 @@ func TestEveryCapabilityIsDocumented(t *testing.T) {
 			}
 		}
 	}
-	if len(All()) != 12 {
+	want := 12
+	if runtime.GOOS == "darwin" {
+		want = 13 // Apple's apps
+	}
+	if len(All()) != want {
 		t.Fatalf("catalog has %d kinds", len(All()))
 	}
 }

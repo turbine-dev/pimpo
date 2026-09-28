@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 
 	"github.com/denerFernandes/pimpo/internal/connector/services"
@@ -28,7 +29,11 @@ func TestCatalogConnectors(t *testing.T) {
 	defer delete(services.BaseURL, "todoist")
 
 	_, out := ta.do(t, "GET", "/api/catalog", nil)
-	if len(out["connectors"].([]any)) != 12 {
+	want := 12
+	if runtime.GOOS == "darwin" {
+		want = 13 // Apple's apps
+	}
+	if len(out["connectors"].([]any)) != want {
 		t.Fatalf("catalog %v", out)
 	}
 	if code, _ := ta.do(t, "PUT", "/api/catalog/homeassistant", map[string]string{"url": "http://ha.local:8123"}); code != 400 {

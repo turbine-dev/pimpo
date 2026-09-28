@@ -112,6 +112,10 @@ A routine or task can read a text aloud and send it to you as audio (`audio.send
 
 Any routine can be started by another service calling a secret address: on its page, turn on **Disparar por webhook**. Use it from an iPhone Shortcut ("when I leave home, send me the day's brief"), IFTTT, Zapier, GitHub or a form. What is sent (JSON, form fields or text) reaches the routine as `event.webhook` with `method`, `query` and `body`, so a routine can act on it ("when a new order arrives, tell me who bought what"). Ask for such a routine in a chat and Pimpo makes it start by webhook. Addresses work on this computer and on the home network; for internet services, turn on Tailscale with Funnel. Anyone with the address starts the routine, so treat it like a password; **Trocar endereço** replaces it at once. A paused routine does not start, a call carries at most 256 KB, and a routine starts at most 30 times a minute this way.
 
+## Apple Reminders, Notes and Calendar
+
+On a Mac, **Conexões › Lembretes, Notas e Calendário da Apple** lets tasks and routines use Apple's own apps: add a reminder that rings on your iPhone and Watch, mark one done, list the open ones; search your notes and add to a note in Pimpo's folder; read the Mac's Calendar. Give the Notes folder Pimpo writes in (created if missing) and, if you like, the default Reminders list. The first time, macOS asks to let Pimpo use each app (System Settings › Privacy & Security › Automation). Reminders added and notes changed can be undone in **Atividade**. When this is connected, "me lembra amanhã às 9h" goes to the Reminders app.
+
 ## Reminders
 
 Ask in any chat, in the app or on a channel: "daqui a 30 minutos me lembra de conferir o deploy", "amanhã às 9h me lembra de ligar para a Ana". Pimpo sets a reminder that goes out once, where your notices go, and is gone; nothing is turned into a routine. Pending reminders are listed at the top of **Rotinas**, where each can be cancelled. One that falls due while Pimpo is closed goes out when it opens, saying it is late. What repeats ("toda segunda…") is a routine instead.

@@ -28,6 +28,16 @@ type Undo struct {
 	Events *event.Store
 	Mail   func(ctx context.Context) (Mail, error)
 	Outbox Outbox
+	// Call runs the undo step a connector gave with its result.
+	Call func(ctx context.Context, capability string, args any) (any, error)
+}
+
+// step is how a connector says a change is undone: call this capability
+// with these arguments.
+func step(result map[string]any) (string, any, bool) {
+	u, _ := result["undo"].(map[string]any)
+	c, _ := u["capability"].(string)
+	return c, u["args"], c != ""
 }
 
 var ErrNotUndoable = errors.New("this action cannot be undone")
@@ -37,6 +47,9 @@ var ErrAlreadyUndone = errors.New("this action was already undone")
 func Plan(rec host.ActionRecord, result map[string]any) (bool, time.Time) {
 	if rec.DryRun || rec.Error != "" {
 		return false, time.Time{}
+	}
+	if _, _, ok := step(result); ok {
+		return true, time.Time{}
 	}
 	switch done(rec) {
 	case "gmail.archive", "gmail.trash":
@@ -84,6 +97,16 @@ func (u *Undo) Undo(ctx context.Context, id int64, actor string) error {
 		return ErrNotUndoable
 	}
 	str := func(k string) string { s, _ := result[k].(string); return s }
+	if c, args, ok := step(result); ok {
+		if u.Call == nil {
+			return ErrNotUndoable
+		}
+		if _, err := u.Call(ctx, c, args); err != nil {
+			return err
+		}
+		_, err = u.Events.Append(ctx, EventUndone, actor, map[string]any{"action": id, "capability": rec.Capability, "source": rec.Source})
+		return err
+	}
 	switch done(rec) {
 	case "gmail.archive", "gmail.trash":
 		m, err := u.Mail(ctx)
