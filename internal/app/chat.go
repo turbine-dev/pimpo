@@ -156,7 +156,7 @@ func (a *App) getChat(w http.ResponseWriter, r *http.Request) {
 	if model == "" {
 		model = Auto
 	}
-	server.WriteJSON(w, 200, map[string]any{"chat": c, "turns": turns, "model": model})
+	server.WriteJSON(w, 200, map[string]any{"chat": c, "turns": turns, "model": model, "effort": firstModel(a.chatEffort(r.Context(), c.ID), Auto)})
 }
 
 type chatMessageBody struct {
@@ -164,6 +164,8 @@ type chatMessageBody struct {
 	Assistant string `json:"assistant"`
 	// Model is the conversation's model: "auto", a model id, or "" to keep it.
 	Model string `json:"model"`
+	// Effort is how hard it thinks: "auto", a level, or "" to keep it.
+	Effort string `json:"effort"`
 }
 
 func readMessage(r *http.Request) (chatMessageBody, error) {
@@ -221,9 +223,15 @@ func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: m.Model + " is not among your models"})
 		return
 	}
+	if !usableEffort(m.Effort) {
+		a.Store.DeleteChat(ctx, c.ID)
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "effort is auto, low, medium, high or max"})
+		return
+	}
 	a.setChatModel(ctx, c.ID, m.Model)
-	pick := a.routeModel(ctx, text, "", m.Model)
-	o.Model = pick.Model
+	a.setChatEffort(ctx, c.ID, m.Effort)
+	pick := a.routeModel(ctx, text, "", m.Model, m.Effort)
+	o.Model, o.Effort = pick.Model, pick.Effort
 	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), text, actor(ctx), o)
 	if err != nil {
 		a.Store.DeleteChat(ctx, c.ID)
@@ -292,8 +300,15 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 		}
 		a.setChatModel(ctx, c.ID, m.Model)
 	}
-	pick := a.routeModel(ctx, m.Text, history, a.chatModel(ctx, c.ID))
-	o.Model = pick.Model
+	if m.Effort != "" {
+		if !usableEffort(m.Effort) {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: "effort is auto, low, medium, high or max"})
+			return
+		}
+		a.setChatEffort(ctx, c.ID, m.Effort)
+	}
+	pick := a.routeModel(ctx, m.Text, history, a.chatModel(ctx, c.ID), a.chatEffort(ctx, c.ID))
+	o.Model, o.Effort = pick.Model, pick.Effort
 	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), m.Text, actor(ctx), o)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})

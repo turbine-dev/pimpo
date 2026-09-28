@@ -19,37 +19,72 @@ import (
 // Auto is the chat's model choice meaning "let Pimpo choose".
 const Auto = "auto"
 
-// routed is the model a request goes to, and why.
+// routed is the model a request goes to, how hard it thinks, and why.
 type routed struct {
 	Model string `json:"model"`
-	// Tier is simple, normal or hard for automatic choices, "" when fixed.
+	// Tier is simple, normal or hard when the request was weighed.
 	Tier string `json:"tier,omitempty"`
-	// By is jev, rules, fixed or default.
+	// By is jev, rules, fixed or default: how the model was chosen.
 	By string `json:"by"`
+	// Effort is the level of thinking, "" for the model's own default.
+	Effort string `json:"effort,omitempty"`
+	// EffortBy is fixed when the owner set the level, auto when it
+	// followed the weighing, default when it is the job's default.
+	EffortBy string `json:"effort_by,omitempty"`
 }
 
 // tierChooser weighs a request; tests replace it.
 var tierChooser = func(a *App) (chooser, bool) { return meaningJudge(a) }
 
-// routeModel picks the model for a chat request. fixed is the model the
-// owner chose for the conversation, or "" / Auto.
-func (a *App) routeModel(ctx context.Context, request, conversation, fixed string) routed {
+// routeModel picks the model and the effort for a chat request. fixed and
+// effort are what the owner chose for the conversation, "" or Auto for
+// Pimpo's choice. The same weighing drives both: a quick request goes to
+// the light model thinking little, a heavy one to the strong model
+// thinking hard, and anything else stays on the tasks model at its usual
+// level.
+func (a *App) routeModel(ctx context.Context, request, conversation, fixed, effort string) routed {
 	s := a.Settings(ctx)
-	if fixed != "" && fixed != Auto {
-		return routed{Model: fixed, By: "fixed"}
+	fixedModel := fixed != "" && fixed != Auto
+	fixedEffort := effort != "" && effort != Auto
+	tier, by := "", ""
+	if !s.AutoOff && !(fixedModel && fixedEffort) {
+		tier, by = a.weigh(ctx, request, conversation)
 	}
-	if s.AutoOff {
-		return routed{Model: s.ExploreModel, By: "default"}
-	}
-	tier, by := a.weigh(ctx, request, conversation)
-	light, strong := a.autoModels(ctx)
+	room := a.roomToSpend(ctx)
+	var r routed
 	switch {
-	case tier == "simple" && light != "":
-		return routed{Model: light, Tier: tier, By: by}
-	case tier == "hard" && strong != "" && a.roomToSpend(ctx):
-		return routed{Model: strong, Tier: tier, By: by}
+	case fixedModel:
+		r = routed{Model: fixed, Tier: tier, By: "fixed"}
+	case s.AutoOff:
+		r = routed{Model: s.ExploreModel, By: "default"}
+	default:
+		light, strong := a.autoModels(ctx)
+		switch {
+		case tier == "simple" && light != "":
+			r = routed{Model: light, Tier: tier, By: by}
+		case tier == "hard" && strong != "" && room:
+			r = routed{Model: strong, Tier: tier, By: by}
+		default:
+			r = routed{Model: s.ExploreModel, Tier: "normal", By: by}
+			if tier != "" {
+				r.Tier = tier
+			}
+		}
 	}
-	return routed{Model: s.ExploreModel, Tier: "normal", By: by}
+	switch {
+	case fixedEffort:
+		r.Effort, r.EffortBy = effort, "fixed"
+	case tier == "simple":
+		r.Effort, r.EffortBy = "low", "auto"
+	case tier == "hard" && room:
+		r.Effort, r.EffortBy = "high", "auto"
+	default:
+		r.Effort = s.Efforts["explore"]
+		if r.Effort != "" {
+			r.EffortBy = "default"
+		}
+	}
+	return r
 }
 
 // weigh says how demanding a request is. A level counts only when it is
@@ -150,6 +185,7 @@ func (a *App) roomToSpend(ctx context.Context) bool {
 
 // Chat and exploration keys for the chosen and the used model.
 func chatModelKey(chat string) string       { return "chat.model." + chat }
+func chatEffortKey(chat string) string      { return "chat.effort." + chat }
 func explorationModelKey(exp string) string { return "exploration.model." + exp }
 
 func (a *App) chatModel(ctx context.Context, chat string) string {
@@ -164,10 +200,22 @@ func (a *App) setChatModel(ctx context.Context, chat, model string) {
 	a.Events.Put(ctx, chatModelKey(chat), model)
 }
 
+func (a *App) chatEffort(ctx context.Context, chat string) string {
+	e, _ := a.Events.Get(ctx, chatEffortKey(chat))
+	return e
+}
+
+func (a *App) setChatEffort(ctx context.Context, chat, effort string) {
+	if effort == Auto {
+		effort = ""
+	}
+	a.Events.Put(ctx, chatEffortKey(chat), effort)
+}
+
 func (a *App) noteRouted(ctx context.Context, exp string, r routed) {
 	b, _ := json.Marshal(r)
 	a.Events.Put(ctx, explorationModelKey(exp), string(b))
-	a.Events.Append(ctx, "model.routed", "system", map[string]any{"exploration": exp, "model": r.Model, "tier": r.Tier, "by": r.By})
+	a.Events.Append(ctx, "model.routed", "system", map[string]any{"exploration": exp, "model": r.Model, "tier": r.Tier, "by": r.By, "effort": r.Effort})
 }
 
 func (a *App) routedOf(ctx context.Context, exp string) *routed {
@@ -194,3 +242,6 @@ func (a *App) usableModel(ctx context.Context, model string) bool {
 	}
 	return false
 }
+
+// usableEffort says whether an effort can be chosen for a chat.
+func usableEffort(e string) bool { return e == Auto || llm.ValidEffort(e) }

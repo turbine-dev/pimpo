@@ -19,6 +19,7 @@ export type RoutineSummary = {
   values?: Record<string, unknown>
   gallery_update?: { name: string; description: string; settings: string[] }
   model?: string
+  effort?: string
   thinks?: boolean
 }
 
@@ -42,7 +43,9 @@ export type Organized = { at?: string; checked: number; merged: { kept: string; 
 
 export type Chat = { id: string; title: string; assistant?: string; created_at: string; updated_at: string; turns: number }
 export type ChatAction = { capability: string; text: string; risk: CapRisk; args: unknown }
-export type Routed = { model: string; tier?: 'simple' | 'normal' | 'hard'; by: 'jev' | 'rules' | 'fixed' | 'default' }
+export type Effort = 'low' | 'medium' | 'high' | 'max'
+export const EFFORTS: Effort[] = ['low', 'medium', 'high', 'max']
+export type Routed = { model: string; tier?: 'simple' | 'normal' | 'hard'; by: 'jev' | 'rules' | 'fixed' | 'default'; effort?: Effort; effort_by?: 'fixed' | 'auto' | 'default' }
 export type ChatTurn = { model?: Routed; id: string; request: string; state: 'running' | 'ready' | 'compiling' | 'done' | 'failed' | 'discarded'; summary?: string; error?: string; cost_usd: number; routine?: string; created_at: string
   actions: ChatAction[]; done?: { state: 'running' | 'done' | 'failed'; at: string; results: { capability: string; ok: boolean; error?: string }[] } }
 
@@ -159,7 +162,7 @@ export type ActionRecord = {
 
 export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
-export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string }
+export type Settings = { zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>> }
 export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
 export type Provider = { id: string; name: string; key_url?: string; needs_key: boolean; local?: boolean }
@@ -215,9 +218,9 @@ export const api = {
   organizeMemory: () => request<Organized>('POST', '/api/memory/organize'),
   memoryOrganized: () => request<Organized>('GET', '/api/memory/organized'),
   chats: () => request<Chat[]>('GET', '/api/chats'),
-  chat: (id: string) => request<{ chat: Chat; turns: ChatTurn[]; model: string }>('GET', `/api/chats/${id}`),
-  newChat: (text: string, assistant = '', model = '') => request<{ chat: string; turn: string }>('POST', '/api/chats', { text, assistant, model }),
-  sendChat: (id: string, text: string, model = '') => request<{ chat: string; turn: string }>('POST', `/api/chats/${id}/messages`, { text, model }),
+  chat: (id: string) => request<{ chat: Chat; turns: ChatTurn[]; model: string; effort?: string }>('GET', `/api/chats/${id}`),
+  newChat: (text: string, assistant = '', model = '', effort = '') => request<{ chat: string; turn: string }>('POST', '/api/chats', { text, assistant, model, effort }),
+  sendChat: (id: string, text: string, model = '', effort = '') => request<{ chat: string; turn: string }>('POST', `/api/chats/${id}/messages`, { text, model, effort }),
   chatDo: (id: string, turn: string) => request<ChatTurn>('POST', `/api/chats/${id}/turns/${turn}/do`),
   deleteChat: (id: string) => request<{ deleted: string }>('DELETE', `/api/chats/${id}`),
   assistants: () => request<Assistant[]>('GET', '/api/assistants'),
@@ -303,7 +306,7 @@ export const api = {
   checkCatalog: (id: string) => request<{ ok: boolean; detail?: string }>('POST', `/api/catalog/${id}/check`),
   protection: () => request<{ version: number; entries: number; updated: string; fetched?: string; enabled: boolean; blocked: number }>('GET', '/api/protection'),
   updateFromGallery: (id: string) => request<RoutineSummary>('POST', `/api/routines/${id}/update`),
-  saveRoutineSettings: (id: string, schedule: string, params: Record<string, unknown>, watchEvery = '', model = '') => request<RoutineSummary>('PUT', `/api/routines/${id}/settings`, { schedule, params, watch_every: watchEvery, model: model || 'auto' }),
+  saveRoutineSettings: (id: string, schedule: string, params: Record<string, unknown>, watchEvery = '', model = '', effort = '') => request<RoutineSummary>('PUT', `/api/routines/${id}/settings`, { schedule, params, watch_every: watchEvery, model: model || 'auto', effort: effort || 'auto' }),
   destinations: () => request<Destination[]>('GET', '/api/destinations'),
   geocode: (q: string) => request<Place[]>('GET', `/api/geocode?q=${encodeURIComponent(q)}`),
   bots: () => request<TelegramBot[]>('GET', '/api/telegram/bots'),

@@ -7,7 +7,7 @@ import { api, type Place, type RoutineParam, type RoutineSummary, type Watch } f
 import { cn } from '../lib/cn'
 import { cronText, when } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
-import { label, useModelOptions } from './ModelSetup'
+import { EffortSelect, label, useModelOptions } from './ModelSetup'
 import { Button, Card } from './ui'
 
 const field = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -63,11 +63,13 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
   useEffect(() => { setEvery(s.watch?.every || '10m') }, [s.watch?.every])
   const [model, setModel] = useState(s.model ?? '')
   useEffect(() => { setModel(s.model ?? '') }, [s.model])
+  const [effort, setEffort] = useState(s.effort ?? '')
+  useEffect(() => { setEffort(s.effort ?? '') }, [s.effort])
   const models = useModelOptions()
   const cron = s.watch && !s.schedule ? '' : toCron(sched)
-  const dirty = cron !== s.schedule || JSON.stringify(values) !== JSON.stringify(s.values ?? {}) || (!!s.watch && every !== (s.watch.every || '10m')) || model !== (s.model ?? '')
+  const dirty = cron !== s.schedule || JSON.stringify(values) !== JSON.stringify(s.values ?? {}) || (!!s.watch && every !== (s.watch.every || '10m')) || model !== (s.model ?? '') || effort !== (s.effort ?? '')
   const save = useMutation({
-    mutationFn: () => api.saveRoutineSettings(s.id, cron, values, s.watch ? every : '', model),
+    mutationFn: () => api.saveRoutineSettings(s.id, cron, values, s.watch ? every : '', model, effort),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['routine', s.id] }); qc.invalidateQueries({ queryKey: ['routines'] }) },
   })
 
@@ -93,10 +95,13 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
         {s.thinks && (
           <label className="block">
             <span className="mb-1.5 flex items-center gap-1.5 text-[13px] font-medium text-ink-2"><Cpu size={14} /> {t('rs.model')}</span>
-            <select value={model} onChange={(e) => setModel(e.target.value)} className={input} aria-label={t('rs.model')}>
-              <option value="">{t('rs.modelDefault', { model: label(models.settings?.judge_model || 'haiku') })}</option>
-              {[...(model && !models.options.includes(model) ? [model] : []), ...models.options].map((o) => <option key={o} value={o}>{label(o)}</option>)}
-            </select>
+            <span className="flex gap-2">
+              <select value={model} onChange={(e) => setModel(e.target.value)} className={cn(field, 'min-w-0 flex-1')} aria-label={t('rs.model')}>
+                <option value="">{t('rs.modelDefault', { model: label(models.settings?.judge_model || 'haiku') })}</option>
+                {[...(model && !models.options.includes(model) ? [model] : []), ...models.options].map((o) => <option key={o} value={o}>{label(o)}</option>)}
+              </select>
+              <EffortSelect value={effort} onChange={setEffort} fallback={models.settings?.efforts?.judge} className="w-[150px] shrink-0" />
+            </span>
             <span className="mt-1 block text-[12px] text-ink-3">{t('rs.modelText')}</span>
           </label>
         )}

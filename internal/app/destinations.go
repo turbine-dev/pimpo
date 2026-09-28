@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/denerFernandes/pimpo/internal/llm"
 	"io"
 	"net/http"
 	"net/url"
@@ -323,6 +324,7 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 		Params     map[string]any `json:"params"`
 		WatchEvery string         `json:"watch_every"`
 		Model      string         `json:"model"`
+		Effort     string         `json:"effort"`
 	}
 	if err := server.Decode(r, &req); err != nil {
 		server.WriteError(w, err)
@@ -372,7 +374,14 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: req.Model + " is not among your models"})
 		return
 	}
-	settings := store.Settings{Schedule: req.Schedule, Params: req.Params, WatchEvery: req.WatchEvery, Model: req.Model}
+	if req.Effort == Auto {
+		req.Effort = ""
+	}
+	if !llm.ValidEffort(req.Effort) {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "effort is low, medium, high or max"})
+		return
+	}
+	settings := store.Settings{Schedule: req.Schedule, Params: req.Params, WatchEvery: req.WatchEvery, Model: req.Model, Effort: req.Effort}
 	if err := a.Store.SetRoutineSettings(ctx, rt.ID, settings); err != nil {
 		server.WriteError(w, err)
 		return

@@ -137,6 +137,8 @@ type Settings struct {
 	// Model is the model for this routine's judgments and texts; "" uses
 	// the one set for judgments.
 	Model string `json:"model,omitempty"`
+	// Effort is how hard that model thinks; "" uses the default.
+	Effort string `json:"effort,omitempty"`
 }
 
 // Watch is what the routine waits for, with the owner's interval, or nil.

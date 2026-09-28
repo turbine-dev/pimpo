@@ -316,6 +316,22 @@ func ModelOf(ctx context.Context) string {
 	return m
 }
 
+type effortKey struct{}
+
+// WithEffort sets how hard a routine's judgments and texts think.
+func WithEffort(ctx context.Context, effort string) context.Context {
+	if effort == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, effortKey{}, effort)
+}
+
+// EffortOf is the routine's own effort, or "".
+func EffortOf(ctx context.Context) string {
+	e, _ := ctx.Value(effortKey{}).(string)
+	return e
+}
+
 func (h *Host) Calls() []trace.Call {
 	h.mu.Lock()
 	defer h.mu.Unlock()

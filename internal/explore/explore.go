@@ -122,6 +122,8 @@ type Options struct {
 	// Model overrides the model for this request (chosen by the owner or
 	// by the automatic choice).
 	Model string
+	// Effort is how hard the model thinks for this request, "" for the default.
+	Effort string
 }
 
 // Assistant is a named role for the agent with the capabilities it may use.
@@ -229,6 +231,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		Prompt:     prompt,
 		MCPURL:     fmt.Sprintf("%s/mcp/explore/%s?key=%s", s.BaseURL, e.ID, key),
 		Model:      firstNonEmpty(o.Model, s.Model),
+		Effort:     o.Effort,
 		MaxCostUSD: s.maxCost(ctx),
 		MaxTurns:   40,
 	})

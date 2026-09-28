@@ -144,6 +144,10 @@ type chat struct {
 	tools    []tool
 	messages []map[string]any
 	force    string // a tool the model must call, for structured output
+	effort   string
+	// noEffort is set once the model refused the effort setting, so the
+	// rest of the conversation goes without it.
+	noEffort bool
 }
 
 func (c *chat) user(text string) {
@@ -151,10 +155,47 @@ func (c *chat) user(text string) {
 }
 
 func (c *chat) send(ctx context.Context) (turn, error) {
+	do := c.sendOpenAI
 	if c.a.Provider == "anthropic" {
-		return c.sendAnthropic(ctx)
+		do = c.sendAnthropic
 	}
-	return c.sendOpenAI(ctx)
+	t, err := do(ctx)
+	// A model that cannot be told how hard to think still answers without
+	// it; the level is a preference, not a condition.
+	if err != nil && c.effort != "" && !c.noEffort && effortRefused(err) {
+		c.noEffort = true
+		return do(ctx)
+	}
+	return t, err
+}
+
+func effortRefused(err error) bool {
+	m := strings.ToLower(err.Error())
+	return strings.Contains(m, "answered 400") && (strings.Contains(m, "effort") || strings.Contains(m, "reasoning") || strings.Contains(m, "thinking"))
+}
+
+// level is the effort to send, "" when none.
+func (c *chat) level() string {
+	if c.noEffort {
+		return ""
+	}
+	return c.effort
+}
+
+// openAIEffort puts the effort where each chat completions provider reads
+// it. Their scales stop at high; DeepSeek, Mistral and DashScope choose
+// thinking by model instead.
+func openAIEffort(provider, effort string, body map[string]any) {
+	if effort == "max" {
+		effort = "high"
+	}
+	switch provider {
+	case "deepseek", "mistral", "dashscope":
+	case "openrouter":
+		body["reasoning"] = map[string]string{"effort": effort}
+	default:
+		body["reasoning_effort"] = effort
+	}
 }
 
 func (c *chat) sendAnthropic(ctx context.Context) (turn, error) {
@@ -163,6 +204,16 @@ func (c *chat) sendAnthropic(ctx context.Context) (turn, error) {
 	// breakpoint after the system prompt (which covers the tools before
 	// it) and one on the newest message.
 	body := map[string]any{"model": c.a.Model, "max_tokens": 8192, "messages": cachedTail(c.messages)}
+	if e := c.level(); e != "" {
+		// Thinking counts toward max_tokens, so higher levels get more room.
+		body["output_config"] = map[string]string{"effort": e}
+		switch e {
+		case "high":
+			body["max_tokens"] = 16384
+		case "max":
+			body["max_tokens"] = 32000
+		}
+	}
 	if c.system != "" {
 		body["system"] = []map[string]any{{"type": "text", "text": c.system, "cache_control": ephemeral}}
 	}
@@ -177,14 +228,8 @@ func (c *chat) sendAnthropic(ctx context.Context) (turn, error) {
 		}
 	}
 	var r struct {
-		Content []struct {
-			Type  string          `json:"type"`
-			Text  string          `json:"text"`
-			ID    string          `json:"id"`
-			Name  string          `json:"name"`
-			Input json.RawMessage `json:"input"`
-		} `json:"content"`
-		Usage struct {
+		Content []json.RawMessage `json:"content"`
+		Usage   struct {
 			In         int `json:"input_tokens"`
 			Out        int `json:"output_tokens"`
 			CacheWrite int `json:"cache_creation_input_tokens"`
@@ -196,8 +241,25 @@ func (c *chat) sendAnthropic(ctx context.Context) (turn, error) {
 	}
 	t := turn{In: r.Usage.In, Out: r.Usage.Out, CacheWrite: r.Usage.CacheWrite, CacheRead: r.Usage.CacheRead}
 	var content []map[string]any
-	for _, b := range r.Content {
+	for _, raw := range r.Content {
+		var b struct {
+			Type  string          `json:"type"`
+			Text  string          `json:"text"`
+			ID    string          `json:"id"`
+			Name  string          `json:"name"`
+			Input json.RawMessage `json:"input"`
+		}
+		if json.Unmarshal(raw, &b) != nil {
+			continue
+		}
 		switch b.Type {
+		case "thinking", "redacted_thinking":
+			// Thinking goes back unchanged, signature included, or the
+			// model cannot continue after a tool call.
+			var block map[string]any
+			if json.Unmarshal(raw, &block) == nil {
+				content = append(content, block)
+			}
 		case "text":
 			t.Text += b.Text
 			content = append(content, map[string]any{"type": "text", "text": b.Text})
@@ -216,6 +278,9 @@ func (c *chat) sendOpenAI(ctx context.Context) (turn, error) {
 		msgs = append([]map[string]any{{"role": "system", "content": c.system}}, msgs...)
 	}
 	body := map[string]any{"model": c.a.Model, "messages": msgs}
+	if e := c.level(); e != "" {
+		openAIEffort(c.a.Provider, e, body)
+	}
 	if len(c.tools) > 0 {
 		var ts []map[string]any
 		for _, t := range c.tools {
@@ -324,7 +389,7 @@ func (c *chat) results(calls []toolCall, outputs []string, failed []bool) {
 // Generate answers one prompt; with a schema the answer is a forced tool
 // call whose input is the structured output.
 func (a API) Generate(ctx context.Context, r Request) (Response, error) {
-	c := &chat{a: a, system: r.System}
+	c := &chat{a: a, system: r.System, effort: r.Effort}
 	c.user(r.Prompt)
 	if len(r.Schema) > 0 {
 		c.tools = []tool{{Name: "answer", Description: "Give the answer in this exact shape.", Schema: r.Schema}}
@@ -395,7 +460,7 @@ func (a API) Run(ctx context.Context, r AgentRequest) (Response, error) {
 	if err := m.call(ctx, "tools/list", map[string]any{}, &list); err != nil {
 		return Response{}, fmt.Errorf("could not list Pimpo's tools: %w", err)
 	}
-	c := &chat{a: a, system: r.System}
+	c := &chat{a: a, system: r.System, effort: r.Effort}
 	for _, t := range list.Tools {
 		c.tools = append(c.tools, tool{t.Name, t.Description, t.InputSchema})
 	}
