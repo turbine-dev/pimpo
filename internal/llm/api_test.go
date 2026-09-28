@@ -251,3 +251,18 @@ func TestReadOpencode(t *testing.T) {
 		t.Fatalf("config %s", cfg)
 	}
 }
+
+func TestReadKimi(t *testing.T) {
+	out := []byte(`{"role":"meta","type":"system.version","version":"2.1.1"}
+{"role":"assistant","content":"","tool_calls":[{"type":"function","id":"1","function":{"name":"mcp__pimpo__weather_today","arguments":"{}"}}]}
+{"role":"tool","tool_call_id":"1","content":"{\"temp_c\":23}"}
+{"role":"assistant","content":"Faz 23 graus."}
+`)
+	if got := readKimi(out); got != "Faz 23 graus." {
+		t.Fatalf("%q", got)
+	}
+	a := string(kimiAgent("Use ${tools}", true))
+	if !strings.Contains(a, `tools: ["mcp__pimpo__*"]`) || strings.Contains(a, "${") || !strings.Contains(string(kimiAgent("", false)), "tools: []") {
+		t.Fatalf("agent %s", a)
+	}
+}
