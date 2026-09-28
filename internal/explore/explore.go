@@ -25,6 +25,7 @@ import (
 	"github.com/denerFernandes/pimpo/internal/memory"
 	"github.com/denerFernandes/pimpo/internal/people"
 	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/denerFernandes/pimpo/internal/runtime"
 	"github.com/denerFernandes/pimpo/internal/store"
 	"github.com/denerFernandes/pimpo/internal/trace"
 )
@@ -377,7 +378,8 @@ func (s *Service) Approve(ctx context.Context, id, actor string) (store.Routine,
 	// A repair must still pass the tests of the version it replaces.
 	if e.Routine != "" && err == nil && last.Accepted() {
 		if old, oerr := s.Store.Routine(ctx, e.Routine); oerr == nil {
-			for _, t := range old.Body.Tests {
+			kept, dropped := carryTests(old.Body, last.Routine.Manifest)
+			for _, t := range kept {
 				if o := routine.Check(ctx, last.Routine, "previous test "+t.Name, t.Scenario); !o.Passed {
 					last.Outcomes = append(last.Outcomes, o)
 				}
@@ -385,7 +387,10 @@ func (s *Service) Approve(ctx context.Context, id, actor string) (store.Routine,
 			if !last.Accepted() {
 				err = fmt.Errorf("the repaired routine breaks what the old one did: %s", strings.Join(last.Problems(), "; "))
 			} else {
-				last.Routine.Tests = append(last.Routine.Tests, old.Body.Tests...)
+				last.Routine.Tests = append(last.Routine.Tests, kept...)
+				if len(dropped) > 0 {
+					s.Env.Events.Append(ctx, "routine.tests.dropped", "system", map[string]any{"routine": e.Routine, "tests": dropped})
+				}
 			}
 		}
 	}
@@ -560,4 +565,41 @@ func firstNonEmpty(vs ...string) string {
 		}
 	}
 	return ""
+}
+
+// carryTests adapts the old version's tests to the repaired one. A
+// setting the repair removed is left out where a test set it to its old
+// default, since the test did not depend on it; a test that set it to
+// something else was about that setting, which no longer exists, so it is
+// dropped and named.
+func carryTests(old routine.Routine, now runtime.Manifest) (kept []routine.Test, dropped []string) {
+	has := map[string]bool{}
+	for _, p := range now.Params {
+		has[p.Name] = true
+	}
+	defaults := map[string]any{}
+	for _, p := range old.Manifest.Params {
+		defaults[p.Name] = p.Default
+	}
+	for _, t := range old.Tests {
+		params := map[string]any{}
+		gone := false
+		for k, v := range t.Scenario.Params {
+			switch {
+			case has[k]:
+				params[k] = v
+			case fmt.Sprint(v) != fmt.Sprint(defaults[k]):
+				gone = true
+			}
+		}
+		if gone {
+			dropped = append(dropped, t.Name)
+			continue
+		}
+		if len(t.Scenario.Params) > 0 {
+			t.Scenario.Params = params
+		}
+		kept = append(kept, t)
+	}
+	return kept, dropped
 }
