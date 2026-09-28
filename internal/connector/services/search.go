@@ -10,15 +10,16 @@ import (
 	"github.com/denerFernandes/pimpo/internal/capability"
 )
 
-// Web search through Brave's official API or a SearXNG instance the owner
-// trusts. DuckDuckGo has no official API for web results, and scraping it
+// Web search through Brave's official API, Perplexity's search API, or a
+// SearXNG instance the owner trusts. DuckDuckGo has no official API for web results, and scraping it
 // breaks its terms; SearXNG can include it among its engines.
 func init() {
 	register(Kind{
 		ID: "websearch", Title: "Busca na web", Description: "Pesquisa na internet: notícias, preços, horários, qualquer coisa.",
-		Help: "Use a API do Brave Search (chave grátis em api-dashboard.search.brave.com, 2.000 buscas por mês) ou o endereço de uma instância SearXNG sua ou de confiança, com o formato JSON ligado. Se preencher os dois, o Brave é usado.",
+		Help: "Use a API do Brave Search (chave grátis em api-dashboard.search.brave.com, 2.000 buscas por mês), a busca da Perplexity (chave em perplexity.ai/account/api, cerca de US$ 5 por mil buscas, cobrados pela Perplexity) ou o endereço de uma instância SearXNG sua ou de confiança, com o formato JSON ligado. Se preencher mais de um, vale nesta ordem: Brave, Perplexity, SearXNG.",
 		Fields: []Field{
 			{Name: "brave_key", Label: "Chave da API do Brave Search", Secret: true, Optional: true},
+			{Name: "perplexity_key", Label: "Chave da API da Perplexity", Secret: true, Optional: true},
 			{Name: "searxng_url", Label: "Endereço do SearXNG", Placeholder: "https://searx.exemplo.org", Optional: true},
 		},
 		Specs: []capability.Spec{{Name: "web.search", Risk: capability.Read, Signature: "web.search({query, count})", Returns: "[{title, url, snippet}] most relevant first; count up to 10",
@@ -49,6 +50,7 @@ func callSearch(ctx context.Context, cfg Config, _, _ string, args any) (any, er
 	}
 	key, _ := cfg(ctx, "brave_key")
 	searx, _ := cfg(ctx, "searxng_url")
+	pplx, _ := cfg(ctx, "perplexity_key")
 	out := []result{}
 	switch {
 	case strings.TrimSpace(key) != "":
@@ -67,6 +69,21 @@ func callSearch(ctx context.Context, cfg Config, _, _ string, args any) (any, er
 		}
 		for _, x := range r.Web.Results {
 			out = append(out, result{plain(x.Title), x.URL, plain(x.Description)})
+		}
+	case strings.TrimSpace(pplx) != "":
+		var r struct {
+			Results []struct {
+				Title   string `json:"title"`
+				URL     string `json:"url"`
+				Snippet string `json:"snippet"`
+			} `json:"results"`
+		}
+		body := map[string]any{"query": q, "max_results": count}
+		if err := doJSON(ctx, "POST", base("perplexity", "https://api.perplexity.ai")+"/search", map[string]string{"Authorization": "Bearer " + strings.TrimSpace(pplx)}, body, &r); err != nil {
+			return nil, err
+		}
+		for _, x := range r.Results {
+			out = append(out, result{plain(x.Title), x.URL, plain(x.Snippet)})
 		}
 	case strings.TrimSpace(searx) != "":
 		b, err := url.Parse(strings.TrimRight(strings.TrimSpace(searx), "/"))
