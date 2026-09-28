@@ -1224,4 +1224,5 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'doc.fix.opencode': "opencode が見つかりません。インストールするか、設定 › モデル で別のモデルを選んでください。",
   'rem.title': "リマインダー",
   'rem.cancel': "リマインダー「{text}」を取り消す",
+  'inbox.audio': "最近の音声",
 }

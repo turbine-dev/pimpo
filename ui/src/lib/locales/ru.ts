@@ -1274,4 +1274,5 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'doc.fix.opencode': "opencode не найден. Установите его или выберите другую модель в Настройки › Модели.",
   'rem.title': "Напоминания",
   'rem.cancel': "Отменить напоминание «{text}»",
+  'inbox.audio': "Недавние записи",
 }

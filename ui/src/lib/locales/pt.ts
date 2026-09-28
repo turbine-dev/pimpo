@@ -1224,6 +1224,7 @@ export const pt = {
   'doc.fix.opencode': "O opencode não foi encontrado. Instale-o ou escolha outro modelo em Ajustes › Modelos.",
   'rem.title': "Lembretes",
   'rem.cancel': "Cancelar o lembrete “{text}”",
+  'inbox.audio': "Áudios recentes",
 }
 
 export type Key = keyof typeof pt

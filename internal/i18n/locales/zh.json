@@ -36,6 +36,7 @@
   "msg.approval.batch": "本次运行接下来的操作都已允许。",
   "msg.approval.deny": "已拒绝。",
   "msg.approval.gone": "此请求已不再等待处理。",
+  "msg.audio.ready": "🎧 {title}（约 {minutes} 分钟）已就绪。在 Pimpo 的“需要你”中收听。",
   "msg.conv.continue": "收到，继续这段对话。🔎",
   "msg.conv.new": "🆕 新的对话。接下来的内容会重新开始。",
   "msg.discarded": "已舍弃。",

@@ -487,6 +487,40 @@ T.append({
     },
 })
 
+# 21. Hacker News as a spoken podcast, in a language the owner picks.
+HN = "https://hn.algolia.com/api/v1/search"
+def story(i, title, points, comments):
+    return {"objectID": str(i), "title": title, "url": f"https://example{i}.com/post", "points": points, "num_comments": comments, "author": f"user{i}", "created_at": "2026-09-24T02:00:00Z"}
+def comments(*texts):
+    return {"hits": [{"comment_text": t, "author": f"c{n}", "story_id": 1} for n, t in enumerate(texts)]}
+
+T.append({
+    "id": "oc-21-hn-podcast",
+    "request": "Todo dia às 8h, pega as 3 histórias com mais pontos na primeira página do Hacker News, faz um resumo de cada uma com o que a comunidade está comentando e me manda como um podcast em áudio, em português (quero poder trocar o idioma depois).",
+    "now": "2026-09-24T08:00:00-03:00",
+    "calls": [
+        {"capability": "http.getJSON", "args": HN + "?tags=front_page&hitsPerPage=10", "result": {"hits": [
+            story(101, "Open-weight model beats GPT on coding", 910, 402), story(102, "The history of the Unix pipe", 450, 120),
+            story(103, "Why SQLite is everywhere", 780, 300), story(104, "Show HN: A tiny text editor", 150, 40), story(105, "Postgres 19 released", 620, 210)]}},
+        {"capability": "http.getJSON", "args": HN + "?tags=comment,story_101&hitsPerPage=5", "result": comments("The benchmark numbers look solid but it needs 80GB of VRAM.", "Finally an open model that competes.")},
+        {"capability": "http.getJSON", "args": HN + "?tags=comment,story_103&hitsPerPage=5", "result": comments("SQLite is in every phone and browser.", "The test suite is the real product.")},
+        {"capability": "http.getJSON", "args": HN + "?tags=comment,story_105&hitsPerPage=5", "result": comments("Async I/O by default is huge.", "Upgrade path looks painless.")},
+        {"capability": "audio.send", "args": {"title": "Hacker News — 24/09", "language": "pt-BR", "text": "Bom dia! Estas são as três histórias com mais pontos no Hacker News hoje. Primeira: Open-weight model beats GPT on coding. Um modelo aberto superou o GPT num teste de programação; a comunidade elogia os números, mas lembra que ele precisa de 80 GB de memória de vídeo. Segunda: Why SQLite is everywhere. O texto explica por que o SQLite está em todo celular e navegador, e os comentários destacam a suíte de testes. Terceira: Postgres 19 released. A nova versão traz entrada e saída assíncronas por padrão, e quem comentou diz que atualizar é tranquilo. Até amanhã!"}, "result": {"ok": True}},
+    ],
+    "outcome": "Um podcast em áudio por dia com as 3 histórias de mais pontos do Hacker News, cada uma com o resumo e o que a comunidade comenta, no idioma escolhido (português por padrão).",
+    "expect": [expect("audio.send", 1, ["Open-weight model beats GPT on coding", "Why SQLite is everywhere", "Postgres 19 released"], ["Unix pipe", "tiny text editor"])],
+    "holdout": {
+        "now": "2026-10-08T08:00:00-03:00",
+        "responses": [
+            {"capability": "http.getJSON", "result": {"hits": [story(201, "Rust in the Linux kernel, one year on", 700, 300), story(202, "I built a CPU in a spreadsheet", 820, 250),
+                story(203, "Ask HN: What are you working on?", 300, 800), story(204, "The economics of AI chips", 640, 190)]}},
+            {"capability": "http.getJSON", "result": comments("Spreadsheets are Turing complete after all.")},
+            {"capability": "http.getJSON", "result": comments("Driver maintainers are happier.")},
+            {"capability": "http.getJSON", "result": comments("Margins are the whole story.")}],
+        "expect": [expect("audio.send", 1, ["I built a CPU in a spreadsheet", "Rust in the Linux kernel", "The economics of AI chips"], ["What are you working on"])],
+    },
+})
+
 out = here
 for t in T:
     with open(os.path.join(out, t["id"] + ".json"), "w") as f:

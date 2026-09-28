@@ -231,6 +231,7 @@ export const api = {
   capabilities: () => request<CapabilitySpec[]>('GET', '/api/capabilities'),
   models: () => request<{ keys: Record<string, boolean>; claude_code: boolean; providers: Provider[]; auto?: { light: string; strong: string; base: string; weigher: 'jev' | 'rules' } }>('GET', '/api/models'),
   detectModels: () => request<Found>('GET', '/api/models/detect'),
+  media: () => request<{ id: string; title: string; at: string }[]>('GET', '/api/media'),
   reminders: () => request<Reminder[]>('GET', '/api/reminders'),
   cancelReminder: (id: string) => request<{ ok: boolean }>('DELETE', `/api/reminders/${id}`),
   opencodeModels: () => request<OpencodeModel[]>('GET', '/api/models/opencode'),

@@ -36,6 +36,7 @@
   "msg.approval.batch": "今回の実行が終わるまで許可しました。",
   "msg.approval.deny": "拒否しました。",
   "msg.approval.gone": "この依頼はもう対応待ちではありません。",
+  "msg.audio.ready": "🎧 {title}（約 {minutes} 分）ができました。Pimpo の「対応が必要」で聞けます。",
   "msg.conv.continue": "了解です。会話を続けます。🔎",
   "msg.conv.new": "🆕 新しい会話です。ここからは最初から始まります。",
   "msg.discarded": "破棄しました。",

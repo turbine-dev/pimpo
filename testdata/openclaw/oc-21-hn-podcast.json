@@ -1,0 +1,239 @@
+{
+ "id": "oc-21-hn-podcast",
+ "request": "Todo dia às 8h, pega as 3 histórias com mais pontos na primeira página do Hacker News, faz um resumo de cada uma com o que a comunidade está comentando e me manda como um podcast em áudio, em português (quero poder trocar o idioma depois).",
+ "now": "2026-09-24T08:00:00-03:00",
+ "calls": [
+  {
+   "capability": "http.getJSON",
+   "args": "https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=10",
+   "result": {
+    "hits": [
+     {
+      "objectID": "101",
+      "title": "Open-weight model beats GPT on coding",
+      "url": "https://example101.com/post",
+      "points": 910,
+      "num_comments": 402,
+      "author": "user101",
+      "created_at": "2026-09-24T02:00:00Z"
+     },
+     {
+      "objectID": "102",
+      "title": "The history of the Unix pipe",
+      "url": "https://example102.com/post",
+      "points": 450,
+      "num_comments": 120,
+      "author": "user102",
+      "created_at": "2026-09-24T02:00:00Z"
+     },
+     {
+      "objectID": "103",
+      "title": "Why SQLite is everywhere",
+      "url": "https://example103.com/post",
+      "points": 780,
+      "num_comments": 300,
+      "author": "user103",
+      "created_at": "2026-09-24T02:00:00Z"
+     },
+     {
+      "objectID": "104",
+      "title": "Show HN: A tiny text editor",
+      "url": "https://example104.com/post",
+      "points": 150,
+      "num_comments": 40,
+      "author": "user104",
+      "created_at": "2026-09-24T02:00:00Z"
+     },
+     {
+      "objectID": "105",
+      "title": "Postgres 19 released",
+      "url": "https://example105.com/post",
+      "points": 620,
+      "num_comments": 210,
+      "author": "user105",
+      "created_at": "2026-09-24T02:00:00Z"
+     }
+    ]
+   }
+  },
+  {
+   "capability": "http.getJSON",
+   "args": "https://hn.algolia.com/api/v1/search?tags=comment,story_101&hitsPerPage=5",
+   "result": {
+    "hits": [
+     {
+      "comment_text": "The benchmark numbers look solid but it needs 80GB of VRAM.",
+      "author": "c0",
+      "story_id": 1
+     },
+     {
+      "comment_text": "Finally an open model that competes.",
+      "author": "c1",
+      "story_id": 1
+     }
+    ]
+   }
+  },
+  {
+   "capability": "http.getJSON",
+   "args": "https://hn.algolia.com/api/v1/search?tags=comment,story_103&hitsPerPage=5",
+   "result": {
+    "hits": [
+     {
+      "comment_text": "SQLite is in every phone and browser.",
+      "author": "c0",
+      "story_id": 1
+     },
+     {
+      "comment_text": "The test suite is the real product.",
+      "author": "c1",
+      "story_id": 1
+     }
+    ]
+   }
+  },
+  {
+   "capability": "http.getJSON",
+   "args": "https://hn.algolia.com/api/v1/search?tags=comment,story_105&hitsPerPage=5",
+   "result": {
+    "hits": [
+     {
+      "comment_text": "Async I/O by default is huge.",
+      "author": "c0",
+      "story_id": 1
+     },
+     {
+      "comment_text": "Upgrade path looks painless.",
+      "author": "c1",
+      "story_id": 1
+     }
+    ]
+   }
+  },
+  {
+   "capability": "audio.send",
+   "args": {
+    "title": "Hacker News — 24/09",
+    "language": "pt-BR",
+    "text": "Bom dia! Estas são as três histórias com mais pontos no Hacker News hoje. Primeira: Open-weight model beats GPT on coding. Um modelo aberto superou o GPT num teste de programação; a comunidade elogia os números, mas lembra que ele precisa de 80 GB de memória de vídeo. Segunda: Why SQLite is everywhere. O texto explica por que o SQLite está em todo celular e navegador, e os comentários destacam a suíte de testes. Terceira: Postgres 19 released. A nova versão traz entrada e saída assíncronas por padrão, e quem comentou diz que atualizar é tranquilo. Até amanhã!"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Um podcast em áudio por dia com as 3 histórias de mais pontos do Hacker News, cada uma com o resumo e o que a comunidade comenta, no idioma escolhido (português por padrão).",
+ "expect": [
+  {
+   "capability": "audio.send",
+   "count": 1,
+   "contains": [
+    "Open-weight model beats GPT on coding",
+    "Why SQLite is everywhere",
+    "Postgres 19 released"
+   ],
+   "not_contains": [
+    "Unix pipe",
+    "tiny text editor"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T08:00:00-03:00",
+  "responses": [
+   {
+    "capability": "http.getJSON",
+    "result": {
+     "hits": [
+      {
+       "objectID": "201",
+       "title": "Rust in the Linux kernel, one year on",
+       "url": "https://example201.com/post",
+       "points": 700,
+       "num_comments": 300,
+       "author": "user201",
+       "created_at": "2026-09-24T02:00:00Z"
+      },
+      {
+       "objectID": "202",
+       "title": "I built a CPU in a spreadsheet",
+       "url": "https://example202.com/post",
+       "points": 820,
+       "num_comments": 250,
+       "author": "user202",
+       "created_at": "2026-09-24T02:00:00Z"
+      },
+      {
+       "objectID": "203",
+       "title": "Ask HN: What are you working on?",
+       "url": "https://example203.com/post",
+       "points": 300,
+       "num_comments": 800,
+       "author": "user203",
+       "created_at": "2026-09-24T02:00:00Z"
+      },
+      {
+       "objectID": "204",
+       "title": "The economics of AI chips",
+       "url": "https://example204.com/post",
+       "points": 640,
+       "num_comments": 190,
+       "author": "user204",
+       "created_at": "2026-09-24T02:00:00Z"
+      }
+     ]
+    }
+   },
+   {
+    "capability": "http.getJSON",
+    "result": {
+     "hits": [
+      {
+       "comment_text": "Spreadsheets are Turing complete after all.",
+       "author": "c0",
+       "story_id": 1
+      }
+     ]
+    }
+   },
+   {
+    "capability": "http.getJSON",
+    "result": {
+     "hits": [
+      {
+       "comment_text": "Driver maintainers are happier.",
+       "author": "c0",
+       "story_id": 1
+      }
+     ]
+    }
+   },
+   {
+    "capability": "http.getJSON",
+    "result": {
+     "hits": [
+      {
+       "comment_text": "Margins are the whole story.",
+       "author": "c0",
+       "story_id": 1
+      }
+     ]
+    }
+   }
+  ],
+  "expect": [
+   {
+    "capability": "audio.send",
+    "count": 1,
+    "contains": [
+     "I built a CPU in a spreadsheet",
+     "Rust in the Linux kernel",
+     "The economics of AI chips"
+    ],
+    "not_contains": [
+     "What are you working on"
+    ]
+   }
+  ]
+ }
+}

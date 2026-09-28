@@ -1224,4 +1224,5 @@ export const de: Record<Key, string> & Record<string, string> = {
   'doc.fix.opencode': "opencode wurde nicht gefunden. Installiere es oder wähle ein anderes Modell unter Einstellungen › Modelle.",
   'rem.title': "Erinnerungen",
   'rem.cancel': "Erinnerung „{text}“ absagen",
+  'inbox.audio': "Neue Aufnahmen",
 }

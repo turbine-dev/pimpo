@@ -104,6 +104,10 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 
 Pimpo can run on a machine that is always on (a home server, a VPS) while the desktop app just opens it. On that machine, generate a link in **Ajustes › Abrir no celular** as for a phone. On your computer, click the Pimpo icon in the menu bar, choose **Conectar a outro Pimpo…** and paste the link. The Pimpo on your computer then stops, so the same Telegram bot and the same routines never run twice; its data stays where it was. **Usar o Pimpo deste computador** in the same menu brings it back. While connected elsewhere, notifications come from that Pimpo's channels (Telegram and others), not from this computer.
 
+## Audio
+
+A routine or task can read a text aloud and send it to you as audio (`audio.send`): a podcast of the day's news, a briefing to hear on the way. The voice is your Mac's own, in the language you choose (Portuguese, English, Spanish, French and the other languages macOS has), so the text never leaves the computer; for better voices, add Premium or Enhanced ones in System Settings › Accessibility › Spoken Content and Pimpo picks them. The recording arrives on Telegram with a player; other channels get a note, and **Precisa de você › Áudios recentes** keeps the last ones.
+
 ## Reminders
 
 Ask in any chat, in the app or on a channel: "daqui a 30 minutos me lembra de conferir o deploy", "amanhã às 9h me lembra de ligar para a Ana". Pimpo sets a reminder that goes out once, where your notices go, and is gone; nothing is turned into a routine. Pending reminders are listed at the top of **Rotinas**, where each can be cancelled. One that falls due while Pimpo is closed goes out when it opens, saying it is late. What repeats ("toda segunda…") is a routine instead.

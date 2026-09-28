@@ -36,6 +36,7 @@
   "msg.approval.batch": "Autorisé pour le reste de cette exécution.",
   "msg.approval.deny": "Refusé.",
   "msg.approval.gone": "Cette demande n’est plus en attente.",
+  "msg.audio.ready": "🎧 {title} (~{minutes} min) est prêt. Écoutez-le dans Pimpo, dans À traiter.",
   "msg.conv.continue": "Compris, la conversation continue. 🔎",
   "msg.conv.new": "🆕 Nouvelle conversation. La suite repart de zéro.",
   "msg.discarded": "Écarté.",
