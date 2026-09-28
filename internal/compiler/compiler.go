@@ -190,6 +190,7 @@ Rules for the code:
 Rules for the manifest:
 - schedule: a 5-field cron expression matching the request, or "" when the routine reacts to something new (see watch).
 - watch: when the request is about reacting to something new ("when an email from X arrives", "whenever this feed has a new post", "if the front door opens", "me avise quando chegar…"), declare {capability, args, key, every} instead of a schedule. capability is the read capability you call to find the items (also listed in capabilities); args are its arguments, with {{param}} for values that come from params; key is the field that identifies one item (id, link, entity_id); every is how often to check ("10m"; at least "5m", "30m" or "1h" when minutes do not matter). Pimpo calls it without a model and runs the routine only with the items it has not seen, as event.items (each item shaped like that capability's results). Work on event.items and do not call the watched capability again. Tests of such a routine set event: {items: [...]} with new fictional items, and one test should have items that must not produce a message.
+- webhook: when the request is about reacting when another service calls Pimpo ("when my iPhone Shortcut runs", "when Zapier/IFTTT/GitHub/a form sends…", "quando o webhook chegar"), set manifest.webhook to true, with schedule "" and no watch: the owner turns on the routine's webhook, and each call runs it with event.webhook = {method, query, body} (body is the parsed JSON, form fields or text). Read what you need from event.webhook.body, and do nothing when event.webhook is missing. Tests of such a routine set event: {webhook: {method: "POST", query: {}, body: {...}}}.
 - locale: the language the user wrote the request in: "pt-BR", "en-US", "es-ES", "fr-FR", "de-DE", "it-IT", "ja-JP", "zh-CN", "ko-KR" or "ru-RU". dates.format uses it for weekday and month names, so write messages and test expectations in that language.
 - capabilities: the minimum set the code calls. Scoped capabilities need the host, e.g. "http.getJSON:api.open-meteo.com". The host is fixed; values in the URL's query (latitude, longitude, currency) can come from params.
 - uses: ids of installed routines this one runs with routines.run (omit when none).
@@ -205,6 +206,7 @@ var schema = json.RawMessage(`{
   "description":{"type":"string"},
   "manifest":{"type":"object","additionalProperties":false,"required":["schedule","capabilities"],"properties":{
     "schedule":{"type":"string"},
+    "webhook":{"type":"boolean"},
     "watch":{"type":"object","additionalProperties":false,"required":["capability","key"],"properties":{
       "capability":{"type":"string"},"args":{"type":"object"},"key":{"type":"string"},"every":{"type":"string"}}},
     "capabilities":{"type":"array","items":{"type":"string"}},

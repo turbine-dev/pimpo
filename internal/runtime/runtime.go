@@ -49,6 +49,9 @@ type Manifest struct {
 	// Watch, when set, runs the routine when a read capability returns
 	// items it has not seen, instead of (or besides) the schedule.
 	Watch *Watch `json:"watch,omitempty"`
+	// Webhook says the routine is started by another service calling its
+	// address (see event.webhook) rather than by a clock.
+	Webhook bool `json:"webhook,omitempty"`
 	// Uses are other routines, by id, this one may run as helpers with
 	// routines.run(id, params). Everything they touch must also be in
 	// Capabilities: a helper never widens what the owner approved.
@@ -68,8 +71,8 @@ type Watch struct {
 // Starts reports whether something starts the routine: a schedule or a
 // watch. Routines are saved only when it does.
 func (m Manifest) Starts() error {
-	if m.Watch == nil && strings.TrimSpace(m.Schedule) == "" {
-		return errors.New("a routine needs a schedule or something to watch")
+	if m.Watch == nil && !m.Webhook && strings.TrimSpace(m.Schedule) == "" {
+		return errors.New("a routine needs a schedule, something to watch, or a webhook")
 	}
 	return nil
 }

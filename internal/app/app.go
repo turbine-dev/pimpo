@@ -279,6 +279,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.mediaRoutes()
 	a.localRoutes()
 	a.speechRoutes()
+	a.webhookRoutes()
 	a.doctorRoutes()
 	a.mcpRoutes()
 	a.organizeRoutes()

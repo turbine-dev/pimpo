@@ -8,6 +8,7 @@ import { Button, Card, PageSkeleton, RiskBadge, RunDots } from '../components/ui
 import { Diff } from '../components/Diff'
 import { Publish } from '../components/Publish'
 import { RoutineSettings } from '../components/RoutineSettings'
+import { WebhookCard } from '../components/WebhookCard'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
 import { cronText, relative, usd, when } from '../lib/format'
@@ -81,6 +82,7 @@ export function RoutinePage() {
       {act.data?.error && <p className="mb-4 text-sm text-danger">{act.data.error}</p>}
 
       <RoutineSettings s={s} onRedo={() => act.mutate('repair')} />
+      <WebhookCard id={s.id} />
 
       <Tabs.Root defaultValue={params.get('tab') ?? 'overview'}>
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('routine.details')}>

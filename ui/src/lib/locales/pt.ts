@@ -1284,6 +1284,17 @@ export const pt = {
   'lm.transcribersText': "Para entender suas notas de voz do Telegram e o ditado no app, aqui mesmo, sem mandar áudio para fora. Quanto maior, mais preciso e mais lento.",
   'voice.preparing': "preparando…",
   'voice.stopListening': "Parar",
+  'wh.title': "Disparar por webhook",
+  'wh.text': "Outro serviço inicia esta rotina chamando um endereço secreto: um Atalho do iPhone, IFTTT, Zapier, GitHub, um formulário.",
+  'wh.public': "Na internet",
+  'wh.lan': "Na rede de casa",
+  'wh.local': "Neste computador",
+  'wh.copy': "Copiar endereço",
+  'wh.howPublic': "Use o endereço da internet em serviços como IFTTT, Zapier ou GitHub. Qualquer um com ele inicia a rotina: trate como senha.",
+  'wh.howLocal': "Estes endereços só funcionam neste computador e na rede de casa. Para serviços da internet, ligue o Tailscale com Funnel em Ajustes › Celular.",
+  'wh.event': "O que for enviado (JSON, formulário ou texto) chega à rotina em event.webhook, com method, query e body.",
+  'wh.rotate': "Trocar endereço",
+  'rs.byWebhook': "Começa quando o webhook desta rotina é chamado (veja abaixo).",
 }
 
 export type Key = keyof typeof pt

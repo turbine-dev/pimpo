@@ -107,6 +107,8 @@ type routineSummary struct {
 	Model string `json:"model,omitempty"`
 	// Effort is how hard that model thinks, "" for the default.
 	Effort string `json:"effort,omitempty"`
+	// Webhook says another service starts it by calling its address.
+	Webhook bool `json:"webhook,omitempty"`
 	// Thinks says whether the routine asks a model anything (judgments or
 	// texts); only then does its model matter.
 	Thinks bool `json:"thinks"`
@@ -115,7 +117,7 @@ type routineSummary struct {
 func (a *App) summary(ctx context.Context, r store.Routine) routineSummary {
 	sum := routineSummary{ID: r.ID, Name: r.Body.Name, Description: r.Body.Description, State: r.State, Version: r.Version,
 		Capabilities: r.Body.Manifest.Capabilities, Schedule: r.Schedule(), DefaultSchedule: r.Body.Manifest.Schedule, Runs: []string{},
-		Params: r.Body.Manifest.Params, Values: map[string]any{}, Model: r.Settings.Model, Effort: r.Settings.Effort,
+		Params: r.Body.Manifest.Params, Values: map[string]any{}, Model: r.Settings.Model, Effort: r.Settings.Effort, Webhook: r.Body.Manifest.Webhook,
 		Thinks: len(r.Body.Manifest.Judgments)+len(r.Body.Manifest.Writes) > 0}
 	if sum.Params == nil {
 		sum.Params = []runtime.Param{}

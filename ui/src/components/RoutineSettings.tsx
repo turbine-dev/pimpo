@@ -66,7 +66,8 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
   const [effort, setEffort] = useState(s.effort ?? '')
   useEffect(() => { setEffort(s.effort ?? '') }, [s.effort])
   const models = useModelOptions()
-  const cron = s.watch && !s.schedule ? '' : toCron(sched)
+  const byHook = !!s.webhook && !s.schedule
+  const cron = (s.watch || byHook) && !s.schedule ? '' : toCron(sched)
   const dirty = cron !== s.schedule || JSON.stringify(values) !== JSON.stringify(s.values ?? {}) || (!!s.watch && every !== (s.watch.every || '10m')) || model !== (s.model ?? '') || effort !== (s.effort ?? '')
   const save = useMutation({
     mutationFn: () => api.saveRoutineSettings(s.id, cron, values, s.watch ? every : '', model, effort),
@@ -85,7 +86,7 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
         </div>
       </div>
       <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); save.mutate() }}>
-        {s.watch && !s.schedule ? <WatchEditor watch={s.watch} every={every} onChange={setEvery} /> : <ScheduleEditor value={sched} onChange={setSched} />}
+        {byHook ? <p className="text-[13px] text-ink-2">{t('rs.byWebhook')}</p> : s.watch && !s.schedule ? <WatchEditor watch={s.watch} every={every} onChange={setEvery} /> : <ScheduleEditor value={sched} onChange={setSched} />}
         {s.default_schedule && cron !== s.default_schedule && (
           <button type="button" className="-mt-3 text-[12.5px] text-ink-3 underline" onClick={() => setSched(parseCron(s.default_schedule!))}>{t('rs.reset')} ({cronText(s.default_schedule)})</button>
         )}

@@ -193,6 +193,12 @@ func (s *Scheduler) Library(ctx context.Context, id string) (runtime.Helper, err
 // Wait blocks until catch-up runs finish.
 func (s *Scheduler) Wait() { s.wg.Wait() }
 
+// RunWith runs a routine once with an event, such as what a webhook
+// brought.
+func (s *Scheduler) RunWith(ctx context.Context, id, trigger string, event any) (store.Run, error) {
+	return s.run(ctx, id, trigger, event)
+}
+
 // RunNow runs a routine once. A routine never runs twice at the same time.
 func (s *Scheduler) RunNow(ctx context.Context, id, trigger string) (store.Run, error) {
 	return s.run(ctx, id, trigger, nil)

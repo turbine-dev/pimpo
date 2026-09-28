@@ -21,6 +21,7 @@ export type RoutineSummary = {
   model?: string
   effort?: string
   thinks?: boolean
+  webhook?: boolean
 }
 
 export type ParamType = 'text' | 'number' | 'boolean' | 'date' | 'time' | 'location' | 'select' | 'multiselect' | 'email' | 'destinations'
@@ -244,6 +245,8 @@ export const api = {
   removeOllama: (model: string) => request<{ ok: boolean }>('DELETE', `/api/local/ollama/${model}`),
   voiceSample: (language: string, forWhat: 'chat' | 'routines' = 'routines') => request<{ id: string; seconds: number; voice: string }>('POST', '/api/local/sample', { language, for: forWhat }),
   media: () => request<{ id: string; title: string; at: string }[]>('GET', '/api/media'),
+  webhook: (id: string) => request<{ urls?: { local?: string; lan?: string; public?: string } }>('GET', `/api/routines/${id}/webhook`),
+  setWebhook: (id: string, action: 'on' | 'off' | 'rotate') => request<{ urls?: { local?: string; lan?: string; public?: string } }>('POST', `/api/routines/${id}/webhook/${action}`),
   reminders: () => request<Reminder[]>('GET', '/api/reminders'),
   cancelReminder: (id: string) => request<{ ok: boolean }>('DELETE', `/api/reminders/${id}`),
   opencodeModels: () => request<OpencodeModel[]>('GET', '/api/models/opencode'),
