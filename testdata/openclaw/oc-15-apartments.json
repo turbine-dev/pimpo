@@ -1,0 +1,128 @@
+{
+ "id": "oc-15-apartments",
+ "request": "Todo dia às 8h30, olha os e-mails de anúncios de imóveis que chegaram nas últimas 24h e me avisa no Telegram só dos apartamentos para alugar com 2 quartos, até R$ 3.000, em Pinheiros.",
+ "now": "2026-09-24T08:30:00-03:00",
+ "calls": [
+  {
+   "capability": "gmail.search",
+   "args": {
+    "query": "from:(quintoandar.com.br OR zapimoveis.com.br)",
+    "days": 1,
+    "max": 30
+   },
+   "result": [
+    {
+     "id": "ap1",
+     "from": "alertas@quintoandar.com.br",
+     "from_name": "QuintoAndar",
+     "to": "eu@exemplo.com",
+     "subject": "Novo imóvel: Rua dos Pinheiros, 2 quartos",
+     "snippet": "Apartamento 2 quartos, 68 m², Pinheiros, aluguel R$ 2.850.",
+     "date": "2026-09-24T07:10:00-03:00",
+     "labels": [
+      "INBOX",
+      "UNREAD"
+     ],
+     "replied": false,
+     "unread": true
+    },
+    {
+     "id": "ap2",
+     "from": "alertas@quintoandar.com.br",
+     "from_name": "QuintoAndar",
+     "to": "eu@exemplo.com",
+     "subject": "Novo imóvel: Rua Cardeal Arcoverde, 3 quartos",
+     "snippet": "Apartamento 3 quartos, Pinheiros, aluguel R$ 4.900.",
+     "date": "2026-09-24T07:12:00-03:00",
+     "labels": [
+      "INBOX",
+      "UNREAD"
+     ],
+     "replied": false,
+     "unread": true
+    },
+    {
+     "id": "ap3",
+     "from": "alertas@zapimoveis.com.br",
+     "from_name": "ZAP",
+     "to": "eu@exemplo.com",
+     "subject": "Novo anúncio na Vila Madalena",
+     "snippet": "Apartamento 2 quartos, Vila Madalena, aluguel R$ 2.700.",
+     "date": "2026-09-24T06:50:00-03:00",
+     "labels": [
+      "INBOX",
+      "UNREAD"
+     ],
+     "replied": false,
+     "unread": true
+    }
+   ]
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "🏠 Apartamento que bate com o que você procura:\n• Novo imóvel: Rua dos Pinheiros, 2 quartos — 68 m², R$ 2.850"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "judgments": {
+  "matches": {
+   "ap1": 0.95,
+   "ap2": 0.04,
+   "ap3": 0.07
+  }
+ },
+ "outcome": "Um aviso só com os anúncios de 2 quartos até R$ 3.000 em Pinheiros; nada quando nenhum bate.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "Rua dos Pinheiros"
+   ],
+   "not_contains": [
+    "Cardeal Arcoverde",
+    "Vila Madalena"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T08:30:00-03:00",
+  "responses": [
+   {
+    "capability": "gmail.search",
+    "result": [
+     {
+      "id": "hap1",
+      "from": "alertas@zapimoveis.com.br",
+      "from_name": "ZAP",
+      "to": "eu@exemplo.com",
+      "subject": "Novo anúncio em Moema",
+      "snippet": "Apartamento 2 quartos, Moema, R$ 2.600.",
+      "date": "2026-10-08T07:00:00-03:00",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "unread": true
+     }
+    ]
+   }
+  ],
+  "judgments": {
+   "matches": {
+    "hap1": 0.05
+   }
+  },
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 0
+   }
+  ]
+ }
+}

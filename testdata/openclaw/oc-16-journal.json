@@ -1,0 +1,136 @@
+{
+ "id": "oc-16-journal",
+ "request": "Todo dia às 23h55, escreve no Obsidian, na nota Diário.md, um registro do dia com as reuniões que tive e as issues do acme/app que fechei hoje.",
+ "now": "2026-09-24T23:55:00-03:00",
+ "calls": [
+  {
+   "capability": "calendar.events",
+   "args": {
+    "from": "2026-09-24T00:00:00-03:00",
+    "to": "2026-09-24T23:59:59-03:00"
+   },
+   "result": [
+    {
+     "id": "j1",
+     "title": "Daily do time",
+     "start": "2026-09-24T09:30:00-03:00",
+     "end": "2026-09-24T09:45:00-03:00",
+     "location": "",
+     "attendees": [],
+     "calendar": "Trabalho"
+    },
+    {
+     "id": "j2",
+     "title": "Mentoria com o Léo",
+     "start": "2026-09-24T16:00:00-03:00",
+     "end": "2026-09-24T17:00:00-03:00",
+     "location": "",
+     "attendees": [],
+     "calendar": "Trabalho"
+    }
+   ]
+  },
+  {
+   "capability": "github.issues",
+   "args": {
+    "repo": "acme/app",
+    "state": "closed",
+    "max": 30
+   },
+   "result": [
+    {
+     "number": 405,
+     "title": "Corrigir cálculo de frete",
+     "state": "closed",
+     "author": "dev1",
+     "labels": [],
+     "url": "https://github.com/acme/app/issues/405",
+     "updated": "2026-09-24T18:00:00Z",
+     "pull_request": false
+    },
+    {
+     "number": 390,
+     "title": "Issue fechada semana passada",
+     "state": "closed",
+     "author": "dev1",
+     "labels": [],
+     "url": "https://github.com/acme/app/issues/390",
+     "updated": "2026-09-17T12:00:00Z",
+     "pull_request": false
+    }
+   ]
+  },
+  {
+   "capability": "obsidian.append",
+   "args": {
+    "note": "Diário.md",
+    "text": "## 2026-09-24\nReuniões: Daily do time, Mentoria com o Léo\nFechadas: #405 Corrigir cálculo de frete"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Uma entrada no Diário.md com as reuniões do dia e as issues fechadas hoje.",
+ "expect": [
+  {
+   "capability": "obsidian.append",
+   "count": 1,
+   "contains": [
+    "Diário.md",
+    "Mentoria com o Léo",
+    "Corrigir cálculo de frete"
+   ],
+   "not_contains": [
+    "semana passada"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T23:55:00-03:00",
+  "responses": [
+   {
+    "capability": "calendar.events",
+    "result": [
+     {
+      "id": "hj1",
+      "title": "Workshop de segurança",
+      "start": "2026-10-08T14:00:00-03:00",
+      "end": "2026-10-08T16:00:00-03:00",
+      "location": "",
+      "attendees": [],
+      "calendar": "Trabalho"
+     }
+    ]
+   },
+   {
+    "capability": "github.issues",
+    "result": [
+     {
+      "number": 441,
+      "title": "Timeout no upload",
+      "state": "closed",
+      "author": "dev1",
+      "labels": [],
+      "url": "https://github.com/acme/app/issues/441",
+      "updated": "2026-10-08T20:00:00Z",
+      "pull_request": false
+     }
+    ]
+   }
+  ],
+  "expect": [
+   {
+    "capability": "obsidian.append",
+    "count": 1,
+    "contains": [
+     "Workshop de segurança",
+     "Timeout no upload"
+    ],
+    "not_contains": [
+     "Mentoria com o Léo"
+    ]
+   }
+  ]
+ }
+}

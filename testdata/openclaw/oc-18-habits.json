@@ -1,0 +1,41 @@
+{
+ "id": "oc-18-habits",
+ "request": "Todo dia às 21h me pergunta no Telegram se eu treinei hoje e se bebi 2 litros de água.",
+ "now": "2026-09-24T21:00:00-03:00",
+ "calls": [
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "💪 Check-in do dia: você treinou hoje? E bebeu os 2 litros de água?"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Uma pergunta por dia no Telegram sobre o treino e a água.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "trein",
+    "água"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T21:00:00-03:00",
+  "responses": [],
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 1,
+    "contains": [
+     "trein",
+     "água"
+    ]
+   }
+  ]
+ }
+}

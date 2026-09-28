@@ -1,6 +1,8 @@
 package routine
 
 import (
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -13,10 +15,10 @@ import (
 // FilterResponse applies a read capability's arguments to canned data, the
 // way the real service would. The demo mailbox uses it too.
 func FilterResponse(capability string, args any, v any, now time.Time) any {
-	return filterResponse(capability, args, v, now)
+	return filterResponse(capability, args, v, now, true)
 }
 
-func filterResponse(capability string, args any, v any, now time.Time) any {
+func filterResponse(capability string, args any, v any, now time.Time, strict bool) any {
 	a, _ := args.(map[string]any)
 	list, ok := v.([]any)
 	if !ok || a == nil {
@@ -24,16 +26,16 @@ func filterResponse(capability string, args any, v any, now time.Time) any {
 	}
 	switch capability {
 	case "gmail.search":
-		return filterMail(list, a, now)
+		return filterMail(list, a, now, strict)
 	case "calendar.events":
 		return filterEvents(list, a, now.Location())
 	}
 	return v
 }
 
-func filterMail(list []any, a map[string]any, now time.Time) []any {
+func filterMail(list []any, a map[string]any, now time.Time, strict bool) []any {
 	q, _ := a["query"].(string)
-	match := mailMatcher(q, now)
+	match := mailMatcher(q, now, strict)
 	unread, _ := a["unread"].(bool)
 	days := toInt(a["days"])
 	var out []any
@@ -76,10 +78,14 @@ func isUnread(m map[string]any) bool {
 	return len(labels) == 0
 }
 
-// mailMatcher understands from: to: subject: is:unread/read, -negation,
-// OR, and bare words; unknown operators match everything.
-func mailMatcher(q string, now time.Time) func(map[string]any) bool {
-	toks := fields(q)
+// mailMatcher understands from: to: subject: is:unread/read, after:,
+// before:, newer_than:, older_than:, category:, label:, in:, grouped
+// values like from:(a OR b), -negation, OR, and bare words; unknown
+// operators match everything. Dates, categories, labels and folders are
+// applied only when strict: a routine's own tests answer its question
+// directly and need not label every item.
+func mailMatcher(q string, now time.Time, strict bool) func(map[string]any) bool {
+	toks := fields(expandGroups(q))
 	type term struct {
 		neg bool
 		fn  func(map[string]any) bool
@@ -92,7 +98,7 @@ func mailMatcher(q string, now time.Time) func(map[string]any) bool {
 		t := toks[i]
 		neg := strings.HasPrefix(t, "-")
 		t = strings.TrimPrefix(t, "-")
-		fn := mailTerm(strings.Trim(t, `"()`), now)
+		fn := mailTerm(strings.Trim(t, `"()`), now, strict)
 		cur := term{neg, fn}
 		if len(groups) > 0 && i > 0 && strings.EqualFold(toks[i-1], "OR") {
 			groups[len(groups)-1] = append(groups[len(groups)-1], cur)
@@ -115,6 +121,70 @@ func mailMatcher(q string, now time.Time) func(map[string]any) bool {
 		}
 		return true
 	}
+}
+
+var grouped = regexp.MustCompile(`(-?)(\w+):\(([^)]*)\)`)
+
+// expandGroups rewrites key:(a OR b) as key:a OR key:b, and key:(a b) as
+// key:a key:b, the way Gmail reads them.
+func expandGroups(q string) string {
+	return grouped.ReplaceAllStringFunc(q, func(g string) string {
+		m := grouped.FindStringSubmatch(g)
+		var parts []string
+		for _, v := range strings.Fields(m[3]) {
+			if strings.EqualFold(v, "OR") {
+				parts = append(parts, "OR")
+				continue
+			}
+			parts = append(parts, m[1]+m[2]+":"+v)
+		}
+		return strings.Join(parts, " ")
+	})
+}
+
+// mailDate reads the dates Gmail takes in after: and before:: 2026/09/24,
+// 2026-09-24, or seconds since 1970. Days start at midnight where the
+// owner is.
+func mailDate(v string, zone *time.Location) (time.Time, bool) {
+	if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 100000 {
+		return time.Unix(n, 0), true
+	}
+	for _, layout := range []string{"2006/01/02", "2006-01-02", "2006/1/2"} {
+		if d, err := time.ParseInLocation(layout, v, zone); err == nil {
+			return d, true
+		}
+	}
+	return time.Time{}, false
+}
+
+// mailAge reads newer_than: and older_than: values: 2d, 3m, 1y.
+func mailAge(v string, now time.Time) (time.Time, bool) {
+	if len(v) < 2 {
+		return time.Time{}, false
+	}
+	n, err := strconv.Atoi(v[:len(v)-1])
+	if err != nil {
+		return time.Time{}, false
+	}
+	switch strings.ToLower(v[len(v)-1:]) {
+	case "d":
+		return now.AddDate(0, 0, -n), true
+	case "m":
+		return now.AddDate(0, -n, 0), true
+	case "y":
+		return now.AddDate(-n, 0, 0), true
+	}
+	return time.Time{}, false
+}
+
+func hasLabel(m map[string]any, label string) bool {
+	labels, _ := m["labels"].([]any)
+	for _, l := range labels {
+		if strings.EqualFold(str(l), label) {
+			return true
+		}
+	}
+	return false
 }
 
 // fields splits on spaces outside double quotes.
@@ -141,7 +211,7 @@ func fields(q string) []string {
 	return out
 }
 
-func mailTerm(t string, now time.Time) func(map[string]any) bool {
+func mailTerm(t string, now time.Time, strict bool) func(map[string]any) bool {
 	key, val, ok := strings.Cut(t, ":")
 	has := func(field string, v string) func(map[string]any) bool {
 		return func(m map[string]any) bool {
@@ -152,6 +222,18 @@ func mailTerm(t string, now time.Time) func(map[string]any) bool {
 		return func(m map[string]any) bool {
 			text := strings.ToLower(str(m["subject"]) + " " + str(m["snippet"]) + " " + str(m["from"]) + " " + str(m["from_name"]))
 			return strings.Contains(text, strings.ToLower(t))
+		}
+	}
+	if strings.EqualFold(val, "me") && (strings.EqualFold(key, "from") || strings.EqualFold(key, "to")) {
+		// "me" is the owner: their own messages are not among what was
+		// recorded, and everything recorded was sent to them.
+		isTo := strings.EqualFold(key, "to")
+		return func(map[string]any) bool { return isTo }
+	}
+	if !strict {
+		switch strings.ToLower(key) {
+		case "after", "before", "newer_than", "older_than", "category", "label", "in":
+			return func(map[string]any) bool { return true }
 		}
 	}
 	switch strings.ToLower(key) {
@@ -167,6 +249,49 @@ func mailTerm(t string, now time.Time) func(map[string]any) bool {
 		return has("to", val)
 	case "subject":
 		return has("subject", val)
+	case "after", "before", "newer_than", "older_than":
+		var at time.Time
+		var ok bool
+		if k := strings.ToLower(key); k == "after" || k == "before" {
+			at, ok = mailDate(val, now.Location())
+		} else {
+			at, ok = mailAge(val, now)
+		}
+		if !ok {
+			break
+		}
+		later := strings.EqualFold(key, "after") || strings.EqualFold(key, "newer_than")
+		return func(m map[string]any) bool {
+			d, err := time.Parse(time.RFC3339, str(m["date"]))
+			if err != nil {
+				return true
+			}
+			if later {
+				return !d.Before(at)
+			}
+			return d.Before(at)
+		}
+	case "category":
+		return func(m map[string]any) bool {
+			if strings.EqualFold(val, "primary") {
+				for _, c := range []string{"CATEGORY_PROMOTIONS", "CATEGORY_SOCIAL", "CATEGORY_UPDATES", "CATEGORY_FORUMS"} {
+					if hasLabel(m, c) {
+						return false
+					}
+				}
+				return true
+			}
+			return hasLabel(m, "CATEGORY_"+val)
+		}
+	case "label", "in":
+		// Items recorded without labels say nothing about where they are.
+		return func(m map[string]any) bool {
+			labels, _ := m["labels"].([]any)
+			if len(labels) == 0 || strings.EqualFold(val, "anywhere") {
+				return true
+			}
+			return hasLabel(m, val) || hasLabel(m, strings.ReplaceAll(val, "-", " "))
+		}
 	case "is":
 		switch strings.ToLower(val) {
 		case "unread":

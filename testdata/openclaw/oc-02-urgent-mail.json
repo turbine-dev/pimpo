@@ -1,0 +1,146 @@
+{
+ "id": "oc-02-urgent-mail",
+ "request": "Fica de olho no meu e-mail e me avisa no Telegram só quando chegar algo urgente de verdade (algo que precisa de resposta ou ação hoje). O resto pode esperar.",
+ "now": "2026-09-24T10:30:00-03:00",
+ "calls": [
+  {
+   "capability": "gmail.search",
+   "args": {
+    "query": "in:inbox is:unread",
+    "days": 1,
+    "unread": true,
+    "max": 20
+   },
+   "result": [
+    {
+     "id": "u1",
+     "from": "suporte@clienteabc.com",
+     "from_name": "Cliente ABC",
+     "to": "eu@exemplo.com",
+     "subject": "Sistema fora do ar desde 9h",
+     "snippet": "Nossas vendas pararam, precisamos de retorno agora.",
+     "date": "2026-09-24T10:12:00-03:00",
+     "labels": [
+      "INBOX",
+      "UNREAD"
+     ],
+     "replied": false,
+     "unread": true
+    },
+    {
+     "id": "u2",
+     "from": "newsletter@thenews.cc",
+     "from_name": "the news",
+     "to": "eu@exemplo.com",
+     "subject": "O resumo de hoje",
+     "snippet": "As notícias do dia.",
+     "date": "2026-09-24T09:00:00-03:00",
+     "labels": [
+      "INBOX",
+      "UNREAD",
+      "CATEGORY_UPDATES"
+     ],
+     "replied": false,
+     "unread": true
+    },
+    {
+     "id": "u3",
+     "from": "pedro@acme.com",
+     "from_name": "Pedro Alves",
+     "to": "eu@exemplo.com",
+     "subject": "Ideia para o offsite",
+     "snippet": "Quando der, dá uma olhada.",
+     "date": "2026-09-24T08:44:00-03:00",
+     "labels": [
+      "INBOX",
+      "UNREAD"
+     ],
+     "replied": false,
+     "unread": true
+    }
+   ]
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "🚨 Urgente: \"Sistema fora do ar desde 9h\" (Cliente ABC) — Nossas vendas pararam, precisamos de retorno agora."
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "judgments": {
+  "urgent": {
+   "u1": 0.97,
+   "u2": 0.01,
+   "u3": 0.08
+  }
+ },
+ "outcome": "Um alerta no Telegram para cada e-mail novo que é urgente; nada para os outros.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "Sistema fora do ar desde 9h"
+   ],
+   "not_contains": [
+    "O resumo de hoje",
+    "Ideia para o offsite"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T15:00:00-03:00",
+  "responses": [
+   {
+    "capability": "gmail.search",
+    "result": [
+     {
+      "id": "hu1",
+      "from": "banco@bancoalfa.com.br",
+      "from_name": "Banco Alfa",
+      "to": "eu@exemplo.com",
+      "subject": "Compra aprovada R$ 42,90",
+      "snippet": "Compra no cartão final 1234.",
+      "date": "2026-10-08T14:40:00-03:00",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "unread": true
+     },
+     {
+      "id": "hu2",
+      "from": "marina@acme.com",
+      "from_name": "Marina Souza",
+      "to": "eu@exemplo.com",
+      "subject": "Fotos da festa",
+      "snippet": "Subi no drive.",
+      "date": "2026-10-08T13:02:00-03:00",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "unread": true
+     }
+    ]
+   }
+  ],
+  "judgments": {
+   "urgent": {
+    "hu1": 0.06,
+    "hu2": 0.02
+   }
+  },
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 0
+   }
+  ]
+ }
+}

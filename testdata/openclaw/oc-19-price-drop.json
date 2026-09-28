@@ -1,0 +1,59 @@
+{
+ "id": "oc-19-price-drop",
+ "request": "De hora em hora, olha o preço do anúncio MLB3456789 no Mercado Livre e me avisa no Telegram se ficar abaixo de R$ 3.200.",
+ "now": "2026-09-24T12:00:00-03:00",
+ "calls": [
+  {
+   "capability": "http.getJSON",
+   "args": "https://api.mercadolibre.com/items/MLB3456789",
+   "result": {
+    "id": "MLB3456789",
+    "title": "Notebook Ultra 14 16GB 512GB",
+    "price": 3099.0,
+    "currency_id": "BRL",
+    "permalink": "https://produto.mercadolivre.com.br/MLB-3456789"
+   }
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "💸 Notebook Ultra 14 16GB 512GB está por R$ 3.099 (abaixo de R$ 3.200): https://produto.mercadolivre.com.br/MLB-3456789"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Um aviso com o preço e o link quando fica abaixo de R$ 3.200; nada acima disso.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "3.099",
+    "MLB-3456789"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T12:00:00-03:00",
+  "responses": [
+   {
+    "capability": "http.getJSON",
+    "result": {
+     "id": "MLB3456789",
+     "title": "Notebook Ultra 14 16GB 512GB",
+     "price": 3499.0,
+     "currency_id": "BRL",
+     "permalink": "https://produto.mercadolivre.com.br/MLB-3456789"
+    }
+   }
+  ],
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 0
+   }
+  ]
+ }
+}

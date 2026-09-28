@@ -1,0 +1,94 @@
+{
+ "id": "oc-06-next-meetings",
+ "request": "A cada hora, das 8h às 18h, me avisa no Telegram das reuniões que começam na próxima hora, com horário, local e participantes. Se não tiver nenhuma, não manda nada.",
+ "now": "2026-09-24T13:00:00-03:00",
+ "calls": [
+  {
+   "capability": "calendar.events",
+   "args": {
+    "from": "2026-09-24T13:00:00-03:00",
+    "to": "2026-09-24T14:00:00-03:00"
+   },
+   "result": [
+    {
+     "id": "n1",
+     "title": "Review do roadmap",
+     "start": "2026-09-24T13:30:00-03:00",
+     "end": "2026-09-24T14:30:00-03:00",
+     "location": "Sala Paulista",
+     "attendees": [
+      "pm@acme.com",
+      "cto@acme.com"
+     ],
+     "calendar": "Trabalho"
+    }
+   ]
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "⏰ 13:30 Review do roadmap — Sala Paulista — pm@acme.com, cto@acme.com"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Um aviso para cada reunião que começa na próxima hora; silêncio quando não há nenhuma.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "Review do roadmap",
+    "13:30",
+    "Sala Paulista",
+    "cto@acme.com"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T10:00:00-03:00",
+  "responses": [
+   {
+    "capability": "calendar.events",
+    "result": [
+     {
+      "id": "hn1",
+      "title": "1:1 com a Ana",
+      "start": "2026-10-08T10:15:00-03:00",
+      "end": "2026-10-08T10:45:00-03:00",
+      "location": "Google Meet",
+      "attendees": [
+       "ana@acme.com"
+      ],
+      "calendar": "Trabalho"
+     },
+     {
+      "id": "hn2",
+      "title": "Planejamento Q4",
+      "start": "2026-10-08T15:00:00-03:00",
+      "end": "2026-10-08T16:00:00-03:00",
+      "location": "Sala 1",
+      "attendees": [
+       "time@acme.com"
+      ],
+      "calendar": "Trabalho"
+     }
+    ]
+   }
+  ],
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "contains": [
+     "1:1 com a Ana",
+     "10:15"
+    ],
+    "not_contains": [
+     "Planejamento Q4"
+    ]
+   }
+  ]
+ }
+}

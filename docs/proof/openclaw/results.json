@@ -1,0 +1,6206 @@
+[
+ {
+  "id": "oc-01-morning-brief",
+  "first_accepted": false,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "notify.send",
+     "args": {
+      "text": "☀️ Bom dia! São Paulo: 20° a 31°, 10% de chance de chuva.\n📅 10:00 Entrevista candidato backend\n📩 Contrato Globex precisa de assinatura (Jurídico)\n✅ Pagar IPVA"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Resumo diário matinal",
+     "description": "Todo dia útil às 7h envia no Telegram um resumo com o tempo em São Paulo (ou outra cidade escolhida), a agenda do dia, os e-mails não lidos realmente importantes e as tarefas do Todoist de hoje ou atrasadas.",
+     "manifest": {
+      "schedule": "0 7 * * 1-5",
+      "capabilities": [
+       "http.getJSON:api.open-meteo.com",
+       "calendar.events",
+       "gmail.search",
+       "todoist.tasks",
+       "notify.send"
+      ],
+      "judgments": {
+       "important": "O e-mail não lido é realmente importante e merece atenção imediata do dono, e não é promoção, newsletter ou notificação automática irrelevante?"
+      },
+      "params": [
+       {
+        "name": "location",
+        "label": "Cidade para a previsão do tempo",
+        "type": "location",
+        "default": {
+         "latitude": -23.55,
+         "longitude": -46.63,
+         "name": "São Paulo",
+         "timezone": "America/Sao_Paulo"
+        }
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const loc = params.location;\n  const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}\u0026longitude=${loc.longitude}\u0026daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max\u0026timezone=${encodeURIComponent(loc.timezone)}\u0026forecast_days=1`;\n  const weather = await http.getJSON(url);\n  const tMax = Math.round(weather.daily.temperature_2m_max[0]);\n  const tMin = Math.round(weather.daily.temperature_2m_min[0]);\n  const precip = Math.round(weather.daily.precipitation_probability_max[0]);\n  const weatherLine = `☀️ Bom dia! ${loc.name}: ${tMin}° a ${tMax}°, ${precip}% de chance de chuva.`;\n\n  const dayStart = dates.today();\n  const dayEnd = dates.addDays(dayStart, 1);\n  const events = await calendar.events({from: dayStart, to: dayEnd});\n  events.sort((a, b) =\u003e (a.start \u003c b.start ? -1 : a.start \u003e b.start ? 1 : 0));\n  const eventsText = events.length\n    ? events.map(e =\u003e `${dates.format(e.start, 'HH:mm')} ${e.title}`).join(' · ')\n    : 'Nenhum evento hoje';\n\n  const emails = await gmail.search({query: 'in:inbox is:unread', days: 1, unread: true, max: 20});\n  const importantEmails = [];\n  for (const e of emails) {\n    const j = await judge.important(e);\n    if (j.p \u003e= 0.5) importantEmails.push(e);\n  }\n  const emailsText = importantEmails.length\n    ? importantEmails.map(e =\u003e `${e.subject} (${e.from_name})`).join(' · ')\n    : 'Nenhum e-mail importante';\n\n  const tasks = await todoist.tasks({filter: 'today | overdue'});\n  const today = dates.today();\n  const tasksText = tasks.length\n    ? tasks.map(t =\u003e {\n        const overdue = t.due \u0026\u0026 t.due.date \u0026\u0026 dates.isBefore(t.due.date, today);\n        return overdue ? `${t.content} (atrasada)` : t.content;\n      }).join(' · ')\n    : 'Nenhuma tarefa para hoje';\n\n  const text = `${weatherLine}\\n📅 ${eventsText}\\n📩 ${emailsText}\\n✅ ${tasksText}`;\n  await notify.send({text});\n}",
+     "tests": [
+      {
+       "name": "Dia normal com eventos, e-mails importantes e tarefa atrasada",
+       "now": "2026-09-28T10:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "precipitation_probability_max": [
+            40
+           ],
+           "temperature_2m_max": [
+            25.6
+           ],
+           "temperature_2m_min": [
+            15.2
+           ],
+           "time": [
+            "2026-09-28"
+           ]
+          }
+         }
+        },
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "c1",
+           "title": "Reunião de equipe",
+           "start": "2026-09-28T09:00:00-03:00",
+           "end": "2026-09-28T09:30:00-03:00",
+           "location": "Meet",
+           "attendees": [],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "c2",
+           "title": "Apresentação para cliente",
+           "start": "2026-09-28T15:00:00-03:00",
+           "end": "2026-09-28T16:00:00-03:00",
+           "location": "Escritório",
+           "attendees": [],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "banco@xyz.com",
+           "from_name": "Banco XYZ",
+           "to": "owner@example.com",
+           "subject": "Fatura vencendo hoje",
+           "snippet": "Sua fatura vence hoje, evite juros.",
+           "date": "2026-09-28T06:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          },
+          {
+           "id": "e2",
+           "from": "info@blog.com",
+           "from_name": "Blog Semanal",
+           "to": "owner@example.com",
+           "subject": "Newsletter semanal",
+           "snippet": "Confira as novidades da semana.",
+           "date": "2026-09-28T05:30:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          },
+          {
+           "id": "e3",
+           "from": "alertas@sistema.com",
+           "from_name": "Sistema de Monitoramento",
+           "to": "owner@example.com",
+           "subject": "Servidor caiu em produção",
+           "snippet": "O servidor principal está fora do ar.",
+           "date": "2026-09-28T05:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": [
+          {
+           "id": "t1",
+           "content": "Pagar conta de luz",
+           "due": {
+            "date": "2026-09-27"
+           },
+           "priority": 3,
+           "project_id": "p1",
+           "labels": []
+          },
+          {
+           "id": "t2",
+           "content": "Revisar relatório",
+           "due": {
+            "date": "2026-09-28"
+           },
+           "priority": 2,
+           "project_id": "p1",
+           "labels": []
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Fatura vencendo hoje": 0.9,
+         "Newsletter semanal": 0.05,
+         "Servidor caiu em produção": 0.88
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "15°",
+          "25°",
+          "40%",
+          "Reunião de equipe",
+          "Apresentação para cliente",
+          "Fatura vencendo hoje",
+          "Servidor caiu em produção",
+          "Pagar conta de luz (atrasada)",
+          "Revisar relatório"
+         ],
+         "not_contains": [
+          "Newsletter semanal"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Dia tranquilo sem eventos, e-mails importantes ou tarefas",
+       "now": "2026-09-24T10:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "precipitation_probability_max": [
+            10
+           ],
+           "temperature_2m_max": [
+            22
+           ],
+           "temperature_2m_min": [
+            14
+           ],
+           "time": [
+            "2026-09-24"
+           ]
+          }
+         }
+        },
+        {
+         "capability": "calendar.events",
+         "result": []
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "promo@loja.com",
+           "from_name": "Loja Y",
+           "to": "owner@example.com",
+           "subject": "Desconto imperdível",
+           "snippet": "Só hoje, 30% off.",
+           "date": "2026-09-24T05:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": []
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Desconto imperdível": 0.03
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Nenhum evento hoje",
+          "Nenhum e-mail importante",
+          "Nenhuma tarefa para hoje"
+         ],
+         "not_contains": [
+          "Desconto imperdível"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Cidade alterada para o Rio de Janeiro",
+       "now": "2026-09-25T10:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "precipitation_probability_max": [
+            20
+           ],
+           "temperature_2m_max": [
+            30
+           ],
+           "temperature_2m_min": [
+            21
+           ],
+           "time": [
+            "2026-09-25"
+           ]
+          }
+         }
+        },
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "c1",
+           "title": "Call com fornecedor",
+           "start": "2026-09-25T11:00:00-03:00",
+           "end": "2026-09-25T11:30:00-03:00",
+           "location": "Zoom",
+           "attendees": [],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "contador@escritorio.com",
+           "from_name": "Contador",
+           "to": "owner@example.com",
+           "subject": "Documentos pendentes para a declaração",
+           "snippet": "Preciso dos documentos até sexta.",
+           "date": "2026-09-25T06:10:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": [
+          {
+           "id": "t1",
+           "content": "Enviar documentos ao contador",
+           "due": {
+            "date": "2026-09-25"
+           },
+           "priority": 3,
+           "project_id": "p1",
+           "labels": []
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Documentos pendentes para a declaração": 0.8
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Rio de Janeiro",
+          "21°",
+          "30°",
+          "Call com fornecedor",
+          "Documentos pendentes para a declaração",
+          "Enviar documentos ao contador"
+         ]
+        }
+       ],
+       "params": {
+        "location": {
+         "latitude": -22.9,
+         "longitude": -43.2,
+         "name": "Rio de Janeiro",
+         "timezone": "America/Sao_Paulo"
+        }
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "☀️ Bom dia! São Paulo: 16° a 27°, 70% de chance de chuva.\n📅 09:30 Daily do time · 12:30 Almoço com a Júlia\n📩 Aprovar orçamento de outubro (Renata Dias) · [acme/app] CI falhou na main (GitHub)\n✅ Renovar seguro do carro (atrasada) · Mandar fotos pro contador"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Dia normal com eventos, e-mails importantes e tarefa atrasada",
+      "passed": false,
+      "problems": [
+       "notify.send never mentions \"25°\"; it sent \"☀️ bom dia! são paulo: 15° a 26°, 40% de chance de chuva.\\n📅 12:00 reunião de equipe · 18:00 apresentação para cliente\\n📩 fatura vencendo hoje (banco xyz) · servidor caiu em produção (sistema de monitoramento)\\n✅ pagar conta de luz (atrasada) · revisar relatório\""
+      ],
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "☀️ Bom dia! São Paulo: 15° a 26°, 40% de chance de chuva.\n📅 12:00 Reunião de equipe · 18:00 Apresentação para cliente\n📩 Fatura vencendo hoje (Banco XYZ) · Servidor caiu em produção (Sistema de Monitoramento)\n✅ Pagar conta de luz (atrasada) · Revisar relatório"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Dia tranquilo sem eventos, e-mails importantes ou tarefas",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "☀️ Bom dia! São Paulo: 14° a 22°, 10% de chance de chuva.\n📅 Nenhum evento hoje\n📩 Nenhum e-mail importante\n✅ Nenhuma tarefa para hoje"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Cidade alterada para o Rio de Janeiro",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "☀️ Bom dia! Rio de Janeiro: 21° a 30°, 20% de chance de chuva.\n📅 14:00 Call com fornecedor\n📩 Documentos pendentes para a declaração (Contador)\n✅ Enviar documentos ao contador"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.16826760000000002
+   },
+   {
+    "routine": {
+     "name": "Resumo diário matinal",
+     "description": "Todo dia útil às 7h envia no Telegram um resumo com o tempo em São Paulo (ou outra cidade escolhida), a agenda do dia, os e-mails não lidos realmente importantes e as tarefas do Todoist de hoje ou atrasadas.",
+     "manifest": {
+      "schedule": "0 7 * * 1-5",
+      "capabilities": [
+       "http.getJSON:api.open-meteo.com",
+       "calendar.events",
+       "gmail.search",
+       "todoist.tasks",
+       "notify.send"
+      ],
+      "judgments": {
+       "important": "O e-mail não lido é realmente importante e merece atenção imediata do dono, e não é promoção, newsletter ou notificação automática irrelevante?"
+      },
+      "params": [
+       {
+        "name": "location",
+        "label": "Cidade para a previsão do tempo",
+        "type": "location",
+        "default": {
+         "latitude": -23.55,
+         "longitude": -46.63,
+         "name": "São Paulo",
+         "timezone": "America/Sao_Paulo"
+        }
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "{\"name\":\"Resumo diário matinal\",\"description\":\"Todo dia útil às 7h envia no Telegram um resumo com o tempo em São Paulo (ou outra cidade escolhida), a agenda do dia, os e-mails não lidos realmente importantes e as tarefas do Todoist de hoje ou atrasadas.\",\"manifest\":{\"schedule\":\"0 7 * * 1-5\",\"capabilities\":[\"http.getJSON:api.open-meteo.com\",\"calendar.events\",\"gmail.search\",\"todoist.tasks\",\"notify.send\"],\"params\":[{\"name\":\"location\",\"label\":\"Cidade para a previsão do tempo\",\"type\":\"location\",\"default\":{\"name\":\"São Paulo\",\"latitude\":-23.55,\"longitude\":-46.63,\"timezone\":\"America/Sao_Paulo\"}},{\"name\":\"destinos\",\"label\":\"Onde avisar\",\"type\":\"destinations\",\"default\":[]}],\"judgments\":{\"important\":\"O e-mail não lido é realmente importante e merece atenção imediata do dono, e não é promoção, newsletter ou notificação automática irrelevante?\"}},\"code\":\"async function run() {\\n  const loc = params.location;\\n  const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}\u0026longitude=${loc.longitude}\u0026daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max\u0026timezone=${encodeURIComponent(loc.timezone)}\u0026forecast_days=1`;\\n  const weather = await http.getJSON(url);\\n  const tMax = Math.round(weather.daily.temperature_2m_max[0]);\\n  const tMin = Math.round(weather.daily.temperature_2m_min[0]);\\n  const precip = Math.round(weather.daily.precipitation_probability_max[0]);\\n  const weatherLine = `☀️ Bom dia! ${loc.name}: ${tMin}° a ${tMax}°, ${precip}% de chance de chuva.`;\\n\\n  const dayStart = dates.today();\\n  const dayEnd = dates.addDays(dayStart, 1);\\n  const events = await calendar.events({from: dayStart, to: dayEnd});\\n  events.sort((a, b) =\u003e (a.start \u003c b.start ? -1 : a.start \u003e b.start ? 1 : 0));\\n  const eventsText = events.length\\n    ? events.map(e =\u003e `${dates.format(e.start, 'HH:mm')} ${e.title}`).join(' · ')\\n    : 'Nenhum evento hoje';\\n\\n  const emails = await gmail.search({query: 'in:inbox is:unread', days: 1, unread: true, max: 20});\\n  const importantEmails = [];\\n  for (const e of emails) {\\n    const j = await judge.important(e);\\n    if (j.p \u003e= 0.5) importantEmails.push(e);\\n  }\\n  const emailsText = importantEmails.length\\n    ? importantEmails.map(e =\u003e `${e.subject} (${e.from_name})`).join(' · ')\\n    : 'Nenhum e-mail importante';\\n\\n  const tasks = await todoist.tasks({filter: 'today | overdue'});\\n  const today = dates.today();\\n  const tasksText = tasks.length\\n    ? tasks.map(t =\u003e {\\n        const overdue = t.due \u0026\u0026 t.due.date \u0026\u0026 dates.isBefore(t.due.date, today);\\n        return overdue ? `${t.content} (atrasada)` : t.content;\\n      }).join(' · ')\\n    : 'Nenhuma tarefa para hoje';\\n\\n  const text = `${weatherLine}\\\\n📅 ${eventsText}\\\\n📩 ${emailsText}\\\\n✅ ${tasksText}`;\\n  await notify.send({text});\\n}\",\"tests\":[{\"name\":\"Dia normal com eventos, e-mails importantes e tarefa atrasada\",\"now\":\"2026-09-28T10:00:00Z\",\"responses\":[{\"capability\":\"http.getJSON\",\"result\":{\"daily\":{\"precipitation_probability_max\":[40],\"temperature_2m_max\":[25.6],\"temperature_2m_min\":[15.2],\"time\":[\"2026-09-28\"]}}},{\"capability\":\"calendar.events\",\"result\":[{\"id\":\"c1\",\"title\":\"Reunião de equipe\",\"start\":\"2026-09-28T09:00:00-03:00\",\"end\":\"2026-09-28T09:30:00-03:00\",\"location\":\"Meet\",\"attendees\":[],\"calendar\":\"Trabalho\"},{\"id\":\"c2\",\"title\":\"Apresentação para cliente\",\"start\":\"2026-09-28T15:00:00-03:00\",\"end\":\"2026-09-28T16:00:00-03:00\",\"location\":\"Escritório\",\"attendees\":[],\"calendar\":\"Trabalho\"}]},{\"capability\":\"gmail.search\",\"result\":[{\"id\":\"e1\",\"from\":\"banco@xyz.com\",\"from_name\":\"Banco XYZ\",\"to\":\"owner@example.com\",\"subject\":\"Fatura vencendo hoje\",\"snippet\":\"Sua fatura vence hoje, evite juros.\",\"date\":\"2026-09-28T06:00:00-03:00\",\"labels\":[\"INBOX\",\"UNREAD\"],\"replied\":false,\"unread\":true,\"can_unsubscribe\":false},{\"id\":\"e2\",\"from\":\"info@blog.com\",\"from_name\":\"Blog Semanal\",\"to\":\"owner@example.com\",\"subject\":\"Newsletter semanal\",\"snippet\":\"Confira as novidades da semana.\",\"date\":\"2026-09-28T05:30:00-03:00\",\"labels\":[\"INBOX\",\"UNREAD\",\"CATEGORY_PROMOTIONS\"],\"replied\":false,\"unread\":true,\"can_unsubscribe\":true},{\"id\":\"e3\",\"from\":\"alertas@sistema.com\",\"from_name\":\"Sistema de Monitoramento\",\"to\":\"owner@example.com\",\"subject\":\"Servidor caiu em produção\",\"snippet\":\"O servidor principal está fora do ar.\",\"date\":\"2026-09-28T05:00:00-03:00\",\"labels\":[\"INBOX\",\"UNREAD\"],\"replied\":false,\"unread\":true,\"can_unsubscribe\":false}]},{\"capability\":\"todoist.tasks\",\"result\":[{\"id\":\"t1\",\"content\":\"Pagar conta de luz\",\"due\":{\"date\":\"2026-09-27\"},\"priority\":3,\"project_id\":\"p1\",\"labels\":[]},{\"id\":\"t2\",\"content\":\"Revisar relatório\",\"due\":{\"date\":\"2026-09-28\"},\"priority\":2,\"project_id\":\"p1\",\"labels\":[]}]}],\"judgments\":{\"important\":{\"Fatura vencendo hoje\":0.9,\"Newsletter semanal\":0.05,\"Servidor caiu em produção\":0.88}},\"expect\":[{\"capability\":\"notify.send\",\"count\":1,\"contains\":[\"15°\",\"26°\",\"40%\",\"Reunião de equipe\",\"Apresentação para cliente\",\"Fatura vencendo hoje\",\"Servidor caiu em produção\",\"Pagar conta de luz (atrasada)\",\"Revisar relatório\"],\"not_contains\":[\"Newsletter semanal\"]}]},{\"name\":\"Dia tranquilo sem eventos, e-mails importantes ou tarefas\",\"now\":\"2026-09-24T10:00:00Z\",\"responses\":[{\"capability\":\"http.getJSON\",\"result\":{\"daily\":{\"precipitation_probability_max\":[10],\"temperature_2m_max\":[22],\"temperature_2m_min\":[14],\"time\":[\"2026-09-24\"]}}},{\"capability\":\"calendar.events\",\"result\":[]},{\"capability\":\"gmail.search\",\"result\":[{\"id\":\"e1\",\"from\":\"promo@loja.com\",\"from_name\":\"Loja Y\",\"to\":\"owner@example.com\",\"subject\":\"Desconto imperdível\",\"snippet\":\"Só hoje, 30% off.\",\"date\":\"2026-09-24T05:00:00-03:00\",\"labels\":[\"INBOX\",\"UNREAD\",\"CATEGORY_PROMOTIONS\"],\"replied\":false,\"unread\":true,\"can_unsubscribe\":true}]},{\"capability\":\"todoist.tasks\",\"result\":[]}],\"judgments\":{\"important\":{\"Desconto imperdível\":0.03}},\"expect\":[{\"capability\":\"notify.send\",\"count\":1,\"contains\":[\"Nenhum evento hoje\",\"Nenhum e-mail importante\",\"Nenhuma tarefa para hoje\"],\"not_contains\":[\"Desconto imperdível\"]}]},{\"name\":\"Cidade alterada para o Rio de Janeiro\",\"now\":\"2026-09-25T10:00:00Z\",\"params\":{\"location\":{\"name\":\"Rio de Janeiro\",\"latitude\":-22.9,\"longitude\":-43.2,\"timezone\":\"America/Sao_Paulo\"}},\"responses\":[{\"capability\":\"http.getJSON\",\"result\":{\"daily\":{\"precipitation_probability_max\":[20],\"temperature_2m_max\":[30],\"temperature_2m_min\":[21],\"time\":[\"2026-09-25\"]}}},{\"capability\":\"calendar.events\",\"result\":[{\"id\":\"c1\",\"title\":\"Call com fornecedor\",\"start\":\"2026-09-25T11:00:00-03:00\",\"end\":\"2026-09-25T11:30:00-03:00\",\"location\":\"Zoom\",\"attendees\":[],\"calendar\":\"Trabalho\"}]},{\"capability\":\"gmail.search\",\"result\":[{\"id\":\"e1\",\"from\":\"contador@escritorio.com\",\"from_name\":\"Contador\",\"to\":\"owner@example.com\",\"subject\":\"Documentos pendentes para a declaração\",\"snippet\":\"Preciso dos documentos até sexta.\",\"date\":\"2026-09-25T06:10:00-03:00\",\"labels\":[\"INBOX\",\"UNREAD\"],\"replied\":false,\"unread\":true,\"can_unsubscribe\":false}]},{\"capability\":\"todoist.tasks\",\"result\":[{\"id\":\"t1\",\"content\":\"Enviar documentos ao contador\",\"due\":{\"date\":\"2026-09-25\"},\"priority\":3,\"project_id\":\"p1\",\"labels\":[]}]}],\"judgments\":{\"important\":{\"Documentos pendentes para a declaração\":0.8}},\"expect\":[{\"capability\":\"notify.send\",\"count\":1,\"contains\":[\"Rio de Janeiro\",\"21°\",\"30°\",\"Call com fornecedor\",\"Documentos pendentes para a declaração\",\"Enviar documentos ao contador\"]}]}]}",
+     "tests": [
+      {
+       "name": "Dia normal com eventos, e-mails importantes e tarefa atrasada",
+       "now": "2026-09-28T10:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "precipitation_probability_max": [
+            40
+           ],
+           "temperature_2m_max": [
+            25.6
+           ],
+           "temperature_2m_min": [
+            15.2
+           ],
+           "time": [
+            "2026-09-28"
+           ]
+          }
+         }
+        },
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "c1",
+           "title": "Reunião de equipe",
+           "start": "2026-09-28T09:00:00-03:00",
+           "end": "2026-09-28T09:30:00-03:00",
+           "location": "Meet",
+           "attendees": [],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "c2",
+           "title": "Apresentação para cliente",
+           "start": "2026-09-28T15:00:00-03:00",
+           "end": "2026-09-28T16:00:00-03:00",
+           "location": "Escritório",
+           "attendees": [],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "banco@xyz.com",
+           "from_name": "Banco XYZ",
+           "to": "owner@example.com",
+           "subject": "Fatura vencendo hoje",
+           "snippet": "Sua fatura vence hoje, evite juros.",
+           "date": "2026-09-28T06:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          },
+          {
+           "id": "e2",
+           "from": "info@blog.com",
+           "from_name": "Blog Semanal",
+           "to": "owner@example.com",
+           "subject": "Newsletter semanal",
+           "snippet": "Confira as novidades da semana.",
+           "date": "2026-09-28T05:30:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          },
+          {
+           "id": "e3",
+           "from": "alertas@sistema.com",
+           "from_name": "Sistema de Monitoramento",
+           "to": "owner@example.com",
+           "subject": "Servidor caiu em produção",
+           "snippet": "O servidor principal está fora do ar.",
+           "date": "2026-09-28T05:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": [
+          {
+           "id": "t1",
+           "content": "Pagar conta de luz",
+           "due": {
+            "date": "2026-09-27"
+           },
+           "priority": 3,
+           "project_id": "p1",
+           "labels": []
+          },
+          {
+           "id": "t2",
+           "content": "Revisar relatório",
+           "due": {
+            "date": "2026-09-28"
+           },
+           "priority": 2,
+           "project_id": "p1",
+           "labels": []
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Fatura vencendo hoje": 0.9,
+         "Newsletter semanal": 0.05,
+         "Servidor caiu em produção": 0.88
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "15°",
+          "26°",
+          "40%",
+          "Reunião de equipe",
+          "Apresentação para cliente",
+          "Fatura vencendo hoje",
+          "Servidor caiu em produção",
+          "Pagar conta de luz (atrasada)",
+          "Revisar relatório"
+         ],
+         "not_contains": [
+          "Newsletter semanal"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Dia tranquilo sem eventos, e-mails importantes ou tarefas",
+       "now": "2026-09-24T10:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "precipitation_probability_max": [
+            10
+           ],
+           "temperature_2m_max": [
+            22
+           ],
+           "temperature_2m_min": [
+            14
+           ],
+           "time": [
+            "2026-09-24"
+           ]
+          }
+         }
+        },
+        {
+         "capability": "calendar.events",
+         "result": []
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "promo@loja.com",
+           "from_name": "Loja Y",
+           "to": "owner@example.com",
+           "subject": "Desconto imperdível",
+           "snippet": "Só hoje, 30% off.",
+           "date": "2026-09-24T05:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": []
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Desconto imperdível": 0.03
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Nenhum evento hoje",
+          "Nenhum e-mail importante",
+          "Nenhuma tarefa para hoje"
+         ],
+         "not_contains": [
+          "Desconto imperdível"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Cidade alterada para o Rio de Janeiro",
+       "now": "2026-09-25T10:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "precipitation_probability_max": [
+            20
+           ],
+           "temperature_2m_max": [
+            30
+           ],
+           "temperature_2m_min": [
+            21
+           ],
+           "time": [
+            "2026-09-25"
+           ]
+          }
+         }
+        },
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "c1",
+           "title": "Call com fornecedor",
+           "start": "2026-09-25T11:00:00-03:00",
+           "end": "2026-09-25T11:30:00-03:00",
+           "location": "Zoom",
+           "attendees": [],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "contador@escritorio.com",
+           "from_name": "Contador",
+           "to": "owner@example.com",
+           "subject": "Documentos pendentes para a declaração",
+           "snippet": "Preciso dos documentos até sexta.",
+           "date": "2026-09-25T06:10:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": [
+          {
+           "id": "t1",
+           "content": "Enviar documentos ao contador",
+           "due": {
+            "date": "2026-09-25"
+           },
+           "priority": 3,
+           "project_id": "p1",
+           "labels": []
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Documentos pendentes para a declaração": 0.8
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Rio de Janeiro",
+          "21°",
+          "30°",
+          "Call com fornecedor",
+          "Documentos pendentes para a declaração",
+          "Enviar documentos ao contador"
+         ]
+        }
+       ],
+       "params": {
+        "location": {
+         "latitude": -22.9,
+         "longitude": -43.2,
+         "name": "Rio de Janeiro",
+         "timezone": "America/Sao_Paulo"
+        }
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": false,
+      "problems": [
+       "run failed: SyntaxError: SyntaxError: (anonymous): Line 1:8 Unexpected token : (and 9 more errors)",
+       "telegram.send called 0 times, want 1",
+       "telegram.send never mentions \"27\"; it sent nothing",
+       "telegram.send never mentions \"Daily do time\"; it sent nothing",
+       "telegram.send never mentions \"Almoço com a Júlia\"; it sent nothing",
+       "telegram.send never mentions \"Aprovar orçamento de outubro\"; it sent nothing",
+       "telegram.send never mentions \"CI falhou\"; it sent nothing",
+       "telegram.send never mentions \"Renovar seguro do carro\"; it sent nothing",
+       "telegram.send never mentions \"Mandar fotos pro contador\"; it sent nothing"
+      ]
+     },
+     {
+      "scenario": "test Dia normal com eventos, e-mails importantes e tarefa atrasada",
+      "passed": false,
+      "problems": [
+       "run failed: SyntaxError: SyntaxError: (anonymous): Line 1:8 Unexpected token : (and 9 more errors)",
+       "notify.send called 0 times, want 1",
+       "notify.send never mentions \"15°\"; it sent nothing",
+       "notify.send never mentions \"26°\"; it sent nothing",
+       "notify.send never mentions \"40%\"; it sent nothing",
+       "notify.send never mentions \"Reunião de equipe\"; it sent nothing",
+       "notify.send never mentions \"Apresentação para cliente\"; it sent nothing",
+       "notify.send never mentions \"Fatura vencendo hoje\"; it sent nothing",
+       "notify.send never mentions \"Servidor caiu em produção\"; it sent nothing",
+       "notify.send never mentions \"Pagar conta de luz (atrasada)\"; it sent nothing",
+       "notify.send never mentions \"Revisar relatório\"; it sent nothing"
+      ]
+     },
+     {
+      "scenario": "test Dia tranquilo sem eventos, e-mails importantes ou tarefas",
+      "passed": false,
+      "problems": [
+       "run failed: SyntaxError: SyntaxError: (anonymous): Line 1:8 Unexpected token : (and 9 more errors)",
+       "notify.send called 0 times, want 1",
+       "notify.send never mentions \"Nenhum evento hoje\"; it sent nothing",
+       "notify.send never mentions \"Nenhum e-mail importante\"; it sent nothing",
+       "notify.send never mentions \"Nenhuma tarefa para hoje\"; it sent nothing"
+      ]
+     },
+     {
+      "scenario": "test Cidade alterada para o Rio de Janeiro",
+      "passed": false,
+      "problems": [
+       "run failed: SyntaxError: SyntaxError: (anonymous): Line 1:8 Unexpected token : (and 9 more errors)",
+       "notify.send called 0 times, want 1",
+       "notify.send never mentions \"Rio de Janeiro\"; it sent nothing",
+       "notify.send never mentions \"21°\"; it sent nothing",
+       "notify.send never mentions \"30°\"; it sent nothing",
+       "notify.send never mentions \"Call com fornecedor\"; it sent nothing",
+       "notify.send never mentions \"Documentos pendentes para a declaração\"; it sent nothing",
+       "notify.send never mentions \"Enviar documentos ao contador\"; it sent nothing"
+      ]
+     }
+    ],
+    "cost_usd": 0.1058882
+   },
+   {
+    "routine": {
+     "name": "Resumo diário matinal",
+     "description": "Todo dia útil às 7h envia no Telegram um resumo com o tempo em São Paulo (ou outra cidade escolhida), a agenda do dia, os e-mails não lidos realmente importantes e as tarefas do Todoist de hoje ou atrasadas.",
+     "manifest": {
+      "schedule": "0 7 * * 1-5",
+      "capabilities": [
+       "http.getJSON:api.open-meteo.com",
+       "calendar.events",
+       "gmail.search",
+       "todoist.tasks",
+       "notify.send"
+      ],
+      "judgments": {
+       "important": "O e-mail não lido é realmente importante e merece atenção imediata do dono, e não é promoção, newsletter ou notificação automática irrelevante?"
+      },
+      "params": [
+       {
+        "name": "location",
+        "label": "Cidade para a previsão do tempo",
+        "type": "location",
+        "default": {
+         "latitude": -23.55,
+         "longitude": -46.63,
+         "name": "São Paulo",
+         "timezone": "America/Sao_Paulo"
+        }
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const loc = params.location;\n  const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}\u0026longitude=${loc.longitude}\u0026daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max\u0026timezone=${encodeURIComponent(loc.timezone)}\u0026forecast_days=1`;\n  const weather = await http.getJSON(url);\n  const tMax = Math.round(weather.daily.temperature_2m_max[0]);\n  const tMin = Math.round(weather.daily.temperature_2m_min[0]);\n  const precip = Math.round(weather.daily.precipitation_probability_max[0]);\n  const weatherLine = `☀️ Bom dia! ${loc.name}: ${tMin}° a ${tMax}°, ${precip}% de chance de chuva.`;\n\n  const dayStart = dates.today();\n  const dayEnd = dates.addDays(dayStart, 1);\n  const events = await calendar.events({from: dayStart, to: dayEnd});\n  events.sort((a, b) =\u003e (a.start \u003c b.start ? -1 : a.start \u003e b.start ? 1 : 0));\n  const eventsText = events.length\n    ? events.map(e =\u003e `${dates.format(e.start, 'HH:mm')} ${e.title}`).join(' · ')\n    : 'Nenhum evento hoje';\n\n  const emails = await gmail.search({query: 'in:inbox is:unread', days: 1, unread: true, max: 20});\n  const importantEmails = [];\n  for (const e of emails) {\n    const j = await judge.important(e);\n    if (j.p \u003e= 0.5) importantEmails.push(e);\n  }\n  const emailsText = importantEmails.length\n    ? importantEmails.map(e =\u003e `${e.subject} (${e.from_name})`).join(' · ')\n    : 'Nenhum e-mail importante';\n\n  const tasks = await todoist.tasks({filter: 'today | overdue'});\n  const today = dates.today();\n  const tasksText = tasks.length\n    ? tasks.map(t =\u003e {\n        const overdue = t.due \u0026\u0026 t.due.date \u0026\u0026 dates.isBefore(t.due.date, today);\n        return overdue ? `${t.content} (atrasada)` : t.content;\n      }).join(' · ')\n    : 'Nenhuma tarefa para hoje';\n\n  const text = `${weatherLine}\\n📅 ${eventsText}\\n📩 ${emailsText}\\n✅ ${tasksText}`;\n  await notify.send({text});\n}",
+     "tests": [
+      {
+       "name": "Dia normal com eventos, e-mails importantes e tarefa atrasada",
+       "now": "2026-09-28T10:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "precipitation_probability_max": [
+            40
+           ],
+           "temperature_2m_max": [
+            25.6
+           ],
+           "temperature_2m_min": [
+            15.2
+           ],
+           "time": [
+            "2026-09-28"
+           ]
+          }
+         }
+        },
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "c1",
+           "title": "Reunião de equipe",
+           "start": "2026-09-28T09:00:00-03:00",
+           "end": "2026-09-28T09:30:00-03:00",
+           "location": "Meet",
+           "attendees": [],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "c2",
+           "title": "Apresentação para cliente",
+           "start": "2026-09-28T15:00:00-03:00",
+           "end": "2026-09-28T16:00:00-03:00",
+           "location": "Escritório",
+           "attendees": [],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "banco@xyz.com",
+           "from_name": "Banco XYZ",
+           "to": "owner@example.com",
+           "subject": "Fatura vencendo hoje",
+           "snippet": "Sua fatura vence hoje, evite juros.",
+           "date": "2026-09-28T06:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          },
+          {
+           "id": "e2",
+           "from": "info@blog.com",
+           "from_name": "Blog Semanal",
+           "to": "owner@example.com",
+           "subject": "Newsletter semanal",
+           "snippet": "Confira as novidades da semana.",
+           "date": "2026-09-28T05:30:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          },
+          {
+           "id": "e3",
+           "from": "alertas@sistema.com",
+           "from_name": "Sistema de Monitoramento",
+           "to": "owner@example.com",
+           "subject": "Servidor caiu em produção",
+           "snippet": "O servidor principal está fora do ar.",
+           "date": "2026-09-28T05:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": [
+          {
+           "id": "t1",
+           "content": "Pagar conta de luz",
+           "due": {
+            "date": "2026-09-27"
+           },
+           "priority": 3,
+           "project_id": "p1",
+           "labels": []
+          },
+          {
+           "id": "t2",
+           "content": "Revisar relatório",
+           "due": {
+            "date": "2026-09-28"
+           },
+           "priority": 2,
+           "project_id": "p1",
+           "labels": []
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Fatura vencendo hoje": 0.9,
+         "Newsletter semanal": 0.05,
+         "Servidor caiu em produção": 0.88
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "15°",
+          "26°",
+          "40%",
+          "Reunião de equipe",
+          "Apresentação para cliente",
+          "Fatura vencendo hoje",
+          "Servidor caiu em produção",
+          "Pagar conta de luz (atrasada)",
+          "Revisar relatório"
+         ],
+         "not_contains": [
+          "Newsletter semanal"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Dia tranquilo sem eventos, e-mails importantes ou tarefas",
+       "now": "2026-09-24T10:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "precipitation_probability_max": [
+            10
+           ],
+           "temperature_2m_max": [
+            22
+           ],
+           "temperature_2m_min": [
+            14
+           ],
+           "time": [
+            "2026-09-24"
+           ]
+          }
+         }
+        },
+        {
+         "capability": "calendar.events",
+         "result": []
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "promo@loja.com",
+           "from_name": "Loja Y",
+           "to": "owner@example.com",
+           "subject": "Desconto imperdível",
+           "snippet": "Só hoje, 30% off.",
+           "date": "2026-09-24T05:00:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": []
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Desconto imperdível": 0.03
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Nenhum evento hoje",
+          "Nenhum e-mail importante",
+          "Nenhuma tarefa para hoje"
+         ],
+         "not_contains": [
+          "Desconto imperdível"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Cidade alterada para o Rio de Janeiro",
+       "now": "2026-09-25T10:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "daily": {
+           "precipitation_probability_max": [
+            20
+           ],
+           "temperature_2m_max": [
+            30
+           ],
+           "temperature_2m_min": [
+            21
+           ],
+           "time": [
+            "2026-09-25"
+           ]
+          }
+         }
+        },
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "c1",
+           "title": "Call com fornecedor",
+           "start": "2026-09-25T11:00:00-03:00",
+           "end": "2026-09-25T11:30:00-03:00",
+           "location": "Zoom",
+           "attendees": [],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "e1",
+           "from": "contador@escritorio.com",
+           "from_name": "Contador",
+           "to": "owner@example.com",
+           "subject": "Documentos pendentes para a declaração",
+           "snippet": "Preciso dos documentos até sexta.",
+           "date": "2026-09-25T06:10:00-03:00",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": [
+          {
+           "id": "t1",
+           "content": "Enviar documentos ao contador",
+           "due": {
+            "date": "2026-09-25"
+           },
+           "priority": 3,
+           "project_id": "p1",
+           "labels": []
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "important": {
+         "Documentos pendentes para a declaração": 0.8
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Rio de Janeiro",
+          "21°",
+          "30°",
+          "Call com fornecedor",
+          "Documentos pendentes para a declaração",
+          "Enviar documentos ao contador"
+         ]
+        }
+       ],
+       "params": {
+        "location": {
+         "latitude": -22.9,
+         "longitude": -43.2,
+         "name": "Rio de Janeiro",
+         "timezone": "America/Sao_Paulo"
+        }
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "☀️ Bom dia! São Paulo: 16° a 27°, 70% de chance de chuva.\n📅 09:30 Daily do time · 12:30 Almoço com a Júlia\n📩 Aprovar orçamento de outubro (Renata Dias) · [acme/app] CI falhou na main (GitHub)\n✅ Renovar seguro do carro (atrasada) · Mandar fotos pro contador"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Dia normal com eventos, e-mails importantes e tarefa atrasada",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "☀️ Bom dia! São Paulo: 15° a 26°, 40% de chance de chuva.\n📅 12:00 Reunião de equipe · 18:00 Apresentação para cliente\n📩 Fatura vencendo hoje (Banco XYZ) · Servidor caiu em produção (Sistema de Monitoramento)\n✅ Pagar conta de luz (atrasada) · Revisar relatório"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Dia tranquilo sem eventos, e-mails importantes ou tarefas",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "☀️ Bom dia! São Paulo: 14° a 22°, 10% de chance de chuva.\n📅 Nenhum evento hoje\n📩 Nenhum e-mail importante\n✅ Nenhuma tarefa para hoje"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Cidade alterada para o Rio de Janeiro",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "☀️ Bom dia! Rio de Janeiro: 21° a 30°, 20% de chance de chuva.\n📅 14:00 Call com fornecedor\n📩 Documentos pendentes para a declaração (Contador)\n✅ Enviar documentos ao contador"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.10272619999999999
+   }
+  ],
+  "seconds": 191.6918295
+ },
+ {
+  "id": "oc-02-urgent-mail",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Alerta de e-mail urgente",
+     "description": "Monitora a caixa de entrada do Gmail e envia um alerta no Telegram (ou nos destinos escolhidos) apenas para e-mails que realmente precisam de resposta ou ação ainda hoje. E-mails não urgentes (newsletters, avisos sem pressa, etc.) são ignorados silenciosamente.",
+     "manifest": {
+      "schedule": "",
+      "capabilities": [
+       "gmail.search",
+       "notify.send"
+      ],
+      "judgments": {
+       "urgent": "Este e-mail realmente precisa de resposta ou ação ainda hoje (é urgente)?"
+      },
+      "locale": "pt-BR",
+      "params": [
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ],
+      "watch": {
+       "capability": "gmail.search",
+       "args": {
+        "days": 1,
+        "max": 20,
+        "query": "in:inbox is:unread",
+        "unread": true
+       },
+       "key": "id",
+       "every": "5m"
+      }
+     },
+     "code": "async function run() {\n  const items = (event \u0026\u0026 event.items) ? event.items : [];\n  for (const item of items) {\n    const j = await judge.urgent(item);\n    if (j.p \u003e= 0.5) {\n      const from = item.from_name || item.from || '';\n      const subject = item.subject || '(sem assunto)';\n      const snippet = item.snippet || '';\n      const text = `🚨 Urgente: \"${subject}\" (${from}) — ${snippet}`;\n      await notify.send({ text });\n    }\n  }\n}",
+     "tests": [
+      {
+       "name": "um e-mail urgente entre dois novos",
+       "now": "2026-09-28T13:00:00Z",
+       "responses": [],
+       "judgments": {
+        "urgent": {
+         "a1": 0.95,
+         "a2": 0.02
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Contrato vence hoje",
+          "Empresa XYZ"
+         ]
+        }
+       ],
+       "event": {
+        "items": [
+         {
+          "date": "2026-09-28T12:50:00Z",
+          "from": "cliente@empresaxyz.com",
+          "from_name": "Empresa XYZ",
+          "id": "a1",
+          "labels": [
+           "INBOX",
+           "UNREAD"
+          ],
+          "replied": false,
+          "snippet": "Precisamos da assinatura até o fim do dia, senão perdemos o prazo.",
+          "subject": "Contrato vence hoje",
+          "unread": true
+         },
+         {
+          "date": "2026-09-28T09:00:00Z",
+          "from": "newsletter@blogsemanal.com",
+          "from_name": "Blog Semanal",
+          "id": "a2",
+          "labels": [
+           "INBOX",
+           "UNREAD",
+           "CATEGORY_UPDATES"
+          ],
+          "replied": false,
+          "snippet": "Confira as novidades e artigos desta semana.",
+          "subject": "Resumo da semana",
+          "unread": true
+         }
+        ]
+       }
+      },
+      {
+       "name": "nenhum e-mail urgente",
+       "now": "2026-09-28T15:00:00Z",
+       "responses": [],
+       "judgments": {
+        "urgent": {
+         "b1": 0.05
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        }
+       ],
+       "event": {
+        "items": [
+         {
+          "date": "2026-09-28T14:30:00Z",
+          "from": "amigo@gmail.com",
+          "from_name": "Amigo",
+          "id": "b1",
+          "labels": [
+           "INBOX",
+           "UNREAD"
+          ],
+          "replied": false,
+          "snippet": "Quando você tiver um tempo, me chama pra combinar.",
+          "subject": "Bora marcar aquele café",
+          "unread": true
+         }
+        ]
+       }
+      },
+      {
+       "name": "vários novos, dois urgentes",
+       "now": "2026-09-28T18:00:00Z",
+       "responses": [],
+       "judgments": {
+        "urgent": {
+         "c1": 0.98,
+         "c2": 0.9,
+         "c3": 0.03
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 2
+        }
+       ],
+       "params": {
+        "destinos": [
+         "telegram-principal"
+        ]
+       },
+       "event": {
+        "items": [
+         {
+          "date": "2026-09-28T17:50:00Z",
+          "from": "financeiro@fornecedor.com",
+          "from_name": "Fornecedor Financeiro",
+          "id": "c1",
+          "labels": [
+           "INBOX",
+           "UNREAD"
+          ],
+          "replied": false,
+          "snippet": "Seu cartão foi recusado e o serviço será suspenso ainda hoje.",
+          "subject": "Pagamento bloqueado, ação necessária hoje",
+          "unread": true
+         },
+         {
+          "date": "2026-09-28T17:40:00Z",
+          "from": "chefe@empresa.com",
+          "from_name": "Chefe",
+          "id": "c2",
+          "labels": [
+           "INBOX",
+           "UNREAD"
+          ],
+          "replied": false,
+          "snippet": "O cliente está esperando nossa posição sobre o contrato.",
+          "subject": "Preciso da sua resposta até o fim do dia",
+          "unread": true
+         },
+         {
+          "date": "2026-09-28T10:00:00Z",
+          "from": "eventos@meetup.com",
+          "from_name": "Meetup",
+          "id": "c3",
+          "labels": [
+           "INBOX",
+           "UNREAD",
+           "CATEGORY_PROMOTIONS"
+          ],
+          "replied": false,
+          "snippet": "Confira o próximo meetup de tecnologia na sua cidade.",
+          "subject": "Novo evento perto de você",
+          "unread": true
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🚨 Urgente: \"Sistema fora do ar desde 9h\" (Cliente ABC) — Nossas vendas pararam, precisamos de retorno agora."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test um e-mail urgente entre dois novos",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🚨 Urgente: \"Contrato vence hoje\" (Empresa XYZ) — Precisamos da assinatura até o fim do dia, senão perdemos o prazo."
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test nenhum e-mail urgente",
+      "passed": true
+     },
+     {
+      "scenario": "test vários novos, dois urgentes",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🚨 Urgente: \"Pagamento bloqueado, ação necessária hoje\" (Fornecedor Financeiro) — Seu cartão foi recusado e o serviço será suspenso ainda hoje."
+        }
+       },
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🚨 Urgente: \"Preciso da sua resposta até o fim do dia\" (Chefe) — O cliente está esperando nossa posição sobre o contrato."
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.05097619999999999
+   }
+  ],
+  "seconds": 38.555013292
+ },
+ {
+  "id": "oc-03-inbox-slack",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "slack.send",
+     "args": {
+      "text": "📬 E-mails de ontem:\n• Financeiro — Fechamento de setembro"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Resumo diário de e-mails de ontem no Slack",
+     "description": "Todo dia útil às 9h, busca os e-mails que chegaram no dia anterior no Gmail, remove os que têm a etiqueta de Promoções ou de Redes Sociais e envia um resumo (remetente e assunto) para o Slack do usuário.",
+     "manifest": {
+      "schedule": "0 9 * * 1-5",
+      "capabilities": [
+       "gmail.search",
+       "slack.send"
+      ],
+      "locale": "pt-BR"
+     },
+     "code": "async function run() {\n  const todayStart = dates.today();\n  const yesterdayStart = dates.addDays(todayStart, -1);\n  const fromStr = dates.format(yesterdayStart, 'yyyy/MM/dd');\n  const toStr = dates.format(todayStart, 'yyyy/MM/dd');\n  const query = `in:inbox after:${fromStr} before:${toStr}`;\n\n  const emails = await gmail.search({ query, days: 2, max: 50 });\n\n  const filtered = (emails || []).filter(e =\u003e {\n    const labels = e.labels || [];\n    return !labels.includes('CATEGORY_PROMOTIONS') \u0026\u0026 !labels.includes('CATEGORY_SOCIAL');\n  });\n\n  if (filtered.length === 0) {\n    log('Nenhum e-mail relevante ontem, nada para enviar.');\n    return;\n  }\n\n  const lines = filtered.map(e =\u003e `• ${e.from_name || e.from} — ${e.subject}`);\n  const text = `📬 E-mails de ontem:\\n${lines.join('\\n')}`;\n\n  await slack.send({ text });\n}\n",
+     "tests": [
+      {
+       "name": "Caso normal: mistura de e-mails, filtra promoções e redes sociais",
+       "now": "2026-10-01T12:00:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "a1",
+           "from": "rh@empresa.com",
+           "from_name": "RH Empresa",
+           "to": "eu@exemplo.com",
+           "subject": "Atualização de benefícios",
+           "snippet": "...",
+           "date": "2026-09-30T14:00:00Z",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false,
+           "unread": false
+          },
+          {
+           "id": "a2",
+           "from": "promo@loja.com",
+           "from_name": "Loja XPTO",
+           "to": "eu@exemplo.com",
+           "subject": "50% de desconto hoje",
+           "snippet": "...",
+           "date": "2026-09-30T15:00:00Z",
+           "labels": [
+            "INBOX",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false,
+           "unread": false
+          },
+          {
+           "id": "a3",
+           "from": "notification@instagram.com",
+           "from_name": "Instagram",
+           "to": "eu@exemplo.com",
+           "subject": "Novo seguidor",
+           "snippet": "...",
+           "date": "2026-09-30T16:00:00Z",
+           "labels": [
+            "INBOX",
+            "CATEGORY_SOCIAL"
+           ],
+           "replied": false,
+           "unread": false
+          },
+          {
+           "id": "a4",
+           "from": "cliente@parceiro.com",
+           "from_name": "Ana Souza",
+           "to": "eu@exemplo.com",
+           "subject": "Contrato assinado",
+           "snippet": "...",
+           "date": "2026-09-30T18:00:00Z",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false,
+           "unread": false
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "slack.send",
+         "count": 1,
+         "contains": [
+          "RH Empresa",
+          "Atualização de benefícios",
+          "Ana Souza",
+          "Contrato assinado"
+         ],
+         "not_contains": [
+          "Loja XPTO",
+          "Instagram",
+          "desconto",
+          "seguidor"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Edge case: só promoções e redes sociais, nada para enviar",
+       "now": "2026-10-02T12:00:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "b1",
+           "from": "promo@viagens.com",
+           "from_name": "Viagens.com",
+           "to": "eu@exemplo.com",
+           "subject": "Pacotes imperdíveis",
+           "snippet": "...",
+           "date": "2026-10-01T13:00:00Z",
+           "labels": [
+            "INBOX",
+            "CATEGORY_PROMOTIONS"
+           ],
+           "replied": false,
+           "unread": false
+          },
+          {
+           "id": "b2",
+           "from": "notification@linkedin.com",
+           "from_name": "LinkedIn",
+           "to": "eu@exemplo.com",
+           "subject": "5 pessoas viram seu perfil",
+           "snippet": "...",
+           "date": "2026-10-01T14:00:00Z",
+           "labels": [
+            "INBOX",
+            "CATEGORY_SOCIAL"
+           ],
+           "replied": false,
+           "unread": false
+          }
+         ]
+        }
+       ],
+       "expect": []
+      },
+      {
+       "name": "Vários e-mails pessoais válidos",
+       "now": "2026-10-05T12:00:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "c1",
+           "from": "joao@fornecedor.com",
+           "from_name": "João Lima",
+           "to": "eu@exemplo.com",
+           "subject": "Proposta comercial",
+           "snippet": "...",
+           "date": "2026-10-04T10:00:00Z",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false,
+           "unread": true
+          },
+          {
+           "id": "c2",
+           "from": "maria@parceira.com",
+           "from_name": "Maria Costa",
+           "to": "eu@exemplo.com",
+           "subject": "Reunião de alinhamento",
+           "snippet": "...",
+           "date": "2026-10-04T12:00:00Z",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false,
+           "unread": false
+          },
+          {
+           "id": "c3",
+           "from": "noreply@banco.com",
+           "from_name": "Banco XYZ",
+           "to": "eu@exemplo.com",
+           "subject": "Fatura disponível",
+           "snippet": "...",
+           "date": "2026-10-04T15:00:00Z",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false,
+           "unread": false
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "slack.send",
+         "count": 1,
+         "contains": [
+          "João Lima",
+          "Proposta comercial",
+          "Maria Costa",
+          "Reunião de alinhamento",
+          "Banco XYZ",
+          "Fatura disponível"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "slack.send",
+        "args": {
+         "text": "📬 E-mails de ontem:\n• RH Acme — Nova política de home office\n• Tiago Rocha — Proposta revisada"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Caso normal: mistura de e-mails, filtra promoções e redes sociais",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "slack.send",
+        "args": {
+         "text": "📬 E-mails de ontem:\n• RH Empresa — Atualização de benefícios\n• Ana Souza — Contrato assinado"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Edge case: só promoções e redes sociais, nada para enviar",
+      "passed": true
+     },
+     {
+      "scenario": "test Vários e-mails pessoais válidos",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "slack.send",
+        "args": {
+         "text": "📬 E-mails de ontem:\n• João Lima — Proposta comercial\n• Maria Costa — Reunião de alinhamento\n• Banco XYZ — Fatura disponível"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.05197019999999999
+   }
+  ],
+  "seconds": 35.563999333
+ },
+ {
+  "id": "oc-04-ai-news",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "notify.send",
+     "args": {
+      "text": "🤖 IA no Hacker News:\n• LLM agents that write their own tools — https://news.ycombinator.com/item?id=2002"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Notícias de IA do Hacker News",
+     "description": "Toda segunda às 9h, lê o feed \"best\" do Hacker News, filtra as histórias publicadas na última semana, usa um julgamento para identificar quais são sobre inteligência artificial e envia ao dono, no Telegram (ou destino escolhido), uma mensagem com os títulos e links dessas histórias. Não envia nada se não houver notícias de IA.",
+     "manifest": {
+      "schedule": "0 9 * * 1",
+      "capabilities": [
+       "rss.read:hnrss.org",
+       "notify.send"
+      ],
+      "judgments": {
+       "about_ai": "Esta história do Hacker News é sobre inteligência artificial?"
+      },
+      "params": [
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       },
+       {
+        "name": "max_items",
+        "label": "Máximo de notícias a analisar no feed",
+        "type": "number",
+        "default": 30
+       },
+       {
+        "name": "dias",
+        "label": "Considerar notícias dos últimos N dias",
+        "type": "number",
+        "default": 7
+       }
+      ]
+     },
+     "code": "async function run() {\n  const items = await rss.read({ url: \"https://hnrss.org/best\", max: params.max_items });\n\n  const cutoff = dates.addDays(now(), -params.dias);\n  const recent = items.filter(it =\u003e !dates.isBefore(it.published, cutoff));\n\n  const aiItems = [];\n  for (const it of recent) {\n    const j = await judge.about_ai(it);\n    if (j.p \u003e= 0.5) {\n      aiItems.push(it);\n    }\n  }\n\n  if (aiItems.length === 0) {\n    log(\"Nenhuma notícia de IA encontrada nesta semana.\");\n    return;\n  }\n\n  const lines = aiItems.map(it =\u003e `• ${it.title} — ${it.link}`);\n  const text = `🤖 IA no Hacker News:\\n${lines.join(\"\\n\")}`;\n\n  await notify.send({ text });\n}\n",
+     "tests": [
+      {
+       "name": "várias notícias, algumas de IA e outras não",
+       "now": "2026-10-05T12:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://news.ycombinator.com/item?id=2001",
+           "published": "2026-10-04T14:00:00Z",
+           "summary": "",
+           "title": "New multimodal LLM sets record on reasoning benchmark"
+          },
+          {
+           "link": "https://news.ycombinator.com/item?id=2002",
+           "published": "2026-10-04T10:00:00Z",
+           "summary": "",
+           "title": "A deep dive into TCP congestion control"
+          },
+          {
+           "link": "https://news.ycombinator.com/item?id=2003",
+           "published": "2026-10-03T18:00:00Z",
+           "summary": "",
+           "title": "OpenAI releases new safety research on alignment"
+          },
+          {
+           "link": "https://news.ycombinator.com/item?id=2004",
+           "published": "2026-10-03T09:00:00Z",
+           "summary": "",
+           "title": "Show HN: I built a mechanical keyboard from scratch"
+          }
+         ]
+        },
+        {
+         "capability": "notify.send",
+         "result": {
+          "ok": true,
+          "delivered": [
+           "telegram:owner"
+          ]
+         }
+        }
+       ],
+       "judgments": {
+        "about_ai": {
+         "id=2001": 0.96,
+         "id=2002": 0.03,
+         "id=2003": 0.93,
+         "id=2004": 0.05
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "id=2001",
+          "id=2003"
+         ],
+         "not_contains": [
+          "id=2002",
+          "id=2004"
+         ]
+        }
+       ],
+       "params": {
+        "destinos": [
+         "telegram:owner"
+        ],
+        "dias": 7,
+        "max_items": 30
+       }
+      },
+      {
+       "name": "nenhuma notícia de IA nesta semana",
+       "now": "2026-10-12T12:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://news.ycombinator.com/item?id=3001",
+           "published": "2026-10-11T14:00:00Z",
+           "summary": "",
+           "title": "The rise and fall of a forgotten programming language"
+          },
+          {
+           "link": "https://news.ycombinator.com/item?id=3002",
+           "published": "2026-10-10T10:00:00Z",
+           "summary": "",
+           "title": "Why databases still use B-trees"
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "about_ai": {
+         "id=3001": 0.02,
+         "id=3002": 0.04
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        }
+       ],
+       "params": {
+        "destinos": [
+         "telegram:owner"
+        ],
+        "dias": 7,
+        "max_items": 30
+       }
+      },
+      {
+       "name": "janela de dias reduzida exclui notícia antiga de IA",
+       "now": "2026-11-02T12:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://news.ycombinator.com/item?id=4001",
+           "published": "2026-11-02T06:00:00Z",
+           "summary": "",
+           "title": "New open-source vision model outperforms GPT-4V"
+          },
+          {
+           "link": "https://news.ycombinator.com/item?id=4002",
+           "published": "2026-10-30T09:00:00Z",
+           "summary": "",
+           "title": "DeepMind publishes new reinforcement learning paper"
+          }
+         ]
+        },
+        {
+         "capability": "notify.send",
+         "result": {
+          "ok": true,
+          "delivered": [
+           "telegram:owner"
+          ]
+         }
+        }
+       ],
+       "judgments": {
+        "about_ai": {
+         "id=4001": 0.95,
+         "id=4002": 0.94
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "id=4001"
+         ],
+         "not_contains": [
+          "id=4002"
+         ]
+        }
+       ],
+       "params": {
+        "destinos": [
+         "telegram:owner"
+        ],
+        "dias": 1,
+        "max_items": 30
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🤖 IA no Hacker News:\n• Open-weight model beats GPT on coding benchmark — https://news.ycombinator.com/item?id=1001\n• Anthropic publishes interpretability results — https://news.ycombinator.com/item?id=1003"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test várias notícias, algumas de IA e outras não",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🤖 IA no Hacker News:\n• New multimodal LLM sets record on reasoning benchmark — https://news.ycombinator.com/item?id=2001\n• OpenAI releases new safety research on alignment — https://news.ycombinator.com/item?id=2003"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test nenhuma notícia de IA nesta semana",
+      "passed": true
+     },
+     {
+      "scenario": "test janela de dias reduzida exclui notícia antiga de IA",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🤖 IA no Hacker News:\n• New open-source vision model outperforms GPT-4V — https://news.ycombinator.com/item?id=4001"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.04454219999999999
+   }
+  ],
+  "seconds": 32.746968084
+ },
+ {
+  "id": "oc-05-meeting-prep",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "notify.send",
+     "args": {
+      "text": "Preparação para amanhã (07/10)\n\n11:00 Negociação contrato Globex\n• Hank Scorpio — \"Contraproposta de preço\": (emailSummary) (sem resposta)\n• Hank Scorpio — \"SLA de suporte 24x7\": (emailSummary)\n\n16:00 1:1 com Marina\n• Marina Duarte — \"Pedido de promoção do Lucas\": (emailSummary) (sem resposta)"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Preparação noturna para reuniões de amanhã",
+     "description": "Toda noite, verifica as reuniões de amanhã que têm convidados, busca os emails recentes de cada participante e envia um resumo (por padrão no Telegram) para o usuário chegar preparado em cada reunião.",
+     "manifest": {
+      "schedule": "0 21 * * *",
+      "capabilities": [
+       "calendar.events",
+       "gmail.search",
+       "notify.send"
+      ],
+      "writes": {
+       "emailSummary": "Resuma em uma linha curta, em português, o que este email trata, com base no assunto e no trecho (snippet). Seja objetivo e direto, sem saudações."
+      },
+      "params": [
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       },
+       {
+        "name": "diasEmails",
+        "label": "Buscar emails dos últimos N dias",
+        "type": "number",
+        "default": 14,
+        "help": "Janela de dias para buscar emails recentes de cada participante"
+       },
+       {
+        "name": "maxEmails",
+        "label": "Máximo de emails por participante",
+        "type": "number",
+        "default": 5
+       }
+      ]
+     },
+     "code": "async function run() {\n  const nowIso = now();\n  const tomorrowStart = dates.startOfDay(nowIso, 1);\n  const tomorrowEnd = dates.addDays(tomorrowStart, 1);\n\n  const events = await calendar.events({ from: tomorrowStart, to: tomorrowEnd });\n  const meetings = (events || [])\n    .filter(e =\u003e Array.isArray(e.attendees) \u0026\u0026 e.attendees.length \u003e 0)\n    .sort((a, b) =\u003e (a.start \u003c b.start ? -1 : a.start \u003e b.start ? 1 : 0));\n\n  if (meetings.length === 0) {\n    log('Nenhuma reunião com convidados amanhã.');\n    return;\n  }\n\n  const emailsByAttendee = {};\n  const seen = new Set();\n  for (const m of meetings) {\n    for (const attendee of m.attendees) {\n      if (seen.has(attendee)) continue;\n      seen.add(attendee);\n      const result = await gmail.search({\n        query: 'from:' + attendee,\n        days: params.diasEmails,\n        max: params.maxEmails\n      });\n      emailsByAttendee[attendee] = result || [];\n    }\n  }\n\n  const lines = [];\n  lines.push('Preparação para amanhã (' + dates.format(tomorrowStart, 'dd/MM') + ')');\n  lines.push('');\n\n  for (const m of meetings) {\n    lines.push(dates.format(m.start, 'HH:mm') + ' ' + m.title);\n    for (const attendee of m.attendees) {\n      const emails = emailsByAttendee[attendee] || [];\n      for (const email of emails) {\n        const summaryRes = await write.emailSummary(email);\n        const summary = (summaryRes \u0026\u0026 summaryRes.text) ? summaryRes.text : email.snippet;\n        const name = email.from_name || email.from;\n        const suffix = email.replied ? '' : ' (sem resposta)';\n        lines.push('• ' + name + ' — \"' + email.subject + '\": ' + summary + suffix);\n      }\n    }\n    lines.push('');\n  }\n\n  while (lines.length \u0026\u0026 lines[lines.length - 1] === '') lines.pop();\n\n  const text = lines.join('\\n');\n  await notify.send({ text });\n}\n",
+     "tests": [
+      {
+       "name": "duas reuniões com convidados, uma sem convidados excluída",
+       "now": "2026-10-05T18:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e-1",
+           "title": "Alinhamento Produto",
+           "start": "2026-10-06T09:00:00-03:00",
+           "end": "2026-10-06T10:00:00-03:00",
+           "location": "Meet",
+           "attendees": [
+            "ana@foo.com",
+            "bruno@foo.com"
+           ],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "e-2",
+           "title": "Almoço",
+           "start": "2026-10-06T12:00:00-03:00",
+           "end": "2026-10-06T13:00:00-03:00",
+           "location": "",
+           "attendees": [],
+           "calendar": "Pessoal"
+          },
+          {
+           "id": "e-3",
+           "title": "Reunião Cliente",
+           "start": "2026-10-06T14:00:00-03:00",
+           "end": "2026-10-06T15:00:00-03:00",
+           "location": "Sala 2",
+           "attendees": [
+            "carla@bar.com"
+           ],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g-1",
+           "from": "ana@foo.com",
+           "from_name": "Ana Souza",
+           "to": "eu@exemplo.com",
+           "subject": "Roadmap Q4",
+           "snippet": "Fechamos as prioridades do próximo trimestre.",
+           "date": "2026-10-04T10:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": true,
+           "unread": false,
+           "can_unsubscribe": false
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g-2",
+           "from": "bruno@foo.com",
+           "from_name": "Bruno Lima",
+           "to": "eu@exemplo.com",
+           "subject": "Dúvida sobre orçamento",
+           "snippet": "Preciso confirmar o valor aprovado para o projeto.",
+           "date": "2026-10-05T09:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "g-3",
+           "from": "carla@bar.com",
+           "from_name": "Carla Reis",
+           "to": "eu@exemplo.com",
+           "subject": "Contrato revisado",
+           "snippet": "Segue a versão final para assinatura.",
+           "date": "2026-10-05T11:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": true,
+           "unread": false,
+           "can_unsubscribe": false
+          },
+          {
+           "id": "g-4",
+           "from": "carla@bar.com",
+           "from_name": "Carla Reis",
+           "to": "eu@exemplo.com",
+           "subject": "Feedback da última reunião",
+           "snippet": "Ficou pendente o ajuste no cronograma.",
+           "date": "2026-10-03T11:00:00-03:00",
+           "labels": [
+            "INBOX"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Alinhamento Produto",
+          "Reunião Cliente",
+          "Ana Souza",
+          "Bruno Lima",
+          "Carla Reis",
+          "sem resposta"
+         ],
+         "not_contains": [
+          "Almoço"
+         ]
+        }
+       ],
+       "writes": {
+        "emailSummary": {
+         "Contrato revisado": "Versão final do contrato para assinatura",
+         "Dúvida sobre orçamento": "Pergunta sobre o valor aprovado do projeto",
+         "Feedback da última reunião": "Ajuste pendente no cronograma",
+         "Roadmap Q4": "Prioridades do próximo trimestre foram fechadas"
+        }
+       }
+      },
+      {
+       "name": "nenhuma reunião com convidados amanhã",
+       "now": "2026-10-05T18:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e-9",
+           "title": "Almoço",
+           "start": "2026-10-06T12:00:00-03:00",
+           "end": "2026-10-06T13:00:00-03:00",
+           "location": "",
+           "attendees": [],
+           "calendar": "Pessoal"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "participante sem emails recentes e parâmetro alterado",
+       "now": "2026-10-05T18:00:00-03:00",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "e-5",
+           "title": "Sync com Fornecedor",
+           "start": "2026-10-06T11:00:00-03:00",
+           "end": "2026-10-06T11:30:00-03:00",
+           "location": "Google Meet",
+           "attendees": [
+            "dora@vendor.com"
+           ],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "gmail.search",
+         "result": []
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Sync com Fornecedor"
+         ],
+         "not_contains": [
+          "•"
+         ]
+        }
+       ],
+       "params": {
+        "diasEmails": 7,
+        "maxEmails": 3
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "Preparação para amanhã (25/09)\n\n10:00 Kickoff Projeto Atlas\n• Rafael Mendes — \"Escopo revisado v2\": (emailSummary)\n• Julia Prado — \"Cronograma de entregas\": (emailSummary) (sem resposta)\n• Julia Prado — \"Acessos ao ambiente de homologação\": (emailSummary)\n\n15:00 Review de design do onboarding\n• Pedro Almeida — \"Protótipos do onboarding no Figma\": (emailSummary) (sem resposta)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test duas reuniões com convidados, uma sem convidados excluída",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "Preparação para amanhã (06/10)\n\n09:00 Alinhamento Produto\n• Ana Souza — \"Roadmap Q4\": Prioridades do próximo trimestre foram fechadas\n• Bruno Lima — \"Dúvida sobre orçamento\": Pergunta sobre o valor aprovado do projeto (sem resposta)\n\n14:00 Reunião Cliente\n• Carla Reis — \"Contrato revisado\": Versão final do contrato para assinatura\n• Carla Reis — \"Feedback da última reunião\": Ajuste pendente no cronograma (sem resposta)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test nenhuma reunião com convidados amanhã",
+      "passed": true
+     },
+     {
+      "scenario": "test participante sem emails recentes e parâmetro alterado",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "Preparação para amanhã (06/10)\n\n11:00 Sync com Fornecedor"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.1420416
+   }
+  ],
+  "seconds": 84.964639792
+ },
+ {
+  "id": "oc-06-next-meetings",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "notify.send",
+     "args": {
+      "text": "⏰ 10:15 1:1 com a Ana — Google Meet — ana@acme.com"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Aviso de reuniões da próxima hora",
+     "description": "Rotina que verifica, a cada hora entre 8h e 18h, se há reuniões começando na próxima hora e envia um aviso por reunião via notify.send (Telegram por padrão), incluindo horário, local e participantes. Silêncio quando não há reuniões no intervalo.",
+     "manifest": {
+      "schedule": "0 8-18 * * *",
+      "capabilities": [
+       "calendar.events",
+       "notify.send"
+      ],
+      "params": [
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const from = now();\n  const to = dates.addHours(from, 1);\n  const events = await calendar.events({ from, to });\n  const meetings = (events || []).filter(e =\u003e {\n    if (!e.start || !e.start.includes('T')) return false;\n    return !dates.isBefore(e.start, from) \u0026\u0026 dates.isBefore(e.start, to);\n  });\n  if (meetings.length === 0) {\n    log('Nenhuma reunião começando na próxima hora');\n    return;\n  }\n  for (const e of meetings) {\n    const time = dates.format(e.start, 'HH:mm');\n    const attendees = (e.attendees || []).join(', ');\n    let text = `⏰ ${time} ${e.title}`;\n    if (e.location) text += ` — ${e.location}`;\n    if (attendees) text += ` — ${attendees}`;\n    await notify.send({ text });\n  }\n}",
+     "tests": [
+      {
+       "name": "Uma reunião na próxima hora",
+       "now": "2026-09-28T16:00:00Z",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "n1",
+           "title": "Review do roadmap",
+           "start": "2026-09-28T16:30:00Z",
+           "end": "2026-09-28T17:30:00Z",
+           "location": "Sala Paulista",
+           "attendees": [
+            "pm@acme.com",
+            "cto@acme.com"
+           ],
+           "calendar": "Trabalho"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "16:30",
+          "Review do roadmap",
+          "Sala Paulista",
+          "pm@acme.com",
+          "cto@acme.com"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Nenhuma reunião na próxima hora - silêncio",
+       "now": "2026-09-28T11:00:00Z",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": []
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "Múltiplas reuniões, uma fora da janela e um evento de dia inteiro excluídos",
+       "now": "2026-09-28T16:00:00Z",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "n1",
+           "title": "Standup diário",
+           "start": "2026-09-28T16:15:00Z",
+           "end": "2026-09-28T16:30:00Z",
+           "location": "Google Meet",
+           "attendees": [
+            "ana@acme.com"
+           ],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "n2",
+           "title": "Reunião de amanhã",
+           "start": "2026-09-29T13:00:00Z",
+           "end": "2026-09-29T14:00:00Z",
+           "location": "Sala 3",
+           "attendees": [
+            "ceo@acme.com"
+           ],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "n3",
+           "title": "Feriado - dia inteiro",
+           "start": "2026-09-29",
+           "end": "2026-09-30",
+           "location": "",
+           "attendees": [],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "n4",
+           "title": "Alinhamento com cliente",
+           "start": "2026-09-28T16:45:00Z",
+           "end": "2026-09-28T17:15:00Z",
+           "location": "Sala Paulista",
+           "attendees": [
+            "cliente@empresa.com"
+           ],
+           "calendar": "Trabalho"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 2,
+         "contains": [
+          "Standup diário",
+          "Alinhamento com cliente"
+         ],
+         "not_contains": [
+          "Reunião de amanhã",
+          "Feriado - dia inteiro"
+         ]
+        }
+       ],
+       "params": {
+        "destinos": [
+         "telegram:familia"
+        ]
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "⏰ 13:30 Review do roadmap — Sala Paulista — pm@acme.com, cto@acme.com"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Uma reunião na próxima hora",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "⏰ 16:30 Review do roadmap — Sala Paulista — pm@acme.com, cto@acme.com"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Nenhuma reunião na próxima hora - silêncio",
+      "passed": true
+     },
+     {
+      "scenario": "test Múltiplas reuniões, uma fora da janela e um evento de dia inteiro excluídos",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "⏰ 16:15 Standup diário — Google Meet — ana@acme.com"
+        }
+       },
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "⏰ 16:45 Alinhamento com cliente — Sala Paulista — cliente@empresa.com"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.07551459999999999
+   }
+  ],
+  "seconds": 43.790024542
+ },
+ {
+  "id": "oc-07-repo-watch",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "discord.send",
+     "args": {
+      "text": "🐙 acme/app nas últimas 6h:\n• #430 Crash ao exportar PDF — https://github.com/acme/app/issues/430"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "GitHub: atividade recente em issues/PRs no Discord",
+     "description": "A cada 6 horas, verifica issues e PRs abertas no repositório do GitHub configurado e avisa no Discord as que tiveram atividade (campo \"updated\") nas últimas 6 horas, com título e link. Não envia nada quando não houver atividade recente.",
+     "manifest": {
+      "schedule": "0 */6 * * *",
+      "capabilities": [
+       "github.issues",
+       "discord.send"
+      ],
+      "params": [
+       {
+        "name": "repo",
+        "label": "Repositório (owner/nome)",
+        "type": "text",
+        "default": "acme/app",
+        "help": "Repositório do GitHub a monitorar, no formato owner/nome"
+       },
+       {
+        "name": "max",
+        "label": "Máximo de issues/PRs a verificar",
+        "type": "number",
+        "default": 50
+       }
+      ]
+     },
+     "code": "\nasync function run() {\n  const repo = params.repo;\n  const issues = await github.issues({ repo, state: \"open\", max: params.max });\n  const cutoff = dates.addHours(now(), -6);\n  const recent = issues.filter(it =\u003e dates.isBefore(cutoff, it.updated));\n\n  if (recent.length === 0) {\n    log(\"No open issues/PRs updated in the last 6h for \" + repo);\n    return;\n  }\n\n  const lines = recent.map(it =\u003e {\n    const prefix = it.pull_request ? `PR #${it.number}` : `#${it.number}`;\n    return `• ${prefix} ${it.title} — ${it.url}`;\n  });\n\n  const text = `🐙 ${repo} nas últimas 6h:\\n${lines.join(\"\\n\")}`;\n  await discord.send({ text });\n}\n",
+     "tests": [
+      {
+       "name": "Algumas issues/PRs com atividade recente",
+       "now": "2026-09-28T12:00:00Z",
+       "responses": [
+        {
+         "capability": "github.issues",
+         "result": [
+          {
+           "number": 101,
+           "title": "Crash on start",
+           "author": "alice",
+           "labels": [],
+           "pull_request": false,
+           "state": "open",
+           "updated": "2026-09-28T10:15:00Z",
+           "url": "https://github.com/octo/widgets/issues/101"
+          },
+          {
+           "number": 102,
+           "title": "Add dark theme",
+           "author": "bob",
+           "labels": [],
+           "pull_request": true,
+           "state": "open",
+           "updated": "2026-09-28T09:00:00Z",
+           "url": "https://github.com/octo/widgets/issues/102"
+          },
+          {
+           "number": 99,
+           "title": "Update README",
+           "author": "carol",
+           "labels": [],
+           "pull_request": false,
+           "state": "open",
+           "updated": "2026-09-27T20:00:00Z",
+           "url": "https://github.com/octo/widgets/issues/99"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "discord.send",
+         "count": 1,
+         "contains": [
+          "101",
+          "102",
+          "acme/app"
+         ],
+         "not_contains": [
+          "99"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Nenhuma atividade recente - não envia",
+       "now": "2026-09-28T12:00:00Z",
+       "responses": [
+        {
+         "capability": "github.issues",
+         "result": [
+          {
+           "number": 55,
+           "title": "Old bug still open",
+           "author": "dave",
+           "labels": [],
+           "pull_request": false,
+           "state": "open",
+           "updated": "2026-09-28T02:00:00Z",
+           "url": "https://github.com/octo/widgets/issues/55"
+          },
+          {
+           "number": 40,
+           "title": "Old PR pending",
+           "author": "erin",
+           "labels": [],
+           "pull_request": true,
+           "state": "open",
+           "updated": "2026-09-27T18:00:00Z",
+           "url": "https://github.com/octo/widgets/issues/40"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "discord.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "Repositório e limite customizados, várias atividades",
+       "now": "2026-09-28T18:00:00Z",
+       "responses": [
+        {
+         "capability": "github.issues",
+         "result": [
+          {
+           "number": 7,
+           "title": "Broken build",
+           "author": "x1",
+           "labels": [],
+           "pull_request": false,
+           "state": "open",
+           "updated": "2026-09-28T16:30:00Z",
+           "url": "https://github.com/foo/bar/issues/7"
+          },
+          {
+           "number": 8,
+           "title": "Refactor auth module",
+           "author": "x2",
+           "labels": [],
+           "pull_request": true,
+           "state": "open",
+           "updated": "2026-09-28T14:00:00Z",
+           "url": "https://github.com/foo/bar/issues/8"
+          },
+          {
+           "number": 9,
+           "title": "Typo in docs",
+           "author": "x3",
+           "labels": [],
+           "pull_request": false,
+           "state": "open",
+           "updated": "2026-09-28T13:05:00Z",
+           "url": "https://github.com/foo/bar/issues/9"
+          },
+          {
+           "number": 3,
+           "title": "Very old ticket",
+           "author": "x4",
+           "labels": [],
+           "pull_request": false,
+           "state": "open",
+           "updated": "2026-09-27T08:00:00Z",
+           "url": "https://github.com/foo/bar/issues/3"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "discord.send",
+         "count": 1,
+         "contains": [
+          "7",
+          "8",
+          "9",
+          "foo/bar"
+         ],
+         "not_contains": [
+          "issues/3\n"
+         ]
+        }
+       ],
+       "params": {
+        "max": 10,
+        "repo": "foo/bar"
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "discord.send",
+        "args": {
+         "text": "🐙 acme/app nas últimas 6h:\n• #412 Login quebra no Safari — https://github.com/acme/app/issues/412\n• PR #411 Adicionar modo escuro — https://github.com/acme/app/issues/411"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Algumas issues/PRs com atividade recente",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "discord.send",
+        "args": {
+         "text": "🐙 acme/app nas últimas 6h:\n• #101 Crash on start — https://github.com/octo/widgets/issues/101\n• PR #102 Add dark theme — https://github.com/octo/widgets/issues/102"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Nenhuma atividade recente - não envia",
+      "passed": true
+     },
+     {
+      "scenario": "test Repositório e limite customizados, várias atividades",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "discord.send",
+        "args": {
+         "text": "🐙 foo/bar nas últimas 6h:\n• #7 Broken build — https://github.com/foo/bar/issues/7\n• PR #8 Refactor auth module — https://github.com/foo/bar/issues/8\n• #9 Typo in docs — https://github.com/foo/bar/issues/9"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.0496002
+   }
+  ],
+  "seconds": 33.824266792
+ },
+ {
+  "id": "oc-08-weekly-report",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "notify.send",
+     "args": {
+      "text": "📊 Semana:\nFechados no acme/app: #440 Paginação na busca\nAtrasadas: Nenhuma"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Resumo semanal: GitHub + Todoist",
+     "description": "Toda sexta às 17h, envia no destino escolhido (Telegram por padrão) um resumo semanal com as issues e PRs fechados no repositório do GitHub nos últimos N dias e as tarefas do Todoist que estão atrasadas.",
+     "manifest": {
+      "schedule": "0 17 * * 5",
+      "capabilities": [
+       "github.issues",
+       "todoist.tasks",
+       "notify.send"
+      ],
+      "locale": "pt-BR",
+      "params": [
+       {
+        "name": "repo",
+        "label": "Repositório GitHub",
+        "type": "text",
+        "default": "acme/app",
+        "help": "No formato owner/nome"
+       },
+       {
+        "name": "days",
+        "label": "Dias considerados como 'semana'",
+        "type": "number",
+        "default": 7
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const currentTime = now();\n  const from = dates.addDays(currentTime, -params.days);\n\n  const issues = await github.issues({ repo: params.repo, state: \"closed\", max: 50 });\n  const closedRecent = issues.filter(function (i) {\n    return !dates.isBefore(i.updated, from);\n  });\n\n  const tasks = await todoist.tasks({ filter: \"overdue\" });\n\n  const issuesText = closedRecent.length\n    ? closedRecent\n        .map(function (i) {\n          return i.pull_request ? (\"PR #\" + i.number + \" \" + i.title) : (\"#\" + i.number + \" \" + i.title);\n        })\n        .join(\" · \")\n    : \"Nenhum\";\n\n  const tasksText = tasks.length\n    ? tasks.map(function (t) { return t.content; }).join(\" · \")\n    : \"Nenhuma\";\n\n  const text =\n    \"📊 Semana:\\n\" +\n    \"Fechados no \" + params.repo + \": \" + issuesText + \"\\n\" +\n    \"Atrasadas: \" + tasksText;\n\n  await notify.send({ text: text });\n}",
+     "tests": [
+      {
+       "name": "Caso normal com issues, PRs e tarefa atrasada",
+       "now": "2026-10-02T20:00:00Z",
+       "responses": [
+        {
+         "capability": "github.issues",
+         "result": [
+          {
+           "number": 501,
+           "title": "Fix bug X",
+           "author": "dev2",
+           "labels": [],
+           "pull_request": false,
+           "state": "closed",
+           "updated": "2026-09-30T10:00:00Z",
+           "url": "https://github.com/acme/app/issues/501"
+          },
+          {
+           "number": 490,
+           "title": "Update deps",
+           "author": "dev3",
+           "labels": [],
+           "pull_request": true,
+           "state": "closed",
+           "updated": "2026-09-26T09:00:00Z",
+           "url": "https://github.com/acme/app/pull/490"
+          },
+          {
+           "number": 480,
+           "title": "Old fix",
+           "author": "dev1",
+           "labels": [],
+           "pull_request": false,
+           "state": "closed",
+           "updated": "2026-09-20T09:00:00Z",
+           "url": "https://github.com/acme/app/issues/480"
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": [
+          {
+           "id": "t1",
+           "content": "Pagar fatura",
+           "due": {
+            "date": "2026-09-29"
+           },
+           "priority": 2,
+           "project_id": "p1",
+           "labels": []
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "#501 Fix bug X",
+          "PR #490 Update deps",
+          "Pagar fatura"
+         ],
+         "not_contains": [
+          "Old fix"
+         ]
+        }
+       ],
+       "params": {
+        "days": 7,
+        "destinos": [
+         "telegram:default"
+        ],
+        "repo": "acme/app"
+       }
+      },
+      {
+       "name": "Nada fechado e nada atrasado",
+       "now": "2026-10-09T20:00:00Z",
+       "responses": [
+        {
+         "capability": "github.issues",
+         "result": []
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": []
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Nenhum",
+          "Nenhuma"
+         ]
+        }
+       ],
+       "params": {
+        "days": 7,
+        "destinos": [
+         "telegram:default"
+        ],
+        "repo": "acme/app"
+       }
+      },
+      {
+       "name": "Parâmetro de dias reduzido e repositório diferente",
+       "now": "2026-10-16T20:00:00Z",
+       "responses": [
+        {
+         "capability": "github.issues",
+         "result": [
+          {
+           "number": 601,
+           "title": "New feature",
+           "author": "dev4",
+           "labels": [],
+           "pull_request": false,
+           "state": "closed",
+           "updated": "2026-10-15T10:00:00Z",
+           "url": "https://github.com/acme/other-app/issues/601"
+          },
+          {
+           "number": 600,
+           "title": "Old thing",
+           "author": "dev5",
+           "labels": [],
+           "pull_request": false,
+           "state": "closed",
+           "updated": "2026-10-10T10:00:00Z",
+           "url": "https://github.com/acme/other-app/issues/600"
+          }
+         ]
+        },
+        {
+         "capability": "todoist.tasks",
+         "result": []
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "#601 New feature",
+          "Nenhuma"
+         ],
+         "not_contains": [
+          "Old thing"
+         ]
+        }
+       ],
+       "params": {
+        "days": 3,
+        "destinos": [
+         "telegram:default"
+        ],
+        "repo": "acme/other-app"
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📊 Semana:\nFechados no acme/app: #405 Corrigir cálculo de frete · PR #401 Migrar para Postgres 17\nAtrasadas: Revisar contrato de aluguel"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Caso normal com issues, PRs e tarefa atrasada",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📊 Semana:\nFechados no acme/app: #501 Fix bug X · PR #490 Update deps\nAtrasadas: Pagar fatura"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Nada fechado e nada atrasado",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📊 Semana:\nFechados no acme/app: Nenhum\nAtrasadas: Nenhuma"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Parâmetro de dias reduzido e repositório diferente",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📊 Semana:\nFechados no acme/other-app: #601 New feature\nAtrasadas: Nenhuma"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.05227219999999999
+   }
+  ],
+  "seconds": 35.359674959
+ },
+ {
+  "id": "oc-09-crypto",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Alerta de variação do Bitcoin",
+     "description": "A cada hora, consulta o preço do Bitcoin em reais na CoinGecko e avisa no Telegram apenas quando a variação nas últimas 24h passar de um limite percentual (para cima ou para baixo); se a variação for menor, não envia nada.",
+     "manifest": {
+      "schedule": "0 * * * *",
+      "capabilities": [
+       "http.getJSON:api.coingecko.com",
+       "notify.send"
+      ],
+      "params": [
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       },
+       {
+        "name": "limite",
+        "label": "Limite de variação (%)",
+        "type": "number",
+        "default": 3,
+        "help": "Percentual mínimo de variação em 24h para disparar o alerta"
+       }
+      ]
+     },
+     "code": "async function run() {\n  const url = \"https://api.coingecko.com/api/v3/simple/price?ids=bitcoin\u0026vs_currencies=brl\u0026include_24hr_change=true\";\n  const data = await http.getJSON(url);\n  if (!data || !data.bitcoin) {\n    log(\"Resposta inesperada da CoinGecko, abortando.\");\n    return;\n  }\n  const price = data.bitcoin.brl;\n  const change = data.bitcoin.brl_24h_change;\n  const threshold = params.limite;\n\n  if (Math.abs(change) \u003e threshold) {\n    const dir = change \u003e 0 ? \"subiu\" : \"caiu\";\n    const emoji = change \u003e 0 ? \"📈\" : \"📉\";\n    const priceStr = money.format(price, \"BRL\");\n    const text = emoji + \" Bitcoin \" + dir + \" \" + Math.abs(change).toFixed(2) + \"% em 24h: \" + priceStr;\n    await notify.send({ text: text });\n  } else {\n    log(\"Variação de \" + change.toFixed(2) + \"% dentro do limite de \" + threshold + \"%, nada a avisar.\");\n  }\n}",
+     "tests": [
+      {
+       "name": "Queda acima do limite dispara alerta",
+       "now": "2026-09-28T17:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "bitcoin": {
+           "brl": 612345,
+           "brl_24h_change": -4.27
+          }
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "caiu",
+          "612.345",
+          "4.27"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Variação pequena fica em silêncio",
+       "now": "2026-09-28T18:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "bitcoin": {
+           "brl": 598000,
+           "brl_24h_change": 1.4
+          }
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "Limite alterado pelo usuário evita alerta",
+       "now": "2026-09-28T19:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "bitcoin": {
+           "brl": 700000,
+           "brl_24h_change": 4.1
+          }
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        }
+       ],
+       "params": {
+        "limite": 5
+       }
+      },
+      {
+       "name": "Alta acima do limite dispara alerta",
+       "now": "2026-09-28T20:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "bitcoin": {
+           "brl": 650000,
+           "brl_24h_change": 6.8
+          }
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "subiu",
+          "650.000",
+          "6.80"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📉 Bitcoin caiu 4.27% em 24h: R$ 612.345,00"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Queda acima do limite dispara alerta",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📉 Bitcoin caiu 4.27% em 24h: R$ 612.345,00"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Variação pequena fica em silêncio",
+      "passed": true
+     },
+     {
+      "scenario": "test Limite alterado pelo usuário evita alerta",
+      "passed": true
+     },
+     {
+      "scenario": "test Alta acima do limite dispara alerta",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📈 Bitcoin subiu 6.80% em 24h: R$ 650.000,00"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.0337942
+   }
+  ],
+  "seconds": 20.782479834
+ },
+ {
+  "id": "oc-10-stocks",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "notify.send",
+     "args": {
+      "text": "📈 Cotações:\n⚠️ PETR4 R$ 36,00 (-3,1%)\nITUB4 R$ 35,20 (+0,4%)\nMXRF11 R$ 10,30 (+0,2%)"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Cotações diárias com destaque de variação",
+     "description": "Todo dia útil às 10h30, envia a cotação de uma lista de ativos (padrão: PETR4, ITUB4, MXRF11), destacando com ⚠️ os que variaram mais de um limite percentual no dia.",
+     "manifest": {
+      "schedule": "30 10 * * 1-5",
+      "capabilities": [
+       "http.getJSON:brapi.dev",
+       "notify.send"
+      ],
+      "params": [
+       {
+        "name": "tickers",
+        "label": "Tickers (separados por vírgula)",
+        "type": "text",
+        "default": "PETR4,ITUB4,MXRF11",
+        "help": "Códigos dos ativos, ex: PETR4,ITUB4,MXRF11"
+       },
+       {
+        "name": "limite",
+        "label": "Variação (%) para destacar com ⚠️",
+        "type": "number",
+        "default": 2
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const tickers = params.tickers.split(',').map(t =\u003e t.trim()).filter(Boolean);\n  if (tickers.length === 0) return;\n  const url = `https://brapi.dev/api/quote/${tickers.join(',')}`;\n  const data = await http.getJSON(url);\n  const results = (data \u0026\u0026 data.results) || [];\n  const lines = [];\n  for (const ticker of tickers) {\n    const r = results.find(x =\u003e x.symbol === ticker);\n    if (!r) continue;\n    const price = money.format(r.regularMarketPrice, \"BRL\");\n    const pct = r.regularMarketChangePercent;\n    const pctStr = (pct \u003e= 0 ? '+' : '') + pct.toFixed(1).replace('.', ',') + '%';\n    const flag = Math.abs(pct) \u003e params.limite ? '⚠️ ' : '';\n    lines.push(`${flag}${ticker} ${price} (${pctStr})`);\n  }\n  if (lines.length === 0) return;\n  const text = `📈 Cotações:\\n${lines.join('\\n')}`;\n  await notify.send({ text });\n}",
+     "tests": [
+      {
+       "name": "Caso normal - um ativo variou mais de 2%",
+       "now": "2026-09-28T13:30:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "results": [
+           {
+            "symbol": "PETR4",
+            "regularMarketPrice": 38.12,
+            "regularMarketChangePercent": -0.8
+           },
+           {
+            "symbol": "ITUB4",
+            "regularMarketPrice": 35.4,
+            "regularMarketChangePercent": 2.6
+           },
+           {
+            "symbol": "MXRF11",
+            "regularMarketPrice": 10.21,
+            "regularMarketChangePercent": 0.1
+           }
+          ]
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "⚠️ ITUB4"
+         ],
+         "not_contains": [
+          "⚠️ PETR4",
+          "⚠️ MXRF11"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Edge case - nenhum ativo variou mais que o limite",
+       "now": "2026-09-29T13:30:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "results": [
+           {
+            "symbol": "PETR4",
+            "regularMarketPrice": 37.5,
+            "regularMarketChangePercent": 0.5
+           },
+           {
+            "symbol": "ITUB4",
+            "regularMarketPrice": 34.9,
+            "regularMarketChangePercent": -1
+           },
+           {
+            "symbol": "MXRF11",
+            "regularMarketPrice": 10.15,
+            "regularMarketChangePercent": 0.3
+           }
+          ]
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "not_contains": [
+          "⚠️"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Parâmetros alterados - outros tickers e limite menor",
+       "now": "2026-09-30T13:30:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "results": [
+           {
+            "symbol": "PETR4",
+            "regularMarketPrice": 39,
+            "regularMarketChangePercent": 1.5
+           },
+           {
+            "symbol": "VALE3",
+            "regularMarketPrice": 65.2,
+            "regularMarketChangePercent": -0.5
+           }
+          ]
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "⚠️ PETR4"
+         ],
+         "not_contains": [
+          "⚠️ VALE3"
+         ]
+        }
+       ],
+       "params": {
+        "limite": 1,
+        "tickers": "PETR4,VALE3"
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📈 Cotações:\nPETR4 R$ 38,12 (-0,8%)\n⚠️ ITUB4 R$ 35,40 (+2,6%)\nMXRF11 R$ 10,21 (+0,1%)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Caso normal - um ativo variou mais de 2%",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📈 Cotações:\nPETR4 R$ 38,12 (-0,8%)\n⚠️ ITUB4 R$ 35,40 (+2,6%)\nMXRF11 R$ 10,21 (+0,1%)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Edge case - nenhum ativo variou mais que o limite",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📈 Cotações:\nPETR4 R$ 37,50 (+0,5%)\nITUB4 R$ 34,90 (-1,0%)\nMXRF11 R$ 10,15 (+0,3%)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Parâmetros alterados - outros tickers e limite menor",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📈 Cotações:\n⚠️ PETR4 R$ 39,00 (+1,5%)\nVALE3 R$ 65,20 (-0,5%)"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.0788714
+   }
+  ],
+  "seconds": 41.356834958
+ },
+ {
+  "id": "oc-11-arxiv",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "obsidian.append",
+     "args": {
+      "note": "Pesquisa/arXiv.md",
+      "text": "## 2026-10-08\n- [Self-Correcting Coding Agents](https://arxiv.org/abs/2610.02001)"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "arXiv - Artigos sobre Agentes de IA para Obsidian",
+     "description": "Todos os dias às 8h, lê os artigos novos do feed de IA do arXiv (cs.AI), identifica quais tratam de agentes de IA usando um julgamento, e anota título e link dos relevantes na nota Pesquisa/arXiv.md do Obsidian, sob um cabeçalho com a data do dia. Evita repetir artigos já vistos em execuções anteriores usando estado persistente.",
+     "manifest": {
+      "schedule": "0 8 * * *",
+      "capabilities": [
+       "rss.read:rss.arxiv.org",
+       "obsidian.append"
+      ],
+      "judgments": {
+       "about_agents": "Este artigo do arXiv trata de agentes de IA (agentes que planejam, usam ferramentas ou agem de forma autônoma)?"
+      },
+      "params": [
+       {
+        "name": "feed_url",
+        "label": "Feed do arXiv",
+        "type": "text",
+        "default": "https://rss.arxiv.org/rss/cs.AI",
+        "help": "URL do feed RSS do arXiv a monitorar"
+       },
+       {
+        "name": "note",
+        "label": "Nota no Obsidian",
+        "type": "text",
+        "default": "Pesquisa/arXiv.md",
+        "help": "Caminho da nota onde os artigos serão anotados"
+       }
+      ]
+     },
+     "code": "\nasync function run() {\n  const feedUrl = params.feed_url;\n  const items = await rss.read({ url: feedUrl, max: 50 });\n\n  const seen = state.get('seen_links') || [];\n  const seenSet = new Set(seen);\n  const newItems = items.filter(i =\u003e !seenSet.has(i.link));\n\n  if (newItems.length === 0) {\n    log('No new arXiv items since last run.');\n    return;\n  }\n\n  const agentItems = [];\n  for (const item of newItems) {\n    const j = await judge.about_agents(item);\n    if (j.p \u003e= 0.5) agentItems.push(item);\n  }\n\n  // Remember everything we've now seen, keep it small.\n  const updatedSeen = [...seen, ...newItems.map(i =\u003e i.link)].slice(-500);\n  state.set('seen_links', updatedSeen);\n\n  if (agentItems.length === 0) {\n    log('No new items about AI agents.');\n    return;\n  }\n\n  const dateStr = dates.format(now(), 'yyyy-MM-dd');\n  const lines = agentItems.map(i =\u003e `- [${i.title}](${i.link})`).join('\\n');\n  const text = `## ${dateStr}\\n${lines}`;\n\n  await obsidian.append({ note: params.note, text });\n}\n",
+     "tests": [
+      {
+       "name": "Vários artigos novos, alguns sobre agentes",
+       "now": "2026-09-28T11:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://arxiv.org/abs/2610.05001",
+           "published": "2026-09-28T05:00:00Z",
+           "summary": "We propose a multi-agent framework for tool use...",
+           "title": "Collaborative Tool-Using Agents for Software Engineering"
+          },
+          {
+           "link": "https://arxiv.org/abs/2610.05002",
+           "published": "2026-09-28T05:00:00Z",
+           "summary": "A new benchmark for image classification.",
+           "title": "Benchmarking Vision Transformers on Satellite Imagery"
+          },
+          {
+           "link": "https://arxiv.org/abs/2610.05003",
+           "published": "2026-09-28T05:00:00Z",
+           "summary": "An autonomous agent that plans long-horizon tasks.",
+           "title": "Long-Horizon Planning for Autonomous Web Agents"
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "about_agents": {
+         "2610.05001": 0.94,
+         "2610.05002": 0.02,
+         "2610.05003": 0.91
+        }
+       },
+       "expect": [
+        {
+         "capability": "obsidian.append",
+         "count": 1,
+         "contains": [
+          "Collaborative Tool-Using Agents for Software Engineering",
+          "2610.05001",
+          "Long-Horizon Planning for Autonomous Web Agents",
+          "2610.05003"
+         ],
+         "not_contains": [
+          "Benchmarking Vision Transformers"
+         ]
+        }
+       ],
+       "expect_state": {
+        "seen_links": [
+         "https://arxiv.org/abs/2610.05001",
+         "https://arxiv.org/abs/2610.05002",
+         "https://arxiv.org/abs/2610.05003"
+        ]
+       }
+      },
+      {
+       "name": "Nenhum artigo novo (todos já vistos)",
+       "now": "2026-09-29T11:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://arxiv.org/abs/2610.05001",
+           "published": "2026-09-28T05:00:00Z",
+           "summary": "We propose a multi-agent framework for tool use...",
+           "title": "Collaborative Tool-Using Agents for Software Engineering"
+          },
+          {
+           "link": "https://arxiv.org/abs/2610.05002",
+           "published": "2026-09-28T05:00:00Z",
+           "summary": "A new benchmark for image classification.",
+           "title": "Benchmarking Vision Transformers on Satellite Imagery"
+          }
+         ]
+        }
+       ],
+       "expect": [],
+       "state": {
+        "seen_links": [
+         "https://arxiv.org/abs/2610.05001",
+         "https://arxiv.org/abs/2610.05002"
+        ]
+       },
+       "expect_state": {
+        "seen_links": [
+         "https://arxiv.org/abs/2610.05001",
+         "https://arxiv.org/abs/2610.05002"
+        ]
+       }
+      },
+      {
+       "name": "Artigos novos mas nenhum sobre agentes, com nota customizada",
+       "now": "2026-09-30T11:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://arxiv.org/abs/2610.06001",
+           "published": "2026-09-30T05:00:00Z",
+           "summary": "A survey of convolutional architectures.",
+           "title": "A Survey of Efficient CNN Architectures"
+          },
+          {
+           "link": "https://arxiv.org/abs/2610.06002",
+           "published": "2026-09-30T05:00:00Z",
+           "summary": "New results on diffusion models for images.",
+           "title": "Improving Diffusion Models for Image Synthesis"
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "about_agents": {
+         "2610.06001": 0.05,
+         "2610.06002": 0.08
+        }
+       },
+       "expect": [],
+       "params": {
+        "note": "Pesquisa/IA-Feed.md"
+       },
+       "expect_state": {
+        "seen_links": [
+         "https://arxiv.org/abs/2610.06001",
+         "https://arxiv.org/abs/2610.06002"
+        ]
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "obsidian.append",
+        "args": {
+         "note": "Pesquisa/arXiv.md",
+         "text": "## 2026-09-24\n- [Planning with Tool-Using Language Agents](https://arxiv.org/abs/2609.01001)\n- [Memory for Long-Horizon Web Agents](https://arxiv.org/abs/2609.01003)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Vários artigos novos, alguns sobre agentes",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "obsidian.append",
+        "args": {
+         "note": "Pesquisa/arXiv.md",
+         "text": "## 2026-09-28\n- [Collaborative Tool-Using Agents for Software Engineering](https://arxiv.org/abs/2610.05001)\n- [Long-Horizon Planning for Autonomous Web Agents](https://arxiv.org/abs/2610.05003)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Nenhum artigo novo (todos já vistos)",
+      "passed": true
+     },
+     {
+      "scenario": "test Artigos novos mas nenhum sobre agentes, com nota customizada",
+      "passed": true
+     }
+    ],
+    "cost_usd": 0.04996819999999999
+   }
+  ],
+  "seconds": 31.976551625
+ },
+ {
+  "id": "oc-12-reddit",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "notify.send",
+     "args": {
+      "text": "r/LocalLLaMA:\n1. New 8B model tops the leaderboard\nhttps://www.reddit.com/r/LocalLLaMA/comments/c1\n\nr/selfhosted:\n1. Backups: 3-2-1 explained\nhttps://www.reddit.com/r/selfhosted/comments/d1"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Top do dia no Reddit",
+     "description": "Todo dia às 20h, envia por Telegram (ou outros destinos escolhidos) os posts mais votados do dia em dois subreddits configuráveis (padrão r/LocalLLaMA e r/selfhosted), com título e link de cada um.",
+     "manifest": {
+      "schedule": "0 20 * * *",
+      "capabilities": [
+       "rss.read:www.reddit.com",
+       "notify.send"
+      ],
+      "locale": "pt-BR",
+      "params": [
+       {
+        "name": "subreddit1",
+        "label": "Primeiro subreddit",
+        "type": "text",
+        "default": "LocalLLaMA",
+        "help": "Nome do subreddit, sem o r/"
+       },
+       {
+        "name": "subreddit2",
+        "label": "Segundo subreddit",
+        "type": "text",
+        "default": "selfhosted",
+        "help": "Nome do subreddit, sem o r/"
+       },
+       {
+        "name": "count",
+        "label": "Quantidade de posts por subreddit",
+        "type": "number",
+        "default": 3
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const subs = [params.subreddit1, params.subreddit2].filter(Boolean);\n  const count = params.count || 3;\n  const sections = [];\n\n  for (const sub of subs) {\n    const url = `https://www.reddit.com/r/${sub}/top/.rss?t=day`;\n    const posts = await rss.read({ url, max: count });\n    if (!posts || posts.length === 0) {\n      log(`Sem posts para r/${sub} hoje`);\n      continue;\n    }\n    const lines = posts\n      .map((p, i) =\u003e `${i + 1}. ${p.title}\\n${p.link}`)\n      .join('\\n');\n    sections.push(`r/${sub}:\\n${lines}`);\n  }\n\n  if (sections.length === 0) {\n    log('Nenhum post encontrado em nenhum subreddit');\n    return;\n  }\n\n  const text = sections.join('\\n\\n');\n  await notify.send({ text });\n}",
+     "tests": [
+      {
+       "name": "caso normal com dois subreddits e 3 posts cada",
+       "now": "2026-09-29T23:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.reddit.com/r/LocalLLaMA/comments/x1",
+           "published": "2026-09-29T12:00:00Z",
+           "summary": "",
+           "title": "Novo modelo aberto de 70B roda em 2 GPUs"
+          },
+          {
+           "link": "https://www.reddit.com/r/LocalLLaMA/comments/x2",
+           "published": "2026-09-29T10:00:00Z",
+           "summary": "",
+           "title": "Comparativo de quantizações Q4 vs Q8"
+          },
+          {
+           "link": "https://www.reddit.com/r/LocalLLaMA/comments/x3",
+           "published": "2026-09-29T09:00:00Z",
+           "summary": "",
+           "title": "Como montar um cluster caseiro de inferência"
+          }
+         ]
+        },
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.reddit.com/r/selfhosted/comments/y1",
+           "published": "2026-09-29T13:00:00Z",
+           "summary": "",
+           "title": "Migrando de Dropbox para Nextcloud"
+          },
+          {
+           "link": "https://www.reddit.com/r/selfhosted/comments/y2",
+           "published": "2026-09-29T11:00:00Z",
+           "summary": "",
+           "title": "Meu setup de backup com restic"
+          },
+          {
+           "link": "https://www.reddit.com/r/selfhosted/comments/y3",
+           "published": "2026-09-29T08:00:00Z",
+           "summary": "",
+           "title": "Vaultwarden vs Bitwarden oficial"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "r/LocalLLaMA",
+          "Novo modelo aberto de 70B roda em 2 GPUs",
+          "https://www.reddit.com/r/LocalLLaMA/comments/x1",
+          "r/selfhosted",
+          "Migrando de Dropbox para Nextcloud",
+          "https://www.reddit.com/r/selfhosted/comments/y1"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "um subreddit sem posts no dia",
+       "now": "2026-09-29T23:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": []
+        },
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.reddit.com/r/selfhosted/comments/z1",
+           "published": "2026-09-29T13:00:00Z",
+           "summary": "",
+           "title": "Rodando Home Assistant em um Raspberry Pi 5"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "r/selfhosted",
+          "Rodando Home Assistant em um Raspberry Pi 5"
+         ],
+         "not_contains": [
+          "r/LocalLLaMA"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "subreddits e quantidade personalizados pelo usuário",
+       "now": "2026-09-29T23:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.reddit.com/r/programming/comments/p1",
+           "published": "2026-09-29T12:00:00Z",
+           "summary": "",
+           "title": "Por que Rust está ganhando espaço em kernels"
+          },
+          {
+           "link": "https://www.reddit.com/r/programming/comments/p2",
+           "published": "2026-09-29T10:00:00Z",
+           "summary": "",
+           "title": "Debate sobre microserviços em 2026"
+          }
+         ]
+        },
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.reddit.com/r/MachineLearning/comments/m1",
+           "published": "2026-09-29T13:00:00Z",
+           "summary": "",
+           "title": "Novo paper sobre atenção esparsa"
+          },
+          {
+           "link": "https://www.reddit.com/r/MachineLearning/comments/m2",
+           "published": "2026-09-29T11:00:00Z",
+           "summary": "",
+           "title": "Resultados do benchmark MMLU atualizado"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "r/programming",
+          "Por que Rust está ganhando espaço em kernels",
+          "r/MachineLearning",
+          "Novo paper sobre atenção esparsa"
+         ]
+        }
+       ],
+       "params": {
+        "count": 2,
+        "subreddit1": "programming",
+        "subreddit2": "MachineLearning"
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "r/LocalLLaMA:\n1. Qwen 4 32B runs on a single 4090\nhttps://www.reddit.com/r/LocalLLaMA/comments/a1\n2. My llama.cpp benchmark results\nhttps://www.reddit.com/r/LocalLLaMA/comments/a2\n3. Best embedding model in 2026?\nhttps://www.reddit.com/r/LocalLLaMA/comments/a3\n\nr/selfhosted:\n1. I replaced Google Photos with Immich\nhttps://www.reddit.com/r/selfhosted/comments/b1\n2. Homelab tour 2026\nhttps://www.reddit.com/r/selfhosted/comments/b2\n3. Caddy vs Traefik\nhttps://www.reddit.com/r/selfhosted/comments/b3"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test caso normal com dois subreddits e 3 posts cada",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "r/LocalLLaMA:\n1. Novo modelo aberto de 70B roda em 2 GPUs\nhttps://www.reddit.com/r/LocalLLaMA/comments/x1\n2. Comparativo de quantizações Q4 vs Q8\nhttps://www.reddit.com/r/LocalLLaMA/comments/x2\n3. Como montar um cluster caseiro de inferência\nhttps://www.reddit.com/r/LocalLLaMA/comments/x3\n\nr/selfhosted:\n1. Migrando de Dropbox para Nextcloud\nhttps://www.reddit.com/r/selfhosted/comments/y1\n2. Meu setup de backup com restic\nhttps://www.reddit.com/r/selfhosted/comments/y2\n3. Vaultwarden vs Bitwarden oficial\nhttps://www.reddit.com/r/selfhosted/comments/y3"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test um subreddit sem posts no dia",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "r/selfhosted:\n1. Rodando Home Assistant em um Raspberry Pi 5\nhttps://www.reddit.com/r/selfhosted/comments/z1"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test subreddits e quantidade personalizados pelo usuário",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "r/programming:\n1. Por que Rust está ganhando espaço em kernels\nhttps://www.reddit.com/r/programming/comments/p1\n2. Debate sobre microserviços em 2026\nhttps://www.reddit.com/r/programming/comments/p2\n\nr/MachineLearning:\n1. Novo paper sobre atenção esparsa\nhttps://www.reddit.com/r/MachineLearning/comments/m1\n2. Resultados do benchmark MMLU atualizado\nhttps://www.reddit.com/r/MachineLearning/comments/m2"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.051138199999999995
+   }
+  ],
+  "seconds": 36.597102792
+ },
+ {
+  "id": "oc-13-youtube",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Vídeos do dia - YouTube",
+     "description": "Todo dia às 19h, envia no Telegram os vídeos publicados hoje nos canais do YouTube configurados, com link. Não envia nada se não saiu vídeo novo.",
+     "manifest": {
+      "schedule": "0 19 * * *",
+      "capabilities": [
+       "rss.read:www.youtube.com",
+       "notify.send"
+      ],
+      "params": [
+       {
+        "name": "canal1",
+        "label": "ID do canal 1 do YouTube",
+        "type": "text",
+        "default": "UCsBjURrPoezykLs9EqgamOA",
+        "help": "O ID do canal, ex: UCsBjURrPoezykLs9EqgamOA"
+       },
+       {
+        "name": "canal2",
+        "label": "ID do canal 2 do YouTube",
+        "type": "text",
+        "default": "UCbRP3c757lWg9M-U7TyEkXA",
+        "help": "O ID do canal, ex: UCbRP3c757lWg9M-U7TyEkXA"
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const channelIds = [params.canal1, params.canal2].filter(Boolean);\n  const today = dates.today();\n  const videosHoje = [];\n\n  for (const channelId of channelIds) {\n    const url = 'https://www.youtube.com/feeds/videos.xml?channel_id=' + channelId;\n    const items = await rss.read({ url, max: 10 });\n    for (const item of items) {\n      if (dates.sameDay(item.published, today)) {\n        videosHoje.push(item);\n      }\n    }\n  }\n\n  if (videosHoje.length === 0) {\n    log('Nenhum vídeo publicado hoje.');\n    return;\n  }\n\n  videosHoje.sort((a, b) =\u003e (dates.isBefore(a.published, b.published) ? -1 : 1));\n\n  const linhas = videosHoje.map(v =\u003e '• ' + v.title + ' — ' + v.link);\n  const text = '🎬 Vídeos de hoje:\\n' + linhas.join('\\n');\n\n  await notify.send({ text });\n}",
+     "tests": [
+      {
+       "name": "videos em ambos os canais hoje",
+       "now": "2026-09-28T22:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.youtube.com/watch?v=abc1",
+           "published": "2026-09-28T18:00:00Z",
+           "summary": "",
+           "title": "Novo vídeo canal 1"
+          },
+          {
+           "link": "https://www.youtube.com/watch?v=old1",
+           "published": "2026-09-25T18:00:00Z",
+           "summary": "",
+           "title": "Vídeo antigo canal 1"
+          }
+         ]
+        },
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.youtube.com/watch?v=abc2",
+           "published": "2026-09-28T15:00:00Z",
+           "summary": "",
+           "title": "Novo vídeo canal 2"
+          }
+         ]
+        },
+        {
+         "capability": "notify.send",
+         "result": {
+          "ok": true,
+          "delivered": [
+           "telegram"
+          ]
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Novo vídeo canal 1",
+          "Novo vídeo canal 2",
+          "abc1",
+          "abc2"
+         ],
+         "not_contains": [
+          "old1",
+          "Vídeo antigo canal 1"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "nenhum vídeo hoje - nao envia",
+       "now": "2026-09-28T22:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.youtube.com/watch?v=old2",
+           "published": "2026-09-24T18:00:00Z",
+           "summary": "",
+           "title": "Vídeo antigo A"
+          }
+         ]
+        },
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.youtube.com/watch?v=old3",
+           "published": "2026-09-23T18:00:00Z",
+           "summary": "",
+           "title": "Vídeo antigo B"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "apenas um canal configurado com video hoje",
+       "now": "2026-09-28T22:00:00Z",
+       "responses": [
+        {
+         "capability": "rss.read",
+         "result": [
+          {
+           "link": "https://www.youtube.com/watch?v=xyz9",
+           "published": "2026-09-28T20:00:00Z",
+           "summary": "",
+           "title": "Lançamento de hoje"
+          }
+         ]
+        },
+        {
+         "capability": "rss.read",
+         "result": []
+        },
+        {
+         "capability": "notify.send",
+         "result": {
+          "ok": true,
+          "delivered": [
+           "telegram"
+          ]
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Lançamento de hoje",
+          "xyz9"
+         ]
+        }
+       ],
+       "params": {
+        "canal1": "UCoutroCanalTeste0000001",
+        "canal2": "UCoutroCanalTeste0000002"
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🎬 Vídeos de hoje:\n• Rust in 100 seconds — https://www.youtube.com/watch?v=vid1"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test videos em ambos os canais hoje",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🎬 Vídeos de hoje:\n• Novo vídeo canal 2 — https://www.youtube.com/watch?v=abc2\n• Novo vídeo canal 1 — https://www.youtube.com/watch?v=abc1"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test nenhum vídeo hoje - nao envia",
+      "passed": true
+     },
+     {
+      "scenario": "test apenas um canal configurado com video hoje",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🎬 Vídeos de hoje:\n• Lançamento de hoje — https://www.youtube.com/watch?v=xyz9"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.062465799999999995
+   }
+  ],
+  "seconds": 33.890765375
+ },
+ {
+  "id": "oc-14-newsletters",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "notify.send",
+     "args": {
+      "text": "📰 Newsletters de hoje:\n• Morning Brew — Markets today"
+     }
+    },
+    {
+     "capability": "gmail.archive",
+     "args": {
+      "id": "hn1"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Resumo diário de newsletters",
+     "description": "Todo dia às 18h, junta as newsletters recebidas no dia numa única mensagem no Telegram (remetente e assunto) e arquiva os e-mails originais.",
+     "manifest": {
+      "schedule": "0 18 * * *",
+      "capabilities": [
+       "gmail.search",
+       "gmail.archive",
+       "notify.send"
+      ],
+      "judgments": {
+       "newsletter": "This email is a newsletter (a periodic bulk-content mailing from a publication, blog or service), not a personal or transactional email"
+      },
+      "params": [
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const emails = await gmail.search({ query: \"in:inbox\", days: 1, max: 50 });\n  const newsletters = [];\n  for (const e of emails) {\n    if (!dates.sameDay(e.date, now())) continue;\n    const { p } = await judge.newsletter(e);\n    if (p \u003e= 0.5) newsletters.push(e);\n  }\n  if (newsletters.length === 0) {\n    log(\"Nenhuma newsletter hoje\");\n    return;\n  }\n  const lines = newsletters.map(e =\u003e `• ${e.from_name || e.from} — ${e.subject}`);\n  const text = `📰 Newsletters de hoje:\\n${lines.join(\"\\n\")}`;\n  await notify.send({ text });\n  for (const e of newsletters) {\n    await gmail.archive({ id: e.id });\n  }\n}",
+     "tests": [
+      {
+       "name": "duas newsletters e um e-mail pessoal",
+       "now": "2026-09-28T21:00:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "nl-a",
+           "from": "hello@thenews.cc",
+           "from_name": "the news",
+           "to": "eu@exemplo.com",
+           "subject": "☕ Segunda-feira, 28",
+           "snippet": "Bom dia!",
+           "date": "2026-09-28T09:00:00Z",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          },
+          {
+           "id": "nl-b",
+           "from": "dan@tldrnewsletter.com",
+           "from_name": "TLDR",
+           "to": "eu@exemplo.com",
+           "subject": "TLDR AI 2026-09-28",
+           "snippet": "Top stories",
+           "date": "2026-09-28T10:00:00Z",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          },
+          {
+           "id": "personal-c",
+           "from": "carla@acme.com",
+           "from_name": "Carla",
+           "to": "eu@exemplo.com",
+           "subject": "Reunião amanhã",
+           "snippet": "Podemos mudar para 15h?",
+           "date": "2026-09-28T14:00:00Z",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        },
+        {
+         "capability": "notify.send",
+         "result": {
+          "ok": true,
+          "delivered": [
+           "telegram"
+          ]
+         }
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "judgments": {
+        "newsletter": {
+         "nl-a": 0.9,
+         "nl-b": 0.85,
+         "personal-c": 0.05
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "the news",
+          "☕ Segunda-feira, 28",
+          "TLDR",
+          "TLDR AI 2026-09-28"
+         ],
+         "not_contains": [
+          "Carla",
+          "Reunião amanhã"
+         ]
+        },
+        {
+         "capability": "gmail.archive",
+         "count": 2,
+         "contains": [
+          "nl-a",
+          "nl-b"
+         ]
+        }
+       ],
+       "params": {
+        "destinos": []
+       }
+      },
+      {
+       "name": "nenhuma newsletter hoje",
+       "now": "2026-09-28T21:00:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "personal-x",
+           "from": "carla@acme.com",
+           "from_name": "Carla",
+           "to": "eu@exemplo.com",
+           "subject": "Follow-up",
+           "snippet": "Combinado então?",
+           "date": "2026-09-28T11:00:00Z",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          },
+          {
+           "id": "personal-y",
+           "from": "banco@meubanco.com",
+           "from_name": "Meu Banco",
+           "to": "eu@exemplo.com",
+           "subject": "Fatura disponível",
+           "snippet": "Sua fatura chegou",
+           "date": "2026-09-28T12:00:00Z",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": false
+          }
+         ]
+        }
+       ],
+       "judgments": {
+        "newsletter": {
+         "personal-x": 0.1,
+         "personal-y": 0.2
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        },
+        {
+         "capability": "gmail.archive",
+         "count": 0
+        }
+       ],
+       "params": {
+        "destinos": []
+       }
+      },
+      {
+       "name": "três newsletters com destino customizado",
+       "now": "2026-09-28T21:00:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "id": "nl-1",
+           "from": "news@substacker.com",
+           "from_name": "Substacker Weekly",
+           "to": "eu@exemplo.com",
+           "subject": "Edição 42",
+           "snippet": "Nesta semana...",
+           "date": "2026-09-28T08:00:00Z",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          },
+          {
+           "id": "nl-2",
+           "from": "digest@morningbrew.com",
+           "from_name": "Morning Brew",
+           "to": "eu@exemplo.com",
+           "subject": "Your daily digest",
+           "snippet": "Markets today",
+           "date": "2026-09-28T09:30:00Z",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          },
+          {
+           "id": "nl-3",
+           "from": "info@promo.com",
+           "from_name": "Promo Store",
+           "to": "eu@exemplo.com",
+           "subject": "50% off hoje!",
+           "snippet": "Aproveite",
+           "date": "2026-09-28T10:00:00Z",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "unread": true,
+           "can_unsubscribe": true
+          }
+         ]
+        },
+        {
+         "capability": "notify.send",
+         "result": {
+          "ok": true,
+          "delivered": [
+           "slack"
+          ]
+         }
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        },
+        {
+         "capability": "gmail.archive",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "judgments": {
+        "newsletter": {
+         "nl-1": 0.95,
+         "nl-2": 0.9,
+         "nl-3": 0.5
+        }
+       },
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "Substacker Weekly",
+          "Edição 42",
+          "Morning Brew",
+          "Promo Store"
+         ]
+        },
+        {
+         "capability": "gmail.archive",
+         "count": 3,
+         "contains": [
+          "nl-1",
+          "nl-2",
+          "nl-3"
+         ]
+        }
+       ],
+       "params": {
+        "destinos": [
+         "slack:#leituras"
+        ]
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📰 Newsletters de hoje:\n• the news — ☕ Quinta-feira, 24\n• TLDR — TLDR AI 2026-09-24"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "nl1"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "nl2"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test duas newsletters e um e-mail pessoal",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📰 Newsletters de hoje:\n• the news — ☕ Segunda-feira, 28\n• TLDR — TLDR AI 2026-09-28"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "nl-a"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "nl-b"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test nenhuma newsletter hoje",
+      "passed": true
+     },
+     {
+      "scenario": "test três newsletters com destino customizado",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "📰 Newsletters de hoje:\n• Substacker Weekly — Edição 42\n• Morning Brew — Your daily digest\n• Promo Store — 50% off hoje!"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "nl-1"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "nl-2"
+        }
+       },
+       {
+        "capability": "gmail.archive",
+        "args": {
+         "id": "nl-3"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.10184359999999999
+   }
+  ],
+  "seconds": 56.976528
+ },
+ {
+  "id": "oc-15-apartments",
+  "first_accepted": false,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Alerta de imóveis para alugar",
+     "description": "Todo dia às 8h30, verifica e-mails de anúncios de imóveis (QuintoAndar, ZAP) recebidos nas últimas 24h e avisa apenas sobre apartamentos para alugar que batem com número de quartos, aluguel máximo e bairro escolhidos pelo dono.",
+     "manifest": {
+      "schedule": "30 8 * * *",
+      "capabilities": [
+       "gmail.search",
+       "notify.send"
+      ],
+      "writes": {
+       "summary": "Resuma este anúncio de imóvel em uma linha em português, incluindo rua ou bairro, metragem (se houver) e valor do aluguel."
+      },
+      "params": [
+       {
+        "name": "bedrooms",
+        "label": "Número de quartos",
+        "type": "number",
+        "default": 2,
+        "help": "Quantidade exata de quartos desejada"
+       },
+       {
+        "name": "maxRent",
+        "label": "Aluguel máximo (R$)",
+        "type": "number",
+        "default": 3000,
+        "help": "Valor máximo do aluguel"
+       },
+       {
+        "name": "neighborhood",
+        "label": "Bairro",
+        "type": "text",
+        "default": "Pinheiros"
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "\nasync function run() {\n  const items = await gmail.search({\n    days: 1,\n    max: 30,\n    query: \"from:(quintoandar.com.br OR zapimoveis.com.br)\"\n  });\n\n  const neighborhood = (params.neighborhood || \"\").toLowerCase();\n  const bedroomRegex = /(\\d+)\\s*quartos?/i;\n\n  const matched = [];\n  for (const item of items) {\n    const text = ((item.subject || \"\") + \" \" + (item.snippet || \"\")).toLowerCase();\n\n    const bedroomMatch = text.match(bedroomRegex);\n    const bedrooms = bedroomMatch ? parseInt(bedroomMatch[1], 10) : null;\n\n    const price = money.parse(item.snippet || \"\");\n\n    const hasNeighborhood = neighborhood ? text.includes(neighborhood) : true;\n    const isRental = text.includes(\"aluguel\") || text.includes(\"alugar\");\n\n    if (\n      bedrooms === params.bedrooms \u0026\u0026\n      price !== null \u0026\u0026\n      price \u003c= params.maxRent \u0026\u0026\n      hasNeighborhood \u0026\u0026\n      isRental\n    ) {\n      matched.push(item);\n    }\n  }\n\n  if (matched.length === 0) {\n    log(\"Nenhum imóvel bateu com os critérios hoje.\");\n    return;\n  }\n\n  const lines = [];\n  for (const item of matched) {\n    const w = await write.summary(item);\n    lines.push(\"• \" + w.text);\n  }\n\n  const header = matched.length === 1\n    ? \"🏠 Apartamento que bate com o que você procura:\"\n    : \"🏠 Apartamentos que batem com o que você procura:\";\n\n  await notify.send({ text: header + \"\\n\" + lines.join(\"\\n\") });\n}\n",
+     "tests": [
+      {
+       "name": "um imóvel bate com os critérios",
+       "now": "2026-09-29T11:30:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "date": "2026-09-29T10:10:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "a1",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 70 m², Pinheiros, aluguel R$ 2.900.",
+           "subject": "Novo imóvel: Rua Teodoro Sampaio, 2 quartos",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T10:12:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "a2",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 3 quartos, 90 m², Pinheiros, aluguel R$ 3.800.",
+           "subject": "Novo imóvel: Rua Cardeal Arcoverde, 3 quartos",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T09:50:00Z",
+           "from": "alertas@zapimoveis.com.br",
+           "from_name": "ZAP",
+           "id": "a3",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 55 m², Vila Madalena, aluguel R$ 2.400.",
+           "subject": "Novo anúncio na Vila Madalena",
+           "to": "eu@exemplo.com",
+           "unread": true
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "contains": [
+          "Teodoro Sampaio"
+         ]
+        }
+       ],
+       "writes": {
+        "summary": {
+         "Teodoro Sampaio": "Rua Teodoro Sampaio, 2 quartos — 70 m², R$ 2.900"
+        }
+       }
+      },
+      {
+       "name": "nenhum imóvel bate - nada é enviado",
+       "now": "2026-09-29T11:30:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "date": "2026-09-29T10:05:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "b1",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 3 quartos, 80 m², Pinheiros, aluguel R$ 2.000.",
+           "subject": "Novo imóvel em Pinheiros",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T10:07:00Z",
+           "from": "alertas@zapimoveis.com.br",
+           "from_name": "ZAP",
+           "id": "b2",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 65 m², Pinheiros, aluguel R$ 3.500.",
+           "subject": "Novo anúncio em Pinheiros",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T09:40:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "b3",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 60 m², Itaim Bibi, aluguel R$ 2.800.",
+           "subject": "Novo imóvel no Itaim Bibi",
+           "to": "eu@exemplo.com",
+           "unread": true
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "bairro alterado pelo dono (Vila Madalena)",
+       "now": "2026-09-29T11:30:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "date": "2026-09-29T10:15:00Z",
+           "from": "alertas@zapimoveis.com.br",
+           "from_name": "ZAP",
+           "id": "c1",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 58 m², Vila Madalena, aluguel R$ 2.600.",
+           "subject": "Novo anúncio: Rua Harmonia, 2 quartos",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T10:20:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "c2",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 66 m², Pinheiros, aluguel R$ 2.600.",
+           "subject": "Novo imóvel: Rua Fradique Coutinho, 2 quartos",
+           "to": "eu@exemplo.com",
+           "unread": true
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "contains": [
+          "Harmonia"
+         ],
+         "not_contains": [
+          "Fradique Coutinho"
+         ]
+        }
+       ],
+       "params": {
+        "bedrooms": 2,
+        "destinos": [],
+        "maxRent": 3000,
+        "neighborhood": "Vila Madalena"
+       },
+       "writes": {
+        "summary": {
+         "Harmonia": "Rua Harmonia, 2 quartos — 58 m², R$ 2.600"
+        }
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": false,
+      "problems": [
+       "telegram.send never mentions \"Rua dos Pinheiros\"; it sent \"🏠 apartamento que bate com o que você procura:\\n• (summary)\""
+      ],
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🏠 Apartamento que bate com o que você procura:\n• (summary)"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test um imóvel bate com os critérios",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🏠 Apartamento que bate com o que você procura:\n• Rua Teodoro Sampaio, 2 quartos — 70 m², R$ 2.900"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test nenhum imóvel bate - nada é enviado",
+      "passed": true
+     },
+     {
+      "scenario": "test bairro alterado pelo dono (Vila Madalena)",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🏠 Apartamento que bate com o que você procura:\n• Rua Harmonia, 2 quartos — 58 m², R$ 2.600"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.09850820000000002
+   },
+   {
+    "routine": {
+     "name": "Alerta de imóveis para alugar",
+     "description": "Todo dia às 8h30, verifica e-mails de anúncios de imóveis (QuintoAndar, ZAP) recebidos nas últimas 24h e avisa apenas sobre apartamentos para alugar que batem com número de quartos, aluguel máximo e bairro escolhidos pelo dono. A mensagem usa diretamente o assunto do e-mail e os valores de metragem e preço extraídos do próprio texto do anúncio, sem reescrever nada.",
+     "manifest": {
+      "schedule": "30 8 * * *",
+      "capabilities": [
+       "gmail.search",
+       "notify.send"
+      ],
+      "params": [
+       {
+        "name": "bedrooms",
+        "label": "Número de quartos",
+        "type": "number",
+        "default": 2,
+        "help": "Quantidade exata de quartos desejada"
+       },
+       {
+        "name": "maxRent",
+        "label": "Aluguel máximo (R$)",
+        "type": "number",
+        "default": 3000,
+        "help": "Valor máximo do aluguel"
+       },
+       {
+        "name": "neighborhood",
+        "label": "Bairro",
+        "type": "text",
+        "default": "Pinheiros"
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "\nasync function run() {\n  const items = await gmail.search({\n    days: 1,\n    max: 30,\n    query: \"from:(quintoandar.com.br OR zapimoveis.com.br)\"\n  });\n\n  const neighborhood = (params.neighborhood || \"\").toLowerCase();\n  const bedroomRegex = /(\\d+)\\s*quartos?/i;\n\n  const matched = [];\n  for (const item of items) {\n    const text = ((item.subject || \"\") + \" \" + (item.snippet || \"\")).toLowerCase();\n\n    const bedroomMatch = text.match(bedroomRegex);\n    const bedrooms = bedroomMatch ? parseInt(bedroomMatch[1], 10) : null;\n\n    const price = money.parse(item.snippet || \"\");\n\n    const hasNeighborhood = neighborhood ? text.includes(neighborhood) : true;\n    const isRental = text.includes(\"aluguel\") || text.includes(\"alugar\");\n\n    if (\n      bedrooms === params.bedrooms \u0026\u0026\n      price !== null \u0026\u0026\n      price \u003c= params.maxRent \u0026\u0026\n      hasNeighborhood \u0026\u0026\n      isRental\n    ) {\n      matched.push(item);\n    }\n  }\n\n  if (matched.length === 0) {\n    log(\"Nenhum imóvel bateu com os critérios hoje.\");\n    return;\n  }\n\n  const lines = [];\n  for (const item of matched) {\n    const sqmMatch = (item.snippet || \"\").match(/(\\d+)\\s*m²/i);\n    const sqm = sqmMatch ? sqmMatch[1] : null;\n    const priceText = money.find(item.snippet || \"\");\n\n    let line = item.subject || \"\";\n    if (sqm) line += ` — ${sqm} m²`;\n    if (priceText) line += (sqm ? `, ${priceText}` : ` — ${priceText}`);\n\n    lines.push(\"• \" + line);\n  }\n\n  const header = matched.length === 1\n    ? \"🏠 Apartamento que bate com o que você procura:\"\n    : \"🏠 Apartamentos que batem com o que você procura:\";\n\n  await notify.send({ text: header + \"\\n\" + lines.join(\"\\n\") });\n}\n",
+     "tests": [
+      {
+       "name": "um imóvel bate com os critérios",
+       "now": "2026-09-29T11:30:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "date": "2026-09-29T10:10:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "a1",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 70 m², Pinheiros, aluguel R$ 2.900.",
+           "subject": "Novo imóvel: Rua Teodoro Sampaio, 2 quartos",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T10:12:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "a2",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 3 quartos, 90 m², Pinheiros, aluguel R$ 3.800.",
+           "subject": "Novo imóvel: Rua Cardeal Arcoverde, 3 quartos",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T09:50:00Z",
+           "from": "alertas@zapimoveis.com.br",
+           "from_name": "ZAP",
+           "id": "a3",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 55 m², Vila Madalena, aluguel R$ 2.400.",
+           "subject": "Novo anúncio na Vila Madalena",
+           "to": "eu@exemplo.com",
+           "unread": true
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "contains": [
+          "Teodoro Sampaio",
+          "70 m²",
+          "R$ 2.900"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "nenhum imóvel bate - nada é enviado",
+       "now": "2026-09-29T11:30:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "date": "2026-09-29T10:05:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "b1",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 3 quartos, 80 m², Pinheiros, aluguel R$ 2.000.",
+           "subject": "Novo imóvel em Pinheiros",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T10:07:00Z",
+           "from": "alertas@zapimoveis.com.br",
+           "from_name": "ZAP",
+           "id": "b2",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 65 m², Pinheiros, aluguel R$ 3.500.",
+           "subject": "Novo anúncio em Pinheiros",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T09:40:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "b3",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 60 m², Itaim Bibi, aluguel R$ 2.800.",
+           "subject": "Novo imóvel no Itaim Bibi",
+           "to": "eu@exemplo.com",
+           "unread": true
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 0
+        }
+       ]
+      },
+      {
+       "name": "bairro alterado pelo dono (Vila Madalena)",
+       "now": "2026-09-29T11:30:00Z",
+       "responses": [
+        {
+         "capability": "gmail.search",
+         "result": [
+          {
+           "date": "2026-09-29T10:15:00Z",
+           "from": "alertas@zapimoveis.com.br",
+           "from_name": "ZAP",
+           "id": "c1",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 58 m², Vila Madalena, aluguel R$ 2.600.",
+           "subject": "Novo anúncio: Rua Harmonia, 2 quartos",
+           "to": "eu@exemplo.com",
+           "unread": true
+          },
+          {
+           "date": "2026-09-29T10:20:00Z",
+           "from": "alertas@quintoandar.com.br",
+           "from_name": "QuintoAndar",
+           "id": "c2",
+           "labels": [
+            "INBOX",
+            "UNREAD"
+           ],
+           "replied": false,
+           "snippet": "Apartamento 2 quartos, 66 m², Pinheiros, aluguel R$ 2.600.",
+           "subject": "Novo imóvel: Rua Fradique Coutinho, 2 quartos",
+           "to": "eu@exemplo.com",
+           "unread": true
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "contains": [
+          "Harmonia",
+          "58 m²",
+          "R$ 2.600"
+         ],
+         "not_contains": [
+          "Fradique Coutinho"
+         ]
+        }
+       ],
+       "params": {
+        "bedrooms": 2,
+        "destinos": [],
+        "maxRent": 3000,
+        "neighborhood": "Vila Madalena"
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🏠 Apartamento que bate com o que você procura:\n• Novo imóvel: Rua dos Pinheiros, 2 quartos — 68 m², R$ 2.850"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test um imóvel bate com os critérios",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🏠 Apartamento que bate com o que você procura:\n• Novo imóvel: Rua Teodoro Sampaio, 2 quartos — 70 m², R$ 2.900"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test nenhum imóvel bate - nada é enviado",
+      "passed": true
+     },
+     {
+      "scenario": "test bairro alterado pelo dono (Vila Madalena)",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🏠 Apartamento que bate com o que você procura:\n• Novo anúncio: Rua Harmonia, 2 quartos — 58 m², R$ 2.600"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.0888582
+   }
+  ],
+  "seconds": 127.497814667
+ },
+ {
+  "id": "oc-16-journal",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "obsidian.append",
+     "args": {
+      "note": "Diário.md",
+      "text": "## 2026-10-08\nReuniões: Workshop de segurança\nFechadas: #441 Timeout no upload"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Diário: reuniões e issues fechadas",
+     "description": "Todo dia às 23h55, registra no Obsidian (nota Diário.md) as reuniões do dia e as issues fechadas hoje no repositório do GitHub indicado.",
+     "manifest": {
+      "schedule": "55 23 * * *",
+      "capabilities": [
+       "calendar.events",
+       "github.issues",
+       "obsidian.append"
+      ],
+      "locale": "pt-BR",
+      "params": [
+       {
+        "name": "repo",
+        "label": "Repositório GitHub",
+        "type": "text",
+        "default": "acme/app",
+        "help": "Formato owner/name"
+       },
+       {
+        "name": "nota",
+        "label": "Nota do Obsidian",
+        "type": "text",
+        "default": "Diário.md"
+       }
+      ]
+     },
+     "code": "async function run() {\n  const from = dates.startOfDay(now());\n  const to = dates.addDays(from, 1);\n\n  const events = await calendar.events({ from, to });\n  const meetingTitles = events.map(e =\u003e e.title);\n\n  const issues = await github.issues({ repo: params.repo, state: 'closed', max: 30 });\n  const closedToday = issues.filter(i =\u003e !i.pull_request \u0026\u0026 dates.sameDay(i.updated, now()));\n\n  const dateLabel = dates.format(now(), \"yyyy-MM-dd\");\n\n  const reunioesLine = meetingTitles.length \u003e 0\n    ? \"Reuniões: \" + meetingTitles.join(\", \")\n    : \"Reuniões: Nenhuma reunião\";\n\n  const fechadasLine = closedToday.length \u003e 0\n    ? \"Fechadas: \" + closedToday.map(i =\u003e \"#\" + i.number + \" \" + i.title).join(\", \")\n    : \"Fechadas: Nenhuma issue fechada\";\n\n  const text = \"## \" + dateLabel + \"\\n\" + reunioesLine + \"\\n\" + fechadasLine;\n\n  await obsidian.append({ note: params.nota, text: text });\n\n  log(\"Registro do dia salvo em \" + params.nota);\n}",
+     "tests": [
+      {
+       "name": "dia normal com reuniões e uma issue fechada hoje",
+       "now": "2026-09-24T02:55:00Z",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "j1",
+           "title": "Daily do time",
+           "start": "2026-09-24T12:30:00Z",
+           "end": "2026-09-24T12:45:00Z",
+           "location": "",
+           "attendees": [],
+           "calendar": "Trabalho"
+          },
+          {
+           "id": "j2",
+           "title": "Mentoria com o Léo",
+           "start": "2026-09-24T19:00:00Z",
+           "end": "2026-09-24T20:00:00Z",
+           "location": "",
+           "attendees": [],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "github.issues",
+         "result": [
+          {
+           "number": 405,
+           "title": "Corrigir cálculo de frete",
+           "state": "closed",
+           "author": "dev1",
+           "labels": [],
+           "updated": "2026-09-24T18:00:00Z",
+           "url": "https://github.com/acme/app/issues/405",
+           "pull_request": false
+          },
+          {
+           "number": 390,
+           "title": "Issue fechada semana passada",
+           "state": "closed",
+           "author": "dev1",
+           "labels": [],
+           "updated": "2026-09-17T12:00:00Z",
+           "url": "https://github.com/acme/app/issues/390",
+           "pull_request": false
+          }
+         ]
+        },
+        {
+         "capability": "obsidian.append",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "obsidian.append",
+         "count": 1,
+         "contains": [
+          "Daily do time",
+          "Mentoria com o Léo",
+          "#405",
+          "Corrigir cálculo de frete"
+         ],
+         "not_contains": [
+          "#390",
+          "Issue fechada semana passada"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "sem reuniões, ignora pull request e issue de outro dia",
+       "now": "2026-09-25T02:55:00Z",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": []
+        },
+        {
+         "capability": "github.issues",
+         "result": [
+          {
+           "number": 410,
+           "title": "Ajuste de PR automatizado",
+           "state": "closed",
+           "author": "dev2",
+           "labels": [],
+           "updated": "2026-09-25T14:00:00Z",
+           "url": "https://github.com/acme/app/pull/410",
+           "pull_request": true
+          },
+          {
+           "number": 411,
+           "title": "Corrigir timeout de login",
+           "state": "closed",
+           "author": "dev2",
+           "labels": [],
+           "updated": "2026-09-25T15:00:00Z",
+           "url": "https://github.com/acme/app/issues/411",
+           "pull_request": false
+          },
+          {
+           "number": 399,
+           "title": "Issue antiga",
+           "state": "closed",
+           "author": "dev2",
+           "labels": [],
+           "updated": "2026-09-10T15:00:00Z",
+           "url": "https://github.com/acme/app/issues/399",
+           "pull_request": false
+          }
+         ]
+        },
+        {
+         "capability": "obsidian.append",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "obsidian.append",
+         "count": 1,
+         "contains": [
+          "#411",
+          "Corrigir timeout de login",
+          "Nenhuma reunião"
+         ],
+         "not_contains": [
+          "#410",
+          "#399",
+          "Issue antiga",
+          "Ajuste de PR automatizado"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "repositório diferente via parâmetro, várias issues fechadas",
+       "now": "2026-09-26T02:55:00Z",
+       "responses": [
+        {
+         "capability": "calendar.events",
+         "result": [
+          {
+           "id": "j5",
+           "title": "Reunião com cliente",
+           "start": "2026-09-26T13:00:00Z",
+           "end": "2026-09-26T13:30:00Z",
+           "location": "",
+           "attendees": [],
+           "calendar": "Trabalho"
+          }
+         ]
+        },
+        {
+         "capability": "github.issues",
+         "result": [
+          {
+           "number": 20,
+           "title": "Bug no checkout",
+           "state": "closed",
+           "author": "dev3",
+           "labels": [],
+           "updated": "2026-09-26T16:00:00Z",
+           "url": "https://github.com/acme/site/issues/20",
+           "pull_request": false
+          },
+          {
+           "number": 21,
+           "title": "Erro de layout mobile",
+           "state": "closed",
+           "author": "dev3",
+           "labels": [],
+           "updated": "2026-09-26T17:00:00Z",
+           "url": "https://github.com/acme/site/issues/21",
+           "pull_request": false
+          }
+         ]
+        },
+        {
+         "capability": "obsidian.append",
+         "result": {
+          "ok": true
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "obsidian.append",
+         "count": 1,
+         "contains": [
+          "Reunião com cliente",
+          "#20",
+          "Bug no checkout",
+          "#21",
+          "Erro de layout mobile"
+         ]
+        }
+       ],
+       "params": {
+        "nota": "Registros/Diário.md",
+        "repo": "acme/site"
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "obsidian.append",
+        "args": {
+         "note": "Diário.md",
+         "text": "## 2026-09-24\nReuniões: Daily do time, Mentoria com o Léo\nFechadas: #405 Corrigir cálculo de frete"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test dia normal com reuniões e uma issue fechada hoje",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "obsidian.append",
+        "args": {
+         "note": "Diário.md",
+         "text": "## 2026-09-24\nReuniões: Daily do time, Mentoria com o Léo\nFechadas: #405 Corrigir cálculo de frete"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test sem reuniões, ignora pull request e issue de outro dia",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "obsidian.append",
+        "args": {
+         "note": "Diário.md",
+         "text": "## 2026-09-25\nReuniões: Nenhuma reunião\nFechadas: #411 Corrigir timeout de login"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test repositório diferente via parâmetro, várias issues fechadas",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "obsidian.append",
+        "args": {
+         "note": "Registros/Diário.md",
+         "text": "## 2026-09-26\nReuniões: Reunião com cliente\nFechadas: #20 Bug no checkout, #21 Erro de layout mobile"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.0986232
+   }
+  ],
+  "seconds": 57.650549208
+ },
+ {
+  "id": "oc-17-home-open",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Verificação noturna de portas e janelas",
+     "description": "Todo dia às 23h, verifica os sensores binários do Home Assistant cujo nome contenha palavras-chave de porta/janela e, se algum estiver com estado \"on\" (aberto), envia um aviso listando quais ficaram abertos. Se tudo estiver fechado, não envia nada.",
+     "manifest": {
+      "schedule": "0 23 * * *",
+      "capabilities": [
+       "ha.states",
+       "notify.send"
+      ],
+      "locale": "pt-BR",
+      "params": [
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       },
+       {
+        "name": "keywords",
+        "label": "Palavras-chave para identificar portas/janelas (separadas por vírgula)",
+        "type": "text",
+        "default": "porta,janela"
+       }
+      ]
+     },
+     "code": "async function run() {\n  const sensors = await ha.states({ domain: 'binary_sensor' });\n\n  const keywords = (params.keywords || 'porta,janela')\n    .split(',')\n    .map(k =\u003e k.trim().toLowerCase())\n    .filter(Boolean);\n\n  const open = sensors.filter(s =\u003e {\n    if (s.state !== 'on') return false;\n    const name = (s.name || s.entity_id || '').toLowerCase();\n    return keywords.some(k =\u003e name.includes(k));\n  });\n\n  if (open.length === 0) {\n    log('Tudo fechado, nada a avisar.');\n    return;\n  }\n\n  const lista = open.map(s =\u003e s.name).join(', ');\n  await notify.send({ text: `🚪 Ficou aberto: ${lista}` });\n}\n",
+     "tests": [
+      {
+       "name": "Algumas aberturas abertas - avisa",
+       "now": "2026-09-28T02:00:00Z",
+       "responses": [
+        {
+         "capability": "ha.states",
+         "result": [
+          {
+           "entity_id": "binary_sensor.porta_da_frente",
+           "name": "Porta da frente",
+           "state": "off",
+           "changed": "2026-09-27T21:00:00Z"
+          },
+          {
+           "entity_id": "binary_sensor.janela_da_sala",
+           "name": "Janela da sala",
+           "state": "on",
+           "changed": "2026-09-27T21:00:00Z"
+          },
+          {
+           "entity_id": "binary_sensor.porta_da_varanda",
+           "name": "Porta da varanda",
+           "state": "off",
+           "changed": "2026-09-27T21:00:00Z"
+          },
+          {
+           "entity_id": "binary_sensor.movimento_corredor",
+           "name": "Movimento corredor",
+           "state": "on",
+           "changed": "2026-09-27T21:00:00Z"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "contains": [
+          "Janela da sala"
+         ],
+         "not_contains": [
+          "Movimento corredor",
+          "Porta da frente",
+          "Porta da varanda"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Tudo fechado - não avisa",
+       "now": "2026-09-28T02:00:00Z",
+       "responses": [
+        {
+         "capability": "ha.states",
+         "result": [
+          {
+           "entity_id": "binary_sensor.porta_da_frente",
+           "name": "Porta da frente",
+           "state": "off",
+           "changed": "2026-09-27T21:00:00Z"
+          },
+          {
+           "entity_id": "binary_sensor.janela_da_sala",
+           "name": "Janela da sala",
+           "state": "off",
+           "changed": "2026-09-27T21:00:00Z"
+          },
+          {
+           "entity_id": "binary_sensor.porta_da_varanda",
+           "name": "Porta da varanda",
+           "state": "off",
+           "changed": "2026-09-27T21:00:00Z"
+          }
+         ]
+        }
+       ],
+       "expect": []
+      },
+      {
+       "name": "Palavra-chave customizada só 'porta' - janela aberta é ignorada",
+       "now": "2026-09-28T02:00:00Z",
+       "responses": [
+        {
+         "capability": "ha.states",
+         "result": [
+          {
+           "entity_id": "binary_sensor.porta_da_garagem",
+           "name": "Porta da garagem",
+           "state": "on",
+           "changed": "2026-09-27T21:00:00Z"
+          },
+          {
+           "entity_id": "binary_sensor.janela_do_quarto",
+           "name": "Janela do quarto",
+           "state": "on",
+           "changed": "2026-09-27T21:00:00Z"
+          }
+         ]
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "contains": [
+          "Porta da garagem"
+         ],
+         "not_contains": [
+          "Janela do quarto"
+         ]
+        }
+       ],
+       "params": {
+        "keywords": "porta"
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🚪 Ficou aberto: Janela da sala, Porta da varanda"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Algumas aberturas abertas - avisa",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🚪 Ficou aberto: Janela da sala"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Tudo fechado - não avisa",
+      "passed": true
+     },
+     {
+      "scenario": "test Palavra-chave customizada só 'porta' - janela aberta é ignorada",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "🚪 Ficou aberto: Porta da garagem"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.04294019999999999
+   }
+  ],
+  "seconds": 32.329877666
+ },
+ {
+  "id": "oc-18-habits",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true,
+   "writes": [
+    {
+     "capability": "notify.send",
+     "args": {
+      "text": "💪 Check-in do dia: você treinou hoje? E bebeu os 2 litros de água?"
+     }
+    }
+   ]
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "checkin_treino_agua",
+     "description": "Todos os dias às 21h, envia uma mensagem perguntando se o usuário treinou e se bebeu 2 litros de água.",
+     "manifest": {
+      "schedule": "0 21 * * *",
+      "capabilities": [
+       "notify.send"
+      ],
+      "params": [
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const text = \"💪 Check-in do dia: você treinou hoje? E bebeu os 2 litros de água?\";\n  await notify.send({ text });\n}",
+     "tests": [
+      {
+       "name": "envia checkin diario",
+       "now": "2026-09-29T00:00:00Z",
+       "responses": [
+        {
+         "capability": "notify.send",
+         "result": {
+          "ok": true,
+          "delivered": [
+           "telegram"
+          ]
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "treinou",
+          "água"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "envia checkin em outro dia sem alterar comportamento",
+       "now": "2026-09-30T00:00:00Z",
+       "responses": [
+        {
+         "capability": "notify.send",
+         "result": {
+          "ok": true,
+          "delivered": [
+           "telegram"
+          ]
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "treinou",
+          "água"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "com destino customizado ainda envia a mesma pergunta",
+       "now": "2026-10-01T00:00:00Z",
+       "responses": [
+        {
+         "capability": "notify.send",
+         "result": {
+          "ok": true,
+          "delivered": [
+           "whatsapp"
+          ]
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "treinou",
+          "água"
+         ]
+        }
+       ],
+       "params": {
+        "destinos": [
+         "whatsapp"
+        ]
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "💪 Check-in do dia: você treinou hoje? E bebeu os 2 litros de água?"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test envia checkin diario",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "💪 Check-in do dia: você treinou hoje? E bebeu os 2 litros de água?"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test envia checkin em outro dia sem alterar comportamento",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "💪 Check-in do dia: você treinou hoje? E bebeu os 2 litros de água?"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test com destino customizado ainda envia a mesma pergunta",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "💪 Check-in do dia: você treinou hoje? E bebeu os 2 litros de água?"
+        }
+       }
+      ]
+     }
+    ],
+    "cost_usd": 0.0329554
+   }
+  ],
+  "seconds": 16.366242334
+ },
+ {
+  "id": "oc-19-price-drop",
+  "first_accepted": true,
+  "first_holdout": true,
+  "accepted": true,
+  "holdout": {
+   "scenario": "holdout",
+   "passed": true
+  },
+  "attempts": [
+   {
+    "routine": {
+     "name": "Aviso de preço no Mercado Livre",
+     "description": "A cada hora, verifica o preço do anúncio informado no Mercado Livre e avisa nos destinos escolhidos quando o preço cair abaixo do limite definido (com preço e link). Não repete o aviso enquanto o preço continuar abaixo; avisa de novo se voltar a cair após subir.",
+     "manifest": {
+      "schedule": "0 * * * *",
+      "capabilities": [
+       "http.getJSON:api.mercadolibre.com",
+       "notify.send"
+      ],
+      "params": [
+       {
+        "name": "anuncio",
+        "label": "Código do anúncio (Mercado Livre)",
+        "type": "text",
+        "default": "MLB3456789",
+        "help": "O identificador do anúncio, ex: MLB3456789"
+       },
+       {
+        "name": "limite",
+        "label": "Preço limite (R$)",
+        "type": "number",
+        "default": 3200,
+        "help": "Avisa quando o preço ficar abaixo deste valor"
+       },
+       {
+        "name": "destinos",
+        "label": "Onde avisar",
+        "type": "destinations",
+        "default": []
+       }
+      ]
+     },
+     "code": "async function run() {\n  const url = `https://api.mercadolibre.com/items/${params.anuncio}`;\n  const item = await http.getJSON(url);\n  if (!item || typeof item.price !== 'number') {\n    log('Sem preço retornado para ' + params.anuncio);\n    return;\n  }\n\n  const price = item.price;\n  const threshold = params.limite;\n  const isBelow = price \u003c threshold;\n  const wasBelow = state.get('wasBelow') || false;\n\n  if (isBelow \u0026\u0026 !wasBelow) {\n    const currency = item.currency_id || 'BRL';\n    const priceText = money.format(price, currency);\n    const thresholdText = money.format(threshold, currency);\n    const title = item.title || params.anuncio;\n    const link = item.permalink || `https://produto.mercadolivre.com.br/${params.anuncio}`;\n    const text = `💸 ${title} está por ${priceText} (abaixo de ${thresholdText}): ${link}`;\n    await notify.send({ text });\n  }\n\n  state.set('wasBelow', isBelow);\n}",
+     "tests": [
+      {
+       "name": "Primeiro run, preço abaixo do limite - deve avisar",
+       "now": "2026-09-28T15:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "currency_id": "BRL",
+          "id": "MLB3456789",
+          "permalink": "https://produto.mercadolivre.com.br/MLB-3456789",
+          "price": 3099,
+          "title": "Notebook Ultra 14 16GB 512GB"
+         }
+        }
+       ],
+       "expect": [
+        {
+         "capability": "notify.send",
+         "count": 1,
+         "contains": [
+          "3.099",
+          "3.200",
+          "produto.mercadolivre.com.br/MLB-3456789"
+         ]
+        }
+       ],
+       "params": {
+        "anuncio": "MLB3456789",
+        "destinos": [],
+        "limite": 3200
+       },
+       "expect_state": {
+        "wasBelow": true
+       }
+      },
+      {
+       "name": "Preço acima do limite - não deve avisar",
+       "now": "2026-09-28T16:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "currency_id": "BRL",
+          "id": "MLB3456789",
+          "permalink": "https://produto.mercadolivre.com.br/MLB-3456789",
+          "price": 3450,
+          "title": "Notebook Ultra 14 16GB 512GB"
+         }
+        }
+       ],
+       "expect": [],
+       "params": {
+        "anuncio": "MLB3456789",
+        "destinos": [],
+        "limite": 3200
+       },
+       "expect_state": {
+        "wasBelow": false
+       }
+      },
+      {
+       "name": "Já avisado antes e continua abaixo - não repete aviso",
+       "now": "2026-09-28T17:00:00Z",
+       "responses": [
+        {
+         "capability": "http.getJSON",
+         "result": {
+          "currency_id": "BRL",
+          "id": "MLB3456789",
+          "permalink": "https://produto.mercadolivre.com.br/MLB-3456789",
+          "price": 3050,
+          "title": "Notebook Ultra 14 16GB 512GB"
+         }
+        }
+       ],
+       "expect": [],
+       "params": {
+        "anuncio": "MLB3456789",
+        "destinos": [],
+        "limite": 3200
+       },
+       "state": {
+        "wasBelow": true
+       },
+       "expect_state": {
+        "wasBelow": true
+       }
+      }
+     ]
+    },
+    "outcomes": [
+     {
+      "scenario": "replay of the exploration",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "💸 Notebook Ultra 14 16GB 512GB está por R$ 3.099,00 (abaixo de R$ 3.200,00): https://produto.mercadolivre.com.br/MLB-3456789"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Primeiro run, preço abaixo do limite - deve avisar",
+      "passed": true,
+      "writes": [
+       {
+        "capability": "notify.send",
+        "args": {
+         "text": "💸 Notebook Ultra 14 16GB 512GB está por R$ 3.099,00 (abaixo de R$ 3.200,00): https://produto.mercadolivre.com.br/MLB-3456789"
+        }
+       }
+      ]
+     },
+     {
+      "scenario": "test Preço acima do limite - não deve avisar",
+      "passed": true
+     },
+     {
+      "scenario": "test Já avisado antes e continua abaixo - não repete aviso",
+      "passed": true
+     }
+    ],
+    "cost_usd": 0.0383882
+   }
+  ],
+  "seconds": 24.209861917
+ }
+]

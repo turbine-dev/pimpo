@@ -148,10 +148,10 @@ func Verify(ctx context.Context, r routine.Routine, t trace.Trace) Attempt {
 		a.Invalid = "empty code"
 		return a
 	}
+	// A watching routine is woken in the replay the way the scheduler
+	// would: routine.Check asks the watched capability with the watch's
+	// arguments.
 	replay := t.Replay()
-	if w := r.Manifest.Watch; w != nil {
-		replay.Event = WatchEvent(t, *w)
-	}
 	a.Outcomes = append(a.Outcomes, routine.Check(ctx, r, "replay of the exploration", replay))
 	for _, test := range r.Tests {
 		a.Outcomes = append(a.Outcomes, routine.Check(ctx, r, "test "+test.Name, test.Scenario))

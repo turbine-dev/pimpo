@@ -1,0 +1,91 @@
+{
+ "id": "oc-10-stocks",
+ "request": "Todo dia útil às 10h30, me manda no Telegram a cotação de PETR4, ITUB4 e MXRF11 e destaca com ⚠️ as que variaram mais de 2% no dia.",
+ "now": "2026-09-24T10:30:00-03:00",
+ "calls": [
+  {
+   "capability": "http.getJSON",
+   "args": "https://brapi.dev/api/quote/PETR4,ITUB4,MXRF11",
+   "result": {
+    "results": [
+     {
+      "symbol": "PETR4",
+      "regularMarketPrice": 38.12,
+      "regularMarketChangePercent": -0.8
+     },
+     {
+      "symbol": "ITUB4",
+      "regularMarketPrice": 35.4,
+      "regularMarketChangePercent": 2.6
+     },
+     {
+      "symbol": "MXRF11",
+      "regularMarketPrice": 10.21,
+      "regularMarketChangePercent": 0.1
+     }
+    ]
+   }
+  },
+  {
+   "capability": "telegram.send",
+   "args": {
+    "text": "📈 Cotações:\nPETR4 R$ 38,12 (-0,8%)\n⚠️ ITUB4 R$ 35,40 (+2,6%)\nMXRF11 R$ 10,21 (+0,1%)"
+   },
+   "result": {
+    "ok": true
+   }
+  }
+ ],
+ "outcome": "Uma mensagem com as três cotações e um ⚠️ nas que variaram mais de 2%.",
+ "expect": [
+  {
+   "capability": "telegram.send",
+   "count": 1,
+   "contains": [
+    "PETR4",
+    "ITUB4",
+    "MXRF11",
+    "⚠️"
+   ]
+  }
+ ],
+ "holdout": {
+  "now": "2026-10-08T10:30:00-03:00",
+  "responses": [
+   {
+    "capability": "http.getJSON",
+    "result": {
+     "results": [
+      {
+       "symbol": "PETR4",
+       "regularMarketPrice": 36.0,
+       "regularMarketChangePercent": -3.1
+      },
+      {
+       "symbol": "ITUB4",
+       "regularMarketPrice": 35.2,
+       "regularMarketChangePercent": 0.4
+      },
+      {
+       "symbol": "MXRF11",
+       "regularMarketPrice": 10.3,
+       "regularMarketChangePercent": 0.2
+      }
+     ]
+    }
+   }
+  ],
+  "expect": [
+   {
+    "capability": "telegram.send",
+    "count": 1,
+    "contains": [
+     "PETR4",
+     "ITUB4",
+     "MXRF11",
+     "⚠️"
+    ]
+   }
+  ]
+ }
+}
