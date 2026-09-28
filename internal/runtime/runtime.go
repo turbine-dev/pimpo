@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dop251/goja"
@@ -102,8 +103,12 @@ type Options struct {
 	Now time.Time
 	// Zone and Locale drive the dates and money helpers; they default to
 	// the machine's zone and Portuguese.
-	Zone    *time.Location
-	Locale  string
+	Zone   *time.Location
+	Locale string
+	// Timeout bounds the routine's own work: time spent waiting on a
+	// capability, a judgment, a text or another routine does not count,
+	// since those have limits of their own and the caller's context bounds
+	// the whole run.
 	Timeout time.Duration
 	// MaxCalls bounds capability calls per run, so a runaway loop stops.
 	MaxCalls int
@@ -249,6 +254,13 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 	fail := func(err error) {
 		panic(vm.NewGoError(err))
 	}
+	clock := &workClock{limit: opt.Timeout, vm: vm}
+	// waiting stops the clock while the routine waits on the host.
+	waiting := func(fn func() goja.Value) goja.Value {
+		clock.pause()
+		defer clock.resume()
+		return fn()
+	}
 	bind := func(obj *goja.Object, method string, fn func(goja.FunctionCall) goja.Value) {
 		if err := obj.Set(method, fn); err != nil {
 			fail(err)
@@ -283,7 +295,9 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 					fail(fmt.Errorf("%s: %v is outside the manifest scope %v", name, args, allowed))
 				}
 			}
-			out, err := host.Call(ctx, name, scope, args)
+			var out any
+			var err error
+			waiting(func() goja.Value { out, err = host.Call(ctx, name, scope, args); return nil })
 			if err != nil {
 				fail(fmt.Errorf("%s: %w", name, err))
 			}
@@ -297,7 +311,10 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 			name, question := name, question
 			bind(judge, name, func(call goja.FunctionCall) goja.Value {
 				res.Calls++
-				p, err := host.Judge(ctx, name, question, call.Argument(0).Export())
+				var p float64
+				var err error
+				item := call.Argument(0).Export()
+				waiting(func() goja.Value { p, err = host.Judge(ctx, name, question, item); return nil })
 				if err != nil {
 					fail(fmt.Errorf("judge.%s: %w", name, err))
 				}
@@ -320,7 +337,10 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 				if written > MaxWrites {
 					fail(fmt.Errorf("routine asked for more than %d texts in one run", MaxWrites))
 				}
-				text, err := writer.Write(ctx, name, instruction, call.Argument(0).Export())
+				var text string
+				var err error
+				input := call.Argument(0).Export()
+				waiting(func() goja.Value { text, err = writer.Write(ctx, name, instruction, input); return nil })
 				if err != nil {
 					fail(fmt.Errorf("write.%s: %w", name, err))
 				}
@@ -402,7 +422,13 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 			if p, ok := call.Argument(1).Export().(map[string]any); ok {
 				params = p
 			}
-			out, calls, err := runHelper(ctx, m, id, params, host, opt, opt.MaxCalls-res.Calls)
+			var out any
+			var calls int
+			var err error
+			waiting(func() goja.Value {
+				out, calls, err = runHelper(ctx, m, id, params, host, opt, opt.MaxCalls-res.Calls)
+				return nil
+			})
 			res.Calls += calls
 			if err != nil {
 				fail(fmt.Errorf("routines.run(%q): %w", id, err))
@@ -411,8 +437,8 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 		})
 	}
 
-	timer := time.AfterFunc(opt.Timeout, func() { vm.Interrupt(ErrTimeout) })
-	defer timer.Stop()
+	clock.resume()
+	defer clock.pause()
 	stop := context.AfterFunc(ctx, func() { vm.Interrupt(ctx.Err()) })
 	defer stop()
 
@@ -578,4 +604,38 @@ func isIdent(s string) bool {
 		return false
 	}
 	return true
+}
+
+// workClock measures the routine's own running time and interrupts it
+// past the limit; it stands still while the routine waits on the host.
+type workClock struct {
+	mu    sync.Mutex
+	limit time.Duration
+	used  time.Duration
+	since time.Time
+	timer *time.Timer
+	vm    *goja.Runtime
+}
+
+func (c *workClock) resume() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.since = time.Now()
+	left := c.limit - c.used
+	if left <= 0 {
+		c.vm.Interrupt(ErrTimeout)
+		return
+	}
+	c.timer = time.AfterFunc(left, func() { c.vm.Interrupt(ErrTimeout) })
+}
+
+func (c *workClock) pause() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.timer == nil {
+		return
+	}
+	c.timer.Stop()
+	c.timer = nil
+	c.used += time.Since(c.since)
 }
