@@ -229,7 +229,10 @@ func (s *Scheduler) run(ctx context.Context, id, trigger string, event any) (sto
 	if params, err := r.Body.Manifest.ResolveParams(r.Settings.Params); err == nil {
 		h.Destinations = r.Body.Manifest.Destinations(params)
 	}
-	ctx, cancel := context.WithTimeout(host.WithEffort(host.WithModel(ctx, r.Settings.Model), r.Settings.Effort), 2*time.Minute)
+	// The routine's own code has 90 seconds; waiting on services and
+	// models, as a judgment per item does, may take longer, up to 15
+	// minutes in all.
+	ctx, cancel := context.WithTimeout(host.WithEffort(host.WithModel(ctx, r.Settings.Model), r.Settings.Effort), 15*time.Minute)
 	defer cancel()
 	res, runErr := runtime.Run(ctx, r.Body.Code, r.Body.Manifest, h, runtime.Options{Now: s.now(), Zone: s.zone(), Timeout: 90 * time.Second,
 		Params: r.Settings.Params, Event: event, State: s.State(ctx, id), Library: s.Library, ID: id})

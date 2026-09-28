@@ -223,3 +223,24 @@ func TestRoutinesUseOthersWithinTheirCapabilities(t *testing.T) {
 		}
 	}
 }
+
+type slowHost struct{ Host }
+
+func (slowHost) Call(ctx context.Context, name, scope string, args any) (any, error) {
+	time.Sleep(60 * time.Millisecond)
+	return map[string]any{"ok": true}, nil
+}
+
+// Waiting on the host does not count toward the time limit; a busy loop
+// still does.
+func TestTimeLimitCountsOnlyTheRoutinesWork(t *testing.T) {
+	m := Manifest{Capabilities: []string{"notify.send"}}
+	code := `async function run() { for (let i = 0; i < 5; i++) await notify.send({text: "x"}) }`
+	if _, err := Run(context.Background(), code, m, slowHost{}, Options{Timeout: 150 * time.Millisecond}); err != nil {
+		t.Fatalf("waiting counted as work: %v", err)
+	}
+	loop := `async function run() { await notify.send({text: "x"}); while (true) {} }`
+	if _, err := Run(context.Background(), loop, m, slowHost{}, Options{Timeout: 150 * time.Millisecond}); !errors.Is(err, ErrTimeout) && (err == nil || !strings.Contains(err.Error(), "time limit")) {
+		t.Fatalf("a busy loop ran on: %v", err)
+	}
+}
