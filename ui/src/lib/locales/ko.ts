@@ -612,7 +612,7 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'conn.google': 'Google로 로그인',
   'conn.googleText': '앱 비밀번호 없이 이메일과 캘린더를 한 번에 연결해요. 내 OAuth 클라이언트를 사용하므로 Pimpo 서버를 거치지 않아요.',
   'conn.googleRefused': 'Google이 거부했어요: {reason}',
-  'conn.googleStep1': '{link}에서 프로젝트를 만들고 Gmail, Google Calendar, Google Drive API를 켜세요(Drive는 백업용이에요).',
+  'conn.googleStep1': "{link}에서 프로젝트를 만들고 Gmail, Google Calendar, Google Drive(백업용), Google Sheets(스프레드시트 루틴용) API를 켜세요. 이미 연결했다면 스프레드시트를 허용하도록 다시 로그인하세요.",
   'conn.googleStep2': '{kind} 유형의 {type} 사용자 인증 정보를 만드세요.',
   'conn.googleClientType': 'OAuth 클라이언트 ID',
   'conn.googleAppKind': '데스크톱 앱',

@@ -612,7 +612,7 @@ export const en: Record<Key, string> = {
   'conn.google': 'Sign in with Google',
   'conn.googleText': 'Email and calendar in one go, no app password. It uses your own OAuth client: nothing goes through Pimpo’s servers.',
   'conn.googleRefused': 'Google refused: {reason}',
-  'conn.googleStep1': 'In the {link}, create a project and turn on the Gmail, Google Calendar and Google Drive APIs (Drive is only for backups).',
+  'conn.googleStep1': "In {link}, create a project and turn on the Gmail, Google Calendar, Google Drive (backups only) and Google Sheets (routines with spreadsheets) APIs. If you connected before, sign in again to allow spreadsheets.",
   'conn.googleStep2': 'Create an {type} credential of type {kind}.',
   'conn.googleClientType': 'OAuth client ID',
   'conn.googleAppKind': 'Desktop app',

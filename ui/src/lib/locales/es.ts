@@ -624,7 +624,7 @@ export const es: Record<Key, string> & Record<string, string> = {
   'conn.google': 'Iniciar sesión con Google',
   'conn.googleText': 'Correo y calendario de una vez, sin contraseña de aplicación. Usa tu propio cliente OAuth: nada pasa por servidores de Pimpo.',
   'conn.googleRefused': 'Google lo rechazó: {reason}',
-  'conn.googleStep1': 'En {link}, crea un proyecto y activa las APIs de Gmail, Google Calendar y Google Drive (Drive es solo para las copias de seguridad).',
+  'conn.googleStep1': "En {link}, crea un proyecto y activa las API de Gmail, Google Calendar, Google Drive (solo para copias) y Google Sheets (rutinas con hojas de cálculo). Si ya te habías conectado, vuelve a entrar para permitir las hojas.",
   'conn.googleStep2': 'Crea una credencial {type} de tipo {kind}.',
   'conn.googleClientType': 'ID de cliente OAuth',
   'conn.googleAppKind': 'App de escritorio',

@@ -18,9 +18,13 @@ import (
 	"time"
 )
 
-// Scopes: full mail access over IMAP/SMTP, read-only calendars, and the
-// Drive files Pimpo creates itself (its backups).
-var Scopes = []string{"https://mail.google.com/", "https://www.googleapis.com/auth/calendar.readonly", DriveScope, "openid", "email"}
+// Scopes: full mail access over IMAP/SMTP, read-only calendars, the
+// Drive files Pimpo creates itself (its backups), and the owner's
+// spreadsheets.
+var Scopes = []string{"https://mail.google.com/", "https://www.googleapis.com/auth/calendar.readonly", DriveScope, SheetsScope, "openid", "email"}
+
+// SheetsScope lets routines read and add to the owner's spreadsheets.
+const SheetsScope = "https://www.googleapis.com/auth/spreadsheets"
 
 const DriveScope = "https://www.googleapis.com/auth/drive.file"
 

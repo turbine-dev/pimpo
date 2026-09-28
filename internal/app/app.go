@@ -27,6 +27,7 @@ import (
 	"github.com/denerFernandes/pimpo/internal/connector/external"
 	"github.com/denerFernandes/pimpo/internal/connector/mail"
 	"github.com/denerFernandes/pimpo/internal/connector/services"
+	"github.com/denerFernandes/pimpo/internal/connector/sheets"
 	"github.com/denerFernandes/pimpo/internal/connector/telegramcap"
 	"github.com/denerFernandes/pimpo/internal/connector/web"
 	"github.com/denerFernandes/pimpo/internal/desktop"
@@ -165,6 +166,8 @@ type App struct {
 	// VoiceAPI replaces a cloud voice provider's address (openai,
 	// elevenlabs); tests only.
 	VoiceAPI map[string]string
+	// SheetsAPI replaces Google Sheets' address; tests only.
+	SheetsAPI string
 	// WhatsAppAPI replaces the Graph API; tests only.
 	WhatsAppAPI string
 	// VoiceModel is the whisper.cpp model used for voice notes.
@@ -479,6 +482,7 @@ func (a *App) router() *connector.Router {
 		reminderCap{a},
 		audioCap{a},
 		askCap{a},
+		&sheets.Sheets{Token: func(ctx context.Context) (string, error) { return a.Google.Token(ctx) }, Granted: func(ctx context.Context) bool { return a.Google.Granted(ctx, oauth.SheetsScope) }, API: a.SheetsAPI},
 	)
 	for _, k := range services.All() {
 		r.Add(k.Connector(a.catalogConfig))
