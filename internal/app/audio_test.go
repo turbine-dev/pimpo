@@ -95,3 +95,37 @@ func TestCloudVoice(t *testing.T) {
 		t.Fatal("accepted an unknown voice model")
 	}
 }
+
+// The chat's readings are kept: the same text with the same voice comes
+// back from the cache, another voice is read anew.
+func TestSpeakCache(t *testing.T) {
+	if _, err := exec.LookPath("say"); err != nil {
+		t.Skip("no macOS voices")
+	}
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ta.Home = t.TempDir()
+	speak := func() (int, string) {
+		req, _ := http.NewRequest("POST", ta.srv.URL+"/api/speak", strings.NewReader(`{"text":"Bom dia, tudo certo?","language":"pt-BR"}`))
+		req.Header.Set("Authorization", "Bearer tok")
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+		return resp.StatusCode, resp.Header.Get("X-Pimpo-Cache")
+	}
+	if code, cache := speak(); code != 200 || cache != "" {
+		t.Fatalf("first %d %q", code, cache)
+	}
+	if code, cache := speak(); code != 200 || cache != "hit" {
+		t.Fatalf("second %d %q", code, cache)
+	}
+	s := ta.Settings(context.Background())
+	s.ChatVoice = "system"
+	ta.do(t, "PUT", "/api/settings", s)
+	if _, cache := speak(); cache == "hit" {
+		t.Fatal("another voice came from the cache")
+	}
+}

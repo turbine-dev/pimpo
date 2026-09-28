@@ -1282,4 +1282,6 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'vc.about.browser': "ブラウザー自身の声。ファイルを作らずすぐに始まります。",
   'lm.transcribers': "音声の文字起こし（任意）",
   'lm.transcribersText': "Telegram のボイスメモやアプリでの音声入力を、音声を外に送らずここで理解します。大きいほど正確で遅くなります。",
+  'voice.preparing': "準備中…",
+  'voice.stopListening': "停止",
 }

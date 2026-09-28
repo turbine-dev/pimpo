@@ -1282,6 +1282,8 @@ export const pt = {
   'vc.about.browser': "A voz do próprio navegador: começa na hora, sem gerar arquivo.",
   'lm.transcribers': "Transcrição de voz (opcional)",
   'lm.transcribersText': "Para entender suas notas de voz do Telegram e o ditado no app, aqui mesmo, sem mandar áudio para fora. Quanto maior, mais preciso e mais lento.",
+  'voice.preparing': "preparando…",
+  'voice.stopListening': "Parar",
 }
 
 export type Key = keyof typeof pt

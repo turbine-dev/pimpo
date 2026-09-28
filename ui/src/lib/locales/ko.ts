@@ -1282,4 +1282,6 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'vc.about.browser': "브라우저 자체 음성: 파일 없이 바로 시작합니다.",
   'lm.transcribers': "음성 받아쓰기 (선택)",
   'lm.transcribersText': "텔레그램 음성 메시지와 앱의 받아쓰기를 오디오를 밖으로 보내지 않고 여기서 이해합니다. 클수록 정확하고 느립니다.",
+  'voice.preparing': "준비 중…",
+  'voice.stopListening': "정지",
 }

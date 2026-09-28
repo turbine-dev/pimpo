@@ -9,7 +9,7 @@ import { api, type ChatTurn, type Settings } from '../lib/api'
 import { cn } from '../lib/cn'
 import { relative, usd } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
-import { readAloud as listen, useDictation } from '../lib/voice'
+import { readAloud as listen, stopReading, useDictation, useReading, warmReading } from '../lib/voice'
 
 const suggestions: TKey[] = ['chat.s1', 'chat.s2', 'chat.s3', 'chat.s4']
 
@@ -49,11 +49,18 @@ export function Chat() {
   useEffect(() => {
     const done = turns.find((x) => x.id === readAloud && x.state !== 'running')
     if (done) {
-      listen(done.summary || done.error || '', settings.data?.chat_voice)
+      listen(done.summary || done.error || '', settings.data?.chat_voice, done.id)
       setReadAloud('')
     }
   }, [turns, readAloud])
   const remove = useMutation({ mutationFn: api.deleteChat, onSuccess: (_, gone) => { if (gone === id) nav('/chat'); qc.invalidateQueries({ queryKey: ['chats'] }) } })
+  // The newest answer's first sentence is read ahead, with a free voice.
+  const last = turns.at(-1)
+  useEffect(() => {
+    const st = settings.data
+    if (!st || !last?.summary || last.state === 'running') return
+    warmReading(last.summary, st.chat_voice || st.voice || 'auto')
+  }, [last?.id, last?.state, last?.summary, settings.data])
   const end = useRef<HTMLDivElement>(null)
   useEffect(() => { end.current?.scrollIntoView?.({ block: 'end' }) }, [turns.length, turns.at(-1)?.state])
 
@@ -191,6 +198,7 @@ function Turn({ chat, turn: x, onChange }: { chat: string; turn: ChatTurn; onCha
   const act = useMutation({ mutationFn: () => api.chatDo(chat, x.id), onSuccess: onChange })
   const compile = useMutation({ mutationFn: () => api.compile(x.id), onSuccess: () => { onChange(); qc.invalidateQueries({ queryKey: ['routines'] }) } })
   const failed = x.done?.results.filter((r) => !r.ok) ?? []
+  const reading = useReading()
   const routed = useRoutedText()(x.model)
   return (
     <div className="space-y-3">
@@ -245,7 +253,13 @@ function Turn({ chat, turn: x, onChange }: { chat: string; turn: ChatTurn; onCha
               )}
               {x.state === 'compiling' && <Loader2 size={13} className="animate-spin" />}
               {x.summary && (
-                <Button size="sm" variant="ghost" onClick={() => listen(x.summary!, qc.getQueryData<Settings>(['settings'])?.chat_voice)} aria-label={t('voice.listen')}><Volume2 size={13} /> {t('voice.listen')}</Button>
+                reading?.key === x.id ? (
+                  <Button size="sm" variant="ghost" onClick={stopReading} aria-label={t('voice.stopListening')}>
+                    {reading.phase === 'loading' ? <Loader2 size={13} className="animate-spin" /> : <Square size={12} />} {t(reading.phase === 'loading' ? 'voice.preparing' : 'voice.stopListening')}
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="ghost" onClick={() => listen(x.summary!, qc.getQueryData<Settings>(['settings'])?.chat_voice, x.id)} aria-label={t('voice.listen')}><Volume2 size={13} /> {t('voice.listen')}</Button>
+                )
               )}
               {x.cost_usd > 0 && <span>{t('chat.cost', { cost: usd(x.cost_usd) })}</span>}
               {routed && <span title={x.model?.by === 'jev' ? t('mp.weighedJev') : x.model?.by === 'rules' ? t('mp.weighedRules') : undefined}>· {routed}</span>}

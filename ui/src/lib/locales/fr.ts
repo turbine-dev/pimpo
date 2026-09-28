@@ -1307,4 +1307,6 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'vc.about.browser': "La voix du navigateur : démarre tout de suite, sans fichier.",
   'lm.transcribers': "Transcription vocale (facultatif)",
   'lm.transcribersText': "Pour comprendre vos notes vocales Telegram et la dictée dans l’app, ici même, sans envoyer d’audio. Plus il est gros, plus il est précis et lent.",
+  'voice.preparing': "préparation…",
+  'voice.stopListening': "Arrêter",
 }
