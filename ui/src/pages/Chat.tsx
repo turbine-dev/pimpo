@@ -30,8 +30,9 @@ export function Chat() {
   const assistants = useQuery({ queryKey: ['assistants'], queryFn: api.assistants })
   const [who, setWho] = useState('')
   const [model, setModel] = useState('auto')
+  const [effort, setEffort] = useState('auto')
   const [picked, setPicked] = useState(false)
-  useEffect(() => { if (!picked) setModel(chat.data?.model ?? 'auto') }, [chat.data?.model, picked])
+  useEffect(() => { if (!picked) { setModel(chat.data?.model ?? 'auto'); setEffort(chat.data?.effort ?? 'auto') } }, [chat.data?.model, chat.data?.effort, picked])
   useEffect(() => { setPicked(false) }, [id])
   const emojiOf = (a?: string) => assistants.data?.find((x) => x.id === a)?.emoji
   const current = assistants.data?.find((x) => x.id === chat.data?.chat.assistant)
@@ -41,7 +42,7 @@ export function Chat() {
   const location = useLocation()
   const [readAloud, setReadAloud] = useState<string>((location.state as { readAloud?: string } | null)?.readAloud ?? '')
   const send = useMutation({
-    mutationFn: ({ text }: { text: string; spoken: boolean }) => (id ? api.sendChat(id, text, picked ? model : '') : api.newChat(text, who, model)),
+    mutationFn: ({ text }: { text: string; spoken: boolean }) => (id ? api.sendChat(id, text, picked ? model : '', picked ? effort : '') : api.newChat(text, who, model, effort)),
     onSuccess: (r, v) => { if (v.spoken) setReadAloud(r.turn); setPicked(false); if (!id) nav(`/chat/${r.chat}`); refresh() },
   })
   useEffect(() => {
@@ -98,7 +99,7 @@ export function Chat() {
         )}
       </div>
       {send.error && <p className="mb-2 text-center text-[13px] text-danger">{send.error.message}</p>}
-      <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} model={model} onModel={(m) => { setModel(m); setPicked(true) }} />
+      <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} model={model} onModel={(m) => { setModel(m); setPicked(true) }} effort={effort} onEffort={(e) => { setEffort(e); setPicked(true) }} />
     </div>
   )
 }
@@ -134,7 +135,7 @@ export function Suggestions({ onPick, disabled, className }: { onPick: (text: st
   )
 }
 
-export function Composer({ disabled, onSend, model, onModel }: { disabled: boolean; onSend: (text: string, spoken: boolean) => void; model?: string; onModel?: (model: string) => void }) {
+export function Composer({ disabled, onSend, model, onModel, effort, onEffort }: { disabled: boolean; onSend: (text: string, spoken: boolean) => void; model?: string; onModel?: (model: string) => void; effort?: string; onEffort?: (effort: string) => void }) {
   const t = useT()
   const [text, setText] = useState('')
   const [spoken, setSpoken] = useState(false)
@@ -172,7 +173,7 @@ export function Composer({ disabled, onSend, model, onModel }: { disabled: boole
             {dictation.listening ? <Square size={14} /> : <Mic size={16} />}
           </button>
         )}
-        {onModel && <ModelPicker value={model ?? 'auto'} onChange={onModel} />}
+        {onModel && <ModelPicker value={model ?? 'auto'} onChange={onModel} effort={effort} onEffort={onEffort} />}
         <div className="flex-1" />
         <button type="submit" aria-label={t('chat.send')} disabled={!text.trim() || disabled}
           className="grid size-8 shrink-0 place-items-center rounded-xl bg-ink text-bg transition disabled:opacity-30">

@@ -41,31 +41,31 @@ func TestRouteModel(t *testing.T) {
 	defer func(old func(*App) (chooser, bool)) { tierChooser = old }(tierChooser)
 
 	tierChooser = func(*App) (chooser, bool) { return fixedChooser{"simple": 0.8, "normal": 0.15, "hard": 0.05}, true }
-	if r := ta.routeModel(ctx, "que horas são?", "", ""); r.Model != "openai:gpt-5-mini" || r.Tier != "simple" || r.By != "jev" {
+	if r := ta.routeModel(ctx, "que horas são?", "", "", ""); r.Model != "openai:gpt-5-mini" || r.Tier != "simple" || r.By != "jev" {
 		t.Fatalf("simple %+v", r)
 	}
 	tierChooser = func(*App) (chooser, bool) { return fixedChooser{"simple": 0.1, "normal": 0.2, "hard": 0.7}, true }
-	if r := ta.routeModel(ctx, "planeje minha viagem", "", ""); r.Model != "anthropic:claude-opus-5" || r.Tier != "hard" {
+	if r := ta.routeModel(ctx, "planeje minha viagem", "", "", ""); r.Model != "anthropic:claude-opus-5" || r.Tier != "hard" {
 		t.Fatalf("hard %+v", r)
 	}
 	tierChooser = func(*App) (chooser, bool) { return fixedChooser{"simple": 0.5, "normal": 0.1, "hard": 0.4}, true }
-	if r := ta.routeModel(ctx, "hmm", "", ""); r.Model != "anthropic:claude-sonnet-5" || r.Tier != "normal" {
+	if r := ta.routeModel(ctx, "hmm", "", "", ""); r.Model != "anthropic:claude-sonnet-5" || r.Tier != "normal" {
 		t.Fatalf("doubt should stay on the usual model: %+v", r)
 	}
-	if r := ta.routeModel(ctx, "que horas são?", "", "openai:gpt-5-mini"); r.By != "fixed" {
+	if r := ta.routeModel(ctx, "que horas são?", "", "openai:gpt-5-mini", ""); r.By != "fixed" {
 		t.Fatalf("fixed %+v", r)
 	}
 	// Near the day's spending limit the strong model is not used.
 	tierChooser = func(*App) (chooser, bool) { return fixedChooser{"hard": 0.9}, true }
 	ta.do(t, "PUT", "/api/budget", map[string]float64{"daily_usd": 1})
 	ta.Budget.Record(ctx, budgetCost(0.9, "exploration"))
-	if r := ta.routeModel(ctx, "planeje", "", ""); r.Model != "anthropic:claude-sonnet-5" {
+	if r := ta.routeModel(ctx, "planeje", "", "", ""); r.Model != "anthropic:claude-sonnet-5" {
 		t.Fatalf("spent the strong model near the limit: %+v", r)
 	}
 	s = ta.Settings(ctx)
 	s.AutoOff = true
 	ta.do(t, "PUT", "/api/settings", s)
-	if r := ta.routeModel(ctx, "que horas são?", "", ""); r.By != "default" {
+	if r := ta.routeModel(ctx, "que horas são?", "", "", ""); r.By != "default" {
 		t.Fatalf("auto off %+v", r)
 	}
 }
@@ -119,5 +119,104 @@ func TestModelCommandOnAChannel(t *testing.T) {
 	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+5511", Text: "/model auto"})
 	if !strings.Contains(l.last(), "esta conversa usa auto") {
 		t.Fatalf("%q", l.last())
+	}
+}
+
+// The same weighing sets how hard the model thinks: little for a quick
+// request, hard for a heavy one, the job's default otherwise; the owner's
+// level wins, and near the spending limit it does not climb.
+func TestRouteEffort(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ctx := t.Context()
+	s := ta.Settings(ctx)
+	s.Efforts = map[string]string{"explore": "medium"}
+	ta.do(t, "PUT", "/api/settings", s)
+	defer func(old func(*App) (chooser, bool)) { tierChooser = old }(tierChooser)
+	for probs, want := range map[string]string{"simple": "low", "hard": "high", "normal": "medium"} {
+		tierChooser = func(*App) (chooser, bool) { return fixedChooser{probs: 0.9}, true }
+		if r := ta.routeModel(ctx, "x", "", "", ""); r.Effort != want {
+			t.Errorf("%s: effort %+v, want %s", probs, r, want)
+		}
+	}
+	tierChooser = func(*App) (chooser, bool) { return fixedChooser{"simple": 0.9}, true }
+	if r := ta.routeModel(ctx, "x", "", "opus", "max"); r.Effort != "max" || r.EffortBy != "fixed" || r.Model != "opus" {
+		t.Errorf("owner's level: %+v", r)
+	}
+	if r := ta.routeModel(ctx, "x", "", "opus", ""); r.Effort != "low" || r.By != "fixed" {
+		t.Errorf("fixed model, automatic level: %+v", r)
+	}
+	tierChooser = func(*App) (chooser, bool) { return fixedChooser{"hard": 0.9}, true }
+	ta.do(t, "PUT", "/api/budget", map[string]float64{"daily_usd": 1})
+	ta.Budget.Record(ctx, budgetCost(0.9, "exploration"))
+	if r := ta.routeModel(ctx, "x", "", "", ""); r.Effort != "medium" {
+		t.Errorf("climbed near the limit: %+v", r)
+	}
+	s = ta.Settings(ctx)
+	s.Efforts = map[string]string{"explore": "extreme"}
+	if code, _ := ta.do(t, "PUT", "/api/settings", s); code != 400 {
+		t.Error("accepted an unknown level")
+	}
+}
+
+// A chat's level reaches the model, and the answer says which it was.
+func TestChatEffort(t *testing.T) {
+	var seen []string
+	agent := llm.FakeAgent{Script: func(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
+		seen = append(seen, r.Effort)
+		return llm.Response{Text: "ok"}, nil
+	}}
+	ta := newApp(t, agent, &llm.Fake{})
+	defer func(old func(*App) (chooser, bool)) { tierChooser = old }(tierChooser)
+	tierChooser = func(*App) (chooser, bool) { return nil, false }
+	_, out := ta.do(t, "POST", "/api/chats", map[string]string{"text": "Resuma meus e-mails de hoje", "effort": "high"})
+	chat := out["chat"].(string)
+	ta.Explore.Wait()
+	ta.do(t, "POST", "/api/chats/"+chat+"/messages", map[string]string{"text": "e os de ontem?"})
+	ta.Explore.Wait()
+	ta.do(t, "POST", "/api/chats/"+chat+"/messages", map[string]string{"text": "ok", "effort": "auto"})
+	ta.Explore.Wait()
+	_, got := ta.do(t, "GET", "/api/chats/"+chat, nil)
+	if len(seen) != 3 || seen[0] != "high" || seen[1] != "high" || seen[2] == "high" || got["effort"] != "auto" {
+		t.Fatalf("seen %v, chat effort %v", seen, got["effort"])
+	}
+	turn := got["turns"].([]any)[0].(map[string]any)["model"].(map[string]any)
+	if turn["effort"] != "high" || turn["effort_by"] != "fixed" {
+		t.Fatalf("turn %v", turn)
+	}
+	if code, _ := ta.do(t, "POST", "/api/chats", map[string]string{"text": "x", "effort": "turbo"}); code != 400 {
+		t.Fatal("accepted an unknown level")
+	}
+}
+
+func TestEffortCommandOnAChannel(t *testing.T) {
+	var seen []string
+	agent := llm.FakeAgent{Script: func(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
+		seen = append(seen, r.Effort)
+		return llm.Response{Text: "ok"}, nil
+	}}
+	ta := newApp(t, agent, &llm.Fake{})
+	defer func(old func(*App) (chooser, bool)) { tierChooser = old }(tierChooser)
+	tierChooser = func(*App) (chooser, bool) { return nil, false }
+	ctx := context.Background()
+	l := &fakeLink{}
+	run := &linkRun{link: l, cancel: func() {}}
+	ta.links = map[string]*linkRun{"signal": run}
+	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+5511", Text: "pimpo " + ta.Channel.PairingCode()})
+	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+5511", Text: "/pensar"})
+	if !strings.Contains(l.last(), "Raciocínio desta conversa: auto") {
+		t.Fatalf("%q", l.last())
+	}
+	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+5511", Text: "/pensar máximo"})
+	if !strings.Contains(l.last(), "nível máximo") {
+		t.Fatalf("%q", l.last())
+	}
+	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+5511", Text: "/think turbo"})
+	if !strings.Contains(l.last(), "turbo") {
+		t.Fatalf("%q", l.last())
+	}
+	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+5511", Text: "Resuma meus e-mails de hoje"})
+	ta.Explore.Wait()
+	if len(seen) != 1 || seen[0] != "max" {
+		t.Fatalf("seen %v", seen)
 	}
 }

@@ -1196,6 +1196,22 @@ export const pt = {
   'ms.autoByJev': "O Jev avalia cada pedido.",
   'ms.autoByRules': "Regras simples avaliam cada pedido; com o Jev ligado a avaliação fica mais precisa.",
   'ms.autoBudget': "O modelo forte não é usado depois de 80% do limite do dia.",
+  'mp.model': "Modelo",
+  'mp.effort': "Raciocínio",
+  'mp.effortAuto': "Pensa pouco nos pedidos simples e mais nos difíceis.",
+  'mp.effort.low': "Respostas rápidas, pouco custo.",
+  'mp.effort.medium': "Equilíbrio entre rapidez e cuidado.",
+  'mp.effort.high': "Pensa com calma antes de agir.",
+  'mp.effort.max': "O máximo que o modelo oferece; mais lento e caro.",
+  'mp.thinks': "raciocínio {level}",
+  'effort.low': "baixo",
+  'effort.medium': "médio",
+  'effort.high': "alto",
+  'effort.max': "máximo",
+  'ms.effortJob': "Raciocínio: {level}",
+  'ms.effortModel': "Raciocínio: padrão",
+  'ms.autoEffort': "O nível de raciocínio segue a mesma avaliação: baixo nos pedidos simples, alto nos difíceis.",
+  'ms.effortDefault': "Padrão",
 }
 
 export type Key = keyof typeof pt

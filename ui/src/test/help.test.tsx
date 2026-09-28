@@ -12,7 +12,7 @@ describe('Help and settings', () => {
     const calls = mockFetch({ 'POST /api/chats': { chat: 'c9', turn: 'e1' } })
     wrap(<Routes><Route path="/" element={<Help />} /><Route path="/chat/:id" element={<p>chat aberto</p>} /></Routes>)
     await userEvent.click(screen.getByRole('button', { name: 'Como abro o Pimpo no celular?' }))
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'Como abro o Pimpo no celular?', assistant: '', model: '' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ text: 'Como abro o Pimpo no celular?', assistant: '', model: '', effort: '' }))
     expect(await screen.findByText('chat aberto')).toBeInTheDocument()
   })
 

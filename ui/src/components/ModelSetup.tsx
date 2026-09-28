@@ -1,8 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, ChevronRight, Cpu, ExternalLink, HardDrive, Loader2, Plus, Search, Sparkles, Trash2, X } from 'lucide-react'
+import { Brain, Check, ChevronRight, Cpu, ExternalLink, HardDrive, Loader2, Plus, Search, Sparkles, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { api, type CatalogModel, type Job, type ModelOption, type ModelTest, type Provider, type Settings } from '../lib/api'
+import { api, EFFORTS, type CatalogModel, type Effort, type Job, type ModelOption, type ModelTest, type Provider, type Settings } from '../lib/api'
 import { cn } from '../lib/cn'
 import { usd } from '../lib/format'
 import { fill, useT, type TKey } from '../lib/i18n'
@@ -15,6 +15,22 @@ const jobs: { job: Job; key: 'explore_model' | 'compile_model' | 'judge_model'; 
   { job: 'compile', key: 'compile_model', label: 'models.compile', text: 'ms.compileText' },
   { job: 'judge', key: 'judge_model', label: 'ms.judge', text: 'ms.judgeText' },
 ]
+
+// EffortSelect picks how hard a model thinks; "" keeps the default, which
+// is the job's level when there is one and the model's own otherwise.
+export function EffortSelect({ value, onChange, fallback, className }: { value: string; onChange: (e: string) => void; fallback?: string; className?: string }) {
+  const t = useT()
+  const name = (e: string) => { const n = t(`effort.${e}` as TKey); return n.charAt(0).toUpperCase() + n.slice(1) }
+  return (
+    <label className={cn('relative block', className)} title={t('mp.effort')}>
+      <Brain size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
+      <select className={cn(field, 'w-full pl-8')} value={value} aria-label={t('mp.effort')} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{fallback ? `${t('ms.effortDefault')} (${t(`effort.${fallback}` as TKey)})` : t('ms.effortDefault')}</option>
+        {EFFORTS.map((e) => <option key={e} value={e}>{name(e)}</option>)}
+      </select>
+    </label>
+  )
+}
 
 export const label = (id: string) => (claudeCode.includes(id) ? `Claude Code · ${id}` : id === 'codex' ? 'Codex · ChatGPT' : id)
 const price = (t: ReturnType<typeof useT>, m: { price_in: number; price_out: number; free?: boolean }) =>
@@ -72,10 +88,14 @@ export function ModelSetup() {
                   <div className="text-[12px] text-ink-3">{t(text)}</div>
                 </div>
                 <div className="space-y-2">
-                  <select className={cn(field, 'w-full')} value={s[key]} aria-label={t(l)} onChange={(e) => save.mutate((x) => ({ ...x, [key]: e.target.value }))}>
-                    {!options.includes(s[key]) && <option value={s[key]}>{label(s[key])}</option>}
-                    {options.map((o) => <option key={o} value={o}>{label(o)}</option>)}
-                  </select>
+                  <div className="flex gap-2">
+                    <select className={cn(field, 'min-w-0 flex-1')} value={s[key]} aria-label={t(l)} onChange={(e) => save.mutate((x) => ({ ...x, [key]: e.target.value }))}>
+                      {!options.includes(s[key]) && <option value={s[key]}>{label(s[key])}</option>}
+                      {options.map((o) => <option key={o} value={o}>{label(o)}</option>)}
+                    </select>
+                    <EffortSelect value={s.efforts?.[job] ?? ''} className="w-[124px] shrink-0"
+                      onChange={(e) => save.mutate((x) => { const ef = { ...x.efforts }; if (e) ef[job] = e as Effort; else delete ef[job]; return { ...x, efforts: ef } })} />
+                  </div>
                   <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
                     <span className="text-ink-3">{t('ms.fallbacks')}</span>
                     {fallbacks.length === 0 && <span className="text-ink-3">{t('ms.noFallback')}</span>}
@@ -220,7 +240,7 @@ function AutoChoice({ s, options, save }: { s: Settings; options: string[]; save
         <div className="mt-4 space-y-4">
           {pick('auto_light', s.auto_light ? undefined : auto?.light, 'ms.autoLight', 'ms.autoLightText')}
           {pick('auto_strong', s.auto_strong ? undefined : auto?.strong, 'ms.autoStrong', 'ms.autoStrongText')}
-          <p className="text-[12px] text-ink-3">{t(auto?.weigher === 'jev' ? 'ms.autoByJev' : 'ms.autoByRules')} {t('ms.autoBudget')}</p>
+          <p className="text-[12px] text-ink-3">{t('ms.autoEffort')} {t(auto?.weigher === 'jev' ? 'ms.autoByJev' : 'ms.autoByRules')} {t('ms.autoBudget')}</p>
         </div>
       )}
     </Card>

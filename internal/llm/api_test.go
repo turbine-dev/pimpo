@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -139,5 +140,89 @@ func TestOpenAICompatibleLoopAndStructuredOutput(t *testing.T) {
 	out, err := a.Generate(context.Background(), Request{Prompt: "nome?", Schema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}}}`)})
 	if err != nil || string(out.Structured) != `{"name":"Bom dia"}` {
 		t.Fatalf("%s %v", out.Structured, err)
+	}
+}
+
+// Effort reaches each provider in its own field; thinking comes back to
+// Anthropic unchanged after a tool call; a model that refuses the level
+// answers without it.
+func TestEffort(t *testing.T) {
+	var calls []string
+	mcp := fakeMCP(t, &calls)
+	defer mcp.Close()
+	var bodies []map[string]any
+	var mu sync.Mutex
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		mu.Lock()
+		bodies = append(bodies, body)
+		n := len(bodies)
+		mu.Unlock()
+		if r.URL.Path == "/messages" {
+			if n == 1 {
+				io.WriteString(w, `{"content":[{"type":"thinking","thinking":"hm","signature":"sig1"},{"type":"tool_use","id":"tu1","name":"weather_today","input":{}}],"usage":{"input_tokens":1,"output_tokens":1}}`)
+				return
+			}
+			io.WriteString(w, `{"content":[{"type":"text","text":"24"}],"usage":{"input_tokens":1,"output_tokens":1}}`)
+			return
+		}
+		if _, ok := body["reasoning_effort"]; ok && body["model"] == "old" {
+			w.WriteHeader(400)
+			io.WriteString(w, `{"error":{"message":"Unrecognized request argument supplied: reasoning_effort"}}`)
+			return
+		}
+		io.WriteString(w, `{"choices":[{"message":{"content":"ok"}}],"usage":{}}`)
+	}))
+	defer api.Close()
+	ctx := context.Background()
+
+	if _, err := (API{Provider: "anthropic", Key: "k", Base: api.URL, Model: "claude-sonnet-5"}).Run(ctx, AgentRequest{Prompt: "tempo?", MCPURL: mcp.URL, Effort: "max"}); err != nil {
+		t.Fatal(err)
+	}
+	if oc, _ := bodies[0]["output_config"].(map[string]any); oc["effort"] != "max" || bodies[0]["max_tokens"] != float64(32000) {
+		t.Errorf("anthropic effort: %v %v", bodies[0]["output_config"], bodies[0]["max_tokens"])
+	}
+	msgs := bodies[1]["messages"].([]any)
+	first := msgs[1].(map[string]any)["content"].([]any)[0].(map[string]any)
+	if first["type"] != "thinking" || first["signature"] != "sig1" {
+		t.Errorf("thinking not sent back: %v", first)
+	}
+
+	bodies = nil
+	(API{Provider: "openrouter", Base: api.URL, Model: "x"}).Generate(ctx, Request{Prompt: "a", Effort: "high"})
+	(API{Provider: "openai", Base: api.URL, Model: "x"}).Generate(ctx, Request{Prompt: "a", Effort: "max"})
+	(API{Provider: "deepseek", Base: api.URL, Model: "x"}).Generate(ctx, Request{Prompt: "a", Effort: "low"})
+	if r, _ := bodies[0]["reasoning"].(map[string]any); r["effort"] != "high" {
+		t.Errorf("openrouter: %v", bodies[0])
+	}
+	if bodies[1]["reasoning_effort"] != "high" {
+		t.Errorf("openai max should be high: %v", bodies[1])
+	}
+	if _, ok := bodies[2]["reasoning_effort"]; ok {
+		t.Errorf("deepseek got an effort: %v", bodies[2])
+	}
+
+	bodies = nil
+	resp, err := (API{Provider: "openai", Base: api.URL, Model: "old"}).Generate(ctx, Request{Prompt: "a", Effort: "low"})
+	if err != nil || resp.Text != "ok" || len(bodies) != 2 {
+		t.Fatalf("refused effort should retry without it: %v %v %d", resp, err, len(bodies))
+	}
+	if _, ok := bodies[1]["reasoning_effort"]; ok {
+		t.Error("retry still sent the effort")
+	}
+}
+
+// Claude Code gets the level as --effort.
+func TestClaudeCLIEffort(t *testing.T) {
+	dir := t.TempDir()
+	bin := dir + "/claude"
+	os.WriteFile(bin, []byte("#!/bin/sh\necho \"$@\" > "+dir+"/args\necho '{\"result\":\"ok\"}'\n"), 0o755)
+	if _, err := (ClaudeCLI{Binary: bin}).Generate(context.Background(), Request{Prompt: "a", Effort: "max"}); err != nil {
+		t.Fatal(err)
+	}
+	args, _ := os.ReadFile(dir + "/args")
+	if !strings.Contains(string(args), "--effort max") {
+		t.Fatalf("args %s", args)
 	}
 }

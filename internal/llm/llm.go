@@ -20,8 +20,28 @@ type Request struct {
 	// Schema, when set, asks for structured output matching this JSON schema.
 	Schema json.RawMessage
 	Model  string
+	// Effort is how hard the model thinks: low, medium, high or max; ""
+	// leaves the model's own default.
+	Effort string
 	// MaxCostUSD stops the call if it would cost more.
 	MaxCostUSD float64
+}
+
+// Efforts are the levels of thinking Pimpo offers, lightest first. Each
+// backend maps them to its own scale.
+var Efforts = []string{"low", "medium", "high", "max"}
+
+// ValidEffort says whether e is "" or one of Efforts.
+func ValidEffort(e string) bool {
+	if e == "" {
+		return true
+	}
+	for _, x := range Efforts {
+		if x == e {
+			return true
+		}
+	}
+	return false
 }
 
 type Response struct {
@@ -49,6 +69,9 @@ func (c ClaudeCLI) Generate(ctx context.Context, r Request) (Response, error) {
 	args := []string{"-p", r.Prompt, "--output-format", "json", "--tools", "", "--no-session-persistence", "--strict-mcp-config"}
 	if m := firstNonEmpty(r.Model, c.Model); m != "" {
 		args = append(args, "--model", m)
+	}
+	if r.Effort != "" {
+		args = append(args, "--effort", r.Effort)
 	}
 	if r.System != "" {
 		args = append(args, "--system-prompt", r.System)
@@ -129,6 +152,7 @@ type AgentRequest struct {
 	Prompt     string
 	MCPURL     string
 	Model      string
+	Effort     string
 	MaxCostUSD float64
 	MaxTurns   int
 }
@@ -150,6 +174,9 @@ func (c ClaudeCLI) Run(ctx context.Context, r AgentRequest) (Response, error) {
 		"--strict-mcp-config", "--mcp-config", string(cfg), "--allowed-tools", "mcp__pimpo"}
 	if m := firstNonEmpty(r.Model, c.Model); m != "" {
 		args = append(args, "--model", m)
+	}
+	if r.Effort != "" {
+		args = append(args, "--effort", r.Effort)
 	}
 	if r.System != "" {
 		args = append(args, "--system-prompt", r.System)

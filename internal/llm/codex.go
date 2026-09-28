@@ -43,7 +43,7 @@ func CodexBinary() string {
 // how Codex calls MCP tools, and what is left in it cannot read anything.
 var codexOff = []string{"shell_tool", "unified_exec", "browser_use", "browser_use_external", "computer_use", "apps", "multi_agent", "view_image"}
 
-func (c CodexCLI) run(ctx context.Context, prompt, system, model string, extra []string) (string, error) {
+func (c CodexCLI) run(ctx context.Context, prompt, system, model, effort string, extra []string) (string, error) {
 	bin := c.Binary
 	if bin == "" {
 		bin = CodexBinary()
@@ -69,6 +69,13 @@ func (c CodexCLI) run(ctx context.Context, prompt, system, model string, extra [
 	}
 	if m := firstNonEmpty(model, c.Model); m != "" && m != "codex" {
 		args = append(args, "-m", strings.TrimPrefix(m, "codex:"))
+	}
+	if effort != "" {
+		// Codex calls its top level xhigh.
+		if effort == "max" {
+			effort = "xhigh"
+		}
+		args = append(args, "-c", `model_reasoning_effort="`+effort+`"`)
 	}
 	args = append(append(args, extra...), "-")
 	cmd := exec.CommandContext(ctx, bin, args...)
@@ -123,7 +130,7 @@ func (c CodexCLI) Generate(ctx context.Context, r Request) (Response, error) {
 		f.Close()
 		extra = append(extra, "--output-schema", f.Name())
 	}
-	text, err := c.run(ctx, r.Prompt, r.System, r.Model, extra)
+	text, err := c.run(ctx, r.Prompt, r.System, r.Model, r.Effort, extra)
 	if err != nil {
 		return Response{}, err
 	}
@@ -143,6 +150,6 @@ func (c CodexCLI) Run(ctx context.Context, r AgentRequest) (Response, error) {
 	// Pimpo's tools are pre-approved here because Pimpo's own policy and
 	// approvals check every call on the other side.
 	extra := []string{"-c", "mcp_servers.pimpo.url=" + string(url), "-c", `mcp_servers.pimpo.default_tools_approval_mode="approve"`}
-	text, err := c.run(ctx, r.Prompt, r.System, r.Model, extra)
+	text, err := c.run(ctx, r.Prompt, r.System, r.Model, r.Effort, extra)
 	return Response{Text: text}, err
 }

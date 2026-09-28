@@ -89,6 +89,9 @@ type Settings struct {
 	// Fallbacks are tried in order when a job's model fails: explore,
 	// compile and judge.
 	Fallbacks map[string][]string `json:"fallbacks,omitempty"`
+	// Efforts are how hard each job's model thinks by default (explore,
+	// compile, judge): low, medium, high or max; missing is the model's own.
+	Efforts map[string]string `json:"efforts,omitempty"`
 	// AutoOff stops the automatic model choice in chats; AutoLight and
 	// AutoStrong override the models it sends simple and hard requests to.
 	AutoOff    bool   `json:"auto_off,omitempty"`
@@ -339,6 +342,14 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 		}
 		known[m.ID] = true
 	}
+	for job, e := range s.Efforts {
+		if job != "explore" && job != "compile" && job != "judge" {
+			return server.StatusError{Status: 400, Msg: "efforts are for explore, compile or judge"}
+		}
+		if !llm.ValidEffort(e) {
+			return server.StatusError{Status: 400, Msg: "effort is low, medium, high or max"}
+		}
+	}
 	chosen := []string{s.ExploreModel, s.CompileModel, s.JudgeModel, s.AutoLight, s.AutoStrong}
 	for job, list := range s.Fallbacks {
 		if job != "explore" && job != "compile" && job != "judge" {
@@ -536,6 +547,13 @@ func (c claude) Generate(ctx context.Context, r llm.Request) (llm.Response, erro
 	} else if r.Model == s.JudgeModel || r.Model == host.ModelOf(ctx) {
 		job = "judge"
 	}
+	if r.Effort == "" {
+		if job == "judge" {
+			r.Effort = firstModel(host.EffortOf(ctx), s.Efforts["judge"])
+		} else {
+			r.Effort = s.Efforts["compile"]
+		}
+	}
 	return c.a.withFallback(ctx, job, r.Model, func(model string) (llm.Response, error) {
 		r.Model = model
 		if api, ok, err := c.a.apiModel(ctx, model); ok {
@@ -565,8 +583,12 @@ func firstModel(ms ...string) string {
 func isCodex(model string) bool { return model == "codex" || strings.HasPrefix(model, "codex:") }
 
 func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
+	s := c.a.Settings(ctx)
 	if r.Model == "" {
-		r.Model = c.a.Settings(ctx).ExploreModel
+		r.Model = s.ExploreModel
+	}
+	if r.Effort == "" {
+		r.Effort = s.Efforts["explore"]
 	}
 	return c.a.withFallback(ctx, "explore", r.Model, func(model string) (llm.Response, error) {
 		r.Model = model
@@ -771,6 +793,9 @@ func (a *App) converse(ctx context.Context, via, text string) (string, error) {
 	if m := modelCommand.FindStringSubmatch(text); m != nil {
 		return a.modelCommand(ctx, key, strings.TrimSpace(m[1])), nil
 	}
+	if m := effortCommand.FindStringSubmatch(text); m != nil {
+		return a.effortCommand(ctx, key, strings.TrimSpace(m[1])), nil
+	}
 	var ids []string
 	conv := ""
 	if raw, _ := a.Events.Get(ctx, key); raw != "" {
@@ -782,8 +807,9 @@ func (a *App) converse(ctx context.Context, via, text string) (string, error) {
 		}
 	}
 	history := a.history(ctx, ids)
-	pick := a.routeModel(ctx, text, history, a.convModel(ctx, key))
-	o := explore.Options{Context: history, Model: pick.Model}
+	convEffort, _ := a.Events.Get(ctx, key+".effort")
+	pick := a.routeModel(ctx, text, history, a.convModel(ctx, key), convEffort)
+	o := explore.Options{Context: history, Model: pick.Model, Effort: pick.Effort}
 	exp, err := a.Explore.StartWith(ctx, text, actor(ctx), o)
 	if err != nil {
 		return "", err
@@ -882,6 +908,44 @@ func (a *App) modelCommand(ctx context.Context, key, arg string) string {
 		a.Events.Put(ctx, key+".model", arg)
 	}
 	return i18n.T(ctx, "msg.model.set", "model", arg)
+}
+
+var effortCommand = regexp.MustCompile(`(?i)^\s*/(?:think|pensar|pensa|effort|esforço|esforco|reasoning|raciocinio|raciocínio|réflexion|reflexion|denken|pensare|思考|생각|думать)(?:\s+(.*))?\s*$`)
+
+// effortWords are the levels as people may type them, in the app's
+// languages.
+var effortWords = map[string]string{
+	"low": "low", "baixo": "low", "bajo": "low", "bas": "low", "niedrig": "low", "basso": "low", "低": "low", "낮음": "low", "низкий": "low",
+	"medium": "medium", "médio": "medium", "medio": "medium", "moyen": "medium", "mittel": "medium", "中": "medium", "보통": "medium", "средний": "medium",
+	"high": "high", "alto": "high", "élevé": "high", "eleve": "high", "hoch": "high", "高": "high", "높음": "high", "высокий": "high",
+	"max": "max", "máximo": "max", "maximo": "max", "maximum": "max", "massimo": "max", "maximal": "max", "最大": "max", "최대": "max", "максимум": "max",
+	"auto": Auto, "automático": Auto, "automatico": Auto, "automatic": Auto, "automatique": Auto, "automatisch": Auto,
+}
+
+// effortCommand answers /pensar: with nothing, the level in use; with a
+// level, that level for this conversation; auto goes back to Pimpo's
+// choice.
+func (a *App) effortCommand(ctx context.Context, key, arg string) string {
+	name := func(level string) string { return i18n.T(ctx, "effort."+level) }
+	var names []string
+	for _, e := range append([]string{Auto}, llm.Efforts...) {
+		names = append(names, name(e))
+	}
+	options := strings.Join(names, ", ")
+	if arg == "" {
+		current, _ := a.Events.Get(ctx, key+".effort")
+		return i18n.T(ctx, "msg.effort.current", "effort", name(firstModel(current, Auto)), "options", options)
+	}
+	level, ok := effortWords[strings.ToLower(arg)]
+	if !ok {
+		return i18n.T(ctx, "msg.effort.unknown", "effort", arg, "options", options)
+	}
+	if level == Auto {
+		a.Events.Put(ctx, key+".effort", "")
+	} else {
+		a.Events.Put(ctx, key+".effort", level)
+	}
+	return i18n.T(ctx, "msg.effort.set", "effort", name(level))
 }
 
 func channelTitle(via string) string {
