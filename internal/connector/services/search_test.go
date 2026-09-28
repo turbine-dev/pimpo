@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -48,5 +50,29 @@ func TestWebSearchWithBraveOrSearXNG(t *testing.T) {
 	}
 	if _, err := callSearch(ctx, cfgMap(map[string]string{"searxng_url": "searx.local"}), "web.search", "", map[string]any{"query": "x"}); err == nil {
 		t.Fatal("accepted an address without a scheme")
+	}
+}
+
+func TestWebSearchWithPerplexity(t *testing.T) {
+	var auth, query string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		auth, query = r.Header.Get("Authorization"), fmt.Sprint(body["query"])
+		if r.Method != "POST" || r.URL.Path != "/search" || body["max_results"] != float64(2) {
+			w.WriteHeader(400)
+			return
+		}
+		w.Write([]byte(`{"results":[{"title":"Selic hoje","url":"https://bcb.gov.br/selic","snippet":"A taxa está em 10,5%","date":"2026-09-28"}]}`))
+	}))
+	defer srv.Close()
+	BaseURL["perplexity"] = srv.URL
+	defer delete(BaseURL, "perplexity")
+	out, err := callSearch(context.Background(), cfgMap(map[string]string{"perplexity_key": "pk", "searxng_url": "https://ignored"}), "web.search", "", map[string]any{"query": "selic", "count": float64(2)})
+	if err != nil || auth != "Bearer pk" || query != "selic" {
+		t.Fatalf("%v %q %q", err, auth, query)
+	}
+	if res := out.([]result); len(res) != 1 || res[0].URL != "https://bcb.gov.br/selic" || res[0].Snippet != "A taxa está em 10,5%" {
+		t.Fatalf("%+v", res)
 	}
 }

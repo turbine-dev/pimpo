@@ -124,7 +124,7 @@ If a channel keeps failing for three minutes (Telegram, Discord, Slack or Signal
 
 **Web pages:** a task or routine can read any web page (`web.read`): its title, its text without menus' scripts and styles, the structured data shops publish (the product's price, its availability) and its links. Like any web read, the first visit to a site asks you once. Some big shops (Amazon, Mercado Livre, Zoom) refuse automated reads; KaBuM and most smaller sites answer.
 
-**Busca na web** in Connections lets Pimpo search the internet, with a Brave Search API key (free for 2,000 searches a month) or the address of a SearXNG instance you trust. DuckDuckGo has no official API for web results; a SearXNG instance can include it among its sources.
+**Busca na web** in Connections lets Pimpo search the internet, with a Brave Search API key (free for 2,000 searches a month), a Perplexity API key (about US$5 per thousand searches, billed by Perplexity) or the address of a SearXNG instance you trust. DuckDuckGo has no official API for web results; a SearXNG instance can include it among its sources.
 
 **Conexões › Explorar** searches the official MCP registry: hundreds of servers for files, GitHub, databases, notes, maps and more. Choose one, fill in what it asks for, and **Ver as ferramentas** shows what it offers. Check which tools Pimpo may use and how risky each one is (irreversible ones always ask you first), then install. **Adicionar manualmente** takes a command or an https address you already have. See [CONNECTORS.md](CONNECTORS.md) to write your own.
 
