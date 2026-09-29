@@ -43,3 +43,16 @@ Before installing, the app remembers the version it leaves. **Voltar para a vers
 
 **For maintainers.** The release workflow signs update bundles when the repository has two secrets, `TAURI_SIGNING_PRIVATE_KEY` (the contents of the private key file) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. It then builds the macOS `.app.tar.gz`, the Windows setup and the Linux AppImage with their `.sig` files, writes `latest.json` (`scripts/latest-json.py`) and attaches it to the release and to `channel-beta`. Without the secrets the installers are built as before and the workflow warns that automatic updates are off. The key pair was generated with `npx tauri signer generate`; the private key is held by the maintainers, never in the repository. Losing it means shipping a new public key in a version users install by hand.
 
+## Packages and the website
+
+| Where | How | Needs |
+|---|---|---|
+| Homebrew, command line | `brew install turbine-dev/tap/pimpo`, written by GoReleaser | `HOMEBREW_TAP_TOKEN`, a token that can push to `turbine-dev/homebrew-tap` |
+| Homebrew, desktop app | `brew install --cask turbine-dev/tap/pimpo-app`, written by `scripts/cask.py` in `desktop.yml` | the same token |
+| winget | `TurbineDev.Pimpo`, updated by `desktop.yml` | a first manual submission, then `WINGET_TOKEN` ([packaging/winget](../packaging/winget/README.md)) |
+| Flathub | `app.pimpo.desktop` | building and submitting the manifest in [packaging/flatpak](../packaging/flatpak/README.md) |
+| Docker | `ghcr.io/turbine-dev/pimpo`, from `docker.yml` | nothing: the workflow's token publishes it |
+| Website | `site/`, from `pages.yml` | Pages set to **GitHub Actions** in the repository's settings; a domain in `site/CNAME` |
+
+Packages are published for final releases only; betas reach people through the desktop app's beta channel and the `v…-beta.N` Docker tags.
+

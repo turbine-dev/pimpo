@@ -1,0 +1,46 @@
+# Flatpak manifest for Flathub. It repackages the release's .deb (the
+# desktop app and the Pimpo server inside it). Build and test it with:
+#   flatpak-builder --user --install --force-clean build packaging/flatpak/app.pimpo.desktop.yml
+# The release sets the url and sha256 of the .deb (see packaging/flatpak/README.md).
+id: app.pimpo.desktop
+runtime: org.gnome.Platform
+runtime-version: "47"
+sdk: org.gnome.Sdk
+command: pimpo-desktop
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Pimpo keeps its data in ~/.pimpo; in the sandbox that folder persists.
+  - --persist=.pimpo
+  # The menu bar icon.
+  - --talk-name=org.kde.StatusNotifierWatcher
+  # System notifications.
+  - --talk-name=org.freedesktop.Notifications
+modules:
+  - name: pimpo
+    buildsystem: simple
+    sources:
+      - type: file
+        dest-filename: pimpo.deb
+        url: https://github.com/turbine-dev/pimpo/releases/download/v@VERSION@/Pimpo_@VERSION@_linux_amd64.deb
+        sha256: "@SHA256@"
+        only-arches: [x86_64]
+      - type: file
+        dest-filename: pimpo.deb
+        url: https://github.com/turbine-dev/pimpo/releases/download/v@VERSION@/Pimpo_@VERSION@_linux_arm64.deb
+        sha256: "@SHA256_ARM64@"
+        only-arches: [aarch64]
+      - type: file
+        path: app.pimpo.desktop.metainfo.xml
+    build-commands:
+      - ar x pimpo.deb
+      - tar -xf data.tar.*
+      - install -Dm755 usr/bin/pimpo-desktop ${FLATPAK_DEST}/bin/pimpo-desktop
+      - install -Dm755 usr/bin/pimpo ${FLATPAK_DEST}/bin/pimpo
+      - for s in 32x32 128x128 256x256@2; do [ -f usr/share/icons/hicolor/$s/apps/pimpo-desktop.png ] && install -Dm644 usr/share/icons/hicolor/$s/apps/pimpo-desktop.png ${FLATPAK_DEST}/share/icons/hicolor/${s%@2}/apps/app.pimpo.desktop.png; done
+      - sed -e 's/^Icon=.*/Icon=app.pimpo.desktop/' usr/share/applications/Pimpo.desktop > app.pimpo.desktop.desktop
+      - install -Dm644 app.pimpo.desktop.desktop ${FLATPAK_DEST}/share/applications/app.pimpo.desktop.desktop
+      - install -Dm644 app.pimpo.desktop.metainfo.xml ${FLATPAK_DEST}/share/metainfo/app.pimpo.desktop.metainfo.xml

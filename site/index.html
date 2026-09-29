@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pimpo — a personal AI agent that learns a task once</title>
+<meta name="description" content="Pimpo does a task with a language model once, turns it into tested code, and from then on runs it on its own: reliable, cheap, and safe by construction. Free and open source.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="Pimpo">
+<meta property="og:description" content="A personal AI agent that learns a task once, then does it on its own.">
+<meta property="og:image" content="pimpo.png">
+<style>
+  :root {
+    --bg: #f6f6f5; --surface: #ffffff; --sunken: #efefed; --line: #e3e3e1; --ink: #111111; --ink-2: #4a4a4a; --ink-3: #666666; --ok: #1f7a4d;
+    --radius: 16px; --max: 1040px;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b0b0b; --surface: #141414; --sunken: #1b1b1b; --line: #262626; --ink: #f2f2f2; --ink-2: #bdbdbd; --ink-3: #9a9a9a; --ok: #5bcf93; }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif; }
+  a { color: inherit; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 18px; text-decoration: none; }
+  .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  nav a { margin-left: 18px; font-size: 14px; color: var(--ink-2); text-decoration: none; }
+  nav a:hover { color: var(--ink); }
+  .hero { padding: 56px 0 40px; text-align: center; }
+  .hero img { width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 10px 30px rgb(0 0 0 / .12); }
+  h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.08; letter-spacing: -0.03em; margin: 22px auto 14px; max-width: 16ch; }
+  .lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--ink-2); max-width: 44em; margin: 0 auto; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 28px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid var(--line); background: var(--surface); }
+  .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .btn:hover { transform: translateY(-1px); }
+  .small { font-size: 13px; color: var(--ink-3); margin-top: 12px; }
+  section { padding: 44px 0; }
+  h2 { font-size: clamp(24px, 3.4vw, 32px); letter-spacing: -0.02em; margin: 0 0 18px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 16.5px; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+  .steps { counter-reset: s; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .steps .card::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--sunken); font-weight: 700; font-size: 13px; margin-bottom: 10px; }
+  code, pre { font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  pre { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow-x: auto; margin: 10px 0 0; }
+  .dl { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .dl .card.mine { border-color: var(--ink); }
+  .dl a.file { display: block; margin-top: 8px; font-size: 14px; }
+  .check { color: var(--ok); font-weight: 700; margin-right: 6px; }
+  ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--ink-3); font-size: 14px; }
+  footer a { color: var(--ink-2); }
+  @media (max-width: 640px) { nav a:not(.gh) { display: none; } .hero { padding-top: 32px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="./"><img src="favicon.svg" alt="">Pimpo</a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#download">Download</a>
+      <a href="https://github.com/turbine-dev/pimpo/tree/main/docs">Docs</a>
+      <a class="gh" href="https://github.com/turbine-dev/pimpo">GitHub</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <img src="pimpo.png" alt="Pimpo, a tuxedo kitten">
+    <h1>An AI agent that learns a task once</h1>
+    <p class="lead">Ask in plain words. The first time, Pimpo does it with a language model while you watch. When it works, it turns the task into tested code that runs on its own, without a model: reliable, cheap, and safe by construction.</p>
+    <div class="cta">
+      <a class="btn primary" id="main-download" href="#download">Download</a>
+      <a class="btn" href="https://github.com/turbine-dev/pimpo">Source on GitHub</a>
+    </div>
+    <p class="small">Free and open source (Apache 2.0). macOS, Windows, Linux, and servers. No telemetry.</p>
+  </div>
+
+  <section>
+    <div class="grid">
+      <div class="card"><h3>Reliable</h3><p>A routine is code with tests, not a prompt read again every night. It does the same thing each time, and says so when it cannot.</p></div>
+      <div class="card"><h3>Cheap</h3><p>Routines cost cents, not dollars. It works with the plans you already pay for (Claude Code, Codex, opencode), any API key, or local models.</p></div>
+      <div class="card"><h3>Safe by construction</h3><p>Routines reach only the capabilities they declare. Every action passes your rules and is logged, and anything that cannot be undone waits for you.</p></div>
+      <div class="card"><h3>Yours</h3><p>It runs on your computer or your server and keeps your data there. Export everything to one encrypted file, whenever you want.</p></div>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="card"><h3>You ask</h3><p>In the app, on Telegram or WhatsApp, or by voice: “every morning, send me my agenda and the emails that matter.”</p></div>
+      <div class="card"><h3>It explores</h3><p>A model does the task once, with every change rehearsed first, so you see exactly what it would do.</p></div>
+      <div class="card"><h3>It compiles</h3><p>Pimpo writes a routine: readable JavaScript, tests from what it just saw, and the list of the only things it may touch. A held-out test must pass too.</p></div>
+      <div class="card"><h3>It runs</h3><p>On schedule, on a webhook or when something changes, with no model. If a service changes and it breaks, Pimpo tells you and repairs it.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What it connects to</h2>
+    <div class="grid">
+      <div class="card"><h3>Your day</h3><p>Email, calendars, Google Sheets, Notion, Todoist, Obsidian, GitHub, Home Assistant, Apple Reminders and Notes, Spotify, news feeds, web search.</p></div>
+      <div class="card"><h3>Anything with an API</h3><p>Any MCP server, any REST API with an OpenAPI description, or a JSON file describing its requests. No recompiling.</p></div>
+      <div class="card"><h3>Where you talk</h3><p>Desktop, web, phone, Telegram, WhatsApp, Slack, Discord, Signal, email, and voice, with local or cloud voices.</p></div>
+    </div>
+  </section>
+
+  <section id="download">
+    <h2>Download</h2>
+    <div class="dl" id="downloads">
+      <div class="card" data-os="mac"><h3>macOS</h3><p>Apple Silicon and Intel. A .dmg.</p><a class="file" href="https://github.com/turbine-dev/pimpo/releases">From the releases page</a></div>
+      <div class="card" data-os="windows"><h3>Windows</h3><p>An installer (.exe) or an .msi.</p><a class="file" href="https://github.com/turbine-dev/pimpo/releases">From the releases page</a></div>
+      <div class="card" data-os="linux"><h3>Linux</h3><p>.deb, .rpm or AppImage, for x64 and arm64.</p><a class="file" href="https://github.com/turbine-dev/pimpo/releases">From the releases page</a></div>
+    </div>
+    <div class="grid" style="margin-top:14px">
+      <div class="card">
+        <h3>A server, with Docker</h3>
+        <pre><code>docker run -d --name pimpo -p 127.0.0.1:7788:7788 \
+  -v pimpo:/data ghcr.io/turbine-dev/pimpo</code></pre>
+        <p class="small"><a href="https://github.com/turbine-dev/pimpo/blob/main/docs/SELF_HOSTING.md">Running on a server</a></p>
+      </div>
+      <div class="card">
+        <h3>The command line</h3>
+        <pre><code>curl -fsSL https://raw.githubusercontent.com/turbine-dev/pimpo/main/scripts/install.sh | sh</code></pre>
+        <p class="small">Linux, macOS and Raspberry Pi. Checksums are verified.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Built to be trusted</h2>
+    <ul class="plain">
+      <li><span class="check">✓</span>Rules live outside the model, so a clever email cannot talk Pimpo out of them.</li>
+      <li><span class="check">✓</span>Irreversible actions wait for your approval, on your phone or in the app.</li>
+      <li><span class="check">✓</span>A tamper-evident log of every action, with receipts and undo.</li>
+      <li><span class="check">✓</span>A daily spending limit that is checked before every model call.</li>
+      <li><span class="check">✓</span>Signed updates, and one click to go back to the version you had.</li>
+    </ul>
+    <p class="small"><a href="https://github.com/turbine-dev/pimpo/blob/main/docs/THREAT_MODEL.md">Read the threat model</a> · <a href="https://github.com/turbine-dev/pimpo/blob/main/SECURITY.md">Report a vulnerability</a></p>
+  </section>
+
+  <footer>
+    <p>Pimpo is free and open source under the <a href="https://github.com/turbine-dev/pimpo/blob/main/LICENSE">Apache License 2.0</a>. <a href="https://github.com/turbine-dev/pimpo/tree/main/docs">Documentation</a> · <a href="https://github.com/turbine-dev/pimpo/blob/main/CONTRIBUTING.md">Contributing</a> · <a href="https://github.com/turbine-dev/pimpo/blob/main/docs/ROADMAP.md">Roadmap</a> · <a href="https://github.com/turbine-dev/pimpo/blob/main/CHANGELOG.md">Changelog</a></p>
+  </footer>
+</div>
+<script>
+// Point the downloads at this system's files in the latest release, when
+// there is one; otherwise the links stay on the releases page.
+(function () {
+  var ua = navigator.userAgent, os = /Mac/.test(ua) ? 'mac' : /Win/.test(ua) ? 'windows' : /Linux|X11/.test(ua) ? 'linux' : ''
+  var mine = os && document.querySelector('[data-os="' + os + '"]')
+  if (mine) mine.classList.add('mine')
+  var files = { mac: [/_macos_arm64\.dmg$/, 'Apple Silicon (.dmg)', /_macos_amd64\.dmg$/, 'Intel (.dmg)'], windows: [/_windows_amd64_setup\.exe$/, 'Installer (.exe)', /_windows_amd64\.msi$/, '.msi'], linux: [/_linux_amd64\.deb$/, 'x64 .deb', /_linux_amd64\.AppImage$/, 'x64 AppImage', /_linux_arm64\.deb$/, 'arm64 .deb'] }
+  fetch('https://api.github.com/repos/turbine-dev/pimpo/releases/latest').then(function (r) { return r.ok ? r.json() : null }).then(function (rel) {
+    if (!rel || !rel.assets) return
+    Object.keys(files).forEach(function (k) {
+      var card = document.querySelector('[data-os="' + k + '"]'), list = files[k], links = []
+      for (var i = 0; i < list.length; i += 2) {
+        var a = rel.assets.find(function (x) { return list[i].test(x.name) })
+        if (a) links.push('<a class="file" href="' + a.browser_download_url + '">' + list[i + 1] + '</a>')
+      }
+      if (links.length) card.querySelector('a.file').outerHTML = links.join('') + '<p class="small">Version ' + rel.tag_name.replace(/^v/, '') + '</p>'
+    })
+    if (mine) document.getElementById('main-download').textContent = 'Download for ' + { mac: 'macOS', windows: 'Windows', linux: 'Linux' }[os]
+  }).catch(function () {})
+})()
+</script>
+</body>
+</html>

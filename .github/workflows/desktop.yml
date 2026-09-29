@@ -186,6 +186,10 @@ jobs:
     needs: build
     if: inputs.tag != ''
     runs-on: ubuntu-latest
+    env:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+      FINAL: ${{ !contains(inputs.tag, '-') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -208,3 +212,31 @@ jobs:
               --notes "The desktop app's beta channel reads latest.json here. Install Pimpo from the numbered releases."
           fi
           gh release upload channel-beta latest.json --clobber --repo "${{ github.repository }}"
+
+      # The desktop app's cask in turbine-dev/homebrew-tap, for final
+      # releases, when the repository has a token that can push there.
+      - name: Homebrew cask
+        if: env.HOMEBREW_TAP_TOKEN != '' && env.FINAL == 'true'
+        shell: bash
+        env: { TAG: "${{ inputs.tag }}" }
+        run: |
+          python3 scripts/cask.py packaging/homebrew/pimpo-app.rb.tmpl installers "$TAG" > pimpo-app.rb
+          git clone --depth 1 "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/turbine-dev/homebrew-tap.git" tap
+          mkdir -p tap/Casks && cp pimpo-app.rb tap/Casks/pimpo-app.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/pimpo-app.rb
+          git commit -m "pimpo-app ${TAG#v}" && git push
+
+      # winget, for final releases, once the package exists there (the first
+      # version is submitted by hand: packaging/winget/README.md).
+      - name: winget
+        if: env.WINGET_TOKEN != '' && env.FINAL == 'true'
+        uses: vedantmgoyal9/winget-releaser@main
+        with:
+          identifier: TurbineDev.Pimpo
+          release-tag: ${{ inputs.tag }}
+          installers-regex: '_windows_amd64_setup\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}
+

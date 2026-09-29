@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <path id="face" d="M256 164c-66 0-116 20-142 60-24 36-24 84-6 120 28 56 84 84 148 84s120-28 148-84c18-36 18-84-6-120-26-40-76-60-142-60Z"/>
+    <path id="patch" d="M256 214c-7 0-11 10-13 26-3 22-6 36-18 46-18 4-40 12-52 32-14 24-8 54 18 72 22 16 44 22 65 22s43-6 65-22c26-18 32-48 18-72-12-20-34-28-52-32-12-10-15-24-18-46-2-16-6-26-13-26Z"/>
+    <clipPath id="inPatch"><use href="#patch"/></clipPath>
+    <mask id="outPatch"><rect width="512" height="512" fill="#fff"/><use href="#patch" fill="#000"/></mask>
+    <clipPath id="inFace"><use href="#face"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="#fff"/>
+  <g transform="translate(0 0)">
+<path d="M124 250 146 96c2-14 16-19 26-10l92 96Z" fill="#111" stroke="#111" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M388 250 366 96c-2-14-16-19-26-10l-92 96Z" fill="#111" stroke="#111" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M152 196 162 122l46 50Z" fill="#fff" opacity=".18"/>
+  <path d="M360 196 350 122l-46 50Z" fill="#fff" opacity=".18"/>
+  <use href="#face" fill="#111"/>
+  <use href="#patch" fill="#fff"/>
+  <ellipse cx="200" cy="262" rx="31" ry="37" fill="#fff" stroke="#111" stroke-width="7"/>
+  <ellipse cx="312" cy="262" rx="31" ry="37" fill="#fff" stroke="#111" stroke-width="7"/>
+  <ellipse cx="207" cy="266" rx="13" ry="21" fill="#111"/>
+  <ellipse cx="305" cy="266" rx="13" ry="21" fill="#111"/>
+  <circle cx="212" cy="257" r="5.5" fill="#fff"/>
+  <circle cx="310" cy="257" r="5.5" fill="#fff"/>
+  <path d="M240 318c0-6 7-9 16-9s16 3 16 9c0 7-9 14-16 16-7-2-16-9-16-16Z" fill="#111"/>
+  <path d="M256 334v10m0 0c-6 10-18 12-26 6m26-6c6 10 18 12 26 6" fill="none" stroke="#111" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  </g>
+</svg>
