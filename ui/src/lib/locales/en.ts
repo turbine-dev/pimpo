@@ -119,7 +119,7 @@ export const en: Record<Key, string> = {
 
   'catalog.title': 'More connections',
   'catalog.text': 'Each one says exactly what it allows. Anything that can’t be undone always asks for your approval.',
-  'catalog.install': 'Install connector (.zip)',
+  'catalog.install': 'Install connector (.json · .zip)',
   'catalog.reload': 'Reload the connectors folder',
   'catalog.howTo': 'How to build a connector',
   'catalog.broken': 'Connector not loaded: {name}',

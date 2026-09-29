@@ -26,6 +26,7 @@
   "btn.runAgain": "重新运行",
   "catalog.externalHelp": "位于 {dir} 的外部连接器。它作为独立进程运行，只能获得下面的变量。",
   "catalog.remoteHelp": "位于 {url} 的远程 MCP 服务器。它只能获得 Pimpo 发送给它的内容，以及下面的请求头。",
+  "catalog.httpHelp": "由 connector.json 描述，无需程序：Pimpo 自己调用 {url}，只发送下面列出的请求，并使用下面的密钥。",
   "effort.auto": "auto",
   "effort.high": "高",
   "effort.low": "低",

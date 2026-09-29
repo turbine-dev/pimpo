@@ -119,7 +119,7 @@ export const pt = {
 
   'catalog.title': 'Mais conexões',
   'catalog.text': 'Cada uma diz exatamente o que permite fazer. O que não dá para desfazer sempre pede sua aprovação.',
-  'catalog.install': 'Instalar conector (.zip)',
+  'catalog.install': 'Instalar conector (.json · .zip)',
   'catalog.reload': 'Recarregar a pasta de conectores',
   'catalog.howTo': 'Como criar um conector',
   'catalog.broken': 'Conector não carregado: {name}',

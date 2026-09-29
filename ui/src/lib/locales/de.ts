@@ -119,7 +119,7 @@ export const de: Record<Key, string> & Record<string, string> = {
 
   'catalog.title': 'Weitere Verbindungen',
   'catalog.text': 'Jede zeigt genau, was sie erlaubt. Alles, was sich nicht rückgängig machen lässt, braucht immer deine Freigabe.',
-  'catalog.install': 'Konnektor installieren (.zip)',
+  'catalog.install': 'Konnektor installieren (.json · .zip)',
   'catalog.reload': 'Konnektor-Ordner neu laden',
   'catalog.howTo': 'So baust du einen Konnektor',
   'catalog.broken': 'Konnektor nicht geladen: {name}',

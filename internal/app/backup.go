@@ -89,22 +89,38 @@ func (a *App) installConnector(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 64<<20)
 	file, hdr, err := r.FormFile("file")
 	if err != nil {
-		server.WriteError(w, server.StatusError{Status: 400, Msg: "send the connector as a .zip"})
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "send a connector.json or a .zip of the connector's folder"})
 		return
 	}
 	defer file.Close()
-	zr, err := zip.NewReader(file, hdr.Size)
-	if err != nil {
-		server.WriteError(w, server.StatusError{Status: 400, Msg: "not a zip file"})
-		return
-	}
 	tmp, err := os.MkdirTemp(a.Home, ".connector-")
 	if err != nil {
 		server.WriteError(w, err)
 		return
 	}
 	defer os.RemoveAll(tmp)
-	for _, f := range zr.File {
+	// A declarative connector is a single connector.json; anything else
+	// comes as a .zip of its folder.
+	var files []*zip.File
+	head := make([]byte, 1)
+	if n, _ := file.ReadAt(head, 0); n == 1 && head[0] == '{' {
+		raw, err := io.ReadAll(io.LimitReader(file, 1<<20))
+		if err == nil {
+			err = os.WriteFile(filepath.Join(tmp, "connector.json"), raw, 0o600)
+		}
+		if err != nil {
+			server.WriteError(w, err)
+			return
+		}
+	} else {
+		zr, err := zip.NewReader(file, hdr.Size)
+		if err != nil {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: "send a connector.json or a .zip of the connector's folder"})
+			return
+		}
+		files = zr.File
+	}
+	for _, f := range files {
 		name := filepath.Clean(filepath.FromSlash(f.Name))
 		if filepath.IsAbs(name) || strings.HasPrefix(name, "..") || f.Mode()&os.ModeSymlink != 0 {
 			server.WriteError(w, server.StatusError{Status: 400, Msg: "unsafe path in zip: " + f.Name})

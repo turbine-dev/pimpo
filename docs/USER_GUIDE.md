@@ -148,6 +148,8 @@ If a channel keeps failing for three minutes (Telegram, Discord, Slack or Signal
 
 **Conexões › Explorar** searches the official MCP registry: hundreds of servers for files, GitHub, databases, notes, maps and more. Choose one, fill in what it asks for, and **Ver as ferramentas** shows what it offers. Check which tools Pimpo may use and how risky each one is (irreversible ones always ask you first), then install. **Adicionar manualmente** takes a command or an https address you already have. See [CONNECTORS.md](CONNECTORS.md) to write your own.
 
+**A service with a REST API** needs no program and no recompiling: describe its requests in a `connector.json` (the address, the key it needs, and for each capability the method, path and what to keep from the answer) and send it in **Conexões › Instalar conector (.json · .zip)**. Pimpo checks it, runs its contract and asks for the key. [CONNECTORS.md](CONNECTORS.md#json-connectors) explains the format; `examples/connectors/hnsearch` is a complete one.
+
 ## Gallery
 
 Browse ready-made routines, filtered by what they can touch. Pimpo checks the author's signature, runs the routine's tests, and audits what it really calls before installing. To share one of yours, use **Publicar** on its page.

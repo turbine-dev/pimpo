@@ -119,7 +119,7 @@ export const ko: Record<Key, string> & Record<string, string> = {
 
   'catalog.title': '더 많은 연결',
   'catalog.text': '각 연결은 무엇을 할 수 있는지 정확히 밝혀요. 되돌릴 수 없는 작업은 항상 승인을 요청해요.',
-  'catalog.install': '커넥터 설치(.zip)',
+  'catalog.install': '커넥터 설치(.json · .zip)',
   'catalog.reload': '커넥터 폴더 다시 불러오기',
   'catalog.howTo': '커넥터 만드는 방법',
   'catalog.broken': '커넥터를 불러오지 못함: {name}',

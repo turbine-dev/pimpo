@@ -273,6 +273,9 @@ func (a *App) externalKinds(ctx context.Context) []catalogView {
 		if c.URL != "" {
 			help = i18n.T(ctx, "catalog.remoteHelp", "url", c.URL)
 		}
+		if c.HTTP != nil {
+			help = i18n.T(ctx, "catalog.httpHelp", "url", c.HTTP.Base)
+		}
 		v := catalogView{Kind: services.Kind{ID: c.Name, Title: c.Name, Description: c.Description, Help: help, Fields: []services.Field{}},
 			Capabilities: []catalogCap{}, Values: map[string]string{}, External: true, Configured: true, Source: c.Source}
 		for _, e := range append(append([]string{}, c.Env...), c.Headers...) {

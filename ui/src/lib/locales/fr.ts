@@ -122,7 +122,7 @@ export const fr: Record<Key, string> & Record<string, string> = {
 
   'catalog.title': 'Plus de connexions',
   'catalog.text': 'Chacune indique exactement ce qu’elle permet. Tout ce qui est irréversible demande toujours votre accord.',
-  'catalog.install': 'Installer un connecteur (.zip)',
+  'catalog.install': 'Installer un connecteur (.json · .zip)',
   'catalog.reload': 'Recharger le dossier des connecteurs',
   'catalog.howTo': 'Créer un connecteur',
   'catalog.broken': 'Connecteur non chargé : {name}',

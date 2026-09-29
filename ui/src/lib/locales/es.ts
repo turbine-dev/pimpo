@@ -122,7 +122,7 @@ export const es: Record<Key, string> & Record<string, string> = {
 
   'catalog.title': 'Más conexiones',
   'catalog.text': 'Cada una dice exactamente lo que permite. Lo que no se puede deshacer siempre pide tu aprobación.',
-  'catalog.install': 'Instalar conector (.zip)',
+  'catalog.install': 'Instalar conector (.json · .zip)',
   'catalog.reload': 'Recargar la carpeta de conectores',
   'catalog.howTo': 'Cómo crear un conector',
   'catalog.broken': 'Conector no cargado: {name}',

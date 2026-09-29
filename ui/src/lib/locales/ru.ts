@@ -125,7 +125,7 @@ export const ru: Record<Key, string> & Record<string, string> = {
 
   'catalog.title': 'Другие подключения',
   'catalog.text': 'Каждое точно указывает, что разрешает. Всё, что нельзя отменить, всегда требует вашего одобрения.',
-  'catalog.install': 'Установить коннектор (.zip)',
+  'catalog.install': 'Установить коннектор (.json · .zip)',
   'catalog.reload': 'Перезагрузить папку коннекторов',
   'catalog.howTo': 'Как создать коннектор',
   'catalog.broken': 'Коннектор не загружен: {name}',

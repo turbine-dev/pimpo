@@ -1,0 +1,39 @@
+{
+  "name": "hnsearch",
+  "description": "Hacker News search (hn.algolia.com): stories and comments by words, points and date. No program and no key: Pimpo makes these requests itself.",
+  "http": {"base": "https://hn.algolia.com/api/v1"},
+  "capabilities": [
+    {
+      "name": "hnsearch.stories",
+      "risk": "read",
+      "signature": "hnsearch.stories({query, min_points?, max?})",
+      "returns": "[{title, url, points, comments, author, created, discussion}] most relevant first",
+      "schema": {"type": "object", "required": ["query"], "properties": {"query": {"type": "string"}, "min_points": {"type": "integer"}, "max": {"type": "integer", "maximum": 50}}},
+      "request": {"method": "GET", "path": "/search", "query": {"query": "{{query}}", "tags": "story", "numericFilters": "points>={{min_points}}", "hitsPerPage": "{{max}}"}},
+      "result": {"path": "hits", "max": 50, "fields": {"title": "title", "url": "url", "points": "points", "comments": "num_comments", "author": "author", "created": "created_at", "discussion": "objectID"}}
+    },
+    {
+      "name": "hnsearch.front",
+      "risk": "read",
+      "signature": "hnsearch.front({max?})",
+      "returns": "[{title, url, points, comments, author, created, discussion}] what is on the front page now",
+      "schema": {"type": "object", "properties": {"max": {"type": "integer", "maximum": 50}}},
+      "request": {"method": "GET", "path": "/search", "query": {"tags": "front_page", "hitsPerPage": "{{max}}"}},
+      "result": {"path": "hits", "max": 50, "fields": {"title": "title", "url": "url", "points": "points", "comments": "num_comments", "author": "author", "created": "created_at", "discussion": "objectID"}}
+    },
+    {
+      "name": "hnsearch.item",
+      "risk": "read",
+      "signature": "hnsearch.item({id})",
+      "returns": "{title, url, points, author, created, text, replies} with replies' authors and texts (first level)",
+      "schema": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}},
+      "request": {"method": "GET", "path": "/items/{{id}}"},
+      "result": {"fields": {"title": "title", "url": "url", "points": "points", "author": "author", "created": "created_at", "text": "text", "replies": "children.*.text"}}
+    }
+  ],
+  "contract": [
+    {"capability": "hnsearch.stories", "args": {"query": "rust", "min_points": 100, "max": 3}, "keys": ["title", "points", "discussion"]},
+    {"capability": "hnsearch.front", "args": {"max": 3}, "keys": ["title", "points"]},
+    {"capability": "hnsearch.item", "args": {"id": "1"}, "keys": ["title", "author", "replies"]}
+  ]
+}
