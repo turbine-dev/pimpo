@@ -17,8 +17,19 @@ No version has been tagged yet. The first release will include everything built 
 - Local models downloaded by Pimpo itself from a pinned catalog, with progress: voices, Whisper transcription and Ollama models.
 - **Ouvir** in chat streams sentence by sentence and keeps a cache.
 - Automatic model choice and thinking level per chat, job and routine; Codex, opencode and subscription plans counted apart from money spent.
+- Setup without Claude Code: the welcome screen sets every job up from what the computer has (Claude Code, Codex, opencode, Ollama, LM Studio) or from one API key, and tests it.
+- `pimpo report`: how routines did in real use, including silent failures, late runs and time Pimpo was off.
+- The proof suite runs on any model (`-model`); DeepSeek V4 Pro through opencode passes 5 of 5.
+- Releases can be started from Actions with a version.
 
 ### Fixed
 
+- The **liberal** safety level let irreversible actions through without asking (a GitHub comment, clearing a sheet, imported tools). It now asks before anything irreversible except deleting email, which moves it to the trash, and installs that chose it are upgraded.
+- Repairs are told the error of the last failed run.
+- Routines started only by a webhook no longer log a false "invalid schedule" failure.
+- An answer to a question no longer runs a paused routine; **Rodar agora** keeps a paused routine paused.
+- The time a run waits for approval no longer counts toward its 15 minutes.
+- Saving settings with only some fields keeps the others; the judge uses the configured Ollama address; the home network follows the port of `--addr`.
+- opencode runs that start together no longer fail on a locked database.
 - Windows builds (free disk space was read with a Unix-only call).
 - A data race in how the language of messages was chosen.
