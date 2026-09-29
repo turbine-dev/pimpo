@@ -169,5 +169,11 @@
   "svc.websearch.field.searxng_url.placeholder": "https://searx.example.org",
   "svc.websearch.help": "Brave Search API（api-dashboard.search.brave.com で無料キー、月2,000回）、Perplexity の検索（perplexity.ai/account/api でキー、1,000回あたり約 US$5、Perplexity が請求）、または JSON 形式を有効にした自分か信頼できる SearXNG のアドレスを使います。複数入れた場合は Brave、Perplexity、SearXNG の順です。",
   "svc.websearch.title": "ウェブ検索",
-  "msg.budgetOver": "今日の支出上限に達しました。"
+  "msg.budgetOver": "今日の支出上限に達しました。",
+  "msg.suggestion": "💡 提案: {title}\n{why}\n\n覚えましょうか？ こうします:「{request}」",
+  "btn.suggestYes": "はい、覚えて",
+  "btn.suggestNo": "いいえ、結構です",
+  "msg.suggestion.gone": "その提案はもうありません。",
+  "msg.suggestion.started": "始めました。見ている間に一度やります。承認するとルーティンになります。",
+  "msg.suggestion.declined": "わかりました。もう提案しません。"
 }

@@ -1,0 +1,126 @@
+{
+ "name": "Alerta de variação do Bitcoin",
+ "description": "A cada hora, consulta o preço do Bitcoin em reais e avisa (por padrão no Telegram) quando a variação nas últimas 24h passar de um limite definido, para cima ou para baixo. Se a variação for menor, não envia nada.",
+ "manifest": {
+  "schedule": "0 * * * *",
+  "capabilities": [
+   "http.getJSON:api.coingecko.com",
+   "notify.send"
+  ],
+  "params": [
+   {
+    "name": "limite",
+    "label": "Limite de variação (%)",
+    "type": "number",
+    "default": 3,
+    "help": "Avisa quando a variação em 24h passar deste percentual, para cima ou para baixo."
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const url = \"https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=brl&include_24hr_change=true\";\n  const data = await http.getJSON(url);\n  if (!data || !data.bitcoin || typeof data.bitcoin.brl !== 'number' || typeof data.bitcoin.brl_24h_change !== 'number') {\n    log('resposta inesperada da API');\n    return;\n  }\n  const price = data.bitcoin.brl;\n  const change = data.bitcoin.brl_24h_change;\n  const threshold = params.limite;\n\n  if (Math.abs(change) > threshold) {\n    const arrow = change > 0 ? '📈' : '📉';\n    const verbo = change > 0 ? 'subiu' : 'caiu';\n    const priceStr = money.format(price, 'BRL');\n    const changeStr = Math.abs(change).toFixed(2);\n    const text = `${arrow} Bitcoin ${verbo} ${changeStr}% em 24h: ${priceStr}`;\n    await notify.send({ text });\n  } else {\n    log('variação de ' + change.toFixed(2) + '% dentro do limite de ' + threshold + '%, nada a avisar');\n  }\n}\n",
+ "tests": [
+  {
+   "name": "alta acima do limite dispara alerta",
+   "now": "2026-09-28T17:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "bitcoin": {
+       "brl": 650000,
+       "brl_24h_change": 5.2
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "subiu",
+      "5.20%",
+      "R$ 650.000,00"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "variação pequena não dispara nada",
+   "now": "2026-09-28T18:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "bitcoin": {
+       "brl": 605000,
+       "brl_24h_change": 1.5
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "queda dentro do limite customizado não dispara",
+   "now": "2026-09-28T19:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "bitcoin": {
+       "brl": 590000,
+       "brl_24h_change": -4
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ],
+   "params": {
+    "limite": 5
+   }
+  },
+  {
+   "name": "queda acima do limite padrão dispara alerta",
+   "now": "2026-09-28T20:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "bitcoin": {
+       "brl": 580000,
+       "brl_24h_change": -3.8
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "caiu",
+      "3.80%",
+      "R$ 580.000,00"
+     ]
+    }
+   ]
+  }
+ ]
+}

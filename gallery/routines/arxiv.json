@@ -1,0 +1,192 @@
+{
+ "name": "Artigos novos do arXiv no Obsidian",
+ "description": "Todo dia às 8h, lê os artigos novos do feed RSS do arXiv (cs.AI), usa um julgamento para identificar quais são sobre agentes de IA, e anota título e link dos novos (ainda não vistos) na nota Pesquisa/arXiv.md do Obsidian, agrupados por data.",
+ "manifest": {
+  "schedule": "0 8 * * *",
+  "capabilities": [
+   "rss.read:rss.arxiv.org",
+   "obsidian.append"
+  ],
+  "judgments": {
+   "about_agents": "O artigo (pelo título e resumo) é sobre agentes de IA, como agentes autônomos, agentes que usam ferramentas, agentes de navegação web ou multiagentes?"
+  },
+  "params": [
+   {
+    "name": "feedUrl",
+    "label": "URL do feed RSS do arXiv",
+    "type": "text",
+    "default": "https://rss.arxiv.org/rss/cs.AI",
+    "help": "Feed RSS de categoria do arXiv a ser monitorado"
+   },
+   {
+    "name": "maxItems",
+    "label": "Máximo de itens por leitura",
+    "type": "number",
+    "default": 50
+   },
+   {
+    "name": "nota",
+    "label": "Nota do Obsidian",
+    "type": "text",
+    "default": "Pesquisa/arXiv.md"
+   }
+  ]
+ },
+ "code": "async function run() {\n  const items = await rss.read({ url: params.feedUrl, max: params.maxItems });\n\n  let seen = state.get('seenLinks') || [];\n  const seenSet = new Set(seen);\n\n  const newAgentItems = [];\n\n  for (const item of items) {\n    if (!item.link || seenSet.has(item.link)) continue;\n\n    const judgment = await judge.about_agents(item);\n    if (judgment.p >= 0.5) {\n      newAgentItems.push(item);\n    }\n    seen.push(item.link);\n    seenSet.add(item.link);\n  }\n\n  if (seen.length > 300) {\n    seen = seen.slice(-300);\n  }\n\n  if (newAgentItems.length > 0) {\n    const dateStr = dates.format(now(), 'yyyy-MM-dd');\n    const lines = newAgentItems\n      .map((i) => `- [${i.title}](${i.link})`)\n      .join('\\n');\n    const text = `## ${dateStr}\\n${lines}`;\n    await obsidian.append({ note: params.nota, text });\n    log(`Adicionados ${newAgentItems.length} artigos sobre agentes.`);\n  } else {\n    log('Nenhum artigo novo sobre agentes encontrado.');\n  }\n\n  state.set('seenLinks', seen);\n}\n",
+ "tests": [
+  {
+   "name": "Caso normal: mistura de artigos sobre agentes e outros temas",
+   "now": "2026-09-29T11:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "Autonomous Multi-Agent Coordination for Robotics",
+       "link": "https://arxiv.org/abs/2610.00111",
+       "published": "2026-09-29T09:00:00Z",
+       "summary": "We study coordination among robotic agents."
+      },
+      {
+       "title": "Efficient Transformers for Image Classification",
+       "link": "https://arxiv.org/abs/2610.00112",
+       "published": "2026-09-29T09:00:00Z",
+       "summary": "A new vision transformer architecture."
+      },
+      {
+       "title": "Tool-Augmented LLM Agents for Software Engineering",
+       "link": "https://arxiv.org/abs/2610.00113",
+       "published": "2026-09-29T09:05:00Z",
+       "summary": "Agents that use tools to write and test code."
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "about_agents": {
+     "2610.00111": 0.9,
+     "2610.00112": 0.05,
+     "2610.00113": 0.85
+    }
+   },
+   "expect": [
+    {
+     "capability": "obsidian.append",
+     "count": 1,
+     "contains": [
+      "Autonomous Multi-Agent Coordination for Robotics",
+      "https://arxiv.org/abs/2610.00111",
+      "Tool-Augmented LLM Agents for Software Engineering",
+      "https://arxiv.org/abs/2610.00113"
+     ],
+     "not_contains": [
+      "Efficient Transformers for Image Classification"
+     ]
+    }
+   ],
+   "expect_state": {
+    "seenLinks": [
+     "https://arxiv.org/abs/2610.00111",
+     "https://arxiv.org/abs/2610.00112",
+     "https://arxiv.org/abs/2610.00113"
+    ]
+   }
+  },
+  {
+   "name": "Nada sobre agentes hoje: nenhuma anotação deve ser feita",
+   "now": "2026-09-29T11:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "A Survey of Graph Neural Networks for Chemistry",
+       "link": "https://arxiv.org/abs/2610.00201",
+       "published": "2026-09-29T08:00:00Z",
+       "summary": "Review of GNN methods applied to molecular property prediction."
+      },
+      {
+       "title": "Benchmarking Diffusion Models for Image Synthesis",
+       "link": "https://arxiv.org/abs/2610.00202",
+       "published": "2026-09-29T08:10:00Z",
+       "summary": "Comparative study of diffusion model quality metrics."
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "about_agents": {
+     "2610.00201": 0.02,
+     "2610.00202": 0.1
+    }
+   },
+   "expect": [
+    {
+     "capability": "obsidian.append",
+     "count": 0
+    }
+   ],
+   "expect_state": {
+    "seenLinks": [
+     "https://arxiv.org/abs/2610.00201",
+     "https://arxiv.org/abs/2610.00202"
+    ]
+   }
+  },
+  {
+   "name": "Artigo já visto não é repetido; novo artigo é anotado na nota customizada",
+   "now": "2026-09-30T11:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "Autonomous Multi-Agent Coordination for Robotics",
+       "link": "https://arxiv.org/abs/2610.00111",
+       "published": "2026-09-29T09:00:00Z",
+       "summary": "We study coordination among robotic agents."
+      },
+      {
+       "title": "LLM Agent Benchmarks for Web Navigation",
+       "link": "https://arxiv.org/abs/2610.00300",
+       "published": "2026-09-30T09:00:00Z",
+       "summary": "A new benchmark suite for evaluating web-browsing agents."
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "about_agents": {
+     "2610.00300": 0.88
+    }
+   },
+   "expect": [
+    {
+     "capability": "obsidian.append",
+     "count": 1,
+     "contains": [
+      "LLM Agent Benchmarks for Web Navigation",
+      "https://arxiv.org/abs/2610.00300"
+     ],
+     "not_contains": [
+      "Autonomous Multi-Agent Coordination for Robotics"
+     ]
+    }
+   ],
+   "params": {
+    "nota": "Investigacao/ArXivAgentes.md"
+   },
+   "state": {
+    "seenLinks": [
+     "https://arxiv.org/abs/2610.00111"
+    ]
+   },
+   "expect_state": {
+    "seenLinks": [
+     "https://arxiv.org/abs/2610.00111",
+     "https://arxiv.org/abs/2610.00300"
+    ]
+   }
+  }
+ ]
+}

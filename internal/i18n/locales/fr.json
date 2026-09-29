@@ -169,5 +169,11 @@
   "svc.websearch.field.searxng_url.placeholder": "https://searx.example.org",
   "svc.websearch.help": "Utilisez l’API Brave Search (clé gratuite sur api-dashboard.search.brave.com, 2 000 recherches par mois), la recherche Perplexity (clé sur perplexity.ai/account/api, environ 5 US$ pour mille recherches, facturés par Perplexity) ou l’adresse d’une instance SearXNG à vous ou de confiance, avec le format JSON activé. Si vous en remplissez plusieurs, l’ordre est : Brave, Perplexity, SearXNG.",
   "svc.websearch.title": "Recherche web",
-  "msg.budgetOver": "La limite de dépense du jour est atteinte."
+  "msg.budgetOver": "La limite de dépense du jour est atteinte.",
+  "msg.suggestion": "💡 Idée : {title}\n{why}\n\nJe l’apprends ? Je ferais : « {request} »",
+  "btn.suggestYes": "Oui, apprends-le",
+  "btn.suggestNo": "Non, merci",
+  "msg.suggestion.gone": "Cette suggestion n’est plus là.",
+  "msg.suggestion.started": "C’est parti : je le fais une fois sous vos yeux ; approuvez pour en faire une routine.",
+  "msg.suggestion.declined": "D’accord, je ne le suggérerai plus."
 }

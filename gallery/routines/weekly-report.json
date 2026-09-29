@@ -1,0 +1,190 @@
+{
+ "name": "Resumo semanal: GitHub e Todoist",
+ "description": "Toda sexta às 17h, envia no Telegram (ou destino escolhido) um resumo semanal com as issues e PRs fechados no repositório do GitHub configurado nos últimos N dias e as tarefas do Todoist que estão atrasadas.",
+ "manifest": {
+  "schedule": "0 17 * * 5",
+  "capabilities": [
+   "github.issues",
+   "todoist.tasks",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   },
+   {
+    "name": "repo",
+    "label": "Repositório GitHub",
+    "type": "text",
+    "default": "acme/app",
+    "help": "Formato owner/name"
+   },
+   {
+    "name": "days",
+    "label": "Janela de dias para itens fechados",
+    "type": "number",
+    "default": 7
+   }
+  ]
+ },
+ "code": "async function run() {\n  const cutoff = dates.addDays(now(), -params.days);\n\n  const issues = await github.issues({ repo: params.repo, state: \"closed\", max: 50 });\n\n  const recentClosed = issues.filter(function (i) {\n    return !dates.isBefore(i.updated, cutoff);\n  });\n\n  const closedLines = recentClosed.map(function (i) {\n    const prefix = i.pull_request ? \"PR #\" : \"#\";\n    return prefix + i.number + \" \" + i.title;\n  });\n\n  const tasks = await todoist.tasks({ filter: \"overdue\" });\n\n  const taskLines = tasks.map(function (t) {\n    return t.content;\n  });\n\n  if (closedLines.length === 0 && taskLines.length === 0) {\n    log(\"Nothing closed and nothing overdue, skipping message\");\n    return;\n  }\n\n  let text = \"📊 Semana:\\n\";\n  text += \"Fechados no \" + params.repo + \": \";\n  text += closedLines.length > 0 ? closedLines.join(\" · \") : \"nenhum\";\n  text += \"\\nAtrasadas: \";\n  text += taskLines.length > 0 ? taskLines.join(\", \") : \"nenhuma\";\n\n  await notify.send({ text: text });\n}\n",
+ "tests": [
+  {
+   "name": "Caso normal: issues, PR e tarefa atrasada",
+   "now": "2026-10-02T20:00:00Z",
+   "responses": [
+    {
+     "capability": "github.issues",
+     "result": [
+      {
+       "author": "ana",
+       "labels": [],
+       "number": 512,
+       "pull_request": false,
+       "state": "closed",
+       "title": "Corrigir timeout no login",
+       "updated": "2026-10-01T14:00:00Z",
+       "url": "https://github.com/acme/app/issues/512"
+      },
+      {
+       "author": "bruno",
+       "labels": [],
+       "number": 508,
+       "pull_request": true,
+       "state": "closed",
+       "title": "Atualizar dependência do React",
+       "updated": "2026-09-29T10:00:00Z",
+       "url": "https://github.com/acme/app/pull/508"
+      },
+      {
+       "author": "ana",
+       "labels": [],
+       "number": 470,
+       "pull_request": false,
+       "state": "closed",
+       "title": "Refatorar módulo de pagamentos",
+       "updated": "2026-09-15T08:00:00Z",
+       "url": "https://github.com/acme/app/issues/470"
+      }
+     ]
+    },
+    {
+     "capability": "todoist.tasks",
+     "result": [
+      {
+       "content": "Enviar relatório mensal",
+       "due": {
+        "date": "2026-09-30"
+       },
+       "id": "t1",
+       "labels": [],
+       "priority": 2,
+       "project_id": "p1"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "contains": [
+      "#512",
+      "PR #508",
+      "Enviar relatório mensal"
+     ],
+     "not_contains": [
+      "470",
+      "Refatorar"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Edge case: nada fechado e nada atrasado, não envia",
+   "now": "2026-10-09T20:00:00Z",
+   "responses": [
+    {
+     "capability": "github.issues",
+     "result": [
+      {
+       "author": "ana",
+       "labels": [],
+       "number": 470,
+       "pull_request": false,
+       "state": "closed",
+       "title": "Refatorar módulo de pagamentos",
+       "updated": "2026-09-15T08:00:00Z",
+       "url": "https://github.com/acme/app/issues/470"
+      }
+     ]
+    },
+    {
+     "capability": "todoist.tasks",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "Janela de dias customizada (14 dias) inclui item mais antigo",
+   "now": "2026-10-05T20:00:00Z",
+   "responses": [
+    {
+     "capability": "github.issues",
+     "result": [
+      {
+       "author": "carla",
+       "labels": [],
+       "number": 600,
+       "pull_request": false,
+       "state": "closed",
+       "title": "Melhorar performance da busca",
+       "updated": "2026-09-24T09:00:00Z",
+       "url": "https://github.com/acme/app/issues/600"
+      },
+      {
+       "author": "dev2",
+       "labels": [],
+       "number": 590,
+       "pull_request": true,
+       "state": "closed",
+       "title": "Corrigir vazamento de memória",
+       "updated": "2026-09-10T09:00:00Z",
+       "url": "https://github.com/acme/app/pull/590"
+      }
+     ]
+    },
+    {
+     "capability": "todoist.tasks",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "contains": [
+      "#600",
+      "nenhuma"
+     ],
+     "not_contains": [
+      "590"
+     ]
+    }
+   ],
+   "params": {
+    "days": 14,
+    "destinos": [],
+    "repo": "acme/app"
+   }
+  }
+ ]
+}

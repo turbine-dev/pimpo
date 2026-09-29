@@ -1,0 +1,212 @@
+{
+ "name": "Alerta de E-mail Urgente",
+ "description": "Monitora a caixa de entrada do Gmail e, para cada e-mail novo e não lido, usa o julgamento \"urgent\" (precisa de resposta ou ação ainda hoje) para decidir se avisa o dono no Telegram (ou outro destino escolhido). E-mails não urgentes são ignorados silenciosamente.",
+ "manifest": {
+  "schedule": "",
+  "capabilities": [
+   "gmail.search",
+   "notify.send"
+  ],
+  "judgments": {
+   "urgent": "Este e-mail é urgente de verdade: precisa de resposta ou ação ainda hoje?"
+  },
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ],
+  "watch": {
+   "capability": "gmail.search",
+   "args": {
+    "days": 1,
+    "max": 20,
+    "query": "in:inbox is:unread",
+    "unread": true
+   },
+   "key": "id",
+   "every": "5m"
+  }
+ },
+ "code": "async function run() {\n  const items = (typeof event !== 'undefined' && event && event.items) || [];\n  for (const item of items) {\n    const j = await judge.urgent(item);\n    if (j.p >= 0.5) {\n      const from = item.from_name || item.from || '';\n      const subject = item.subject || '(sem assunto)';\n      const detail = item.snippet || '';\n      const text = `🚨 Urgente: \"${subject}\" (${from})${detail ? ' — ' + detail : ''}`;\n      await notify.send({ text });\n    }\n  }\n}\n",
+ "tests": [
+  {
+   "name": "e-mail urgente único gera alerta",
+   "now": "2026-09-28T13:00:00Z",
+   "responses": [],
+   "judgments": {
+    "urgent": {
+     "Servidor caiu": 0.95
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Servidor caiu",
+      "Cliente XPTO"
+     ]
+    }
+   ],
+   "event": {
+    "items": [
+     {
+      "can_unsubscribe": false,
+      "date": "2026-09-28T12:50:00Z",
+      "from": "suporte@clientex.com",
+      "from_name": "Cliente XPTO",
+      "id": "e1",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "snippet": "Nosso site está fora do ar e os clientes estão reclamando, por favor respondam hoje.",
+      "subject": "Servidor caiu, precisamos de ajuda urgente",
+      "to": "dfernandes@mybeevo.com",
+      "unread": true
+     }
+    ]
+   }
+  },
+  {
+   "name": "nada urgente, nenhum alerta",
+   "now": "2026-09-28T09:00:00Z",
+   "responses": [],
+   "judgments": {
+    "urgent": {
+     "Ideia para reunião": 0.1,
+     "Resumo semanal": 0.02
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ],
+   "event": {
+    "items": [
+     {
+      "can_unsubscribe": true,
+      "date": "2026-09-28T08:50:00Z",
+      "from": "newsletter@site.com",
+      "from_name": "Site News",
+      "id": "e2",
+      "labels": [
+       "INBOX",
+       "UNREAD",
+       "CATEGORY_UPDATES"
+      ],
+      "replied": false,
+      "snippet": "Confira as novidades desta semana.",
+      "subject": "Resumo semanal",
+      "to": "dfernandes@mybeevo.com",
+      "unread": true
+     },
+     {
+      "can_unsubscribe": false,
+      "date": "2026-09-28T08:40:00Z",
+      "from": "colega@empresa.com",
+      "from_name": "Colega",
+      "id": "e3",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "snippet": "Quando puder, dá uma olhada nessa proposta.",
+      "subject": "Ideia para reunião",
+      "to": "dfernandes@mybeevo.com",
+      "unread": true
+     }
+    ]
+   }
+  },
+  {
+   "name": "vários e-mails, mistura de urgente e não urgente, wording diferente",
+   "now": "2026-09-28T15:00:00Z",
+   "responses": [],
+   "judgments": {
+    "urgent": {
+     "Fotos da viagem": 0.02,
+     "Payment failed": 0.9,
+     "aprovação até o fim do dia": 0.92
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 2,
+     "contains": [
+      "Payment failed",
+      "aprovação até o fim do dia"
+     ],
+     "not_contains": [
+      "Fotos da viagem"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [
+     "telegram:meu-bot"
+    ]
+   },
+   "event": {
+    "items": [
+     {
+      "can_unsubscribe": false,
+      "date": "2026-09-28T14:55:00Z",
+      "from": "billing@vendorco.com",
+      "from_name": "Vendor Co Billing",
+      "id": "e4",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "snippet": "Your payment could not be processed, please update your card today to avoid service interruption.",
+      "subject": "Payment failed - action required today",
+      "to": "dfernandes@mybeevo.com",
+      "unread": true
+     },
+     {
+      "can_unsubscribe": false,
+      "date": "2026-09-28T14:30:00Z",
+      "from": "amigo@gmail.com",
+      "from_name": "Amigo",
+      "id": "e5",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "snippet": "Olha essas fotos incríveis que tirei no fim de semana.",
+      "subject": "Fotos da viagem",
+      "to": "dfernandes@mybeevo.com",
+      "unread": true
+     },
+     {
+      "can_unsubscribe": false,
+      "date": "2026-09-28T14:40:00Z",
+      "from": "chefe@empresa.com",
+      "from_name": "Chefe",
+      "id": "e6",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "snippet": "O contrato precisa ser assinado ainda hoje, por favor confirme.",
+      "subject": "Preciso da aprovação até o fim do dia",
+      "to": "dfernandes@mybeevo.com",
+      "unread": true
+     }
+    ]
+   }
+  }
+ ]
+}

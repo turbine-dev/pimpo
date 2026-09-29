@@ -26,6 +26,7 @@ Pimpo acts for people: it reads their email, sends messages and changes things. 
 | Poisoned memory | Anything the agent notes is low trust and never reaches later instructions. Facts are single lines, and topics cannot write outside the memory. | `TestGatePoisonedMemoryNeverBecomesInstruction` (50 attacks) |
 | A destructive request after context was lost | Rules live outside the model, and deletes go to the trash. | `TestGateTwoHundredEmails` |
 | Runaway cost or loops | The budget is checked before every model call, with call limits per run. | `TestGateLoopStopsAtBudget` |
+| A crafted email subject steering suggestions | Suggestions see metadata only, told it is data; they never act: accepting one shows the request and starts an ordinary exploration, which simulates changes. Each round is capped at $0.02 within the daily limit. | `TestSuggestionsFromMetadataOnly` |
 | Leaking secrets | Secrets sit in an encrypted vault whose key is in the OS keychain. Models see capabilities, never credentials. Backups seal secrets with a passphrase. | `TestExportImportRoundTrip`, vault tests |
 | A routine doing more than it says | The runtime exposes only declared capabilities. The gallery signs content and audits each routine with every capability reachable. | `TestAuditFindsUndeclaredCalls`, `TestTamperingIsCaught` |
 | A connector doing more than it says | It runs as a separate process with a clean environment, exactly its declared tools, timeouts, and risk-based rules. | `TestConnectorsAreHeldToTheirManifest` |

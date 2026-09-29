@@ -1,0 +1,211 @@
+{
+ "name": "Top do dia no Reddit",
+ "description": "Todo dia às 20h, envia no Telegram (ou destino escolhido) os posts mais votados do dia em cada subreddit configurado (padrão: r/LocalLLaMA e r/selfhosted), com título e link de cada um.",
+ "manifest": {
+  "schedule": "0 20 * * *",
+  "capabilities": [
+   "rss.read:www.reddit.com",
+   "notify.send"
+  ],
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   },
+   {
+    "name": "subreddits",
+    "label": "Subreddits (separados por vírgula)",
+    "type": "text",
+    "default": "LocalLLaMA, selfhosted",
+    "help": "Nomes dos subreddits, sem 'r/', separados por vírgula"
+   },
+   {
+    "name": "quantidade",
+    "label": "Quantidade de posts por subreddit",
+    "type": "number",
+    "default": 3
+   }
+  ]
+ },
+ "code": "async function run() {\n  const subs = (params.subreddits || \"\")\n    .split(\",\")\n    .map((s) => s.trim())\n    .filter(Boolean);\n  const count = params.quantidade || 3;\n\n  const lines = [];\n\n  for (const sub of subs) {\n    const url = `https://www.reddit.com/r/${sub}/top/.rss?t=day`;\n    const items = await rss.read({ url, max: count });\n    if (!items || items.length === 0) {\n      continue;\n    }\n    lines.push(`r/${sub}:`);\n    items.slice(0, count).forEach((it, idx) => {\n      lines.push(`${idx + 1}. ${it.title} - ${it.link}`);\n    });\n  }\n\n  if (lines.length === 0) {\n    log(\"Nenhum post encontrado hoje.\");\n    return;\n  }\n\n  await notify.send({ text: lines.join(\"\\n\") });\n}\n",
+ "tests": [
+  {
+   "name": "caso normal com dois subreddits",
+   "now": "2026-09-28T23:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.reddit.com/r/LocalLLaMA/comments/x1",
+       "published": "2026-09-28T12:00:00Z",
+       "summary": "",
+       "title": "Novo modelo bate benchmark do GPT"
+      },
+      {
+       "link": "https://www.reddit.com/r/LocalLLaMA/comments/x2",
+       "published": "2026-09-28T10:00:00Z",
+       "summary": "",
+       "title": "Como rodar modelos grandes em CPU"
+      },
+      {
+       "link": "https://www.reddit.com/r/LocalLLaMA/comments/x3",
+       "published": "2026-09-28T09:00:00Z",
+       "summary": "",
+       "title": "Comparativo de quantizações"
+      }
+     ]
+    },
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.reddit.com/r/selfhosted/comments/y1",
+       "published": "2026-09-28T13:00:00Z",
+       "summary": "",
+       "title": "Montei meu próprio NAS"
+      },
+      {
+       "link": "https://www.reddit.com/r/selfhosted/comments/y2",
+       "published": "2026-09-28T11:00:00Z",
+       "summary": "",
+       "title": "Dicas de backup automatizado"
+      },
+      {
+       "link": "https://www.reddit.com/r/selfhosted/comments/y3",
+       "published": "2026-09-28T08:00:00Z",
+       "summary": "",
+       "title": "Traefik vs Nginx Proxy Manager"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "r/LocalLLaMA:",
+      "Novo modelo bate benchmark do GPT",
+      "https://www.reddit.com/r/LocalLLaMA/comments/x1",
+      "r/selfhosted:",
+      "Montei meu próprio NAS",
+      "https://www.reddit.com/r/selfhosted/comments/y1"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [],
+    "quantidade": 3,
+    "subreddits": "LocalLLaMA, selfhosted"
+   }
+  },
+  {
+   "name": "um subreddit sem posts hoje",
+   "now": "2026-09-28T23:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": []
+    },
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.reddit.com/r/selfhosted/comments/z1",
+       "published": "2026-09-28T13:00:00Z",
+       "summary": "",
+       "title": "Home Assistant com Zigbee2MQTT"
+      },
+      {
+       "link": "https://www.reddit.com/r/selfhosted/comments/z2",
+       "published": "2026-09-28T11:00:00Z",
+       "summary": "",
+       "title": "Migrando para Docker Compose"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "r/selfhosted:",
+      "Home Assistant com Zigbee2MQTT",
+      "Migrando para Docker Compose"
+     ],
+     "not_contains": [
+      "r/LocalLLaMA:"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [],
+    "quantidade": 3,
+    "subreddits": "LocalLLaMA, selfhosted"
+   }
+  },
+  {
+   "name": "parametros customizados: outros subreddits e quantidade menor",
+   "now": "2026-09-28T23:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.reddit.com/r/MachineLearning/comments/m1",
+       "published": "2026-09-28T12:00:00Z",
+       "summary": "",
+       "title": "Novo paper sobre atenção esparsa"
+      },
+      {
+       "link": "https://www.reddit.com/r/MachineLearning/comments/m2",
+       "published": "2026-09-28T10:00:00Z",
+       "summary": "",
+       "title": "Discussão sobre RLHF"
+      }
+     ]
+    },
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.reddit.com/r/homelab/comments/h1",
+       "published": "2026-09-28T09:00:00Z",
+       "summary": "",
+       "title": "Rack de 12U montado do zero"
+      },
+      {
+       "link": "https://www.reddit.com/r/homelab/comments/h2",
+       "published": "2026-09-28T08:00:00Z",
+       "summary": "",
+       "title": "Upgrade de storage com ZFS"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "r/MachineLearning:",
+      "Novo paper sobre atenção esparsa",
+      "Discussão sobre RLHF",
+      "r/homelab:",
+      "Rack de 12U montado do zero",
+      "Upgrade de storage com ZFS"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [],
+    "quantidade": 2,
+    "subreddits": "MachineLearning, homelab"
+   }
+  }
+ ]
+}

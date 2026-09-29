@@ -1,0 +1,116 @@
+{
+ "name": "Alerta de preço no Mercado Livre",
+ "description": "Verifica de hora em hora o preço do anúncio informado no Mercado Livre e avisa nos destinos escolhidos quando o preço cair abaixo do limite definido, sem repetir o aviso enquanto o preço continuar abaixo desse valor.",
+ "manifest": {
+  "schedule": "0 * * * *",
+  "capabilities": [
+   "http.getJSON:api.mercadolibre.com",
+   "notify.send"
+  ],
+  "params": [
+   {
+    "name": "item_id",
+    "label": "Código do anúncio (ex: MLB3456789)",
+    "type": "text",
+    "default": "MLB3456789"
+   },
+   {
+    "name": "threshold",
+    "label": "Avisar quando o preço ficar abaixo de",
+    "type": "number",
+    "default": 3200,
+    "help": "Valor em reais"
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const itemId = params.item_id;\n  const threshold = params.threshold;\n  const url = \"https://api.mercadolibre.com/items/\" + itemId;\n  const item = await http.getJSON(url);\n  if (!item || typeof item.price !== \"number\") {\n    log(\"Item sem preço válido, ignorando.\");\n    return;\n  }\n\n  const price = item.price;\n  const below = price < threshold;\n  const wasBelow = state.get(\"wasBelow\") || false;\n\n  if (below && !wasBelow) {\n    const currency = item.currency_id || \"BRL\";\n    const priceStr = money.format(price, currency);\n    const thresholdStr = money.format(threshold, currency);\n    const link = item.permalink || (\"https://produto.mercadolivre.com.br/\" + itemId.replace(\"MLB\", \"MLB-\"));\n    const title = item.title || itemId;\n    const text = \"💸 \" + title + \" está por \" + priceStr + \" (abaixo de \" + thresholdStr + \"): \" + link;\n    await notify.send({ text });\n  }\n\n  state.set(\"wasBelow\", below);\n}\n",
+ "tests": [
+  {
+   "name": "Preço abaixo do limite pela primeira vez, deve avisar",
+   "now": "2026-09-28T15:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "currency_id": "BRL",
+      "id": "MLB3456789",
+      "permalink": "https://produto.mercadolivre.com.br/MLB-3456789",
+      "price": 3099,
+      "title": "Notebook Ultra 14 16GB 512GB"
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Notebook Ultra 14 16GB 512GB",
+      "R$ 3.099,00",
+      "R$ 3.200,00",
+      "produto.mercadolivre.com.br/MLB-3456789"
+     ]
+    }
+   ],
+   "expect_state": {
+    "wasBelow": true
+   }
+  },
+  {
+   "name": "Preço volta a subir acima do limite, não deve avisar e reseta estado",
+   "now": "2026-09-28T16:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "currency_id": "BRL",
+      "id": "MLB3456789",
+      "permalink": "https://produto.mercadolivre.com.br/MLB-3456789",
+      "price": 3450,
+      "title": "Notebook Ultra 14 16GB 512GB"
+     }
+    }
+   ],
+   "expect": [],
+   "state": {
+    "wasBelow": true
+   },
+   "expect_state": {
+    "wasBelow": false
+   }
+  },
+  {
+   "name": "Preço continua abaixo do limite (já avisado antes) e outro item com limite personalizado mais baixo, não deve repetir/avisar",
+   "now": "2026-09-28T17:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "currency_id": "BRL",
+      "id": "MLB9988776",
+      "permalink": "https://www.mercadolivre.com.br/produto-x/p/MLB9988776",
+      "price": 2800,
+      "title": "Cadeira Gamer Reclinável"
+     }
+    }
+   ],
+   "expect": [],
+   "params": {
+    "item_id": "MLB9988776",
+    "threshold": 2500
+   },
+   "state": {
+    "wasBelow": true
+   },
+   "expect_state": {
+    "wasBelow": false
+   }
+  }
+ ]
+}

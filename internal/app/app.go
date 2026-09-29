@@ -86,6 +86,8 @@ type Settings struct {
 	// settings above may name one as provider:model.
 	Models    []ModelOption `json:"models,omitempty"`
 	OllamaURL string        `json:"ollama_url,omitempty"`
+	// SuggestOff stops the daily routine suggestions.
+	SuggestOff bool `json:"suggest_off,omitempty"`
 	// LMStudioURL and CustomURL are where LM Studio and an OpenAI-compatible
 	// server of the owner's answer (without /v1 for LM Studio).
 	LMStudioURL string `json:"lmstudio_url,omitempty"`
@@ -296,6 +298,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.mcpRoutes()
 	a.openapiRoutes()
 	a.quickSetupRoutes()
+	a.suggestionRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()
@@ -322,6 +325,7 @@ func (a *App) Start(ctx context.Context) error {
 	go a.repoLoop(ctx, 15*time.Minute)
 	go a.reminderLoop(ctx, 20*time.Second)
 	go a.aliveLoop(ctx, time.Minute)
+	go a.suggestLoop(ctx, 30*time.Minute)
 	a.restartListener(ctx)
 	return nil
 }
@@ -1075,6 +1079,16 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 			return "", err
 		}
 		return i18n.T(ctx, "msg.routine.redo"), nil
+	case "suggest":
+		if _, err := h.a.acceptSuggestion(ctx, id); err != nil {
+			return "", err
+		}
+		return i18n.T(ctx, "msg.suggestion.started"), nil
+	case "nosuggest":
+		if err := h.a.dismissSuggestion(ctx, id); err != nil {
+			return "", err
+		}
+		return i18n.T(ctx, "msg.suggestion.declined"), nil
 	case "answer":
 		qid, i, err := parseAnswer(id)
 		if err != nil {

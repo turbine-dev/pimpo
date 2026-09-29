@@ -1,0 +1,277 @@
+{
+ "name": "Resumo dos e-mails de ontem no Slack",
+ "description": "Todo dia útil às 9h, busca os e-mails recebidos ontem na caixa de entrada, remove os que estão nas categorias de Promoções e Redes sociais (configurável) e envia um resumo com remetente e assunto para o Slack do dono. Se não houver e-mails relevantes, não envia nada.",
+ "manifest": {
+  "schedule": "0 9 * * 1-5",
+  "capabilities": [
+   "gmail.search",
+   "slack.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "categorias_excluir",
+    "label": "Categorias a excluir",
+    "type": "multiselect",
+    "default": [
+     "Promoções",
+     "Redes sociais"
+    ],
+    "options": [
+     "Promoções",
+     "Redes sociais",
+     "Atualizações",
+     "Fóruns"
+    ],
+    "help": "E-mails com essas categorias do Gmail não entram no resumo"
+   }
+  ]
+ },
+ "code": "async function run() {\n  const todayStart = dates.today();\n  const yesterdayStart = dates.addDays(todayStart, -1);\n  const after = dates.format(yesterdayStart, 'yyyy/MM/dd');\n  const before = dates.format(todayStart, 'yyyy/MM/dd');\n  const query = `in:inbox after:${after} before:${before}`;\n\n  const emails = await gmail.search({ query, days: 2, max: 50 });\n\n  const categoryMap = {\n    \"Promoções\": \"CATEGORY_PROMOTIONS\",\n    \"Redes sociais\": \"CATEGORY_SOCIAL\",\n    \"Atualizações\": \"CATEGORY_UPDATES\",\n    \"Fóruns\": \"CATEGORY_FORUMS\"\n  };\n  const chosen = params.categorias_excluir || [];\n  const excludedLabels = chosen.map(c => categoryMap[c]).filter(Boolean);\n\n  const relevant = emails.filter(e => {\n    if (!dates.sameDay(e.date, yesterdayStart)) return false;\n    const labels = e.labels || [];\n    return !labels.some(l => excludedLabels.includes(l));\n  });\n\n  if (relevant.length === 0) {\n    log(\"Nenhum e-mail relevante encontrado para ontem.\");\n    return;\n  }\n\n  const lines = relevant.map(e => `• ${e.from_name || e.from} — ${e.subject}`);\n  const text = `📬 E-mails de ontem:\\n${lines.join('\\n')}`;\n\n  await slack.send({ text });\n}\n",
+ "tests": [
+  {
+   "name": "Caso normal: alguns e-mails, promoções e redes sociais filtradas",
+   "now": "2026-09-29T12:00:00Z",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "a1",
+       "from": "financeiro@empresa.com",
+       "from_name": "Financeiro",
+       "to": "eu@exemplo.com",
+       "subject": "Reembolso aprovado",
+       "snippet": "Seu reembolso foi processado.",
+       "date": "2026-09-28T09:30:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": false
+      },
+      {
+       "id": "a2",
+       "from": "ofertas@loja.com",
+       "from_name": "Loja Mega Ofertas",
+       "to": "eu@exemplo.com",
+       "subject": "Até 70% off só hoje",
+       "snippet": "Corra!",
+       "date": "2026-09-28T10:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "CATEGORY_PROMOTIONS"
+       ],
+       "replied": false,
+       "unread": false
+      },
+      {
+       "id": "a3",
+       "from": "notify@instagram.com",
+       "from_name": "Instagram",
+       "to": "eu@exemplo.com",
+       "subject": "Você tem novas curtidas",
+       "snippet": "Veja agora.",
+       "date": "2026-09-28T14:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "CATEGORY_SOCIAL"
+       ],
+       "replied": false,
+       "unread": false
+      },
+      {
+       "id": "a4",
+       "from": "cliente@parceiro.com",
+       "from_name": "Ana Souza",
+       "to": "eu@exemplo.com",
+       "subject": "Contrato assinado",
+       "snippet": "Segue anexo.",
+       "date": "2026-09-28T17:45:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": false
+      },
+      {
+       "id": "a5",
+       "from": "boletim@revista.com",
+       "from_name": "Revista X",
+       "to": "eu@exemplo.com",
+       "subject": "Edição de hoje",
+       "snippet": "Confira.",
+       "date": "2026-09-29T08:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": false
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "slack.send",
+     "count": 1,
+     "contains": [
+      "Financeiro",
+      "Reembolso aprovado",
+      "Ana Souza",
+      "Contrato assinado"
+     ],
+     "not_contains": [
+      "Instagram",
+      "Loja Mega Ofertas",
+      "Revista X"
+     ]
+    }
+   ],
+   "params": {
+    "categorias_excluir": [
+     "Promoções",
+     "Redes sociais"
+    ]
+   }
+  },
+  {
+   "name": "Nada relevante: só promoções e redes sociais",
+   "now": "2026-09-29T12:00:00Z",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "b1",
+       "from": "promo@viagem.com",
+       "from_name": "Viagem Já",
+       "to": "eu@exemplo.com",
+       "subject": "Pacotes com desconto",
+       "snippet": "Aproveite.",
+       "date": "2026-09-28T09:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "CATEGORY_PROMOTIONS"
+       ],
+       "replied": false,
+       "unread": false
+      },
+      {
+       "id": "b2",
+       "from": "notification@linkedin.com",
+       "from_name": "LinkedIn",
+       "to": "eu@exemplo.com",
+       "subject": "Novas conexões para você",
+       "snippet": "Veja quem.",
+       "date": "2026-09-28T16:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "CATEGORY_SOCIAL"
+       ],
+       "replied": false,
+       "unread": false
+      }
+     ]
+    }
+   ],
+   "expect": [],
+   "params": {
+    "categorias_excluir": [
+     "Promoções",
+     "Redes sociais"
+    ]
+   }
+  },
+  {
+   "name": "Parâmetro alterado: excluir só promoções, redes sociais entram; formato de dados diferente",
+   "now": "2026-09-29T12:00:00Z",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "c1",
+       "from": "suporte@fornecedor.com",
+       "to": "eu@exemplo.com",
+       "subject": "Atualização do chamado #4521",
+       "snippet": "Seu chamado foi atualizado.",
+       "date": "2026-09-28T11:20:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": true,
+       "unread": false
+      },
+      {
+       "id": "c2",
+       "from": "notification@facebook.com",
+       "from_name": "Facebook",
+       "to": "eu@exemplo.com",
+       "subject": "Fulano marcou você em uma foto",
+       "snippet": "Veja a foto.",
+       "date": "2026-09-28T13:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "CATEGORY_SOCIAL"
+       ],
+       "replied": false,
+       "unread": false
+      },
+      {
+       "id": "c3",
+       "from": "marketing@shopclub.com",
+       "from_name": "ShopClub",
+       "to": "eu@exemplo.com",
+       "subject": "Frete grátis hoje",
+       "snippet": "Só hoje.",
+       "date": "2026-09-28T15:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "CATEGORY_PROMOTIONS"
+       ],
+       "replied": false,
+       "unread": false
+      },
+      {
+       "id": "c4",
+       "from": "boletim@revista.com",
+       "from_name": "Revista X",
+       "to": "eu@exemplo.com",
+       "subject": "Edição de hoje",
+       "snippet": "Confira.",
+       "date": "2026-09-29T08:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": false
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "slack.send",
+     "count": 1,
+     "contains": [
+      "suporte@fornecedor.com",
+      "Atualização do chamado #4521",
+      "Facebook",
+      "Fulano marcou você em uma foto"
+     ],
+     "not_contains": [
+      "ShopClub",
+      "Frete grátis",
+      "Revista X"
+     ]
+    }
+   ],
+   "params": {
+    "categorias_excluir": [
+     "Promoções"
+    ]
+   }
+  }
+ ]
+}

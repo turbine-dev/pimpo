@@ -1,0 +1,213 @@
+{
+ "name": "Diário do dia no Obsidian",
+ "description": "Todos os dias às 23h55, gera um registro diário na nota Diário.md do Obsidian com as reuniões do dia (do calendário) e as issues do repositório GitHub configurado que foram fechadas naquele dia.",
+ "manifest": {
+  "schedule": "55 23 * * *",
+  "capabilities": [
+   "calendar.events",
+   "github.issues",
+   "obsidian.append"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "repo",
+    "label": "Repositório GitHub",
+    "type": "text",
+    "default": "acme/app",
+    "help": "No formato owner/repo"
+   },
+   {
+    "name": "note",
+    "label": "Nota do Obsidian",
+    "type": "text",
+    "default": "Diário.md"
+   }
+  ]
+ },
+ "code": "async function run() {\n  const start = dates.today();\n  const end = dates.addDays(start, 1);\n\n  const events = await calendar.events({ from: start, to: end });\n  const meetings = (events || []).map(e => e.title).filter(Boolean);\n\n  const issues = await github.issues({ repo: params.repo, state: 'closed', max: 50 });\n  const closedToday = (issues || []).filter(\n    i => !i.pull_request && dates.sameDay(i.updated, start)\n  );\n\n  const meetingsLine = meetings.length ? meetings.join(', ') : 'Nenhuma reunião';\n  const issuesLine = closedToday.length\n    ? closedToday.map(i => `#${i.number} ${i.title}`).join(', ')\n    : 'Nenhuma issue fechada';\n\n  const dateLabel = dates.format(start, 'yyyy-MM-dd');\n  const text = `## ${dateLabel}\\nReuniões: ${meetingsLine}\\nFechadas: ${issuesLine}`;\n\n  await obsidian.append({ note: params.note, text });\n  log(text);\n}\n",
+ "tests": [
+  {
+   "name": "caso normal com reuniões e issue fechada",
+   "now": "2026-10-05T15:00:00Z",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e1",
+       "title": "Daily do time",
+       "start": "2026-10-05T09:30:00-03:00",
+       "end": "2026-10-05T09:45:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e2",
+       "title": "1:1 com gerente",
+       "start": "2026-10-05T15:00:00-03:00",
+       "end": "2026-10-05T15:30:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      }
+     ]
+    },
+    {
+     "capability": "github.issues",
+     "result": [
+      {
+       "number": 501,
+       "title": "Corrigir timeout no checkout",
+       "state": "closed",
+       "author": "dev2",
+       "labels": [],
+       "pull_request": false,
+       "updated": "2026-10-05T20:00:00Z",
+       "url": "https://github.com/acme/app/issues/501"
+      },
+      {
+       "number": 480,
+       "title": "Ajustar log de erro",
+       "state": "closed",
+       "author": "dev3",
+       "labels": [],
+       "pull_request": false,
+       "updated": "2026-09-28T10:00:00Z",
+       "url": "https://github.com/acme/app/issues/480"
+      },
+      {
+       "number": 510,
+       "title": "Merge da branch feature/x",
+       "state": "closed",
+       "author": "dev1",
+       "labels": [],
+       "pull_request": true,
+       "updated": "2026-10-05T21:00:00Z",
+       "url": "https://github.com/acme/app/pull/510"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "obsidian.append",
+     "count": 1,
+     "contains": [
+      "2026-10-05",
+      "Daily do time",
+      "1:1 com gerente",
+      "#501 Corrigir timeout no checkout"
+     ],
+     "not_contains": [
+      "#480",
+      "#510",
+      "Ajustar log de erro",
+      "Merge da branch"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "dia sem reuniões e sem issues fechadas",
+   "now": "2026-10-05T15:00:00Z",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": []
+    },
+    {
+     "capability": "github.issues",
+     "result": [
+      {
+       "number": 390,
+       "title": "Issue fechada semana passada",
+       "state": "closed",
+       "author": "dev1",
+       "labels": [],
+       "pull_request": false,
+       "updated": "2026-09-29T12:00:00Z",
+       "url": "https://github.com/acme/app/issues/390"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "obsidian.append",
+     "count": 1,
+     "contains": [
+      "2026-10-05",
+      "Nenhuma reunião",
+      "Nenhuma issue fechada"
+     ],
+     "not_contains": [
+      "#390"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "repositório e nota customizados, múltiplas issues fechadas",
+   "now": "2026-10-05T15:00:00Z",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e5",
+       "title": "Reunião de planejamento",
+       "start": "2026-10-05T11:00:00-03:00",
+       "end": "2026-10-05T12:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      }
+     ]
+    },
+    {
+     "capability": "github.issues",
+     "result": [
+      {
+       "number": 20,
+       "title": "Corrigir bug de autenticação",
+       "state": "closed",
+       "author": "dev4",
+       "labels": [],
+       "pull_request": false,
+       "updated": "2026-10-05T14:00:00Z",
+       "url": "https://github.com/acme/backend/issues/20"
+      },
+      {
+       "number": 21,
+       "title": "Atualizar dependências",
+       "state": "closed",
+       "author": "dev5",
+       "labels": [],
+       "pull_request": false,
+       "updated": "2026-10-05T18:30:00Z",
+       "url": "https://github.com/acme/backend/issues/21"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "obsidian.append",
+     "count": 1,
+     "contains": [
+      "2026-10-05",
+      "Reunião de planejamento",
+      "#20 Corrigir bug de autenticação",
+      "#21 Atualizar dependências"
+     ]
+    }
+   ],
+   "params": {
+    "note": "Notas/Diario.md",
+    "repo": "acme/backend"
+   }
+  }
+ ]
+}
