@@ -1,0 +1,142 @@
+{
+ "name": "Tarefas atrasadas e de hoje",
+ "description": "Toda manhã, numa só mensagem, as tarefas do Todoist que estão atrasadas e as que vencem hoje. Se não houver nenhuma, não manda nada.",
+ "manifest": {
+  "schedule": "0 7 * * *",
+  "capabilities": [
+   "todoist.tasks",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "filtro",
+    "label": "Filtro do Todoist",
+    "type": "text",
+    "default": "overdue | today",
+    "help": "Na sintaxe de filtros do Todoist. Por exemplo: (overdue | today) & #Trabalho"
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "function linha(t, hoje) {\n  let s = \"• \" + (t.priority === 4 ? \"‼️ \" : \"\") + t.content;\n  if (t.due && t.due.indexOf(\"T\") !== -1 && dates.sameDay(t.due, hoje)) s += \" às \" + dates.format(t.due, \"HH:mm\");\n  if (t.due && dates.isBefore(t.due, hoje)) {\n    const n = dates.diffDays(t.due, hoje);\n    s += \" (venceu \" + (n === 1 ? \"ontem\" : \"há \" + n + \" dias\") + \")\";\n  }\n  return s;\n}\n\nasync function run() {\n  const hoje = dates.today();\n  const tarefas = await todoist.tasks({filter: params.filtro});\n  const atrasadas = [], deHoje = [];\n  for (const t of tarefas) {\n    if (t.due && dates.isBefore(t.due, hoje)) atrasadas.push(t);\n    else deHoje.push(t);\n  }\n  if (!atrasadas.length && !deHoje.length) return;\n  const ordem = (a, b) => (b.priority || 1) - (a.priority || 1) || (String(a.due || \"9\") < String(b.due || \"9\") ? -1 : 1);\n  atrasadas.sort(ordem);\n  deHoje.sort(ordem);\n  const partes = [];\n  if (atrasadas.length) partes.push(\"⏰ Atrasadas (\" + atrasadas.length + \"):\\n\" + atrasadas.map(t => linha(t, hoje)).join(\"\\n\"));\n  if (deHoje.length) partes.push(\"✅ Para hoje (\" + deHoje.length + \"):\\n\" + deHoje.map(t => linha(t, hoje)).join(\"\\n\"));\n  await notify.send({text: partes.join(\"\\n\\n\")});\n}\n",
+ "tests": [
+  {
+   "name": "atrasadas e de hoje",
+   "now": "2026-10-01T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "todoist.tasks",
+     "result": [
+      {
+       "id": "t1",
+       "content": "Pagar o seguro do carro",
+       "due": "2026-09-29",
+       "priority": 4,
+       "project_id": "p1",
+       "labels": []
+      },
+      {
+       "id": "t2",
+       "content": "Enviar relatório mensal",
+       "due": "2026-09-30",
+       "priority": 2,
+       "project_id": "p1",
+       "labels": []
+      },
+      {
+       "id": "t3",
+       "content": "Ligar para a escola",
+       "due": "2026-10-01T10:30:00",
+       "priority": 1,
+       "project_id": "p2",
+       "labels": []
+      },
+      {
+       "id": "t4",
+       "content": "Comprar ração",
+       "due": "2026-10-01",
+       "priority": 1,
+       "project_id": "p2",
+       "labels": []
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Atrasadas (2)",
+      "‼️ Pagar o seguro do carro",
+      "há 2 dias",
+      "Enviar relatório mensal (venceu ontem)",
+      "Para hoje (2)",
+      "Ligar para a escola às 10:30",
+      "Comprar ração"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nenhuma tarefa",
+   "now": "2026-10-01T07:00:00-03:00",
+   "responses": [
+    {
+     "capability": "todoist.tasks",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "só de hoje, com outro filtro",
+   "now": "2026-10-02T07:00:00-03:00",
+   "params": {
+    "filtro": "(overdue | today) & #Trabalho"
+   },
+   "responses": [
+    {
+     "capability": "todoist.tasks",
+     "result": [
+      {
+       "id": "t9",
+       "content": "Revisar proposta",
+       "due": "2026-10-02",
+       "priority": 3,
+       "project_id": "p9",
+       "labels": [
+        "trabalho"
+       ]
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Para hoje (1)",
+      "Revisar proposta"
+     ],
+     "not_contains": [
+      "Atrasadas",
+      "venceu"
+     ]
+    }
+   ]
+  }
+ ]
+}

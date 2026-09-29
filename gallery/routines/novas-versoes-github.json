@@ -1,0 +1,212 @@
+{
+ "name": "Novas versões no GitHub",
+ "description": "A cada 6 horas, lê o feed de lançamentos dos repositórios que você escolher e avisa das versões novas, sem repetir.",
+ "manifest": {
+  "schedule": "0 */6 * * *",
+  "capabilities": [
+   "rss.read:github.com",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "repositorios",
+    "label": "Repositórios (dono/nome)",
+    "type": "text",
+    "default": "golang/go, nodejs/node",
+    "help": "Separados por vírgula, como golang/go, nodejs/node. Na primeira vez, a rotina só aprende as versões que já existem."
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const repos = params.repositorios.split(/[,\\s]+/)\n    .map(function (r) { return r.trim().replace(/^https?:\\/\\/github\\.com\\//, \"\").replace(/\\/+$/, \"\"); })\n    .filter(function (r) { return /^[\\w.-]+\\/[\\w.-]+$/.test(r); });\n  const vistos = state.get(\"vistos\") || {};\n  const novidades = [];\n  const agora = {};\n\n  for (const repo of repos) {\n    const items = await rss.read({url: \"https://github.com/\" + repo + \"/releases.atom\", max: 10});\n    const links = items.map(function (i) { return i.link; }).filter(Boolean);\n    const antes = vistos[repo];\n    if (antes) {\n      for (const item of items) {\n        if (item.link && antes.indexOf(item.link) < 0) novidades.push({repo: repo, titulo: item.title || item.link, link: item.link});\n      }\n    } else {\n      log(\"Primeira leitura de \" + repo + \": \" + links.length + \" versões aprendidas.\");\n    }\n    agora[repo] = (antes || []).filter(function (l) { return links.indexOf(l) < 0; }).concat(links).slice(-20);\n  }\n\n  state.set(\"vistos\", agora);\n  if (novidades.length === 0) {\n    log(\"Nenhuma versão nova.\");\n    return;\n  }\n  const linhas = novidades.map(function (n) { return \"• \" + n.repo + \" \" + n.titulo + \" — \" + n.link; });\n  await notify.send({text: \"🚀 \" + (novidades.length === 1 ? \"Versão nova\" : \"Versões novas\") + \" no GitHub:\\n\" + linhas.join(\"\\n\")});\n}\n",
+ "tests": [
+  {
+   "name": "uma versão nova num repositório já conhecido",
+   "now": "2026-10-06T12:00:00Z",
+   "params": {
+    "repositorios": "acme/app"
+   },
+   "state": {
+    "vistos": {
+     "acme/app": [
+      "https://github.com/acme/app/releases/tag/v1.4.0"
+     ]
+    }
+   },
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "v1.5.0",
+       "link": "https://github.com/acme/app/releases/tag/v1.5.0",
+       "published": "2026-10-06T09:00:00Z",
+       "summary": "Novo exportador"
+      },
+      {
+       "title": "v1.4.0",
+       "link": "https://github.com/acme/app/releases/tag/v1.4.0",
+       "published": "2026-09-20T09:00:00Z",
+       "summary": ""
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "acme/app",
+      "v1.5.0",
+      "releases/tag/v1.5.0"
+     ],
+     "not_contains": [
+      "v1.4.0"
+     ]
+    }
+   ],
+   "expect_state": {
+    "vistos": {
+     "acme/app": [
+      "https://github.com/acme/app/releases/tag/v1.5.0",
+      "https://github.com/acme/app/releases/tag/v1.4.0"
+     ]
+    }
+   }
+  },
+  {
+   "name": "nada novo: não avisa",
+   "now": "2026-10-06T12:00:00Z",
+   "params": {
+    "repositorios": "acme/app"
+   },
+   "state": {
+    "vistos": {
+     "acme/app": [
+      "https://github.com/acme/app/releases/tag/v1.4.0"
+     ]
+    }
+   },
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "v1.4.0",
+       "link": "https://github.com/acme/app/releases/tag/v1.4.0",
+       "published": "2026-09-20T09:00:00Z",
+       "summary": ""
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "primeira vez: aprende sem avisar",
+   "now": "2026-10-06T12:00:00Z",
+   "params": {
+    "repositorios": "acme/app"
+   },
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "v2.0.0",
+       "link": "https://github.com/acme/app/releases/tag/v2.0.0",
+       "published": "2026-10-01T09:00:00Z",
+       "summary": ""
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ],
+   "expect_state": {
+    "vistos": {
+     "acme/app": [
+      "https://github.com/acme/app/releases/tag/v2.0.0"
+     ]
+    }
+   }
+  },
+  {
+   "name": "dois repositórios, endereço completo e só um com novidade",
+   "now": "2026-10-06T12:00:00Z",
+   "params": {
+    "repositorios": "https://github.com/acme/app, acme/cli"
+   },
+   "state": {
+    "vistos": {
+     "acme/app": [
+      "https://github.com/acme/app/releases/tag/v1.0.0"
+     ],
+     "acme/cli": [
+      "https://github.com/acme/cli/releases/tag/v0.9.0"
+     ]
+    }
+   },
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "v1.0.0",
+       "link": "https://github.com/acme/app/releases/tag/v1.0.0",
+       "published": "2026-09-01T09:00:00Z",
+       "summary": ""
+      }
+     ]
+    },
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "Release 1.0 estável",
+       "link": "https://github.com/acme/cli/releases/tag/v1.0.0",
+       "published": "2026-10-05T09:00:00Z",
+       "summary": ""
+      },
+      {
+       "title": "v0.9.0",
+       "link": "https://github.com/acme/cli/releases/tag/v0.9.0",
+       "published": "2026-09-01T09:00:00Z",
+       "summary": ""
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Versão nova",
+      "acme/cli Release 1.0 estável",
+      "acme/cli/releases/tag/v1.0.0"
+     ],
+     "not_contains": [
+      "acme/app/releases"
+     ]
+    }
+   ]
+  }
+ ]
+}

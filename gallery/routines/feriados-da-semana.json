@@ -1,0 +1,170 @@
+{
+ "name": "Feriados da semana",
+ "description": "Toda segunda de manhã, avisa se a semana tem feriado nacional, pela BrasilAPI.",
+ "manifest": {
+  "schedule": "0 8 * * 1",
+  "capabilities": [
+   "http.getJSON:brasilapi.com.br",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "avisar_sem_feriado",
+    "label": "Avisar também quando não houver feriado",
+    "type": "boolean",
+    "default": false
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const hoje = dates.today();\n  const dias = [];\n  for (let i = 0; i < 7; i++) dias.push(dates.addDays(hoje, i));\n  const anos = [];\n  for (const d of dias) {\n    const ano = d.slice(0, 4);\n    if (anos.indexOf(ano) < 0) anos.push(ano);\n  }\n\n  let feriados = [];\n  for (const ano of anos) {\n    const lista = await http.getJSON(\"https://brasilapi.com.br/api/feriados/v1/\" + ano);\n    if (Array.isArray(lista)) feriados = feriados.concat(lista);\n  }\n\n  const linhas = [];\n  for (const d of dias) {\n    const dia = d.slice(0, 10);\n    for (const f of feriados) {\n      if (f && f.date === dia) linhas.push(\"• \" + dates.format(d, \"EEEE, d 'de' MMMM\") + \": \" + f.name);\n    }\n  }\n\n  if (linhas.length === 0) {\n    if (params.avisar_sem_feriado) await notify.send({text: \"📅 Nenhum feriado nacional nesta semana.\"});\n    else log(\"Nenhum feriado nacional nesta semana.\");\n    return;\n  }\n  await notify.send({text: \"📅 \" + (linhas.length === 1 ? \"Feriado\" : \"Feriados\") + \" nesta semana:\\n\" + linhas.join(\"\\n\")});\n}\n",
+ "tests": [
+  {
+   "name": "semana com feriado",
+   "now": "2026-10-12T11:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": [
+      {
+       "date": "2026-09-07",
+       "name": "Independência do Brasil",
+       "type": "national"
+      },
+      {
+       "date": "2026-10-12",
+       "name": "Nossa Senhora Aparecida",
+       "type": "national"
+      },
+      {
+       "date": "2026-11-02",
+       "name": "Finados",
+       "type": "national"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Feriado nesta semana",
+      "12 de outubro",
+      "Nossa Senhora Aparecida"
+     ],
+     "not_contains": [
+      "Finados",
+      "Independência"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "semana sem feriado: não avisa",
+   "now": "2026-10-19T11:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": [
+      {
+       "date": "2026-10-12",
+       "name": "Nossa Senhora Aparecida",
+       "type": "national"
+      },
+      {
+       "date": "2026-11-02",
+       "name": "Finados",
+       "type": "national"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "semana sem feriado, mas com aviso pedido",
+   "now": "2026-10-19T11:00:00Z",
+   "params": {
+    "avisar_sem_feriado": true
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": [
+      {
+       "date": "2026-11-02",
+       "name": "Finados",
+       "type": "national"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Nenhum feriado"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "semana da virada do ano: lê os dois anos",
+   "now": "2026-12-28T11:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": [
+      {
+       "date": "2026-12-25",
+       "name": "Natal",
+       "type": "national"
+      }
+     ]
+    },
+    {
+     "capability": "http.getJSON",
+     "result": [
+      {
+       "date": "2027-01-01",
+       "name": "Confraternização mundial",
+       "type": "national"
+      },
+      {
+       "date": "2027-02-09",
+       "name": "Carnaval",
+       "type": "national"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "1 de janeiro",
+      "Confraternização mundial"
+     ],
+     "not_contains": [
+      "Natal",
+      "Carnaval"
+     ]
+    }
+   ]
+  }
+ ]
+}

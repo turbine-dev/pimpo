@@ -1,0 +1,148 @@
+{
+ "name": "Baterias fracas",
+ "description": "Todo dia, avisa quais sensores do Home Assistant estão com a bateria abaixo do limite que você escolher. Reconhece os sensores de bateria pelo nome (battery ou bateria). Se nenhum estiver fraco, não manda nada.",
+ "manifest": {
+  "schedule": "0 9 * * *",
+  "capabilities": [
+   "ha.states",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "limite",
+    "label": "Avisar abaixo de (%)",
+    "type": "number",
+    "default": 20
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const sensores = await ha.states({domain: \"sensor\"});\n  const fracos = sensores\n    .filter(s => /battery|bateria/i.test(s.entity_id + \" \" + (s.name || \"\")))\n    .map(s => ({nome: s.name || s.entity_id, nivel: Number(String(s.state).replace(\",\", \".\"))}))\n    .filter(s => String(s.nivel) !== \"NaN\" && s.nivel >= 0 && s.nivel <= 100 && s.nivel < params.limite)\n    .sort((a, b) => a.nivel - b.nivel);\n  if (!fracos.length) return;\n  await notify.send({text: \"🔋 Bateria fraca (abaixo de \" + params.limite + \"%):\\n\" +\n    fracos.map(s => \"• \" + s.nome + \": \" + Math.round(s.nivel) + \"%\").join(\"\\n\")});\n}\n",
+ "tests": [
+  {
+   "name": "dois sensores fracos",
+   "now": "2026-10-01T09:00:00-03:00",
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "sensor.porta_frente_battery",
+       "state": "12",
+       "name": "Porta da frente Battery",
+       "changed": "2026-09-30T10:00:00-03:00"
+      },
+      {
+       "entity_id": "sensor.termometro_quarto_bateria",
+       "state": "5",
+       "name": "Termômetro do quarto bateria",
+       "changed": "2026-09-30T10:00:00-03:00"
+      },
+      {
+       "entity_id": "sensor.controle_sala_battery",
+       "state": "80",
+       "name": "Controle da sala Battery",
+       "changed": "2026-09-30T10:00:00-03:00"
+      },
+      {
+       "entity_id": "sensor.temperatura_sala",
+       "state": "8",
+       "name": "Temperatura da sala",
+       "changed": "2026-09-30T10:00:00-03:00"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "abaixo de 20%",
+      "Termômetro do quarto bateria: 5%",
+      "Porta da frente Battery: 12%"
+     ],
+     "not_contains": [
+      "Controle da sala",
+      "Temperatura da sala"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "todas as baterias boas",
+   "now": "2026-10-01T09:00:00-03:00",
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "sensor.porta_frente_battery",
+       "state": "64",
+       "name": "Porta da frente Battery",
+       "changed": "2026-09-30T10:00:00-03:00"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "indisponível é ignorado e limite maior",
+   "now": "2026-10-01T09:00:00-03:00",
+   "params": {
+    "limite": 40
+   },
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "sensor.fechadura_battery",
+       "state": "unavailable",
+       "name": "Fechadura Battery",
+       "changed": "2026-09-30T10:00:00-03:00"
+      },
+      {
+       "entity_id": "sensor.sensor_agua_battery",
+       "state": "35",
+       "name": "",
+       "changed": "2026-09-30T10:00:00-03:00"
+      },
+      {
+       "entity_id": "sensor.botao_battery",
+       "state": "unknown",
+       "name": "Botão Battery",
+       "changed": "2026-09-30T10:00:00-03:00"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "abaixo de 40%",
+      "sensor.sensor_agua_battery: 35%"
+     ],
+     "not_contains": [
+      "Fechadura",
+      "Botão"
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,151 @@
+{
+ "name": "Lembretes de hoje",
+ "description": "Toda manhã, numa só mensagem, os lembretes do app Lembretes da Apple que vencem hoje ou já passaram do prazo. Só funciona com o Pimpo rodando num Mac. Se não houver nenhum, não manda nada.",
+ "manifest": {
+  "schedule": "30 7 * * *",
+  "capabilities": [
+   "apple.reminders.list",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "lista",
+    "label": "Lista",
+    "type": "text",
+    "default": "",
+    "help": "Deixe vazio para olhar todas as listas."
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const hoje = dates.today();\n  const args = {max: 200};\n  if (params.lista) args.list = params.lista;\n  const abertos = (await apple[\"reminders.list\"](args)).filter(r => r.due);\n  const atrasados = abertos.filter(r => dates.isBefore(r.due, hoje));\n  const deHoje = abertos.filter(r => dates.sameDay(r.due, hoje));\n  if (!atrasados.length && !deHoje.length) return;\n  const partes = [];\n  if (atrasados.length) partes.push(\"⏰ Atrasados (\" + atrasados.length + \"):\\n\" + atrasados.map(r =>\n    \"• \" + r.title + \" (desde \" + dates.format(r.due, \"dd/MM\") + \")\").join(\"\\n\"));\n  if (deHoje.length) partes.push(\"🔔 Hoje (\" + deHoje.length + \"):\\n\" + deHoje.map(r =>\n    \"• \" + dates.format(r.due, \"HH:mm\") + \" \" + r.title).join(\"\\n\"));\n  await notify.send({text: partes.join(\"\\n\\n\")});\n}\n",
+ "tests": [
+  {
+   "name": "atrasados e de hoje",
+   "now": "2026-10-01T07:30:00-03:00",
+   "responses": [
+    {
+     "capability": "apple.reminders.list",
+     "result": [
+      {
+       "id": "r1",
+       "title": "Renovar a CNH",
+       "due": "2026-09-28T09:00:00-03:00",
+       "list": "Pessoal",
+       "notes": ""
+      },
+      {
+       "id": "r2",
+       "title": "Levar o carro na revisão",
+       "due": "2026-10-01T14:00:00-03:00",
+       "list": "Pessoal",
+       "notes": ""
+      },
+      {
+       "id": "r3",
+       "title": "Comprar presente",
+       "due": "2026-10-05T10:00:00-03:00",
+       "list": "Pessoal",
+       "notes": ""
+      },
+      {
+       "id": "r4",
+       "title": "Ideias de viagem",
+       "due": "",
+       "list": "Pessoal",
+       "notes": ""
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Atrasados (1)",
+      "Renovar a CNH (desde 28/09)",
+      "Hoje (1)",
+      "14:00 Levar o carro na revisão"
+     ],
+     "not_contains": [
+      "Comprar presente",
+      "Ideias de viagem"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nada para hoje",
+   "now": "2026-10-01T07:30:00-03:00",
+   "responses": [
+    {
+     "capability": "apple.reminders.list",
+     "result": [
+      {
+       "id": "r5",
+       "title": "Consulta anual",
+       "due": "2026-10-20T09:00:00-03:00",
+       "list": "Saúde",
+       "notes": ""
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "uma lista escolhida, só atrasados",
+   "now": "2026-10-02T07:30:00-03:00",
+   "params": {
+    "lista": "Trabalho"
+   },
+   "responses": [
+    {
+     "capability": "apple.reminders.list",
+     "result": [
+      {
+       "id": "r6",
+       "title": "Mandar a proposta",
+       "due": "2026-10-01T18:00:00-03:00",
+       "list": "Trabalho",
+       "notes": ""
+      },
+      {
+       "id": "r7",
+       "title": "Fechar o mês",
+       "due": "2026-09-30T12:00:00-03:00",
+       "list": "Trabalho",
+       "notes": ""
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Atrasados (2)",
+      "Mandar a proposta (desde 01/10)",
+      "Fechar o mês (desde 30/09)"
+     ],
+     "not_contains": [
+      "Hoje ("
+     ]
+    }
+   ]
+  }
+ ]
+}

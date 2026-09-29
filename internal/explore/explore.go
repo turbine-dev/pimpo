@@ -131,8 +131,10 @@ type Options struct {
 type Assistant struct {
 	Name         string
 	Instructions string
-	// Capabilities limits the tools; empty means all of them.
+	// Capabilities limits the tools; empty means all of them, unless
+	// OnlyListed, when empty means none (a skill granted nothing).
 	Capabilities []string
+	OnlyListed   bool
 }
 
 // StartWith starts an exploration with options, for the in-app chat.
@@ -212,7 +214,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: true, Person: e.Person}
 	role := ""
 	if as := o.Assistant; as != nil {
-		if len(as.Capabilities) > 0 {
+		if len(as.Capabilities) > 0 || as.OnlyListed {
 			h.Allowed = map[string]bool{}
 			for _, c := range as.Capabilities {
 				h.Allowed[c] = true

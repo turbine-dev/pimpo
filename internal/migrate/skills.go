@@ -31,11 +31,24 @@ var (
 		pattern *regexp.Regexp
 		caps    []string
 	}{
-		{regexp.MustCompile(`(?i)\b(gmail|e-?mails?|inbox|imap|mailbox|newsletters?)\b`), []string{"gmail.search", "gmail.label", "gmail.archive"}},
+		{regexp.MustCompile(`(?i)\b(gmail|inbox|imap|mailbox|read (my |the )?e-?mails?|(my|the) e-?mails?)\b`), []string{"gmail.search", "gmail.label", "gmail.archive"}},
 		{regexp.MustCompile(`(?i)\b(send (an? )?(e-?mail|reply)|smtp|draft)\b`), []string{"gmail.draft", "gmail.send"}},
-		{regexp.MustCompile(`(?i)\b(calendar|agenda|events?|meetings?|ical)\b`), []string{"calendar.list"}},
-		{regexp.MustCompile(`(?i)\b(telegram|notify|notification|remind(er)?s?)\b`), []string{"telegram.send"}},
-		{regexp.MustCompile(`(?i)\b(https?://|rest api|json api|webhook|fetch|weather|rss)\b`), []string{"http.getJSON"}},
+		{regexp.MustCompile(`(?i)\b(calendar|agenda|events?|meetings?|ical)\b`), []string{"calendar.events"}},
+		{regexp.MustCompile(`(?i)\b(telegram|notify|notification|alert|message me)\b`), []string{"notify.send"}},
+		{regexp.MustCompile(`(?i)\b(remind(er)?s?|remind me)\b`), []string{"reminder.set", "reminder.list"}},
+		{regexp.MustCompile(`(?i)\b(rest api|json api|api\.|endpoint|weather)\b`), []string{"http.getJSON"}},
+		{regexp.MustCompile(`(?i)\b(rss|atom feed|feeds?)\b`), []string{"rss.read"}},
+		{regexp.MustCompile(`(?i)\b(web ?page|website|url|scrape|article)\b`), []string{"web.read"}},
+		{regexp.MustCompile(`(?i)\b(search the web|web search|google it|look up online)\b`), []string{"web.search"}},
+		{regexp.MustCompile(`(?i)\b(todoist|to-?dos?|tasks?)\b`), []string{"todoist.tasks", "todoist.add"}},
+		{regexp.MustCompile(`(?i)\bnotion\b`), []string{"notion.search", "notion.append"}},
+		{regexp.MustCompile(`(?i)\bobsidian\b|\bvault\b`), []string{"obsidian.search", "obsidian.append"}},
+		{regexp.MustCompile(`(?i)\b(github|pull requests?|issues?)\b`), []string{"github.issues"}},
+		{regexp.MustCompile(`(?i)\bslack\b`), []string{"slack.send"}},
+		{regexp.MustCompile(`(?i)\bdiscord\b`), []string{"discord.send"}},
+		{regexp.MustCompile(`(?i)\b(google sheets?|spreadsheets?)\b`), []string{"sheets.read", "sheets.append"}},
+		{regexp.MustCompile(`(?i)\b(home assistant|smart home|lights?|thermostat)\b`), []string{"ha.states", "ha.call"}},
+		{regexp.MustCompile(`(?i)\bspotify\b|\bplay (some )?music\b`), []string{"spotify.now", "spotify.play"}},
 	}
 	programs = []struct {
 		pattern *regexp.Regexp
@@ -84,7 +97,7 @@ func findSkills(root string) ([]Skill, error) {
 		if err != nil {
 			return err
 		}
-		out = append(out, analyze(filepath.Dir(path), string(b)))
+		out = append(out, Analyze(filepath.Dir(path), string(b)))
 		return nil
 	})
 	if errors.Is(err, fs.ErrNotExist) {
@@ -93,7 +106,9 @@ func findSkills(root string) ([]Skill, error) {
 	return out, err
 }
 
-func analyze(dir, text string) Skill {
+// Analyze reads a skill's SKILL.md text: what it needs, as capabilities,
+// and what it does that no capability covers.
+func Analyze(dir, text string) Skill {
 	var fm frontmatter
 	body := text
 	if rest, ok := strings.CutPrefix(text, "---\n"); ok {

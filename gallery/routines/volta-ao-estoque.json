@@ -1,0 +1,205 @@
+{
+ "name": "Voltou ao estoque",
+ "description": "A cada hora, lê a página do produto que você escolher e avisa uma vez quando ele voltar a ficar disponível.",
+ "manifest": {
+  "schedule": "0 * * * *",
+  "capabilities": [
+   "web.read:www.kabum.com.br",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "url",
+    "label": "URL do produto",
+    "type": "text",
+    "default": "https://www.kabum.com.br/produto/520369",
+    "help": "Página do produto na KaBuM!"
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "function produtos(v, out) {\n  if (!v || typeof v !== \"object\") return out;\n  if (Array.isArray(v)) {\n    for (const x of v) produtos(x, out);\n    return out;\n  }\n  const tipo = [].concat(v[\"@type\"] || []);\n  if (tipo.indexOf(\"Product\") >= 0 && v.offers) out.push(v);\n  if (v[\"@graph\"]) produtos(v[\"@graph\"], out);\n  if (v.hasVariant) produtos(v.hasVariant, out);\n  return out;\n}\n\nfunction disponibilidade(result) {\n  const lista = produtos(result.data || [], []);\n  let visto = null;\n  for (const p of lista) {\n    const ofertas = [].concat(p.offers.offers || p.offers);\n    for (const o of ofertas) {\n      if (!o || !o.availability) continue;\n      const a = String(o.availability).replace(/^https?:\\/\\/schema\\.org\\//i, \"\").toLowerCase();\n      const preco = o.price !== undefined && o.price !== null && o.price !== \"\" ? money.parse(String(o.price)) : (o.lowPrice !== undefined ? money.parse(String(o.lowPrice)) : null);\n      const info = {nome: p.name || result.title || \"O produto\", preco: preco, disponivel: a === \"instock\" || a === \"limitedavailability\" || a === \"onlineonly\" || a === \"instoreonly\"};\n      if (info.disponivel) return info;\n      visto = info;\n    }\n  }\n  return visto;\n}\n\nasync function run() {\n  const result = await web.read({url: params.url});\n  const info = disponibilidade(result || {});\n  const chave = \"avisado:\" + params.url;\n  if (!info) {\n    log(\"A página não diz se o produto está disponível.\");\n    return;\n  }\n  if (!info.disponivel) {\n    state.delete(chave);\n    log(\"Continua indisponível.\");\n    return;\n  }\n  if (state.get(chave)) {\n    log(\"Já avisado; segue disponível.\");\n    return;\n  }\n  let text = \"✅ Voltou ao estoque: \" + info.nome;\n  if (typeof info.preco === \"number\") text += \" por \" + money.format(info.preco, \"BRL\");\n  text += \" — \" + params.url;\n  await notify.send({text});\n  state.set(chave, now());\n}\n",
+ "tests": [
+  {
+   "name": "voltou ao estoque: avisa uma vez",
+   "now": "2026-10-06T15:00:00Z",
+   "responses": [
+    {
+     "capability": "web.read",
+     "result": {
+      "url": "https://www.kabum.com.br/produto/520369",
+      "title": "Processador AMD Ryzen 7 | KaBuM!",
+      "description": "",
+      "truncated": false,
+      "links": [],
+      "data": [
+       {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "Processador AMD Ryzen 7",
+        "offers": {
+         "@type": "Offer",
+         "availability": "https://schema.org/InStock",
+         "price": "1299.90",
+         "priceCurrency": "BRL"
+        }
+       }
+      ],
+      "text": "Processador AMD Ryzen 7\nR$ 1.299,90"
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Voltou ao estoque",
+      "Processador AMD Ryzen 7",
+      "R$ 1.299,90",
+      "kabum.com.br/produto/520369"
+     ]
+    }
+   ],
+   "expect_state": {
+    "avisado:https://www.kabum.com.br/produto/520369": "2026-10-06T15:00:00Z"
+   }
+  },
+  {
+   "name": "ainda esgotado: não avisa",
+   "now": "2026-10-06T15:00:00Z",
+   "responses": [
+    {
+     "capability": "web.read",
+     "result": {
+      "url": "https://www.kabum.com.br/produto/520369",
+      "title": "Processador AMD Ryzen 7 | KaBuM!",
+      "description": "",
+      "truncated": false,
+      "links": [],
+      "data": [
+       {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "Processador AMD Ryzen 7",
+        "offers": {
+         "@type": "Offer",
+         "availability": "https://schema.org/OutOfStock",
+         "price": "1299.90",
+         "priceCurrency": "BRL"
+        }
+       }
+      ],
+      "text": "Produto indisponível. Avise-me quando chegar."
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "já avisado e continua disponível: não repete",
+   "now": "2026-10-06T16:00:00Z",
+   "state": {
+    "avisado:https://www.kabum.com.br/produto/520369": "2026-10-06T15:00:00Z"
+   },
+   "responses": [
+    {
+     "capability": "web.read",
+     "result": {
+      "url": "https://www.kabum.com.br/produto/520369",
+      "title": "Processador AMD Ryzen 7 | KaBuM!",
+      "description": "",
+      "truncated": false,
+      "links": [],
+      "data": [
+       {
+        "@type": "Product",
+        "name": "Processador AMD Ryzen 7",
+        "offers": {
+         "@type": "Offer",
+         "availability": "https://schema.org/InStock",
+         "price": "1299.90"
+        }
+       }
+      ],
+      "text": ""
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "dados em @graph com AggregateOffer e schema.org sem https",
+   "now": "2026-10-06T15:00:00Z",
+   "params": {
+    "url": "https://www.kabum.com.br/produto/112233"
+   },
+   "responses": [
+    {
+     "capability": "web.read",
+     "result": {
+      "url": "https://www.kabum.com.br/produto/112233",
+      "title": "Monitor Gamer 27 | KaBuM!",
+      "description": "",
+      "truncated": false,
+      "links": [],
+      "data": [
+       {
+        "@context": "https://schema.org",
+        "@graph": [
+         {
+          "@type": "BreadcrumbList",
+          "itemListElement": []
+         },
+         {
+          "@type": "Product",
+          "name": "Monitor Gamer 27",
+          "offers": {
+           "@type": "AggregateOffer",
+           "lowPrice": "899.00",
+           "offers": [
+            {
+             "@type": "Offer",
+             "availability": "http://schema.org/InStock",
+             "price": "899.00"
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ],
+      "text": ""
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Monitor Gamer 27",
+      "R$ 899,00",
+      "produto/112233"
+     ]
+    }
+   ]
+  }
+ ]
+}

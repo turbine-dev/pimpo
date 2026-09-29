@@ -1,0 +1,166 @@
+{
+ "name": "Qualidade do ar",
+ "description": "Todo dia de manhã, confere a qualidade do ar na sua cidade e avisa quando o índice passar do limite.",
+ "manifest": {
+  "schedule": "0 8 * * *",
+  "capabilities": [
+   "http.getJSON:air-quality-api.open-meteo.com",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "cidade",
+    "label": "Cidade",
+    "type": "location",
+    "default": {
+     "name": "São Paulo",
+     "latitude": -23.55,
+     "longitude": -46.63,
+     "timezone": "America/Sao_Paulo"
+    }
+   },
+   {
+    "name": "indice",
+    "label": "Índice",
+    "type": "select",
+    "options": [
+     "americano (US AQI)",
+     "europeu (EAQI)"
+    ],
+    "default": "americano (US AQI)",
+    "help": "O americano vai de 0 a 500 (acima de 100 já faz mal a grupos sensíveis); o europeu, de 0 a 100 ou mais (acima de 60 é ruim)."
+   },
+   {
+    "name": "limite",
+    "label": "Avisar acima de",
+    "type": "number",
+    "default": 100
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "function nivelAmericano(v) {\n  if (v <= 50) return \"boa\";\n  if (v <= 100) return \"moderada\";\n  if (v <= 150) return \"ruim para grupos sensíveis\";\n  if (v <= 200) return \"ruim\";\n  if (v <= 300) return \"muito ruim\";\n  return \"perigosa\";\n}\n\nfunction nivelEuropeu(v) {\n  if (v <= 20) return \"boa\";\n  if (v <= 40) return \"razoável\";\n  if (v <= 60) return \"moderada\";\n  if (v <= 80) return \"ruim\";\n  if (v <= 100) return \"muito ruim\";\n  return \"extremamente ruim\";\n}\n\nasync function run() {\n  const europeu = params.indice.indexOf(\"europeu\") === 0;\n  const campo = europeu ? \"european_aqi\" : \"us_aqi\";\n  const a = await http.getJSON(\"https://air-quality-api.open-meteo.com/v1/air-quality?latitude=\" + params.cidade.latitude + \"&longitude=\" + params.cidade.longitude + \"&current=us_aqi,european_aqi,pm2_5,pm10&timezone=auto\");\n  const c = a && a.current;\n  if (!c || typeof c[campo] !== \"number\") {\n    log(\"Índice de qualidade do ar indisponível.\");\n    return;\n  }\n  const valor = Math.round(c[campo]);\n  if (valor <= params.limite) {\n    log(\"Qualidade do ar \" + valor + \", dentro do limite de \" + params.limite + \".\");\n    return;\n  }\n  const nivel = europeu ? nivelEuropeu(valor) : nivelAmericano(valor);\n  let text = \"😷 Ar \" + nivel + \" em \" + params.cidade.name + \": índice \" + valor + \" (\" + (europeu ? \"europeu\" : \"americano\") + \", limite \" + params.limite + \")\";\n  if (typeof c.pm2_5 === \"number\") text += \". PM2,5: \" + (Math.round(c.pm2_5 * 10) / 10).toString().replace(\".\", \",\") + \" µg/m³\";\n  text += \". Evite exercícios ao ar livre.\";\n  await notify.send({text});\n}\n",
+ "tests": [
+  {
+   "name": "ar ruim: avisa",
+   "now": "2026-10-06T11:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "current": {
+       "time": "2026-10-06T08:00",
+       "interval": 3600,
+       "us_aqi": 132,
+       "european_aqi": 58,
+       "pm2_5": 48.26,
+       "pm10": 61.3
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "São Paulo",
+      "132",
+      "ruim para grupos sensíveis",
+      "48,3"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "ar bom: não avisa",
+   "now": "2026-10-06T11:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "current": {
+       "time": "2026-10-06T08:00",
+       "interval": 3600,
+       "us_aqi": 42,
+       "european_aqi": 18,
+       "pm2_5": 9.1,
+       "pm10": 14.0
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "índice europeu com limite próprio",
+   "now": "2026-10-06T11:00:00Z",
+   "params": {
+    "indice": "europeu (EAQI)",
+    "limite": 60
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "current": {
+       "time": "2026-10-06T08:00",
+       "interval": 3600,
+       "us_aqi": 95,
+       "european_aqi": 72.4,
+       "pm2_5": 30,
+       "pm10": 55
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "índice 72",
+      "europeu",
+      "ruim"
+     ],
+     "not_contains": [
+      "95"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "resposta sem o índice: não avisa",
+   "now": "2026-10-06T11:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "current": {
+       "time": "2026-10-06T08:00",
+       "interval": 3600,
+       "us_aqi": null
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  }
+ ]
+}

@@ -53,7 +53,9 @@ export type Routed = { model: string; tier?: 'simple' | 'normal' | 'hard'; by: '
 export type ChatTurn = { model?: Routed; id: string; request: string; state: 'running' | 'ready' | 'compiling' | 'done' | 'failed' | 'discarded'; summary?: string; error?: string; cost_usd: number; routine?: string; created_at: string
   actions: ChatAction[]; done?: { state: 'running' | 'done' | 'failed'; at: string; results: { capability: string; ok: boolean; error?: string }[] } }
 
-export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[] }
+export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[]; skill?: boolean }
+export type InstalledSkill = { id: string; name: string; description: string; source: string; capabilities: string[]; scripts: string[]; unsupported: string[]; installed: string }
+export type SkillPreview = { token: string; exists: boolean; skill: { id: string; name: string; description: string; body: string; files: string[]; scripts: string[]; suggested: string[]; unsupported: string[]; secrets: string[] } }
 export type CapabilitySpec = { name: string; risk: CapRisk; signature: string; returns: string }
 
 export type SysComponent = { id: string; group: 'channel' | 'account' | 'service' | 'access' | 'backup' | 'brain'; name: string; state: 'ok' | 'off' | 'error' | 'waiting'; detail?: string }
@@ -236,6 +238,20 @@ export const api = {
   chatDo: (id: string, turn: string) => request<ChatTurn>('POST', `/api/chats/${id}/turns/${turn}/do`),
   deleteChat: (id: string) => request<{ deleted: string }>('DELETE', `/api/chats/${id}`),
   assistants: () => request<Assistant[]>('GET', '/api/assistants'),
+  skills: () => request<InstalledSkill[]>('GET', '/api/skills'),
+  previewSkill: async (src: { file?: File; url?: string }) => {
+    if (src.file) {
+      const form = new FormData()
+      form.append('file', src.file)
+      const res = await fetch('/api/skills/preview', { method: 'POST', body: form, credentials: 'same-origin' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error ?? res.statusText)
+      return body as SkillPreview
+    }
+    return request<SkillPreview>('POST', '/api/skills/preview', { url: src.url })
+  },
+  installSkill: (token: string, capabilities: string[]) => request<InstalledSkill>('POST', '/api/skills/install', { token, capabilities }),
+  deleteSkill: (id: string) => request<{ state: string }>('DELETE', `/api/skills/${id}`),
   saveAssistant: (a: Assistant) => request<Assistant>('PUT', `/api/assistants/${a.id}`, a),
   deleteAssistant: (id: string) => request<{ deleted: string }>('DELETE', `/api/assistants/${id}`),
   capabilities: () => request<CapabilitySpec[]>('GET', '/api/capabilities'),

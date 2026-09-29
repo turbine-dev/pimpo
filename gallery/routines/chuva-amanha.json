@@ -1,0 +1,154 @@
+{
+ "name": "Chuva amanhã",
+ "description": "Toda noite, olha a chance de chuva de amanhã na sua cidade e só avisa quando passar do limite que você escolher.",
+ "manifest": {
+  "schedule": "0 20 * * *",
+  "capabilities": [
+   "http.getJSON:api.open-meteo.com",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "cidade",
+    "label": "Cidade",
+    "type": "location",
+    "default": {
+     "name": "São Paulo",
+     "latitude": -23.55,
+     "longitude": -46.63,
+     "timezone": "America/Sao_Paulo"
+    }
+   },
+   {
+    "name": "limite",
+    "label": "Avisar a partir de (% de chuva)",
+    "type": "number",
+    "default": 60
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const w = await http.getJSON(\"https://api.open-meteo.com/v1/forecast?latitude=\" + params.cidade.latitude + \"&longitude=\" + params.cidade.longitude + \"&daily=precipitation_probability_max,precipitation_sum&timezone=auto&forecast_days=2\");\n  const d = w && w.daily;\n  if (!d || !d.precipitation_probability_max || d.precipitation_probability_max.length < 2 || d.precipitation_probability_max[1] === null) {\n    log(\"Previsão de amanhã indisponível.\");\n    return;\n  }\n  const chance = d.precipitation_probability_max[1];\n  if (chance < params.limite) {\n    log(\"Amanhã: \" + chance + \"% de chuva, abaixo de \" + params.limite + \"%.\");\n    return;\n  }\n  let text = \"☔ Amanhã em \" + params.cidade.name + \": \" + chance + \"% de chance de chuva\";\n  const mm = d.precipitation_sum ? d.precipitation_sum[1] : null;\n  if (typeof mm === \"number\" && mm > 0) text += \", cerca de \" + (Math.round(mm * 10) / 10).toString().replace(\".\", \",\") + \" mm\";\n  text += \". Leve guarda-chuva!\";\n  await notify.send({text});\n}\n",
+ "tests": [
+  {
+   "name": "amanhã chuvoso: avisa",
+   "now": "2026-10-06T23:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "time": [
+        "2026-10-06",
+        "2026-10-07"
+       ],
+       "precipitation_probability_max": [
+        20,
+        85
+       ],
+       "precipitation_sum": [
+        0,
+        12.4
+       ]
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "São Paulo",
+      "85%",
+      "12,4 mm",
+      "guarda-chuva"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "amanhã seco: não avisa",
+   "now": "2026-10-06T23:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "time": [
+        "2026-10-06",
+        "2026-10-07"
+       ],
+       "precipitation_probability_max": [
+        90,
+        30
+       ],
+       "precipitation_sum": [
+        20,
+        0.5
+       ]
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "limite menor e chance exatamente no limite, sem milímetros",
+   "now": "2026-10-06T23:00:00Z",
+   "params": {
+    "limite": 40,
+    "cidade": {
+     "name": "Curitiba",
+     "latitude": -25.43,
+     "longitude": -49.27
+    }
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "time": [
+        "2026-10-06",
+        "2026-10-07"
+       ],
+       "precipitation_probability_max": [
+        10,
+        40
+       ],
+       "precipitation_sum": [
+        0,
+        0
+       ]
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Curitiba",
+      "40%"
+     ],
+     "not_contains": [
+      "mm"
+     ]
+    }
+   ]
+  }
+ ]
+}

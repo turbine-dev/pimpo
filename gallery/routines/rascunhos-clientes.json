@@ -1,0 +1,263 @@
+{
+ "name": "Rascunhos para clientes",
+ "description": "Quando chega e-mail de um cliente com pergunta ou pedido, deixa um rascunho de resposta pronto no Gmail e avisa. Nunca envia nada: você revisa e manda.",
+ "manifest": {
+  "schedule": "",
+  "capabilities": [
+   "gmail.search",
+   "gmail.draft",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "judgments": {
+   "pergunta": "Este e-mail pergunta algo ou pede alguma coisa que precisa de uma resposta de quem o recebeu (e não é só um aviso, agradecimento ou mensagem automática)?"
+  },
+  "writes": {
+   "resposta": "Escreva em português do Brasil o corpo de uma resposta curta e cordial ao e-mail recebido (campo email), respondendo ao que foi perguntado ou pedido. Não invente prazos, preços nem fatos; quando faltar informação, diga que vai verificar e retornar. Termine com a assinatura dada (campo assinatura), se houver. Só o texto, sem assunto."
+  },
+  "params": [
+   {
+    "name": "consulta",
+    "label": "E-mails de clientes (busca do Gmail)",
+    "type": "text",
+    "default": "from:(cliente.com.br OR outrocliente.com.br)",
+    "help": "Por exemplo from:(cliente.com.br OR empresa.com.br) com os domínios dos seus clientes."
+   },
+   {
+    "name": "assinatura",
+    "label": "Assinatura",
+    "type": "text",
+    "default": "Abraços",
+    "help": "Vai no fim de cada rascunho."
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ],
+  "watch": {
+   "capability": "gmail.search",
+   "args": {
+    "query": "{{consulta}}",
+    "days": 2
+   },
+   "key": "id",
+   "every": "10m"
+  }
+ },
+ "code": "async function run() {\n  const feitos = [];\n  for (const m of event.items || []) {\n    if (m.replied) continue;\n    const j = await judge.pergunta(m);\n    if (j.p < 0.5) continue;\n    const r = await write.resposta({email: {de: m.from_name || m.from, assunto: m.subject, texto: m.snippet}, assinatura: params.assinatura});\n    const assunto = m.subject || \"(sem assunto)\";\n    await gmail.draft({to: m.from, subject: /^re:/i.test(assunto) ? assunto : \"Re: \" + assunto, body: r.text});\n    feitos.push(m);\n  }\n  if (!feitos.length) return;\n  const linhas = feitos.map(m => \"• \" + (m.from_name || m.from) + \": \" + (m.subject || \"(sem assunto)\"));\n  await notify.send({text: \"✍️ \" + (feitos.length === 1 ? \"Deixei 1 rascunho\" : \"Deixei \" + feitos.length + \" rascunhos\") +\n    \" de resposta no Gmail, para você revisar e enviar:\\n\" + linhas.join(\"\\n\")});\n}\n",
+ "tests": [
+  {
+   "name": "uma pergunta e um agradecimento",
+   "now": "2026-10-01T10:00:00-03:00",
+   "responses": [],
+   "event": {
+    "items": [
+     {
+      "id": "m1",
+      "from": "ana@cliente.com.br",
+      "from_name": "Ana Prado",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Prazo da entrega",
+      "snippet": "Consegue me dizer quando sai a segunda etapa do projeto?",
+      "date": "2026-10-01T09:40:00-03:00",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": false
+     },
+     {
+      "id": "m2",
+      "from": "bruno@cliente.com.br",
+      "from_name": "Bruno Reis",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Obrigado",
+      "snippet": "Recebemos o relatório, valeu!",
+      "date": "2026-10-01T09:50:00-03:00",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": false
+     }
+    ]
+   },
+   "judgments": {
+    "pergunta": {
+     "segunda etapa": 0.92,
+     "Recebemos o relatório": 0.08
+    }
+   },
+   "writes": {
+    "resposta": {
+     "segunda etapa": "Oi, Ana! Vou confirmar com a equipe e te retorno hoje com a data da segunda etapa. Abraços"
+    }
+   },
+   "expect": [
+    {
+     "capability": "gmail.draft",
+     "count": 1,
+     "contains": [
+      "ana@cliente.com.br",
+      "Re: Prazo da entrega",
+      "segunda etapa"
+     ],
+     "not_contains": [
+      "bruno@cliente.com.br"
+     ]
+    },
+    {
+     "capability": "gmail.send",
+     "count": 0
+    },
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "1 rascunho",
+      "Ana Prado",
+      "Prazo da entrega"
+     ],
+     "not_contains": [
+      "Bruno"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nada que precise de resposta",
+   "now": "2026-10-01T11:00:00-03:00",
+   "responses": [],
+   "event": {
+    "items": [
+     {
+      "id": "m3",
+      "from": "noreply@cliente.com.br",
+      "from_name": "Sistema do cliente",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Boletim mensal",
+      "snippet": "Confira as novidades de outubro.",
+      "date": "2026-10-01T10:30:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": true
+     }
+    ]
+   },
+   "judgments": {
+    "pergunta": {
+     "Boletim mensal": 0.04
+    }
+   },
+   "expect": [
+    {
+     "capability": "gmail.draft",
+     "count": 0
+    },
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "já respondido, sem assunto e outra assinatura",
+   "now": "2026-10-02T15:00:00-03:00",
+   "responses": [],
+   "params": {
+    "assinatura": "Att., Equipe Exemplo",
+    "consulta": "from:outrocliente.com.br"
+   },
+   "event": {
+    "items": [
+     {
+      "id": "m4",
+      "from": "carla@outrocliente.com.br",
+      "from_name": "Carla Dias",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Re: Orçamento",
+      "snippet": "Pode mandar o orçamento revisado?",
+      "date": "2026-10-02T14:00:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": true,
+      "unread": false,
+      "can_unsubscribe": false
+     },
+     {
+      "id": "m5",
+      "from": "davi@outrocliente.com.br",
+      "from_name": "",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "",
+      "snippet": "Vocês atendem aos sábados?",
+      "date": "2026-10-02T14:30:00-03:00",
+      "labels": [
+       "INBOX",
+       "UNREAD"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": false
+     }
+    ]
+   },
+   "judgments": {
+    "pergunta": {
+     "orçamento revisado": 0.95,
+     "atendem aos sábados": 0.9
+    }
+   },
+   "writes": {
+    "resposta": {
+     "atendem aos sábados": "Olá! Atendemos aos sábados das 9h às 12h. Att., Equipe Exemplo"
+    }
+   },
+   "expect": [
+    {
+     "capability": "gmail.draft",
+     "count": 1,
+     "contains": [
+      "davi@outrocliente.com.br",
+      "Re: (sem assunto)",
+      "Att., Equipe Exemplo"
+     ],
+     "not_contains": [
+      "carla@outrocliente.com.br"
+     ]
+    },
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "davi@outrocliente.com.br"
+     ],
+     "not_contains": [
+      "Carla"
+     ]
+    }
+   ]
+  }
+ ]
+}

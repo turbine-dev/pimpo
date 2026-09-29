@@ -1,0 +1,241 @@
+{
+ "name": "Status de serviços",
+ "description": "A cada 15 minutos, olha a página de status dos serviços que você escolher e avisa quando algum tiver problema, e quando voltar ao normal, sem repetir.",
+ "manifest": {
+  "schedule": "*/15 * * * *",
+  "capabilities": [
+   "http.getJSON:www.githubstatus.com",
+   "http.getJSON:www.cloudflarestatus.com",
+   "http.getJSON:discordstatus.com",
+   "http.getJSON:www.redditstatus.com",
+   "http.getJSON:status.atlassian.com",
+   "http.getJSON:status.digitalocean.com",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "servicos",
+    "label": "Serviços",
+    "type": "multiselect",
+    "options": [
+     "www.githubstatus.com",
+     "www.cloudflarestatus.com",
+     "discordstatus.com",
+     "www.redditstatus.com",
+     "status.atlassian.com",
+     "status.digitalocean.com"
+    ],
+    "default": [
+     "www.githubstatus.com",
+     "www.cloudflarestatus.com"
+    ],
+    "help": "Páginas de status (Statuspage) a acompanhar"
+   },
+   {
+    "name": "avisar_normalizou",
+    "label": "Avisar quando voltar ao normal",
+    "type": "boolean",
+    "default": true
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "const GRAVIDADE = {\n  minor: \"⚠️ problema leve\",\n  major: \"🟠 problema grave\",\n  critical: \"🔴 fora do ar\",\n  maintenance: \"🛠️ em manutenção\"\n};\n\nasync function run() {\n  const antes = state.get(\"status\") || {};\n  const agora = {};\n  const linhas = [];\n\n  for (const host of params.servicos) {\n    let s;\n    try {\n      s = await http.getJSON(\"https://\" + host + \"/api/v2/status.json\");\n    } catch (e) {\n      log(\"Não consegui ler \" + host + \": \" + e.message);\n      if (antes[host]) agora[host] = antes[host];\n      continue;\n    }\n    if (!s || !s.status || !s.status.indicator) continue;\n    const indicador = s.status.indicator;\n    const nome = (s.page && s.page.name) || host;\n    const anterior = antes[host] || \"none\";\n    agora[host] = indicador;\n    if (indicador === anterior) continue;\n    if (indicador === \"none\") {\n      if (params.avisar_normalizou) linhas.push(\"✅ \" + nome + \" voltou ao normal.\");\n    } else {\n      const url = (s.page && s.page.url) || (\"https://\" + host);\n      linhas.push((GRAVIDADE[indicador] || \"⚠️ \" + indicador) + \" em \" + nome + \": \" + (s.status.description || \"\") + \" — \" + url);\n    }\n  }\n\n  state.set(\"status\", agora);\n  if (linhas.length === 0) {\n    log(\"Nada mudou nos serviços acompanhados.\");\n    return;\n  }\n  await notify.send({text: linhas.join(\"\\n\")});\n}\n",
+ "tests": [
+  {
+   "name": "GitHub com problema, Cloudflare normal",
+   "now": "2026-10-06T15:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON:www.githubstatus.com",
+     "result": {
+      "page": {
+       "id": "kctbh9vrtdwd",
+       "name": "GitHub",
+       "url": "https://www.githubstatus.com",
+       "time_zone": "Etc/UTC",
+       "updated_at": "2026-10-06T14:52:10.123Z"
+      },
+      "status": {
+       "indicator": "minor",
+       "description": "Partially Degraded Service"
+      }
+     }
+    },
+    {
+     "capability": "http.getJSON:www.cloudflarestatus.com",
+     "result": {
+      "page": {
+       "id": "yh6f0r4529hb",
+       "name": "Cloudflare",
+       "url": "https://www.cloudflarestatus.com",
+       "time_zone": "Etc/UTC",
+       "updated_at": "2026-10-06T14:40:00.000Z"
+      },
+      "status": {
+       "indicator": "none",
+       "description": "All Systems Operational"
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "problema leve",
+      "GitHub",
+      "Partially Degraded Service",
+      "https://www.githubstatus.com"
+     ],
+     "not_contains": [
+      "Cloudflare"
+     ]
+    }
+   ],
+   "expect_state": {
+    "status": {
+     "www.githubstatus.com": "minor",
+     "www.cloudflarestatus.com": "none"
+    }
+   }
+  },
+  {
+   "name": "problema já avisado: não repete",
+   "now": "2026-10-06T15:15:00Z",
+   "state": {
+    "status": {
+     "www.githubstatus.com": "minor",
+     "www.cloudflarestatus.com": "none"
+    }
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON:www.githubstatus.com",
+     "result": {
+      "page": {
+       "name": "GitHub",
+       "url": "https://www.githubstatus.com"
+      },
+      "status": {
+       "indicator": "minor",
+       "description": "Partially Degraded Service"
+      }
+     }
+    },
+    {
+     "capability": "http.getJSON:www.cloudflarestatus.com",
+     "result": {
+      "page": {
+       "name": "Cloudflare",
+       "url": "https://www.cloudflarestatus.com"
+      },
+      "status": {
+       "indicator": "none",
+       "description": "All Systems Operational"
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "tudo normal desde sempre: não avisa",
+   "now": "2026-10-06T15:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "page": {
+       "name": "GitHub",
+       "url": "https://www.githubstatus.com"
+      },
+      "status": {
+       "indicator": "none",
+       "description": "All Systems Operational"
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "GitHub voltou ao normal e Discord caiu",
+   "now": "2026-10-06T16:00:00Z",
+   "params": {
+    "servicos": [
+     "www.githubstatus.com",
+     "discordstatus.com"
+    ]
+   },
+   "state": {
+    "status": {
+     "www.githubstatus.com": "major"
+    }
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON:www.githubstatus.com",
+     "result": {
+      "page": {
+       "name": "GitHub",
+       "url": "https://www.githubstatus.com"
+      },
+      "status": {
+       "indicator": "none",
+       "description": "All Systems Operational"
+      }
+     }
+    },
+    {
+     "capability": "http.getJSON:discordstatus.com",
+     "result": {
+      "page": {
+       "name": "Discord",
+       "url": "https://discordstatus.com"
+      },
+      "status": {
+       "indicator": "critical",
+       "description": "Major System Outage"
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "GitHub voltou ao normal",
+      "fora do ar",
+      "Discord",
+      "Major System Outage"
+     ]
+    }
+   ],
+   "expect_state": {
+    "status": {
+     "www.githubstatus.com": "none",
+     "discordstatus.com": "critical"
+    }
+   }
+  }
+ ]
+}

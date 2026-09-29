@@ -24,6 +24,9 @@ type Assistant struct {
 	Emoji        string   `json:"emoji"`
 	Instructions string   `json:"instructions"`
 	Capabilities []string `json:"capabilities"`
+	// Skill marks an installed skill shown as an assistant; it is changed
+	// in the skills screen, not here.
+	Skill bool `json:"skill,omitempty"`
 }
 
 const assistantsKey = "assistants"
@@ -39,6 +42,10 @@ func (a *App) assistants(ctx context.Context) []Assistant {
 }
 
 func (a *App) assistant(ctx context.Context, id string) (Assistant, bool) {
+	if sid, ok := strings.CutPrefix(id, "skill:"); ok {
+		as, err := a.skillAssistant(ctx, sid)
+		return as, err == nil
+	}
 	for _, as := range a.assistants(ctx) {
 		if as.ID == id {
 			return as, true
@@ -48,11 +55,17 @@ func (a *App) assistant(ctx context.Context, id string) (Assistant, bool) {
 }
 
 func (as Assistant) role() *explore.Assistant {
-	return &explore.Assistant{Name: as.Name, Instructions: as.Instructions, Capabilities: as.Capabilities}
+	return &explore.Assistant{Name: as.Name, Instructions: as.Instructions, Capabilities: as.Capabilities, OnlyListed: as.Skill}
 }
 
 func (a *App) assistantRoutes() {
-	a.Server.Handle("GET /api/assistants", func(w http.ResponseWriter, r *http.Request) { server.WriteJSON(w, 200, a.assistants(r.Context())) })
+	a.Server.Handle("GET /api/assistants", func(w http.ResponseWriter, r *http.Request) {
+		list := a.assistants(r.Context())
+		for _, s := range a.installedSkills(r.Context()) {
+			list = append(list, Assistant{ID: "skill:" + s.ID, Name: s.Name, Emoji: "🧩", Instructions: s.Description, Capabilities: s.Capabilities, Skill: true})
+		}
+		server.WriteJSON(w, 200, list)
+	})
 	a.Server.Handle("PUT /api/assistants/{id}", a.putAssistant)
 	a.Server.Handle("DELETE /api/assistants/{id}", a.deleteAssistant)
 	a.Server.Handle("GET /api/capabilities", func(w http.ResponseWriter, r *http.Request) {

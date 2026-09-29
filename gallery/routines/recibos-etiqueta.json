@@ -1,0 +1,264 @@
+{
+ "name": "Etiqueta nos recibos",
+ "description": "Todo dia, põe uma etiqueta nos recibos, notas fiscais e comprovantes que chegaram no Gmail. Uma vez por semana, conta quantos foram.",
+ "manifest": {
+  "schedule": "0 20 * * *",
+  "capabilities": [
+   "gmail.search",
+   "gmail.label",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "judgments": {
+   "recibo": "Este e-mail é um recibo, nota fiscal, fatura já paga ou comprovante de compra ou pagamento (e não uma propaganda, cobrança a pagar ou conversa)?"
+  },
+  "params": [
+   {
+    "name": "consulta",
+    "label": "Busca do Gmail",
+    "type": "text",
+    "default": "recibo OR \"nota fiscal\" OR NF-e OR invoice OR receipt OR comprovante",
+    "help": "O que pode ser um recibo. A rotina confirma cada e-mail antes de pôr a etiqueta."
+   },
+   {
+    "name": "etiqueta",
+    "label": "Etiqueta",
+    "type": "text",
+    "default": "Recibos"
+   },
+   {
+    "name": "dias",
+    "label": "Olhar os últimos (dias)",
+    "type": "number",
+    "default": 2
+   },
+   {
+    "name": "dia_resumo",
+    "label": "Dia da contagem semanal",
+    "type": "select",
+    "options": [
+     "domingo",
+     "segunda",
+     "terça",
+     "quarta",
+     "quinta",
+     "sexta",
+     "sábado"
+    ],
+    "default": "sexta"
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "const DIAS = [\"domingo\", \"segunda\", \"terça\", \"quarta\", \"quinta\", \"sexta\", \"sábado\"];\n\nasync function run() {\n  const vistos = state.get(\"vistos\") || [];\n  let semana = state.get(\"semana\") || 0;\n  const mails = await gmail.search({query: params.consulta, days: params.dias, max: 50});\n  for (const m of mails) {\n    if (vistos.indexOf(m.id) !== -1) continue;\n    vistos.push(m.id);\n    if ((m.labels || []).some(l => String(l).toLowerCase() === params.etiqueta.toLowerCase())) continue;\n    const j = await judge.recibo(m);\n    if (j.p < 0.5) continue;\n    await gmail.label({id: m.id, label: params.etiqueta});\n    semana++;\n  }\n  state.set(\"vistos\", vistos.slice(-300));\n\n  if (dates.weekday(now()) === DIAS.indexOf(params.dia_resumo)) {\n    if (semana > 0) {\n      await notify.send({text: \"🧾 Nesta semana \" + (semana === 1 ? \"1 recibo ganhou\" : semana + \" recibos ganharam\") +\n        \" a etiqueta “\" + params.etiqueta + \"” no Gmail.\"});\n    }\n    semana = 0;\n  }\n  state.set(\"semana\", semana);\n}\n",
+ "tests": [
+  {
+   "name": "sexta: etiqueta dois recibos e conta a semana",
+   "now": "2026-10-02T20:00:00-03:00",
+   "state": {
+    "semana": 3,
+    "vistos": [
+     "antigo1"
+    ]
+   },
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "r1",
+       "from": "nfe@lojaexemplo.com.br",
+       "from_name": "Loja Exemplo",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Sua nota fiscal eletrônica",
+       "snippet": "NF-e 12345 referente ao pedido 889",
+       "date": "2026-10-02T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      },
+      {
+       "id": "r2",
+       "from": "recibos@transporte.com",
+       "from_name": "App de Transporte",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Recibo da sua viagem",
+       "snippet": "Total R$ 23,40",
+       "date": "2026-10-02T08:10:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      },
+      {
+       "id": "p1",
+       "from": "ofertas@varejo.com",
+       "from_name": "Varejo",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Comprovante de desconto: 30% off",
+       "snippet": "Só hoje",
+       "date": "2026-10-02T07:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": true
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "recibo": {
+     "NF-e 12345": 0.95,
+     "Recibo da sua viagem": 0.9,
+     "30% off": 0.1
+    }
+   },
+   "expect": [
+    {
+     "capability": "gmail.label",
+     "count": 2,
+     "contains": [
+      "r1",
+      "r2",
+      "Recibos"
+     ],
+     "not_contains": [
+      "p1"
+     ]
+    },
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "5 recibos",
+      "Recibos"
+     ]
+    }
+   ],
+   "expect_state": {
+    "semana": 0
+   }
+  },
+  {
+   "name": "nada novo num dia comum",
+   "now": "2026-09-30T20:00:00-03:00",
+   "state": {
+    "semana": 1,
+    "vistos": [
+     "r9"
+    ]
+   },
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "r9",
+       "from": "nfe@lojaexemplo.com.br",
+       "from_name": "Loja Exemplo",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Sua nota fiscal",
+       "snippet": "NF-e 999",
+       "date": "2026-09-29T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": false,
+       "can_unsubscribe": false
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "recibo": {
+     "NF-e 999": 0.95
+    }
+   },
+   "expect": [
+    {
+     "capability": "gmail.label",
+     "count": 0
+    },
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ],
+   "expect_state": {
+    "semana": 1
+   }
+  },
+  {
+   "name": "já etiquetado, outra etiqueta e dia de resumo sem recibos",
+   "now": "2026-10-04T20:00:00-03:00",
+   "params": {
+    "etiqueta": "Financeiro/Notas",
+    "dia_resumo": "domingo"
+   },
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "r5",
+       "from": "cobranca@servico.com",
+       "from_name": "Serviço",
+       "to": [
+        "eu@exemplo.com"
+       ],
+       "subject": "Recibo de pagamento",
+       "snippet": "Pagamento confirmado",
+       "date": "2026-10-04T09:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "Financeiro/Notas"
+       ],
+       "replied": false,
+       "unread": false,
+       "can_unsubscribe": false
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "recibo": {
+     "Pagamento confirmado": 0.95
+    }
+   },
+   "expect": [
+    {
+     "capability": "gmail.label",
+     "count": 0
+    },
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ],
+   "expect_state": {
+    "semana": 0
+   }
+  }
+ ]
+}

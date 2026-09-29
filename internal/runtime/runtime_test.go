@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"errors"
+	"github.com/turbine-dev/pimpo/internal/capability"
 	"strings"
 	"testing"
 	"time"
@@ -242,5 +243,33 @@ func TestTimeLimitCountsOnlyTheRoutinesWork(t *testing.T) {
 	loop := `async function run() { await notify.send({text: "x"}); while (true) {} }`
 	if _, err := Run(context.Background(), loop, m, slowHost{}, Options{Timeout: 150 * time.Millisecond}); !errors.Is(err, ErrTimeout) && (err == nil || !strings.Contains(err.Error(), "time limit")) {
 		t.Fatalf("a busy loop ran on: %v", err)
+	}
+}
+
+// Capabilities with more than one dot are called as written, and the older
+// bracket form keeps working.
+func TestDottedCapabilities(t *testing.T) {
+	for _, n := range []string{"apple.reminders.list", "apple.notes.append", "apple.reminders.delete"} {
+		if _, ok := capability.Catalog[n]; !ok {
+			capability.Register(capability.Spec{Name: n, Risk: capability.Read, Signature: n + "({})", Returns: "{}"})
+			defer capability.Unregister(n)
+		}
+	}
+	h := &recordingHost{result: map[string]any{"apple.reminders.list": []any{map[string]any{"title": "Pagar luz"}}}}
+	m := Manifest{Capabilities: []string{"apple.reminders.list", "apple.notes.append", "telegram.send"}}
+	code := `async function run() {
+  const a = await apple.reminders.list({list: "Casa"});
+  const b = await apple["reminders.list"]({});
+  await apple.notes.append({note: "x", text: a[0].title + b.length});
+  await telegram.send({text: "ok"});
+}`
+	if _, err := Run(context.Background(), code, m, h, Options{}); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(h.calls, ",") != "apple.reminders.list@,apple.reminders.list@,apple.notes.append@,telegram.send@" {
+		t.Fatalf("calls %v", h.calls)
+	}
+	if _, err := Run(context.Background(), `async function run() { await apple.reminders.delete({id: "1"}); }`, m, h, Options{}); err == nil {
+		t.Fatal("reached an undeclared dotted capability")
 	}
 }
