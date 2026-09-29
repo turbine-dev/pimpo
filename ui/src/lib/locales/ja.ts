@@ -119,7 +119,7 @@ export const ja: Record<Key, string> & Record<string, string> = {
 
   'catalog.title': 'その他の接続',
   'catalog.text': 'それぞれ何ができるかを明記しています。元に戻せない操作は必ず承認を求めます。',
-  'catalog.install': 'コネクタをインストール（.zip）',
+  'catalog.install': 'コネクタをインストール（.json · .zip）',
   'catalog.reload': 'コネクタフォルダを再読み込み',
   'catalog.howTo': 'コネクタの作り方',
   'catalog.broken': '読み込めなかったコネクタ：{name}',

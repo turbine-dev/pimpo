@@ -26,6 +26,7 @@
   "btn.runAgain": "다시 실행",
   "catalog.externalHelp": "{dir}에 있는 외부 커넥터예요. 별도 프로세스로 실행되며 아래 변수만 받아요.",
   "catalog.remoteHelp": "{url}의 원격 MCP 서버예요. Pimpo가 보내는 내용과 아래 헤더만 받아요.",
+  "catalog.httpHelp": "connector.json으로 정의되며 프로그램이 없어요. Pimpo가 직접 {url}을 호출하며, 아래 요청만 아래 키로 보내요.",
   "effort.auto": "auto",
   "effort.high": "높음",
   "effort.low": "낮음",

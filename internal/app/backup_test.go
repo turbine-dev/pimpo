@@ -4,9 +4,11 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -93,5 +95,29 @@ func TestInstallConnectorWithoutRestart(t *testing.T) {
 	zw.Close()
 	if code, _ := upload(t, ta, "/api/connectors/install", bad.Bytes(), nil); code != 400 {
 		t.Fatalf("zip slip accepted: %d", code)
+	}
+}
+
+func TestInstallJSONConnector(t *testing.T) {
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"hits":[{"title":"Go 2","points":300,"junk":1}]}`))
+	}))
+	defer api.Close()
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ta.Home = t.TempDir()
+	man := `{"name":"hnlocal","description":"test","http":{"base":"` + api.URL + `"},
+	  "capabilities":[{"name":"hnlocal.stories","risk":"read","signature":"hnlocal.stories({query})","returns":"[{title, points}]",
+	    "request":{"method":"GET","path":"/search","query":{"query":"{{query}}"}},"result":{"path":"hits","fields":{"title":"title","points":"points"}}}],
+	  "contract":[{"capability":"hnlocal.stories","args":{"query":"go"},"keys":["title","points"]}]}`
+	code, out := upload(t, ta, "/api/connectors/install", []byte(man), nil)
+	if code != 200 || out["loaded"] != 1.0 {
+		t.Fatalf("install %d %v", code, out)
+	}
+	res, err := ta.Router.Call(t.Context(), "hnlocal.stories", "", map[string]any{"query": "go"})
+	if err != nil || fmt.Sprint(res) != "[map[points:300 title:Go 2]]" {
+		t.Fatalf("call %v %v", res, err)
+	}
+	if code, _ := upload(t, ta, "/api/connectors/install", []byte(`{"name":"x"}`), nil); code != 422 {
+		t.Fatalf("bad manifest: %d", code)
 	}
 }

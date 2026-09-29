@@ -26,6 +26,7 @@
   "btn.runAgain": "Erneut ausführen",
   "catalog.externalHelp": "Externer Connector in {dir}. Er läuft als eigener Prozess und bekommt nur die Variablen unten.",
   "catalog.remoteHelp": "Entfernter MCP-Server unter {url}. Er bekommt nur, was Pimpo ihm schickt, mit den Headern unten.",
+  "catalog.httpHelp": "In connector.json beschrieben, ohne Programm: Pimpo ruft {url} selbst auf, nur die unten aufgeführten Anfragen, mit den Schlüsseln unten.",
   "effort.auto": "auto",
   "effort.high": "hoch",
   "effort.low": "niedrig",

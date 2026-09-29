@@ -119,7 +119,7 @@ export const zh: Record<Key, string> & Record<string, string> = {
 
   'catalog.title': '更多连接',
   'catalog.text': '每个连接都写明了允许做什么。无法撤销的操作一律需要你审批。',
-  'catalog.install': '安装连接器（.zip）',
+  'catalog.install': '安装连接器（.json · .zip）',
   'catalog.reload': '重新加载连接器文件夹',
   'catalog.howTo': '如何创建连接器',
   'catalog.broken': '连接器未加载：{name}',

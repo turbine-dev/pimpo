@@ -26,6 +26,7 @@
   "btn.runAgain": "再実行",
   "catalog.externalHelp": "{dir} にある外部コネクタです。別プロセスとして動作し、以下の変数だけを受け取ります。",
   "catalog.remoteHelp": "{url} のリモート MCP サーバーです。Pimpo が送る内容と以下のヘッダーだけを受け取ります。",
+  "catalog.httpHelp": "connector.json で記述され、プログラムはありません。Pimpo 自身が {url} を呼び出します。下に並ぶリクエストだけを、下のキーで送ります。",
   "effort.auto": "auto",
   "effort.high": "高",
   "effort.low": "低",

@@ -31,6 +31,9 @@ type Manifest struct {
 	// Headers names the request headers whose values come from the vault.
 	URL     string   `json:"url,omitempty"`
 	Headers []string `json:"headers,omitempty"`
+	// HTTP makes this a declarative connector: no program, each capability
+	// is one request to this service (see http.go).
+	HTTP *HTTPSpec `json:"http,omitempty"`
 	// Imported marks a third-party MCP server added from the registry or
 	// by hand: the owner set each tool's risk, it has no contract tests,
 	// and tools it adds later stay hidden instead of failing.
@@ -50,6 +53,9 @@ type Capability struct {
 	Signature string          `json:"signature"`
 	Returns   string          `json:"returns"`
 	Schema    json.RawMessage `json:"schema,omitempty"`
+	// Request and Result describe a declarative connector's call.
+	Request *Request `json:"request,omitempty"`
+	Result  *Result  `json:"result,omitempty"`
 }
 
 // Case is one contract test: calling the capability with these arguments
@@ -77,8 +83,14 @@ func Load(dir string) (Manifest, error) {
 	if !nameRe.MatchString(man.Name) {
 		return man, fmt.Errorf("connector name %q must be lowercase letters and digits", man.Name)
 	}
-	if (man.Command == "") == (man.URL == "") {
-		return man, errors.New("connector.json needs a command or a url")
+	kinds := 0
+	for _, set := range []bool{man.Command != "", man.URL != "", man.HTTP != nil} {
+		if set {
+			kinds++
+		}
+	}
+	if kinds != 1 {
+		return man, errors.New("connector.json needs one of: a command, a url (an MCP server) or http (requests described here)")
 	}
 	if man.URL != "" && !strings.HasPrefix(man.URL, "https://") && !strings.HasPrefix(man.URL, "http://127.0.0.1") && !strings.HasPrefix(man.URL, "http://localhost") {
 		return man, errors.New("a remote connector needs an https url")
@@ -105,6 +117,16 @@ func Load(dir string) (Manifest, error) {
 		}
 		if risks[c.Risk] == capability.Read && !covered[c.Name] && !man.Imported {
 			return man, fmt.Errorf("capability %q has no contract test", c.Name)
+		}
+	}
+	for _, c := range man.Capabilities {
+		if man.HTTP == nil && (c.Request != nil || c.Result != nil) {
+			return man, fmt.Errorf("capability %q has a request, which only a connector with http uses", c.Name)
+		}
+	}
+	if man.HTTP != nil {
+		if err := man.HTTP.validate(man.Capabilities, man.Env); err != nil {
+			return man, err
 		}
 	}
 	for _, e := range man.Env {
@@ -248,6 +270,9 @@ func (c *Connector) Close() {
 
 // Call runs one capability, starting the process if needed.
 func (c *Connector) Call(ctx context.Context, name, _ string, args any) (any, error) {
+	if c.Manifest.HTTP != nil {
+		return c.callHTTP(ctx, name, args)
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.conn == nil {
@@ -314,7 +339,7 @@ func Check(ctx context.Context, m Manifest, secrets Secrets) []string {
 		out, err := c.Call(ctx, cs.Capability, "", cs.Args)
 		if err != nil {
 			problems = append(problems, err.Error())
-			if c.conn == nil {
+			if c.conn == nil && m.HTTP == nil {
 				break
 			}
 			continue

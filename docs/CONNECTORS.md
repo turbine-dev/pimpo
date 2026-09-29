@@ -2,7 +2,10 @@
 
 A connector gives Pimpo new capabilities: `tides.today`, `bank.balance`, `printer.print`. Routines and explorations can only reach the world through capabilities, so a connector decides what becomes possible. For that reason Pimpo holds connectors to what they declare.
 
-A connector is a program in any language that speaks [MCP](https://modelcontextprotocol.io) over stdio: one JSON-RPC message per line on stdin and stdout. Next to it sits a `connector.json`. The smallest complete example is [`examples/connectors/tides`](../examples/connectors/tides): a Python file using only the standard library.
+There are two kinds:
+
+- **A JSON connector**: just a `connector.json` that describes each capability as one HTTP request to a service's API. There is no program; Pimpo makes the requests itself. This covers most REST APIs. See [JSON connectors](#json-connectors) and [`examples/connectors/hnsearch`](../examples/connectors/hnsearch).
+- **A program** in any language that speaks [MCP](https://modelcontextprotocol.io) over stdio: one JSON-RPC message per line on stdin and stdout. Next to it sits a `connector.json`. The smallest complete example is [`examples/connectors/tides`](../examples/connectors/tides): a Python file using only the standard library. Use this kind when a capability needs more than one request, local files, or logic.
 
 ## connector.json
 
@@ -42,6 +45,48 @@ A connector is a program in any language that speaks [MCP](https://modelcontextp
 - **env**: the only environment variables your process gets, besides `PATH`, `HOME` and `LANG`. The owner fills them in Connections, and they are stored in Pimpo's vault. Nothing else from Pimpo's environment reaches you.
 - **contract**: test cases. Every `read` capability needs at least one. A case calls the capability and checks the result has these keys, either on the object or on the first item of a list. Cases may only call `read` capabilities.
 
+## JSON connectors
+
+Replace `command` with `http`, and give each capability a `request` (and optionally a `result`):
+
+```json
+{
+  "name": "hnsearch",
+  "description": "Hacker News search.",
+  "env": ["EXAMPLE_KEY"],
+  "http": {
+    "base": "https://hn.algolia.com/api/v1",
+    "headers": {"Authorization": "Bearer {{env.EXAMPLE_KEY}}"},
+    "query": {}
+  },
+  "capabilities": [
+    {
+      "name": "hnsearch.stories",
+      "risk": "read",
+      "signature": "hnsearch.stories({query, min_points?, max?})",
+      "returns": "[{title, url, points}]",
+      "request": {"method": "GET", "path": "/search", "query": {"query": "{{query}}", "tags": "story", "numericFilters": "points>={{min_points}}", "hitsPerPage": "{{max}}"}},
+      "result": {"path": "hits", "max": 50, "fields": {"title": "title", "url": "url", "points": "points"}}
+    }
+  ],
+  "contract": [{"capability": "hnsearch.stories", "args": {"query": "rust"}, "keys": ["title", "points"]}]
+}
+```
+
+- **http.base**: the service's address; `https` only (plain `http` only for this computer). `headers` and `query` go on every request.
+- **request.method**: `GET`, `POST`, `PUT`, `PATCH` or `DELETE`. Anything but `GET` changes something, so its risk cannot be `read`.
+- **request.path**: starts with `/` and is added to the base. `query` and `headers` add to the ones in `http`.
+- **Placeholders**: `{{name}}` is an argument of the call; `{{env.NAME}}` is a key from `env`, filled in Connections and kept in the vault. Arguments in the path are URL-escaped, so a value cannot reach another endpoint. Keys may go in headers, the query or the body, never in the path.
+- **Optional arguments**: a query parameter whose argument was not given is left out; so is a header whose key is empty. A path argument that is missing is an error.
+- **request.body**: JSON sent as written. A string that is only `"{{text}}"` becomes the argument with its type (a number, a list); `{{…}}` inside a longer string is filled in as text; fields whose argument was not given are dropped. `"form": true` sends the body as form fields instead.
+- **result**: `path` picks part of the answer (`data.items`); `fields` keeps only these, renamed as the keys and taken by dot path (`user.login`, and `labels.*.name` for a field of every item of a list); `max` caps a list. Without `result`, the whole JSON answer is returned. An answer that is not JSON comes back as `{text}`.
+
+Pimpo also enforces, for JSON connectors:
+
+- requests stay on the base's host, redirects too, and never reach private addresses (unless the base is this computer);
+- 30 seconds per request and at most 5 MB of answer;
+- errors say what happened: a refused key (401/403), too many requests (429), or the service's own message.
+
 ## What Pimpo enforces
 
 - The process must offer exactly the declared tools. One extra tool and the connector does not start.
@@ -57,7 +102,7 @@ TIDES_KEY=... pimpo connector check ./tides
 
 No part of Pimpo needs recompiling, and it does not need a restart either. Two ways to install:
 
-- In **Conexões › Instalar conector (.zip)**, send a zip with `connector.json` at its root (or inside one folder). Pimpo checks the manifest before anything is installed.
+- In **Conexões › Instalar conector (.json · .zip)**, send the `connector.json` itself (JSON connectors) or a zip with `connector.json` at its root (or inside one folder). Pimpo checks the manifest before anything is installed.
 - Or copy the folder yourself and choose **Recarregar a pasta de conectores**:
 
 ```bash

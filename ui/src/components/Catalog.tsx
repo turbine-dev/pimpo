@@ -60,7 +60,7 @@ export function Catalog() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 py-1.5 text-[13px] hover:border-line-strong">
           <Puzzle size={14} /> {t('catalog.install')}
-          <input type="file" accept=".zip" className="sr-only" onChange={(e) => e.target.files?.[0] && install.mutate(e.target.files[0])} />
+          <input type="file" accept=".zip,.json,application/json" className="sr-only" onChange={(e) => e.target.files?.[0] && install.mutate(e.target.files[0])} />
         </label>
         <Button size="sm" variant="ghost" onClick={() => reload.mutate()} disabled={reload.isPending}>{t('catalog.reload')}</Button>
         <a className="text-[12.5px] text-ink-3 underline" href="https://github.com/denerFernandes/pimpo/blob/main/docs/CONNECTORS.md" target="_blank" rel="noreferrer">{t('catalog.howTo')}</a>

@@ -122,7 +122,7 @@ export const it: Record<Key, string> & Record<string, string> = {
 
   'catalog.title': 'Altre connessioni',
   'catalog.text': 'Ognuna dice esattamente cosa permette di fare. Ciò che non si può annullare chiede sempre la tua approvazione.',
-  'catalog.install': 'Installa connettore (.zip)',
+  'catalog.install': 'Installa connettore (.json · .zip)',
   'catalog.reload': 'Ricarica la cartella dei connettori',
   'catalog.howTo': 'Come creare un connettore',
   'catalog.broken': 'Connettore non caricato: {name}',
