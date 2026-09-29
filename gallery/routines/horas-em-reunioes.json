@@ -1,0 +1,208 @@
+{
+ "name": "Horas em reuniões",
+ "description": "Sexta à tarde, quanto tempo da semana foi em reuniões, as 3 mais longas e se passou do limite que você escolheu. Reuniões sobrepostas contam uma vez; eventos de dia inteiro ficam de fora.",
+ "manifest": {
+  "schedule": "0 17 * * 5",
+  "capabilities": [
+   "calendar.events",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "limite",
+    "label": "Limite por semana (horas)",
+    "type": "number",
+    "default": 15
+   },
+   {
+    "name": "so_com_participantes",
+    "label": "Contar só eventos com participantes",
+    "type": "boolean",
+    "default": false,
+    "help": "Deixa de fora compromissos pessoais, sem convidados."
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "function horas(min) {\n  const h = Math.floor(min / 60), m = Math.round(min % 60);\n  return h + \"h\" + (m ? (m < 10 ? \"0\" : \"\") + m : \"\");\n}\n\nasync function run() {\n  const hoje = dates.today();\n  const recuo = (dates.weekday(hoje) + 6) % 7;\n  const segunda = dates.startOfDay(hoje, -recuo);\n  const eventos = (await calendar.events({from: segunda, to: dates.startOfDay(hoje, 1)}))\n    .filter(e => e.start && e.end && e.start.indexOf(\"T\") !== -1)\n    .filter(e => !params.so_com_participantes || (e.attendees || []).length > 0)\n    .map(e => ({title: e.title, start: e.start, ini: Date.parse(e.start), fim: Date.parse(e.end)}))\n    .filter(e => e.fim > e.ini);\n  if (!eventos.length) return;\n\n  eventos.sort((a, b) => a.ini - b.ini);\n  let total = 0, ini = eventos[0].ini, fim = eventos[0].fim;\n  for (const e of eventos.slice(1)) {\n    if (e.ini <= fim) { fim = Math.max(fim, e.fim); continue; }\n    total += fim - ini; ini = e.ini; fim = e.fim;\n  }\n  total += fim - ini;\n  const minutos = total / 60000;\n\n  const maiores = eventos.slice().sort((a, b) => (b.fim - b.ini) - (a.fim - a.ini)).slice(0, 3);\n  let text = \"🗓️ Nesta semana: \" + horas(minutos) + \" em reuniões (\" + eventos.length + (eventos.length === 1 ? \" reunião\" : \" reuniões\") + \").\\n\";\n  text += minutos > params.limite * 60\n    ? \"Passou \" + horas(minutos - params.limite * 60) + \" do seu limite de \" + horas(params.limite * 60) + \".\"\n    : \"Dentro do seu limite de \" + horas(params.limite * 60) + \".\";\n  text += \"\\nAs mais longas:\\n\" + maiores.map(e => \"• \" + e.title + \" — \" + horas((e.fim - e.ini) / 60000) + \" (\" + dates.format(e.start, \"EEE\") + \")\").join(\"\\n\");\n  await notify.send({text});\n}\n",
+ "tests": [
+  {
+   "name": "acima do limite, com sobreposição",
+   "now": "2026-10-02T17:00:00-03:00",
+   "params": {
+    "limite": 4
+   },
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e1",
+       "title": "Planejamento do trimestre",
+       "start": "2026-09-28T09:00:00-03:00",
+       "end": "2026-09-28T11:30:00-03:00",
+       "location": "",
+       "attendees": [
+        "a@empresa.com"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e2",
+       "title": "Revisão com diretoria",
+       "start": "2026-09-29T14:00:00-03:00",
+       "end": "2026-09-29T15:30:00-03:00",
+       "location": "",
+       "attendees": [
+        "b@empresa.com"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e3",
+       "title": "Daily",
+       "start": "2026-09-30T09:00:00-03:00",
+       "end": "2026-09-30T09:15:00-03:00",
+       "location": "",
+       "attendees": [
+        "c@empresa.com"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e4",
+       "title": "Entrevista",
+       "start": "2026-10-01T10:00:00-03:00",
+       "end": "2026-10-01T11:00:00-03:00",
+       "location": "",
+       "attendees": [
+        "d@empresa.com"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e5",
+       "title": "Alinhamento rápido",
+       "start": "2026-10-01T10:30:00-03:00",
+       "end": "2026-10-01T11:00:00-03:00",
+       "location": "",
+       "attendees": [
+        "e@empresa.com"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e6",
+       "title": "Semana passada",
+       "start": "2026-09-25T09:00:00-03:00",
+       "end": "2026-09-25T18:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "5h15 em reuniões",
+      "5 reuniões",
+      "Passou 1h15 do seu limite de 4h",
+      "Planejamento do trimestre — 2h30",
+      "Revisão com diretoria — 1h30",
+      "Entrevista — 1h"
+     ],
+     "not_contains": [
+      "Semana passada",
+      "Daily —"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "semana sem reuniões",
+   "now": "2026-10-02T17:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e7",
+       "title": "Feriado",
+       "start": "2026-09-29",
+       "end": "2026-09-30",
+       "location": "",
+       "attendees": [],
+       "calendar": "Feriados"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "só com participantes, dentro do limite",
+   "now": "2026-10-02T17:00:00-03:00",
+   "params": {
+    "so_com_participantes": true
+   },
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e8",
+       "title": "Academia",
+       "start": "2026-09-29T07:00:00-03:00",
+       "end": "2026-09-29T08:30:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Pessoal"
+      },
+      {
+       "id": "e9",
+       "title": "Reunião com cliente",
+       "start": "2026-09-30T15:00:00-03:00",
+       "end": "2026-09-30T15:45:00-03:00",
+       "location": "",
+       "attendees": [
+        "x@cliente.com.br"
+       ],
+       "calendar": "Trabalho"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "0h45 em reuniões",
+      "1 reunião",
+      "Dentro do seu limite de 15h",
+      "Reunião com cliente — 0h45"
+     ],
+     "not_contains": [
+      "Academia",
+      "Passou"
+     ]
+    }
+   ]
+  }
+ ]
+}

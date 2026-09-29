@@ -276,16 +276,29 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 		scopes[spec.Name] = append(scopes[spec.Name], scope)
 	}
 	objects := map[string]*goja.Object{}
+	// object returns the object for a dotted path (apple, apple.reminders),
+	// making it the first time.
+	var object func(path string) *goja.Object
+	object = func(path string) *goja.Object {
+		if obj, ok := objects[path]; ok {
+			return obj
+		}
+		obj := vm.NewObject()
+		objects[path] = obj
+		if parent, last, ok := cutLast(path); ok {
+			if err := object(parent).Set(last, obj); err != nil {
+				fail(err)
+			}
+		} else {
+			vm.Set(path, obj)
+		}
+		return obj
+	}
 	for name, allowed := range scopes {
 		ns, method, _ := strings.Cut(name, ".")
-		obj, ok := objects[ns]
-		if !ok {
-			obj = vm.NewObject()
-			objects[ns] = obj
-			vm.Set(ns, obj)
-		}
 		name, allowed := name, allowed
-		bind(obj, method, func(call goja.FunctionCall) goja.Value {
+		obj := object(ns)
+		fn := func(call goja.FunctionCall) goja.Value {
 			res.Calls++
 			if res.Calls > opt.MaxCalls {
 				fail(fmt.Errorf("routine made more than %d capability calls", opt.MaxCalls))
@@ -305,7 +318,13 @@ func Run(ctx context.Context, code string, m Manifest, host Host, opt Options) (
 				fail(fmt.Errorf("%s: %w", name, err))
 			}
 			return toJS(vm, out)
-		})
+		}
+		bind(obj, method, fn)
+		// apple.reminders.list is called as written; apple["reminders.list"]
+		// keeps working for routines written that way.
+		if parent, last, ok := cutLast(name); ok && parent != ns {
+			bind(object(parent), last, fn)
+		}
 	}
 	if len(m.Judgments) > 0 {
 		judge := vm.NewObject()
@@ -641,4 +660,13 @@ func (c *workClock) pause() {
 	c.timer.Stop()
 	c.timer = nil
 	c.used += time.Since(c.since)
+}
+
+// cutLast splits "a.b.c" into "a.b" and "c".
+func cutLast(path string) (string, string, bool) {
+	i := strings.LastIndexByte(path, '.')
+	if i < 0 {
+		return "", "", false
+	}
+	return path[:i], path[i+1:], true
 }

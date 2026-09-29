@@ -1,0 +1,182 @@
+{
+ "name": "Diário no Notion",
+ "description": "Toda noite, acrescenta numa página do Notion uma linha com as reuniões do dia e as tarefas do Todoist que ficaram abertas. Em dia sem nada, não escreve.",
+ "manifest": {
+  "schedule": "50 23 * * *",
+  "capabilities": [
+   "calendar.events",
+   "todoist.tasks",
+   "notion.append"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "pagina",
+    "label": "Página do Notion (id)",
+    "type": "text",
+    "default": "",
+    "help": "O id da página, o trecho final do endereço dela."
+   },
+   {
+    "name": "incluir_tarefas",
+    "label": "Incluir as tarefas que ficaram abertas",
+    "type": "boolean",
+    "default": true
+   },
+   {
+    "name": "filtro",
+    "label": "Filtro do Todoist",
+    "type": "text",
+    "default": "today | overdue"
+   }
+  ]
+ },
+ "code": "async function run() {\n  if (!params.pagina) throw new Error(\"Escolha a página do Notion nos ajustes da rotina.\");\n  const hoje = dates.today();\n  const eventos = (await calendar.events({from: hoje, to: dates.startOfDay(hoje, 1)}))\n    .filter(e => e.title)\n    .map(e => e.start && e.start.indexOf(\"T\") !== -1 ? dates.format(e.start, \"HH:mm\") + \" \" + e.title : e.title);\n  const tarefas = params.incluir_tarefas ? (await todoist.tasks({filter: params.filtro})).map(t => t.content).filter(Boolean) : [];\n  if (!eventos.length && !tarefas.length) return;\n  let text = dates.format(hoje, \"dd/MM/yyyy (EEE)\") + \" — Reuniões: \" + (eventos.length ? eventos.join(\", \") : \"nenhuma\");\n  if (params.incluir_tarefas) text += \". Ficaram abertas: \" + (tarefas.length ? tarefas.join(\", \") : \"nenhuma\");\n  await notion.append({page_id: params.pagina, text: text + \".\"});\n}\n",
+ "tests": [
+  {
+   "name": "reuniões e tarefas abertas",
+   "now": "2026-10-01T23:50:00-03:00",
+   "params": {
+    "pagina": "pagina-exemplo-123"
+   },
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e1",
+       "title": "Daily do time",
+       "start": "2026-10-01T09:30:00-03:00",
+       "end": "2026-10-01T09:45:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e2",
+       "title": "Revisão de design",
+       "start": "2026-10-01T15:00:00-03:00",
+       "end": "2026-10-01T16:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e3",
+       "title": "Amanhã cedo",
+       "start": "2026-10-02T08:00:00-03:00",
+       "end": "2026-10-02T09:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      }
+     ]
+    },
+    {
+     "capability": "todoist.tasks",
+     "result": [
+      {
+       "id": "t1",
+       "content": "Responder o fornecedor",
+       "due": "2026-10-01",
+       "priority": 2,
+       "project_id": "p1",
+       "labels": []
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notion.append",
+     "count": 1,
+     "contains": [
+      "pagina-exemplo-123",
+      "01/10/2026",
+      "09:30 Daily do time",
+      "15:00 Revisão de design",
+      "Ficaram abertas: Responder o fornecedor"
+     ],
+     "not_contains": [
+      "Amanhã cedo"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "dia vazio não escreve",
+   "now": "2026-10-01T23:50:00-03:00",
+   "params": {
+    "pagina": "pagina-exemplo-123"
+   },
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": []
+    },
+    {
+     "capability": "todoist.tasks",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notion.append",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "sem tarefas e com evento de dia inteiro",
+   "now": "2026-10-03T23:50:00-03:00",
+   "params": {
+    "pagina": "outra-pagina-456",
+    "incluir_tarefas": false
+   },
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e4",
+       "title": "Aniversário da Lia",
+       "start": "2026-10-03",
+       "end": "2026-10-04",
+       "location": "",
+       "attendees": [],
+       "calendar": "Pessoal"
+      }
+     ]
+    },
+    {
+     "capability": "todoist.tasks",
+     "result": [
+      {
+       "id": "t2",
+       "content": "Não deve aparecer",
+       "due": "2026-10-03",
+       "priority": 1,
+       "project_id": "p1",
+       "labels": []
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notion.append",
+     "count": 1,
+     "contains": [
+      "outra-pagina-456",
+      "03/10/2026",
+      "Reuniões: Aniversário da Lia"
+     ],
+     "not_contains": [
+      "Não deve aparecer",
+      "Ficaram abertas"
+     ]
+    }
+   ]
+  }
+ ]
+}

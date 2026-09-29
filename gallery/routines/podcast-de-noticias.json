@@ -1,0 +1,188 @@
+{
+ "name": "Podcast de notícias",
+ "description": "Toda manhã, as principais notícias de um feed, resumidas e enviadas em áudio para você ouvir.",
+ "manifest": {
+  "schedule": "0 7 * * *",
+  "capabilities": [
+   "rss.read:g1.globo.com",
+   "rss.read:feeds.bbci.co.uk",
+   "audio.send"
+  ],
+  "locale": "pt-BR",
+  "writes": {
+   "resumo": "Resuma esta notícia em duas ou três frases curtas, escritas para serem ouvidas em voz alta, no idioma indicado no campo idioma. Comece pelo fato principal. Sem markdown, sem links, sem emojis e sem inventar nada além do título e do texto recebidos."
+  },
+  "params": [
+   {
+    "name": "feed",
+    "label": "Feed de notícias",
+    "type": "select",
+    "options": [
+     "https://g1.globo.com/rss/g1/",
+     "https://feeds.bbci.co.uk/portuguese/rss.xml",
+     "https://feeds.bbci.co.uk/news/world/rss.xml"
+    ],
+    "default": "https://g1.globo.com/rss/g1/",
+    "help": "g1, BBC News Brasil ou BBC World"
+   },
+   {
+    "name": "quantidade",
+    "label": "Quantas notícias",
+    "type": "number",
+    "default": 5,
+    "help": "De 1 a 20"
+   },
+   {
+    "name": "idioma",
+    "label": "Idioma do áudio",
+    "type": "select",
+    "options": [
+     "pt-BR",
+     "en-US",
+     "es-ES"
+    ],
+    "default": "pt-BR"
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "const ABERTURA = {\n  \"pt-BR\": \"Bom dia! Estas são as principais notícias de hoje.\",\n  \"en-US\": \"Good morning! Here are today's top stories.\",\n  \"es-ES\": \"¡Buenos días! Estas son las principales noticias de hoy.\"\n};\nconst FECHO = {\n  \"pt-BR\": \"Essas foram as notícias. Tenha um ótimo dia!\",\n  \"en-US\": \"That's the news for today. Have a great day!\",\n  \"es-ES\": \"Esas fueron las noticias. ¡Que tengas un gran día!\"\n};\n\nfunction recente(item, limite) {\n  if (!item.published) return true;\n  try {\n    return !dates.isBefore(item.published, limite);\n  } catch (e) {\n    return true;\n  }\n}\n\nasync function run() {\n  const limite = dates.addHours(now(), -24);\n  const quantidade = Math.min(20, Math.max(1, Math.round(params.quantidade)));\n  const items = (await rss.read({url: params.feed, max: 30}))\n    .filter(function (i) { return i.title && recente(i, limite); })\n    .slice(0, quantidade);\n\n  if (items.length === 0) {\n    log(\"Nenhuma notícia das últimas 24 horas no feed.\");\n    return;\n  }\n\n  const partes = [ABERTURA[params.idioma] || ABERTURA[\"pt-BR\"]];\n  for (const item of items) {\n    const r = await write.resumo({idioma: params.idioma, titulo: item.title, texto: item.summary || \"\"});\n    const t = (r.text || \"\").trim();\n    partes.push(t || item.title);\n  }\n  partes.push(FECHO[params.idioma] || FECHO[\"pt-BR\"]);\n\n  await audio.send({\n    title: \"📻 Notícias de \" + dates.format(now(), \"d 'de' MMMM\"),\n    text: partes.join(\"\\n\\n\"),\n    language: params.idioma\n  });\n}\n",
+ "tests": [
+  {
+   "name": "manhã normal: as duas primeiras notícias viram áudio",
+   "now": "2026-10-06T10:00:00Z",
+   "params": {
+    "quantidade": 2
+   },
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "Chuva forte alaga ruas do centro",
+       "link": "https://g1.globo.com/noticia/1.ghtml",
+       "published": "2026-10-06T08:30:00Z",
+       "summary": "Temporal na madrugada deixou vias bloqueadas."
+      },
+      {
+       "title": "Inflação desacelera em setembro",
+       "link": "https://g1.globo.com/noticia/2.ghtml",
+       "published": "2026-10-06T07:00:00Z",
+       "summary": "Índice ficou abaixo do esperado."
+      },
+      {
+       "title": "Seleção vence amistoso",
+       "link": "https://g1.globo.com/noticia/3.ghtml",
+       "published": "2026-10-05T23:00:00Z",
+       "summary": "Placar de 2 a 0."
+      }
+     ]
+    }
+   ],
+   "writes": {
+    "resumo": {
+     "Chuva forte alaga": "Um temporal alagou as ruas do centro durante a madrugada.",
+     "Inflação desacelera": "A inflação de setembro ficou abaixo do esperado.",
+     "Seleção vence": "A seleção venceu o amistoso por dois a zero."
+    }
+   },
+   "expect": [
+    {
+     "capability": "audio.send",
+     "count": 1,
+     "contains": [
+      "Bom dia",
+      "temporal alagou",
+      "inflação de setembro",
+      "pt-BR",
+      "6 de outubro"
+     ],
+     "not_contains": [
+      "dois a zero"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "feed só com notícias antigas: nada é enviado",
+   "now": "2026-10-06T10:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "Notícia da semana passada",
+       "link": "https://g1.globo.com/noticia/9.ghtml",
+       "published": "2026-09-30T08:00:00Z",
+       "summary": "Antiga."
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "audio.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "feed vazio: nada é enviado",
+   "now": "2026-10-06T10:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "audio.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "em inglês, com a BBC World e data em formato inesperado",
+   "now": "2026-10-06T10:00:00Z",
+   "params": {
+    "idioma": "en-US",
+    "feed": "https://feeds.bbci.co.uk/news/world/rss.xml"
+   },
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "title": "Leaders meet for climate summit",
+       "link": "https://www.bbc.co.uk/news/world-1",
+       "published": "sometime today",
+       "summary": "Talks begin in Geneva."
+      }
+     ]
+    }
+   ],
+   "writes": {
+    "resumo": {
+     "climate summit": "World leaders began climate talks in Geneva."
+    }
+   },
+   "expect": [
+    {
+     "capability": "audio.send",
+     "count": 1,
+     "contains": [
+      "Good morning",
+      "climate talks in Geneva",
+      "en-US"
+     ]
+    }
+   ]
+  }
+ ]
+}

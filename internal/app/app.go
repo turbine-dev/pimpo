@@ -299,6 +299,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.openapiRoutes()
 	a.quickSetupRoutes()
 	a.suggestionRoutes()
+	a.skillRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()

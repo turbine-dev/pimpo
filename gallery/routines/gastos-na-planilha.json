@@ -1,0 +1,280 @@
+{
+ "name": "Gastos na planilha",
+ "description": "Quando chega a confirmação de uma compra, anota a data, a loja e o valor numa linha da sua planilha do Google e avisa o que anotou.",
+ "manifest": {
+  "schedule": "",
+  "capabilities": [
+   "gmail.search",
+   "sheets.append",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "judgments": {
+   "compra": "Este e-mail confirma uma compra ou pedido feito e pago (ou a pagar) por quem o recebeu, com o valor da compra (e não é propaganda, carrinho abandonado ou aviso de entrega)?"
+  },
+  "params": [
+   {
+    "name": "consulta",
+    "label": "E-mails de compra (busca do Gmail)",
+    "type": "text",
+    "default": "\"pedido confirmado\" OR \"compra aprovada\" OR \"confirmação do pedido\" OR \"recebemos seu pedido\" OR \"compra realizada\"",
+    "help": "A rotina confirma cada e-mail antes de anotar."
+   },
+   {
+    "name": "planilha",
+    "label": "Planilha (endereço ou id)",
+    "type": "text",
+    "default": "",
+    "help": "Cole o endereço da planilha do Google Sheets."
+   },
+   {
+    "name": "intervalo",
+    "label": "Aba e colunas",
+    "type": "text",
+    "default": "Gastos!A:D",
+    "help": "A linha vai com data, loja, valor e assunto."
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ],
+  "watch": {
+   "capability": "gmail.search",
+   "args": {
+    "query": "{{consulta}}",
+    "days": 3
+   },
+   "key": "id",
+   "every": "30m"
+  }
+ },
+ "code": "function loja(m) {\n  if (m.from_name && m.from_name.indexOf(\"@\") === -1) return m.from_name;\n  const dominio = (m.from || \"\").split(\"@\")[1] || m.from || \"?\";\n  return dominio.replace(/^(mail|email|noreply|pedidos|loja)\\./, \"\").split(\".\")[0];\n}\n\nasync function run() {\n  if (!params.planilha) throw new Error(\"Escolha a planilha nos ajustes da rotina.\");\n  const linhas = [];\n  const semValor = [];\n  for (const m of event.items || []) {\n    const j = await judge.compra(m);\n    if (j.p < 0.5) continue;\n    const achado = money.find((m.subject || \"\") + \" \" + (m.snippet || \"\"));\n    const valor = achado ? money.parse(achado) : null;\n    if (valor === null) { semValor.push(loja(m) + \": \" + (m.subject || \"(sem assunto)\")); continue; }\n    const dia = m.date ? dates.format(m.date, \"dd/MM/yyyy\") : dates.format(now(), \"dd/MM/yyyy\");\n    linhas.push({row: [dia, loja(m), valor, m.subject || \"\"], texto: \"• \" + loja(m) + \" — \" + money.format(valor, \"BRL\")});\n  }\n  if (linhas.length) {\n    await sheets.append({sheet: params.planilha, range: params.intervalo, values: linhas.map(l => l.row)});\n  }\n  if (!linhas.length && !semValor.length) return;\n  let text = \"\";\n  if (linhas.length) text += \"💳 Anotei na planilha:\\n\" + linhas.map(l => l.texto).join(\"\\n\");\n  if (semValor.length) text += (text ? \"\\n\\n\" : \"\") + \"Compra sem valor no e-mail, anote à mão:\\n\" + semValor.map(s => \"• \" + s).join(\"\\n\");\n  await notify.send({text});\n}\n",
+ "tests": [
+  {
+   "name": "duas compras e uma propaganda",
+   "now": "2026-10-01T12:00:00-03:00",
+   "params": {
+    "planilha": "https://docs.google.com/spreadsheets/d/planilha-exemplo"
+   },
+   "responses": [],
+   "event": {
+    "items": [
+     {
+      "id": "g1",
+      "from": "pedidos@livrariaexemplo.com.br",
+      "from_name": "Livraria Exemplo",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Pedido confirmado #4521",
+      "snippet": "Total do pedido: R$ 89,90. Obrigado pela compra!",
+      "date": "2026-10-01T10:15:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": false
+     },
+     {
+      "id": "g2",
+      "from": "noreply@mercadoexemplo.com",
+      "from_name": "",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Compra aprovada",
+      "snippet": "Sua compra de R$ 1.249,00 foi aprovada",
+      "date": "2026-09-30T22:05:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": false
+     },
+     {
+      "id": "g3",
+      "from": "ofertas@lojaexemplo.com",
+      "from_name": "Loja Ofertas",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Compra realizada por outros clientes: veja",
+      "snippet": "A partir de R$ 19,90",
+      "date": "2026-10-01T08:00:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": true
+     }
+    ]
+   },
+   "judgments": {
+    "compra": {
+     "Pedido confirmado #4521": 0.95,
+     "1.249,00 foi aprovada": 0.9,
+     "outros clientes": 0.05
+    }
+   },
+   "expect": [
+    {
+     "capability": "sheets.append",
+     "count": 1,
+     "contains": [
+      "planilha-exemplo",
+      "Gastos!A:D",
+      "01/10/2026",
+      "Livraria Exemplo",
+      "89.9",
+      "30/09/2026",
+      "mercadoexemplo",
+      "1249"
+     ],
+     "not_contains": [
+      "Loja Ofertas"
+     ]
+    },
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Livraria Exemplo",
+      "R$ 89,90",
+      "R$ 1.249,00"
+     ],
+     "not_contains": [
+      "Ofertas"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nenhuma compra de verdade",
+   "now": "2026-10-01T12:00:00-03:00",
+   "params": {
+    "planilha": "planilha-exemplo"
+   },
+   "responses": [],
+   "event": {
+    "items": [
+     {
+      "id": "g4",
+      "from": "news@lojaexemplo.com",
+      "from_name": "Loja Exemplo",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Seu pedido confirmado te espera no carrinho",
+      "snippet": "Finalize e ganhe frete grátis",
+      "date": "2026-10-01T09:00:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": true
+     }
+    ]
+   },
+   "judgments": {
+    "compra": {
+     "carrinho": 0.1
+    }
+   },
+   "expect": [
+    {
+     "capability": "sheets.append",
+     "count": 0
+    },
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "compra sem valor no e-mail e outra aba",
+   "now": "2026-10-03T18:00:00-03:00",
+   "params": {
+    "planilha": "planilha-exemplo",
+    "intervalo": "Casa!A:D"
+   },
+   "responses": [],
+   "event": {
+    "items": [
+     {
+      "id": "g5",
+      "from": "contato@moveisexemplo.com.br",
+      "from_name": "Móveis Exemplo",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Recebemos seu pedido",
+      "snippet": "Seu pedido 77 foi recebido e está em separação.",
+      "date": "2026-10-03T17:00:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": false
+     },
+     {
+      "id": "g6",
+      "from": "vendas@ferragemexemplo.com.br",
+      "from_name": "Ferragem Exemplo",
+      "to": [
+       "eu@exemplo.com"
+      ],
+      "subject": "Compra realizada",
+      "snippet": "Valor: R$ 42,50 no cartão",
+      "date": "2026-10-03T16:00:00-03:00",
+      "labels": [
+       "INBOX"
+      ],
+      "replied": false,
+      "unread": true,
+      "can_unsubscribe": false
+     }
+    ]
+   },
+   "judgments": {
+    "compra": {
+     "pedido 77": 0.85,
+     "42,50": 0.9
+    }
+   },
+   "expect": [
+    {
+     "capability": "sheets.append",
+     "count": 1,
+     "contains": [
+      "Casa!A:D",
+      "Ferragem Exemplo",
+      "42.5",
+      "03/10/2026"
+     ],
+     "not_contains": [
+      "Móveis Exemplo"
+     ]
+    },
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Ferragem Exemplo",
+      "R$ 42,50",
+      "anote à mão",
+      "Móveis Exemplo"
+     ]
+    }
+   ]
+  }
+ ]
+}

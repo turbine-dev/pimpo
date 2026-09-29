@@ -1,0 +1,208 @@
+{
+ "name": "Apagar luzes esquecidas",
+ "description": "No horário que você escolher, apaga pelo Home Assistant as luzes que ficaram acesas e diz quais foram. Confere a cada 15 minutos e age uma vez por noite.",
+ "manifest": {
+  "schedule": "*/15 * * * *",
+  "capabilities": [
+   "ha.states",
+   "ha.call",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "horario",
+    "label": "Horário",
+    "type": "time",
+    "default": "00:00"
+   },
+   {
+    "name": "manter",
+    "label": "Luzes que podem ficar acesas",
+    "type": "text",
+    "default": "",
+    "help": "Parte do nome ou do entity_id, separadas por vírgula. Por exemplo: varanda, light.jardim"
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "function minutos(hhmm) {\n  const p = hhmm.split(\":\");\n  return Number(p[0]) * 60 + Number(p[1]);\n}\n\nasync function run() {\n  const agora = now();\n  const passou = (minutos(dates.format(agora, \"HH:mm\")) - minutos(params.horario) + 1440) % 1440;\n  if (passou >= 60) return;\n  const dia = dates.format(dates.addHours(agora, -passou / 60), \"yyyy-MM-dd\");\n  if (state.get(\"ultimo\") === dia) return;\n  state.set(\"ultimo\", dia);\n\n  const manter = params.manter.split(\",\").map(s => s.trim().toLowerCase()).filter(Boolean);\n  const acesas = (await ha.states({domain: \"light\"})).filter(l => l.state === \"on\" && !manter.some(k =>\n    ((l.name || \"\") + \" \" + l.entity_id).toLowerCase().indexOf(k) !== -1));\n  if (!acesas.length) return;\n  for (const l of acesas) await ha.call({domain: \"light\", service: \"turn_off\", entity_id: l.entity_id});\n  await notify.send({text: \"💡 Apaguei \" + (acesas.length === 1 ? \"1 luz que tinha ficado acesa: \" : acesas.length + \" luzes que tinham ficado acesas: \") +\n    acesas.map(l => l.name || l.entity_id).join(\", \") + \".\"});\n}\n",
+ "tests": [
+  {
+   "name": "meia-noite, duas acesas e uma na lista para manter",
+   "now": "2026-10-02T00:00:00-03:00",
+   "params": {
+    "manter": "varanda"
+   },
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "light.sala",
+       "state": "on",
+       "name": "Luz da sala",
+       "changed": "2026-10-01T19:00:00-03:00"
+      },
+      {
+       "entity_id": "light.cozinha",
+       "state": "on",
+       "name": "Luz da cozinha",
+       "changed": "2026-10-01T20:00:00-03:00"
+      },
+      {
+       "entity_id": "light.quarto",
+       "state": "off",
+       "name": "Luz do quarto",
+       "changed": "2026-10-01T22:00:00-03:00"
+      },
+      {
+       "entity_id": "light.varanda",
+       "state": "on",
+       "name": "Luz da varanda",
+       "changed": "2026-10-01T18:00:00-03:00"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "ha.call",
+     "count": 2,
+     "contains": [
+      "light.sala",
+      "light.cozinha",
+      "turn_off"
+     ],
+     "not_contains": [
+      "light.varanda",
+      "light.quarto"
+     ]
+    },
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Apaguei 2 luzes",
+      "Luz da sala",
+      "Luz da cozinha"
+     ],
+     "not_contains": [
+      "varanda"
+     ]
+    }
+   ],
+   "expect_state": {
+    "ultimo": "2026-10-02"
+   }
+  },
+  {
+   "name": "tudo apagado",
+   "now": "2026-10-02T00:15:00-03:00",
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "light.sala",
+       "state": "off",
+       "name": "Luz da sala",
+       "changed": "2026-10-01T23:00:00-03:00"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "ha.call",
+     "count": 0
+    },
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "já apagou nesta noite, não repete",
+   "now": "2026-10-01T23:30:00-03:00",
+   "params": {
+    "horario": "23:15"
+   },
+   "state": {
+    "ultimo": "2026-10-01"
+   },
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "light.sala",
+       "state": "on",
+       "name": "Luz da sala",
+       "changed": "2026-10-01T19:00:00-03:00"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "ha.call",
+     "count": 0
+    },
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "outro horário, rodada atrasada ainda age",
+   "now": "2026-10-01T23:45:00-03:00",
+   "params": {
+    "horario": "23:15"
+   },
+   "state": {
+    "ultimo": "2026-09-30"
+   },
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "light.escritorio",
+       "state": "on",
+       "name": "",
+       "changed": "2026-10-01T19:00:00-03:00"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "ha.call",
+     "count": 1,
+     "contains": [
+      "light.escritorio"
+     ]
+    },
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Apaguei 1 luz",
+      "light.escritorio"
+     ]
+    }
+   ],
+   "expect_state": {
+    "ultimo": "2026-10-01"
+   }
+  }
+ ]
+}

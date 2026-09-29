@@ -1,0 +1,177 @@
+{
+ "name": "Resumo semanal de um tema",
+ "description": "Todo domingo, pesquisa na web o tema que você escolher e manda os resultados mais relevantes, com links, sem repetir os da semana anterior.",
+ "manifest": {
+  "schedule": "0 10 * * 0",
+  "capabilities": [
+   "web.search",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "judgments": {
+   "relevante": "Este resultado de busca traz informação útil e atual sobre o tema pedido (campo tema), e não é propaganda, página genérica, lista de links ou algo fora do tema?"
+  },
+  "params": [
+   {
+    "name": "tema",
+    "label": "Tema",
+    "type": "text",
+    "default": "inteligência artificial"
+   },
+   {
+    "name": "quantidade",
+    "label": "Quantos resultados enviar",
+    "type": "number",
+    "default": 5
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const tema = params.tema.trim();\n  const quantidade = Math.min(10, Math.max(1, Math.round(params.quantidade)));\n  const enviados = state.get(\"enviados\") || [];\n  const resultados = await web.search({query: tema + \" novidades da semana\", count: 10});\n\n  const escolhidos = [];\n  for (const r of resultados) {\n    if (escolhidos.length >= quantidade) break;\n    if (!r.url || enviados.indexOf(r.url) >= 0) continue;\n    const j = await judge.relevante({tema: tema, title: r.title, url: r.url, snippet: r.snippet});\n    if (j.p >= 0.5) escolhidos.push(r);\n  }\n\n  if (escolhidos.length === 0) {\n    log(\"Nenhum resultado novo e relevante sobre \" + tema + \".\");\n    return;\n  }\n\n  const linhas = escolhidos.map(function (r) { return \"• \" + r.title + \" — \" + r.url; });\n  await notify.send({text: \"🔎 \" + tema + \" nesta semana:\\n\" + linhas.join(\"\\n\")});\n  state.set(\"enviados\", enviados.concat(escolhidos.map(function (r) { return r.url; })).slice(-100));\n}\n",
+ "tests": [
+  {
+   "name": "semana normal: só os relevantes",
+   "now": "2026-10-04T13:00:00Z",
+   "responses": [
+    {
+     "capability": "web.search",
+     "result": [
+      {
+       "title": "Novo modelo de linguagem aberto é lançado",
+       "url": "https://exemplo.com/noticias/modelo-aberto",
+       "snippet": "Laboratório publica pesos do modelo."
+      },
+      {
+       "title": "Compre cursos de IA com 90% de desconto",
+       "url": "https://loja.exemplo.com/cursos",
+       "snippet": "Oferta imperdível."
+      },
+      {
+       "title": "Governo discute regras para uso de IA",
+       "url": "https://exemplo.com/noticias/regras-ia",
+       "snippet": "Projeto de lei avança no Senado."
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "relevante": {
+     "modelo-aberto": 0.9,
+     "loja.exemplo.com": 0.05,
+     "regras-ia": 0.8
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "inteligência artificial",
+      "Novo modelo de linguagem aberto",
+      "https://exemplo.com/noticias/modelo-aberto",
+      "https://exemplo.com/noticias/regras-ia"
+     ],
+     "not_contains": [
+      "desconto"
+     ]
+    }
+   ],
+   "expect_state": {
+    "enviados": [
+     "https://exemplo.com/noticias/modelo-aberto",
+     "https://exemplo.com/noticias/regras-ia"
+    ]
+   }
+  },
+  {
+   "name": "nada relevante: não avisa",
+   "now": "2026-10-04T13:00:00Z",
+   "responses": [
+    {
+     "capability": "web.search",
+     "result": [
+      {
+       "title": "O que é inteligência artificial? Definição",
+       "url": "https://dicionario.exemplo.com/ia",
+       "snippet": "Verbete."
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "outro tema, pula o já enviado e respeita a quantidade",
+   "now": "2026-10-11T13:00:00Z",
+   "params": {
+    "tema": "energia solar",
+    "quantidade": 1
+   },
+   "state": {
+    "enviados": [
+     "https://exemplo.com/solar/antigo"
+    ]
+   },
+   "responses": [
+    {
+     "capability": "web.search",
+     "result": [
+      {
+       "title": "Leilão de energia solar bate recorde",
+       "url": "https://exemplo.com/solar/antigo",
+       "snippet": "Semana passada."
+      },
+      {
+       "title": "Painéis mais baratos chegam ao mercado",
+       "url": "https://exemplo.com/solar/paineis",
+       "snippet": "Preço cai 20%."
+      },
+      {
+       "title": "Nova usina solar no Nordeste",
+       "url": "https://exemplo.com/solar/usina",
+       "snippet": "Capacidade de 500 MW."
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "relevante": {
+     "solar/antigo": 0.9,
+     "solar/paineis": 0.9,
+     "solar/usina": 0.9
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "energia solar",
+      "Painéis mais baratos",
+      "solar/paineis"
+     ],
+     "not_contains": [
+      "solar/antigo",
+      "solar/usina"
+     ]
+    }
+   ],
+   "expect_state": {
+    "enviados": [
+     "https://exemplo.com/solar/antigo",
+     "https://exemplo.com/solar/paineis"
+    ]
+   }
+  }
+ ]
+}

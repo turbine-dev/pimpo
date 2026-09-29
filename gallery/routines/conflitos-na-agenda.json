@@ -1,0 +1,212 @@
+{
+ "name": "Conflitos na agenda",
+ "description": "Uma vez por dia, procura compromissos que se sobrepõem nos próximos dias e avisa só quando encontra algum. Eventos de dia inteiro ficam de fora.",
+ "manifest": {
+  "schedule": "0 8 * * *",
+  "capabilities": [
+   "calendar.events",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "dias",
+    "label": "Olhar os próximos (dias)",
+    "type": "number",
+    "default": 7
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const hoje = dates.today();\n  const eventos = (await calendar.events({from: hoje, to: dates.startOfDay(hoje, params.dias)}))\n    .filter(e => e.start && e.end && e.start.indexOf(\"T\") !== -1)\n    .sort((a, b) => dates.isBefore(a.start, b.start) ? -1 : dates.isBefore(b.start, a.start) ? 1 : 0);\n  const conflitos = [];\n  for (let i = 0; i < eventos.length; i++) {\n    for (let j = i + 1; j < eventos.length; j++) {\n      const a = eventos[i], b = eventos[j];\n      if (!dates.isBefore(b.start, a.end)) break;\n      if (dates.isBefore(a.start, b.end)) conflitos.push([a, b]);\n    }\n  }\n  if (!conflitos.length) return;\n  const hora = e => dates.format(e.start, \"HH:mm\") + \"–\" + dates.format(e.end, \"HH:mm\");\n  const linhas = conflitos.map(([a, b]) => \"• \" + dates.format(a.start, \"EEE, dd/MM\") + \": \" +\n    a.title + \" (\" + hora(a) + \") × \" + b.title + \" (\" + hora(b) + \")\");\n  await notify.send({text: \"⚠️ \" + (conflitos.length === 1 ? \"1 conflito\" : conflitos.length + \" conflitos\") +\n    \" na agenda dos próximos \" + params.dias + \" dias:\\n\" + linhas.join(\"\\n\")});\n}\n",
+ "tests": [
+  {
+   "name": "dois conflitos",
+   "now": "2026-10-01T08:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e1",
+       "title": "Reunião de vendas",
+       "start": "2026-10-01T10:00:00-03:00",
+       "end": "2026-10-01T11:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e2",
+       "title": "Consulta médica",
+       "start": "2026-10-01T10:30:00-03:00",
+       "end": "2026-10-01T11:30:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Pessoal"
+      },
+      {
+       "id": "e3",
+       "title": "Almoço com equipe",
+       "start": "2026-10-01T12:00:00-03:00",
+       "end": "2026-10-01T13:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e4",
+       "title": "Planejamento trimestral",
+       "start": "2026-10-05T14:00:00-03:00",
+       "end": "2026-10-05T17:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e5",
+       "title": "Entrevista de candidato",
+       "start": "2026-10-05T15:00:00-03:00",
+       "end": "2026-10-05T15:45:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "2 conflitos",
+      "Reunião de vendas (10:00–11:00) × Consulta médica (10:30–11:30)",
+      "Planejamento trimestral",
+      "Entrevista de candidato",
+      "05/10"
+     ],
+     "not_contains": [
+      "Almoço"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "sem conflitos, colados um no outro",
+   "now": "2026-10-01T08:00:00-03:00",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e6",
+       "title": "Daily",
+       "start": "2026-10-02T09:00:00-03:00",
+       "end": "2026-10-02T09:30:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e7",
+       "title": "Revisão de código",
+       "start": "2026-10-02T09:30:00-03:00",
+       "end": "2026-10-02T10:30:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "dia inteiro não conta e janela menor",
+   "now": "2026-10-01T08:00:00-03:00",
+   "params": {
+    "dias": 2
+   },
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e8",
+       "title": "Feriado",
+       "start": "2026-10-02",
+       "end": "2026-10-03",
+       "location": "",
+       "attendees": [],
+       "calendar": "Feriados"
+      },
+      {
+       "id": "e9",
+       "title": "Dentista",
+       "start": "2026-10-02T14:00:00-03:00",
+       "end": "2026-10-02T15:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Pessoal"
+      },
+      {
+       "id": "e10",
+       "title": "Call com fornecedor",
+       "start": "2026-10-02T14:30:00-03:00",
+       "end": "2026-10-02T15:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e11",
+       "title": "Workshop",
+       "start": "2026-10-06T09:00:00-03:00",
+       "end": "2026-10-06T12:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e12",
+       "title": "Treinamento",
+       "start": "2026-10-06T10:00:00-03:00",
+       "end": "2026-10-06T11:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Trabalho"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "1 conflito",
+      "Dentista",
+      "Call com fornecedor",
+      "próximos 2 dias"
+     ],
+     "not_contains": [
+      "Feriado",
+      "Workshop",
+      "Treinamento"
+     ]
+    }
+   ]
+  }
+ ]
+}

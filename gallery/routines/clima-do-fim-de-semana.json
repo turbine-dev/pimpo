@@ -1,0 +1,247 @@
+{
+ "name": "Clima do fim de semana",
+ "description": "Sexta à tarde, a previsão de sábado e domingo na sua cidade numa mensagem só.",
+ "manifest": {
+  "schedule": "0 16 * * 5",
+  "capabilities": [
+   "http.getJSON:api.open-meteo.com",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "cidade",
+    "label": "Cidade",
+    "type": "location",
+    "default": {
+     "name": "São Paulo",
+     "latitude": -23.55,
+     "longitude": -46.63,
+     "timezone": "America/Sao_Paulo"
+    }
+   },
+   {
+    "name": "chuva",
+    "label": "Marcar chuva a partir de (% de chuva)",
+    "type": "number",
+    "default": 50
+   },
+   {
+    "name": "so_com_chuva",
+    "label": "Só avisar se houver chuva no fim de semana",
+    "type": "boolean",
+    "default": false
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "function tempo(code) {\n  if (code === 0) return \"céu limpo\";\n  if (code === 1) return \"predominantemente limpo\";\n  if (code === 2) return \"parcialmente nublado\";\n  if (code === 3) return \"nublado\";\n  if (code === 45 || code === 48) return \"neblina\";\n  if (code >= 51 && code <= 57) return \"garoa\";\n  if (code >= 61 && code <= 67) return \"chuva\";\n  if (code >= 71 && code <= 77) return \"neve\";\n  if (code >= 80 && code <= 82) return \"pancadas de chuva\";\n  if (code === 85 || code === 86) return \"pancadas de neve\";\n  if (code >= 95) return \"trovoadas\";\n  return \"\";\n}\n\nasync function run() {\n  const w = await http.getJSON(\"https://api.open-meteo.com/v1/forecast?latitude=\" + params.cidade.latitude + \"&longitude=\" + params.cidade.longitude + \"&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7\");\n  const d = w && w.daily;\n  if (!d || !d.time) {\n    log(\"Previsão indisponível.\");\n    return;\n  }\n  const hoje = dates.today().slice(0, 10);\n  const linhas = [];\n  let choveAlgumDia = false;\n  for (let i = 0; i < d.time.length && linhas.length < 2; i++) {\n    const dia = d.time[i];\n    if (dia < hoje) continue;\n    const wd = dates.weekday(dia);\n    if (wd !== 6 && !(wd === 0 && (linhas.length === 1 || dia === hoje))) continue;\n    const chance = d.precipitation_probability_max ? d.precipitation_probability_max[i] : null;\n    const chove = typeof chance === \"number\" && chance >= params.chuva;\n    if (chove) choveAlgumDia = true;\n    let linha = (chove ? \"☔ \" : \"• \") + (wd === 6 ? \"Sábado\" : \"Domingo\") + \" (\" + dates.format(dia, \"d/MM\") + \"): \" +\n      Math.round(d.temperature_2m_min[i]) + \"° a \" + Math.round(d.temperature_2m_max[i]) + \"°\";\n    const t = d.weather_code ? tempo(d.weather_code[i]) : \"\";\n    if (t) linha += \", \" + t;\n    if (typeof chance === \"number\") linha += \", \" + chance + \"% de chuva\";\n    linhas.push(linha);\n  }\n  if (linhas.length === 0) {\n    log(\"A previsão não chega ao fim de semana.\");\n    return;\n  }\n  if (params.so_com_chuva && !choveAlgumDia) {\n    log(\"Fim de semana sem chuva prevista.\");\n    return;\n  }\n  await notify.send({text: \"🌤️ Fim de semana em \" + params.cidade.name + \":\\n\" + linhas.join(\"\\n\")});\n}\n",
+ "tests": [
+  {
+   "name": "sexta: sábado seco e domingo chuvoso",
+   "now": "2026-10-02T19:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "time": [
+        "2026-10-02",
+        "2026-10-03",
+        "2026-10-04",
+        "2026-10-05",
+        "2026-10-06",
+        "2026-10-07",
+        "2026-10-08"
+       ],
+       "weather_code": [
+        3,
+        2,
+        63,
+        61,
+        1,
+        0,
+        0
+       ],
+       "temperature_2m_max": [
+        24.1,
+        27.6,
+        21.2,
+        20,
+        25,
+        26,
+        27
+       ],
+       "temperature_2m_min": [
+        16.4,
+        17.2,
+        15.8,
+        14,
+        15,
+        16,
+        17
+       ],
+       "precipitation_probability_max": [
+        30,
+        10,
+        85,
+        70,
+        5,
+        0,
+        0
+       ]
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "São Paulo",
+      "Sábado (3/10): 17° a 28°, parcialmente nublado, 10% de chuva",
+      "☔ Domingo (4/10): 16° a 21°, chuva, 85% de chuva"
+     ],
+     "not_contains": [
+      "5/10",
+      "2/10"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "só com chuva pedido e fim de semana seco: não avisa",
+   "now": "2026-10-02T19:00:00Z",
+   "params": {
+    "so_com_chuva": true
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "time": [
+        "2026-10-02",
+        "2026-10-03",
+        "2026-10-04"
+       ],
+       "weather_code": [
+        0,
+        0,
+        1
+       ],
+       "temperature_2m_max": [
+        30,
+        31,
+        29
+       ],
+       "temperature_2m_min": [
+        18,
+        19,
+        18
+       ],
+       "precipitation_probability_max": [
+        0,
+        5,
+        10
+       ]
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "rodando num sábado: pega hoje e amanhã, com outra cidade",
+   "now": "2026-10-03T15:00:00Z",
+   "params": {
+    "cidade": {
+     "name": "Porto Alegre",
+     "latitude": -30.03,
+     "longitude": -51.23
+    },
+    "so_com_chuva": true
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "time": [
+        "2026-10-03",
+        "2026-10-04",
+        "2026-10-05"
+       ],
+       "weather_code": [
+        95,
+        80,
+        0
+       ],
+       "temperature_2m_max": [
+        22,
+        19,
+        25
+       ],
+       "temperature_2m_min": [
+        14,
+        12,
+        13
+       ],
+       "precipitation_probability_max": [
+        90,
+        60,
+        0
+       ]
+      }
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Porto Alegre",
+      "Sábado (3/10)",
+      "trovoadas",
+      "Domingo (4/10)",
+      "pancadas de chuva"
+     ],
+     "not_contains": [
+      "5/10"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "resposta sem previsão diária: não avisa",
+   "now": "2026-10-02T19:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "error": true,
+      "reason": "Parameter out of range"
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  }
+ ]
+}

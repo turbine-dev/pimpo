@@ -1,0 +1,327 @@
+{
+ "name": "Terremotos por perto",
+ "description": "A cada 3 horas, confere os terremotos registrados pelo USGS e avisa dos que foram fortes e perto do lugar escolhido, sem repetir.",
+ "manifest": {
+  "schedule": "0 */3 * * *",
+  "capabilities": [
+   "http.getJSON:earthquake.usgs.gov",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "local",
+    "label": "Lugar",
+    "type": "location",
+    "default": {
+     "name": "São Paulo",
+     "latitude": -23.55,
+     "longitude": -46.63,
+     "timezone": "America/Sao_Paulo"
+    }
+   },
+   {
+    "name": "raio",
+    "label": "Distância máxima (km)",
+    "type": "number",
+    "default": 1000
+   },
+   {
+    "name": "magnitude",
+    "label": "Magnitude mínima",
+    "type": "number",
+    "default": 4
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "function distanciaKm(lat1, lon1, lat2, lon2) {\n  const r = Math.PI / 180;\n  const dLat = (lat2 - lat1) * r;\n  const dLon = (lon2 - lon1) * r;\n  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +\n    Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(dLon / 2) * Math.sin(dLon / 2);\n  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));\n}\n\nfunction numero(v, casas) {\n  return v.toFixed(casas).replace(\".\", \",\");\n}\n\nasync function run() {\n  const feed = await http.getJSON(\"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson\");\n  const avisados = state.get(\"avisados\") || [];\n  const novos = [];\n  for (const f of (feed && feed.features) || []) {\n    const p = f.properties || {};\n    const c = f.geometry && f.geometry.coordinates;\n    if (!f.id || !c || typeof p.mag !== \"number\") continue;\n    if (p.mag < params.magnitude) continue;\n    if (avisados.indexOf(f.id) >= 0) continue;\n    const km = distanciaKm(params.local.latitude, params.local.longitude, c[1], c[0]);\n    if (km > params.raio) continue;\n    novos.push({id: f.id, mag: p.mag, lugar: p.place || \"local não informado\", quando: p.time, url: p.url, km: km});\n  }\n\n  if (novos.length === 0) {\n    log(\"Nenhum terremoto novo perto de \" + params.local.name + \".\");\n    return;\n  }\n\n  novos.sort(function (a, b) { return b.mag - a.mag; });\n  const linhas = novos.map(function (q) {\n    let linha = \"• M \" + numero(q.mag, 1) + \" — \" + q.lugar + \", a \" + Math.round(q.km) + \" km\";\n    if (typeof q.quando === \"number\") linha += \", \" + dates.format(new Date(q.quando).toISOString(), \"dd/MM 'às' HH:mm\");\n    if (q.url) linha += \" — \" + q.url;\n    return linha;\n  });\n  await notify.send({text: \"🌋 Terremoto perto de \" + params.local.name + \":\\n\" + linhas.join(\"\\n\")});\n  state.set(\"avisados\", avisados.concat(novos.map(function (q) { return q.id; })).slice(-200));\n}\n",
+ "tests": [
+  {
+   "name": "um terremoto forte e perto, outros longe ou fracos",
+   "now": "2026-10-06T15:00:00Z",
+   "params": {
+    "local": {
+     "name": "Santiago",
+     "latitude": -33.45,
+     "longitude": -70.67
+    },
+    "raio": 500,
+    "magnitude": 4.5
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "type": "FeatureCollection",
+      "metadata": {
+       "count": 3
+      },
+      "features": [
+       {
+        "type": "Feature",
+        "id": "us7000q1ab",
+        "properties": {
+         "mag": 5.3,
+         "place": "45 km SW of Valparaíso, Chile",
+         "time": 1791295200000,
+         "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000q1ab"
+        },
+        "geometry": {
+         "type": "Point",
+         "coordinates": [
+          -71.9,
+          -33.3,
+          30.2
+         ]
+        }
+       },
+       {
+        "type": "Feature",
+        "id": "us7000q1cd",
+        "properties": {
+         "mag": 6.1,
+         "place": "Tonga Islands",
+         "time": 1791291600000,
+         "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000q1cd"
+        },
+        "geometry": {
+         "type": "Point",
+         "coordinates": [
+          -174.8,
+          -18.9,
+          10
+         ]
+        }
+       },
+       {
+        "type": "Feature",
+        "id": "us7000q1ef",
+        "properties": {
+         "mag": 3.1,
+         "place": "20 km N of Santiago, Chile",
+         "time": 1791288000000,
+         "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000q1ef"
+        },
+        "geometry": {
+         "type": "Point",
+         "coordinates": [
+          -70.6,
+          -33.3,
+          90
+         ]
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Santiago",
+      "M 5,3",
+      "Valparaíso",
+      "us7000q1ab",
+      "06/10 às 14:00"
+     ],
+     "not_contains": [
+      "Tonga",
+      "us7000q1ef"
+     ]
+    }
+   ],
+   "expect_state": {
+    "avisados": [
+     "us7000q1ab"
+    ]
+   }
+  },
+  {
+   "name": "já avisado antes: não repete",
+   "now": "2026-10-06T18:00:00Z",
+   "params": {
+    "local": {
+     "name": "Santiago",
+     "latitude": -33.45,
+     "longitude": -70.67
+    },
+    "raio": 500,
+    "magnitude": 4.5
+   },
+   "state": {
+    "avisados": [
+     "us7000q1ab"
+    ]
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "type": "FeatureCollection",
+      "features": [
+       {
+        "type": "Feature",
+        "id": "us7000q1ab",
+        "properties": {
+         "mag": 5.3,
+         "place": "45 km SW of Valparaíso, Chile",
+         "time": 1791295200000,
+         "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000q1ab"
+        },
+        "geometry": {
+         "type": "Point",
+         "coordinates": [
+          -71.9,
+          -33.3,
+          30.2
+         ]
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ],
+   "expect_state": {
+    "avisados": [
+     "us7000q1ab"
+    ]
+   }
+  },
+  {
+   "name": "dia calmo: feed vazio, nada é enviado",
+   "now": "2026-10-06T15:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "type": "FeatureCollection",
+      "features": []
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "dois novos perto, um já avisado: uma mensagem com os dois, mais forte primeiro",
+   "now": "2026-10-06T15:00:00Z",
+   "params": {
+    "local": {
+     "name": "Lima",
+     "latitude": -12.05,
+     "longitude": -77.04
+    },
+    "raio": 300,
+    "magnitude": 4
+   },
+   "state": {
+    "avisados": [
+     "us7000old1"
+    ]
+   },
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "type": "FeatureCollection",
+      "features": [
+       {
+        "type": "Feature",
+        "id": "us7000a111",
+        "properties": {
+         "mag": 4.2,
+         "place": "30 km W of Lima, Peru",
+         "time": 1791295200000,
+         "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000a111"
+        },
+        "geometry": {
+         "type": "Point",
+         "coordinates": [
+          -77.3,
+          -12.1,
+          40
+         ]
+        }
+       },
+       {
+        "type": "Feature",
+        "id": "us7000a222",
+        "properties": {
+         "mag": 5.0,
+         "place": "80 km S of Lima, Peru",
+         "time": 1791298800000,
+         "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000a222"
+        },
+        "geometry": {
+         "type": "Point",
+         "coordinates": [
+          -76.9,
+          -12.8,
+          35
+         ]
+        }
+       },
+       {
+        "type": "Feature",
+        "id": "us7000old1",
+        "properties": {
+         "mag": 4.8,
+         "place": "Lima, Peru",
+         "time": 1791280000000,
+         "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us7000old1"
+        },
+        "geometry": {
+         "type": "Point",
+         "coordinates": [
+          -77.0,
+          -12.0,
+          50
+         ]
+        }
+       }
+      ]
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "M 5,0",
+      "M 4,2",
+      "80 km S of Lima"
+     ],
+     "not_contains": [
+      "us7000old1"
+     ]
+    }
+   ],
+   "expect_state": {
+    "avisados": [
+     "us7000old1",
+     "us7000a222",
+     "us7000a111"
+    ]
+   }
+  }
+ ]
+}

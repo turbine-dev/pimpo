@@ -157,6 +157,12 @@ If a channel keeps failing for three minutes (Telegram, Discord, Slack or Signal
 
 Browse ready-made routines, filtered by what they can touch. Pimpo checks the author's signature, runs the routine's tests, and audits what it really calls before installing. To share one of yours, use **Publicar** on its page.
 
+## Skills
+
+Skills written for OpenClaw, Hermes or agentskills.io (a folder with a `SKILL.md`) work in Pimpo as assistants. In **Assistentes › Skills**, paste a GitHub link to the skill's folder or send its `.zip`. Pimpo shows what the skill is, its full text, and which capabilities its text seems to need, all unchecked except those; **you choose what it may use**, and a skill granted nothing can only give advice. Then pick it like any assistant in a chat.
+
+A skill is text someone else wrote, so Pimpo never treats it as your words: every action still passes your rules and approvals, the scripts it carries are not run, a skill the protection list reports is refused, and a skill changed on disk stops until you install it again.
+
 ## Suggestions
 
 Once a day Pimpo may notice something you repeat and offer a routine: "you pay this bill every month; want a routine for it?". The suggestion arrives in **Precisa de você** and on your channel, and says what Pimpo would do. **Sim, aprenda** starts it the usual way (you watch it once and approve it); **Não, obrigado** makes sure it does not come back. For this Pimpo looks only at who writes to you and about what, your upcoming events and your routines, never at what emails say. Turn it off in **Ajustes › Notificações › Sugestões**.
