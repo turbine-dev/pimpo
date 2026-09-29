@@ -5061,9 +5061,9 @@
      }
     ]
    },
-   "hash": "a65a40ff3033a292e6bb6e917ce6c0013b9c625e1d8bcebe03cffd9abfec6385",
-   "signature": "BxRVIgS63mODDXiBT8b0+hLQWyOLWwhTWEe897rUIbbSN6yv8RleIpmY7oSlKRHheS5xwaVQmC3YO1xcF/ySAQ==",
-   "published": "2026-09-29T16:57:47Z"
+   "hash": "117e55eb0d5f8f312ef14250622b54be82eaeef4b1dfe6cef0443adc8ebfb33f",
+   "signature": "L7tF3QB9t3n1nXla1Aj/5OwpZeQ2c3ZnLdSvlWYZYZQpLiuzzjZA2jhpoEDAn/u5RIL5raXjYkTO9nuk8NtaAQ==",
+   "published": "2026-09-29T17:33:21Z"
   },
   {
    "id": "morning-brief",
@@ -9226,9 +9226,9 @@
      }
     ]
    },
-   "hash": "f8254778e64ec78a6602e89e4c1a2d84f6b5be638ed7640758cd055be59442f4",
-   "signature": "7o5yHiOesFVkSzGYVCrsXDE/apLk37it+Uw2VafQLqKt+FRqJ0mAxdZUqmgWInYGm5AWTNsLygUImRHfP4CdCA==",
-   "published": "2026-09-29T16:57:47Z"
+   "hash": "2d4af6c582d7d98a3e07ddb805870b7c6b65b75755e013ab2af1550a4ada8f55",
+   "signature": "v7GTuZ9+ZfLnxlFsc9p/Yw+GPeCIONOvlzq8iOQ8QE4E/3VnRtOOG7bA8hiQlv9PDAnii9zE8Ql7hvrGZZouAQ==",
+   "published": "2026-09-29T17:33:21Z"
   },
   {
    "id": "volta-ao-estoque",

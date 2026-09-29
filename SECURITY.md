@@ -2,7 +2,13 @@
 
 ## Reporting a vulnerability
 
-Please report privately, not in a public issue: use GitHub's **Report a vulnerability** button on this repository, or email owner@example.com with "Pimpo security" in the subject. Include what you found, how to reproduce it, and which version you ran (`pimpo version`).
+Report it on GitHub, privately, so it is not public before there is a fix:
+
+1. Open the repository's [Security](https://github.com/turbine-dev/pimpo/security) tab and choose **Report a vulnerability** (or go straight to [the form](https://github.com/turbine-dev/pimpo/security/advisories/new)).
+2. Describe what you found, how to reproduce it, and which version you ran (`pimpo version`). Leave out real keys, tokens and personal data.
+3. Submit. Only the maintainers see it, and the conversation about the fix happens there.
+
+This works like an issue, but private. For anything that is **not** a security problem, open an ordinary [issue](https://github.com/turbine-dev/pimpo/issues/new/choose) instead.
 
 What to expect:
 
