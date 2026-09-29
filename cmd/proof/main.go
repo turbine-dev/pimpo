@@ -16,14 +16,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/compiler"
+	"github.com/turbine-dev/pimpo/internal/compiler"
 	// The services' capabilities (RSS, GitHub, Todoist, Home Assistant…)
 	// join the catalog the compiler sees, as they do in the app.
-	_ "github.com/denerFernandes/pimpo/internal/connector/services"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/repo"
-	"github.com/denerFernandes/pimpo/internal/routine"
-	"github.com/denerFernandes/pimpo/internal/trace"
+	_ "github.com/turbine-dev/pimpo/internal/connector/services"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/repo"
+	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/trace"
 )
 
 type result struct {

@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector"
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/routine"
-	"github.com/denerFernandes/pimpo/internal/runtime"
-	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 type tg struct {

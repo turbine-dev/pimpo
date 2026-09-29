@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 // Automatic model choice: before a chat request, Pimpo weighs how

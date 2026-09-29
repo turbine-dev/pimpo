@@ -6,17 +6,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/i18n"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/robfig/cron/v3"
 
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/runtime"
-	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 const (

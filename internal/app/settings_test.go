@@ -9,9 +9,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/routine"
-	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/runtime"
 )
 
 func TestRoutineSettingsAndDestinations(t *testing.T) {

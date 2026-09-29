@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/event"
 )
 
 func TestQueueCancelAndFlush(t *testing.T) {

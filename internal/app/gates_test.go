@@ -17,15 +17,15 @@ import (
 	"github.com/emersion/go-imap/v2/imapserver"
 	"github.com/emersion/go-imap/v2/imapserver/imapmemserver"
 
-	"github.com/denerFernandes/pimpo/internal/approval"
-	"github.com/denerFernandes/pimpo/internal/connector/mail"
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/judge"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/policy"
-	"github.com/denerFernandes/pimpo/internal/routine"
-	"github.com/denerFernandes/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/approval"
+	"github.com/turbine-dev/pimpo/internal/connector/mail"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/judge"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/policy"
+	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/runtime"
 )
 
 type lit struct {

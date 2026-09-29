@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/event"
 )
 
 const CostEvent = "cost.recorded"

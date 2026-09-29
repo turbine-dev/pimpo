@@ -7,16 +7,16 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
-	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/i18n"
 	"math/big"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/people"
-	"github.com/denerFernandes/pimpo/internal/telegram"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/telegram"
 )
 
 const (

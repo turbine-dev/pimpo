@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	starter "github.com/denerFernandes/pimpo/gallery"
-	"github.com/denerFernandes/pimpo/internal/gallery"
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/store"
-	"github.com/denerFernandes/pimpo/internal/vault"
+	starter "github.com/turbine-dev/pimpo/gallery"
+	"github.com/turbine-dev/pimpo/internal/gallery"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/vault"
 )
 
 func (a *App) galleryRoutes() {

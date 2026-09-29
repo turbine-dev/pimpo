@@ -31,6 +31,12 @@ func TestShellPathFindsWhatTheShellFinds(t *testing.T) {
 	if err != nil || os.Getenv("SHELL") == "" {
 		t.Skip("no shell or go here")
 	}
+	// CI puts go on PATH without telling the login shell.
+	if out, err := exec.Command(os.Getenv("SHELL"), "-lc", "PATH=/usr/bin:/bin; . /etc/profile >/dev/null 2>&1; command -v go").Output(); err != nil || len(out) == 0 {
+		if out, err := exec.Command(os.Getenv("SHELL"), "-ilc", "command -v go").Output(); err != nil || len(out) == 0 {
+			t.Skip("the login shell does not know go")
+		}
+	}
 	t.Setenv("PATH", "/usr/bin:/bin")
 	ShellPath()
 	if got, err := exec.LookPath("go"); err != nil || got == "" {

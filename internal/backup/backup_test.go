@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/vault"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/vault"
 )
 
 func TestExportImportRoundTrip(t *testing.T) {

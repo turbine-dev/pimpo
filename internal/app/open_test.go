@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/desktop"
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/desktop"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 func TestDesktopWindowOpensLinksInTheBrowser(t *testing.T) {

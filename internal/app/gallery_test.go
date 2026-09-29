@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/gallery"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/routine"
-	"github.com/denerFernandes/pimpo/internal/runtime"
-	"github.com/denerFernandes/pimpo/internal/trace"
+	"github.com/turbine-dev/pimpo/internal/gallery"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/trace"
 )
 
 func TestGalleryInstallAndPublish(t *testing.T) {

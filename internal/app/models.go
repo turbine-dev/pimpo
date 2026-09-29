@@ -4,14 +4,14 @@ import (
 	"time"
 
 	"context"
-	"github.com/denerFernandes/pimpo/internal/models"
+	"github.com/turbine-dev/pimpo/internal/models"
 	"net/http"
 	"slices"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/budget"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/budget"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // API keys for model providers live in the vault; the models and their

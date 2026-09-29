@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 // Provider describes a model provider for the setup screen.

@@ -3,17 +3,17 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/denerFernandes/pimpo/internal/i18n"
-	ownerpkg "github.com/denerFernandes/pimpo/internal/owner"
+	"github.com/turbine-dev/pimpo/internal/i18n"
+	ownerpkg "github.com/turbine-dev/pimpo/internal/owner"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/denerFernandes/pimpo/internal/chatlink"
-	"github.com/denerFernandes/pimpo/internal/connector/services"
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/chatlink"
+	"github.com/turbine-dev/pimpo/internal/connector/services"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/people"
 )
 
 // Conversation channels beyond Telegram and WhatsApp: Discord, Slack and

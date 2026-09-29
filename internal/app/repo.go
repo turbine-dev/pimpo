@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/i18n"
-	"github.com/denerFernandes/pimpo/internal/repo"
-	"github.com/denerFernandes/pimpo/internal/routine"
-	"github.com/denerFernandes/pimpo/internal/runtime"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/repo"
+	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // Routines in a repository: Pimpo writes its routines to a folder (a git

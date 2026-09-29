@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/owner"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/owner"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 func TestExploreWithAnAPIModel(t *testing.T) {

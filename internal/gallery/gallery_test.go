@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/routine"
-	"github.com/denerFernandes/pimpo/internal/runtime"
-	"github.com/denerFernandes/pimpo/internal/trace"
+	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/trace"
 )
 
 var brief = routine.Routine{

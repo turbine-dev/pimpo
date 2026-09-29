@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/judge"
-	"github.com/denerFernandes/pimpo/internal/memory"
-	"github.com/denerFernandes/pimpo/internal/people"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/judge"
+	"github.com/turbine-dev/pimpo/internal/memory"
+	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // Memory keeps itself tidy: every night near-duplicate facts are checked

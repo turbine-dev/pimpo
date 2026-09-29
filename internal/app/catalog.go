@@ -3,16 +3,16 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/i18n"
 	"net/http"
 	"slices"
 	"sort"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/connector/external"
-	"github.com/denerFernandes/pimpo/internal/connector/services"
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/vault"
+	"github.com/turbine-dev/pimpo/internal/connector/external"
+	"github.com/turbine-dev/pimpo/internal/connector/services"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/vault"
 )
 
 // The catalog: connectors set up from a form in Connections. Secret fields

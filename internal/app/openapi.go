@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector/external"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/connector/external"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // Importing a REST API from its OpenAPI description: Pimpo reads it, the

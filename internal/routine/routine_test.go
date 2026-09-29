@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/runtime"
-	"github.com/denerFernandes/pimpo/internal/trace"
+	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/trace"
 )
 
 func one() *int { n := 1; return &n }

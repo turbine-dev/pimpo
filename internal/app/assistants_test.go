@@ -8,9 +8,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/voice"
+	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/voice"
 )
 
 func TestAssistantOnlyUsesItsCapabilities(t *testing.T) {

@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
-	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/connector"
 )
 
 func init() {

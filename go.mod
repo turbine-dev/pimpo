@@ -1,4 +1,4 @@
-module github.com/denerFernandes/pimpo
+module github.com/turbine-dev/pimpo
 
 go 1.26.6
 

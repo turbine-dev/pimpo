@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/approval"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/memory"
-	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/approval"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/memory"
+	"github.com/turbine-dev/pimpo/internal/people"
 )
 
 // callTool calls an MCP tool and returns its text, or the error text.

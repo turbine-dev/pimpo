@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 // Webhooks start a routine when another service calls its address: an

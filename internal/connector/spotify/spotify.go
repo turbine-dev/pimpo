@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/connector"
 )
 
 // Store keeps the client id and the refresh token (the vault).

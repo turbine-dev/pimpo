@@ -65,7 +65,7 @@ export function Catalog() {
           <input type="file" accept=".zip,.json,application/json" className="sr-only" onChange={(e) => e.target.files?.[0] && install.mutate(e.target.files[0])} />
         </label>
         <Button size="sm" variant="ghost" onClick={() => reload.mutate()} disabled={reload.isPending}>{t('catalog.reload')}</Button>
-        <a className="text-[12.5px] text-ink-3 underline" href="https://github.com/denerFernandes/pimpo/blob/main/docs/CONNECTORS.md" target="_blank" rel="noreferrer">{t('catalog.howTo')}</a>
+        <a className="text-[12.5px] text-ink-3 underline" href="https://github.com/turbine-dev/pimpo/blob/main/docs/CONNECTORS.md" target="_blank" rel="noreferrer">{t('catalog.howTo')}</a>
         {install.error && <span className="text-[12.5px] text-danger">{install.error.message}</span>}
       </div>
       {(q.data?.broken ?? []).map((b) => (

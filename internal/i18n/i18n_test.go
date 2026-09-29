@@ -68,8 +68,8 @@ func TestCatalogsMatchTheSource(t *testing.T) {
 
 func TestTranslateFollowsTheOwner(t *testing.T) {
 	tag := "de-DE"
-	Locale = func(context.Context) string { return tag }
-	defer func() { Locale = nil }()
+	SetLocale(func(context.Context) string { return tag })
+	defer SetLocale(nil)
 	ctx := context.Background()
 	if got := T(ctx, "msg.routine.created", "name", "X", "next", "9:00"); !strings.Contains(got, "X") || strings.Contains(got, "Rotina") {
 		t.Fatalf("de: %q", got)

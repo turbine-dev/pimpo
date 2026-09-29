@@ -7,11 +7,11 @@ import (
 	"slices"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector/services"
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/store"
-	"github.com/denerFernandes/pimpo/internal/sysinfo"
+	"github.com/turbine-dev/pimpo/internal/connector/services"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/sysinfo"
 )
 
 // The system panel: how busy this computer and Pimpo are, what is running

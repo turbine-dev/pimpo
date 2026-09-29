@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/denerFernandes/pimpo/internal/memory"
-	"github.com/denerFernandes/pimpo/internal/people"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/memory"
+	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // AttachMemory gives the app the owner's memory, stored under dir.

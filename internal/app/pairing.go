@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // Phones and other computers open Pimpo through an address the owner

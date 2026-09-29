@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/snapshot"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/snapshot"
 )
 
 func TestNewVersionTakesASnapshotFirst(t *testing.T) {

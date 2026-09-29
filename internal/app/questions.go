@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector"
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/i18n"
-	"github.com/denerFernandes/pimpo/internal/people"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // A routine may ask the person it works for something and act on the

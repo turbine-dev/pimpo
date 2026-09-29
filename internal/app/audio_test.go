@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 // audio.send reads the text aloud, keeps the recording and lists it with

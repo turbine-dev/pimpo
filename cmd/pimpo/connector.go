@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/connector/external"
+	"github.com/turbine-dev/pimpo/internal/connector/external"
 )
 
 // connectorCmd checks an external connector's contract before it is

@@ -28,7 +28,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -323,19 +322,6 @@ func (m *Manager) folder(it Item) string { return filepath.Join(m.Dir, it.ID) }
 func (m *Manager) Installed(it Item) bool {
 	_, err := os.Stat(filepath.Join(m.folder(it), ".complete"))
 	return err == nil
-}
-
-// FreeBytes is the room left on the disk that holds Dir.
-func FreeBytes(dir string) int64 {
-	var st syscall.Statfs_t
-	for d := dir; ; d = filepath.Dir(d) {
-		if syscall.Statfs(d, &st) == nil {
-			return int64(st.Bavail) * int64(st.Bsize)
-		}
-		if d == filepath.Dir(d) {
-			return -1
-		}
-	}
 }
 
 // Install downloads an item (and the engine a voice needs first).

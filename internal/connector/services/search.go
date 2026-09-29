@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/capability"
 )
 
 // Web search through Brave's official API, Perplexity's search API, or a

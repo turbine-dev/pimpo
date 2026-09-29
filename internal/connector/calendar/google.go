@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/connector"
 )
 
 // Google reads calendars through the Google Calendar API with an OAuth token.

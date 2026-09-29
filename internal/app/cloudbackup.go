@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/backup"
-	"github.com/denerFernandes/pimpo/internal/cloud"
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/oauth"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/backup"
+	"github.com/turbine-dev/pimpo/internal/cloud"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/oauth"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // Automatic backups to storage the owner already has. Each one is the

@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/local"
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/speech"
-	"github.com/denerFernandes/pimpo/internal/voice"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/local"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/speech"
+	"github.com/turbine-dev/pimpo/internal/voice"
 )
 
 // Models to download and run on this computer: voices for reading aloud,

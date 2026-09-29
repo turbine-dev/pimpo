@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 // Claude Code signed in with a Claude plan, and Codex signed in with

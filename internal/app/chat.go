@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/people"
-	"github.com/denerFernandes/pimpo/internal/policy"
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/policy"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 // The chat in the app: each message is an exploration that sees the

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/capability"
 )
 
 // Apple's own apps on this Mac: Reminders (which sync to the iPhone and

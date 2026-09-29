@@ -2,11 +2,11 @@ package app
 
 import (
 	"context"
-	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/i18n"
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/explore"
 )
 
 // Channel health: each channel reports how its last attempts went. One

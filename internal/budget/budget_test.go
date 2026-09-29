@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/event"
 )
 
 func TestLimitIsCheckedBeforeEachCall(t *testing.T) {

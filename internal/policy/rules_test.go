@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
-	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/event"
 )
 
 func engine(t *testing.T) *Engine {

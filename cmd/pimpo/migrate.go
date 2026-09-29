@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/app"
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/migrate"
-	"github.com/denerFernandes/pimpo/internal/snapshot"
-	"github.com/denerFernandes/pimpo/internal/vault"
+	"github.com/turbine-dev/pimpo/internal/app"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/migrate"
+	"github.com/turbine-dev/pimpo/internal/snapshot"
+	"github.com/turbine-dev/pimpo/internal/vault"
 )
 
 func migrateCmd(args []string, out io.Writer) error {

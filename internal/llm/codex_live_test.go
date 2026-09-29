@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/mcp"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/mcp"
 )
 
 // With the owner's real Codex login: it answers, sticks to a schema, calls

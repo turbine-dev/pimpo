@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/people"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 func (a *App) peopleRoutes() {

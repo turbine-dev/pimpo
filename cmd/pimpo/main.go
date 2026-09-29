@@ -20,11 +20,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/app"
-	"github.com/denerFernandes/pimpo/internal/desktop"
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/snapshot"
-	"github.com/denerFernandes/pimpo/internal/vault"
+	"github.com/turbine-dev/pimpo/internal/app"
+	"github.com/turbine-dev/pimpo/internal/desktop"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/snapshot"
+	"github.com/turbine-dev/pimpo/internal/vault"
 )
 
 var version = "dev"

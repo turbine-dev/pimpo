@@ -2,13 +2,13 @@ package app
 
 import (
 	"context"
-	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/i18n"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector/mail"
-	"github.com/denerFernandes/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/connector/mail"
+	"github.com/turbine-dev/pimpo/internal/people"
 )
 
 // pimpoSubject also accepts the old name, so saved habits keep working.

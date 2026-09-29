@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/protect"
-	"github.com/denerFernandes/pimpo/protection"
+	"github.com/turbine-dev/pimpo/internal/protect"
+	"github.com/turbine-dev/pimpo/protection"
 )
 
 const protectUsage = `usage:

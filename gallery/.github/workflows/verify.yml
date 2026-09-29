@@ -10,5 +10,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: stable }
-      - run: go install github.com/denerFernandes/pimpo/cmd/pimpo@latest
+      - run: go install github.com/turbine-dev/pimpo/cmd/pimpo@latest
       - run: pimpo gallery verify index.json

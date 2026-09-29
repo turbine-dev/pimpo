@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/remote"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/remote"
 )
 
 type tsFake struct {
