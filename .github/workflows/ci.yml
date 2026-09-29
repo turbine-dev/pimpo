@@ -51,7 +51,7 @@ jobs:
         with: { go-version-file: go.mod }
       - uses: actions/setup-node@v4
         with: { node-version-file: .nvmrc }
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@v7
         with: { args: build --snapshot --clean }
 
   desktop:
