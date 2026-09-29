@@ -24,6 +24,7 @@ export const primary: NavItem[] = [
 export const secondary: NavItem[] = [
   { to: '/gallery', label: 'nav.gallery', icon: <LibraryBig size={17} /> },
   { to: '/skills', label: 'nav.skills', icon: <Puzzle size={17} /> },
+  { to: '/phone', label: 'nav.phone', icon: <Smartphone size={17} /> },
   { to: '/connections', label: 'nav.connections', icon: <Plug size={17} /> },
   { to: '/people', label: 'nav.people', icon: <Users size={17} /> },
   { to: '/memory', label: 'nav.memory', icon: <Brain size={17} /> },

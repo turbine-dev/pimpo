@@ -187,6 +187,10 @@ export type Approval = { id: string; action: { capability: string; scope?: strin
 export type Rule = { id: string; text: string; when: { capabilities?: string[]; min_risk?: string; source?: string; args_contain?: string[]; hosts?: string[]; people?: string[]; roles?: string[] }; then: 'allow' | 'reversible' | 'ask' | 'block'; off?: boolean }
 export type CostView = { today: number; limit: number; month: number; projected_month: number; by_day: Record<string, number>; by_source: Record<string, number>; by_model?: Record<string, number>; by_job?: Record<string, number>; calls_by_model?: Record<string, number>; subscription?: { today: number; month: number; by_model: Record<string, number> } }
 
+export type PhoneShare = 'location' | 'camera' | 'shortcuts'
+export type PhonePlace = { name: string; lat?: number; lon?: number; radius?: number }
+export type PhoneState = { places: PhonePlace[]; shares: PhoneShare[]; device?: { id: string; name: string; shares: PhoneShare[]; has_key: boolean } }
+
 export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low' | 'learned'; person?: string; created: string }
 export type MemoryVersion = { hash: string; message: string; when: string }
 
@@ -240,6 +244,20 @@ export const api = {
   assistants: () => request<Assistant[]>('GET', '/api/assistants'),
   browserLogin: (url: string) => request<{ state: string }>('POST', '/api/browser/login', { url }),
   skills: () => request<InstalledSkill[]>('GET', '/api/skills'),
+  phone: () => request<PhoneState>('GET', '/api/phone'),
+  phoneShares: (shares: PhoneShare[]) => request<{ shares: PhoneShare[] }>('POST', '/api/phone/shares', { shares }),
+  phoneKey: () => request<{ key: string }>('POST', '/api/phone/key'),
+  addPlace: (p: PhonePlace) => request<PhonePlace[]>('POST', '/api/phone/places', p),
+  deletePlace: (name: string) => request<PhonePlace[]>('DELETE', `/api/phone/places/${encodeURIComponent(name)}`),
+  phoneLocation: (lat: number, lon: number, accuracy: number) => request<{ at: string[] }>('POST', '/api/phone/location', { lat, lon, accuracy }),
+  phonePhoto: async (file: File) => {
+    const form = new FormData()
+    form.append('photo', file)
+    const res = await fetch('/api/phone/photo', { method: 'POST', body: form, credentials: 'same-origin' })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new ApiError(res.status, body.error ?? res.statusText)
+    return body as { id: string; text: string; note: string }
+  },
   previewSkill: async (src: { file?: File; url?: string }) => {
     if (src.file) {
       const form = new FormData()

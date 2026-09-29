@@ -90,16 +90,22 @@ func (s *Server) valid(t string) bool {
 
 func (s *Server) auth(h http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tok := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if c, err := r.Cookie(cookie); err == nil && tok == "" {
-			tok = c.Value
-		}
-		if !s.valid(tok) {
+		if !s.valid(TokenOf(r)) {
 			WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "open the login link Pimpo printed at startup"})
 			return
 		}
 		h(w, r)
 	})
+}
+
+// TokenOf is the credential a request carries: a bearer token, or the
+// login cookie.
+func TokenOf(r *http.Request) string {
+	tok := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if c, err := r.Cookie(cookie); err == nil && tok == "" {
+		tok = c.Value
+	}
+	return tok
 }
 
 func WriteJSON(w http.ResponseWriter, status int, v any) {

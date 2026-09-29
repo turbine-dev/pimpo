@@ -121,6 +121,7 @@ Pimpo was called Zodim, and Vigia before that. When `~/.pimpo` does not exist ye
 | `models/ggml-base.bin` | The whisper.cpp model used for voice notes when no local speech-to-text model is installed. You put it there yourself. |
 | `media/` | Recent audio Pimpo made for you (the last 60). |
 | `cache/speech/` | Cached audio for **Ouvir** in the chat (the last 400). |
+| `phone/photos/` | Photos taken in **Celular** on a paired phone, for routines to read; kept on this machine and not included in exports. |
 | `browser/profile/` | Pimpo's own Chrome profile, with the sessions you signed in to for the browser; it is not included in exports. |
 | `skills/` | Installed skills, one folder each (`skills/<id>/SKILL.md` and its files); `.staging/` holds skills being reviewed. |
 | `tailscale/` | The state of the built-in Tailscale node, when **De qualquer lugar** is on. |

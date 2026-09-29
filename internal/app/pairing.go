@@ -28,6 +28,12 @@ type Device struct {
 	Hash     string    `json:"hash"`
 	Created  time.Time `json:"created"`
 	LastSeen time.Time `json:"last_seen,omitzero"`
+	// Shares are what this phone gives Pimpo (location, camera,
+	// shortcuts), chosen on the phone itself.
+	Shares []string `json:"shares,omitempty"`
+	// KeyHash is the phone's key for automations (iOS Shortcuts, Tasker):
+	// it can only report phone events, never open the app.
+	KeyHash string `json:"key_hash,omitempty"`
 }
 
 const devicesKey = "devices"

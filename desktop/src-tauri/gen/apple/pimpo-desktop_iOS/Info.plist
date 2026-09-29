@@ -51,5 +51,9 @@
 	<string>Para você falar com o Pimpo em vez de digitar.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Para transformar o que você fala em texto.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Para fotografar uma conta, um recibo ou um documento para as suas rotinas. A foto é lida no seu computador.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Para rotinas que rodam quando você chega a um lugar seu ou sai dele. A posição não é guardada.</string>
 </dict>
 </plist>

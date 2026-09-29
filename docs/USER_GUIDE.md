@@ -107,6 +107,14 @@ In **Pessoas**, invite family members as a member or a guest. They send the invi
 3. Scan the QR code with the Pimpo app, or paste the link.
 4. Lost the phone? Tap the trash icon next to it. Only that phone loses access.
 
+### The phone as part of Pimpo
+
+Open **Celular** on the paired phone and choose what it shares: **location** (arriving at and leaving your places), **camera** (photos for routines) and **shortcuts**. Only the phone itself turns these on, and the phone asks for its own permission the first time.
+
+- **Places.** Save one where you stand (**Salvar onde estou**), with a 150 m radius, or by name only. While Pimpo is open on the phone it notices arriving and leaving, at most once a minute; the position itself is never kept. For arriving with Pimpo closed, make a **key for automations** and add an automation in iOS Shortcuts or Tasker ("When I arrive home" → *Get contents of URL*, POST to `/api/phone/arrived` with `Authorization: Bearer <key>` and `{"place": "Casa"}`). The key only reports events; it cannot open Pimpo.
+- **Photos.** **Tirar foto** sends a photo of a bill, a receipt or a document; the text is read on your computer (Tesseract) and the photo stays there, under `phone/photos/`.
+- **Routines.** Ask for them as usual: "when I get home, tell me what's on tomorrow's calendar", "when I photograph a bill, remind me two days before it's due". They watch `phone.arrivals`, `phone.photos` or `phone.shortcuts` and run as soon as the phone reports, with the same rules, approvals and receipts as any other routine.
+
 ## A Pimpo on another computer or server
 
 Pimpo can run on a machine that is always on (a home server, a VPS) while the desktop app just opens it. On that machine, generate a link in **Ajustes › Abrir no celular** as for a phone. On your computer, click the Pimpo icon in the menu bar, choose **Conectar a outro Pimpo…** and paste the link. The Pimpo on your computer then stops, so the same Telegram bot and the same routines never run twice; its data stays where it was. **Usar o Pimpo deste computador** in the same menu brings it back. While connected elsewhere, notifications come from that Pimpo's channels (Telegram and others), not from this computer.
