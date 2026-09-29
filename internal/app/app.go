@@ -321,6 +321,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.announceUpgrade(ctx)
 	go a.repoLoop(ctx, 15*time.Minute)
 	go a.reminderLoop(ctx, 20*time.Second)
+	go a.aliveLoop(ctx, time.Minute)
 	a.restartListener(ctx)
 	return nil
 }

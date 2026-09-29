@@ -443,6 +443,7 @@ func (s *Service) Approve(ctx context.Context, id, actor string) (store.Routine,
 		s.Store.SaveExploration(ctx, e)
 		return store.Routine{}, err
 	}
+	repair := e.Routine != ""
 	rid, reason := e.Routine, "repaired from exploration "+id
 	if rid == "" {
 		rid, reason = slug(last.Routine.Name), "compiled from exploration "+id
@@ -460,7 +461,7 @@ func (s *Service) Approve(ctx context.Context, id, actor string) (store.Routine,
 	}
 	e.State, e.Routine, e.Error, e.Candidate = store.ExplorationDone, rid, "", nil
 	s.Store.SaveExploration(ctx, e)
-	s.Env.Events.Append(ctx, EventCompiled, actor, map[string]any{"routine": rid, "exploration": id, "attempts": len(attempts), "cost_usd": cost, "capabilities": last.Routine.Manifest.Capabilities})
+	s.Env.Events.Append(ctx, EventCompiled, actor, map[string]any{"routine": rid, "exploration": id, "attempts": len(attempts), "cost_usd": cost, "capabilities": last.Routine.Manifest.Capabilities, "repair": repair})
 	if s.Routines != nil {
 		s.Routines.Changed(ctx, rid)
 	}

@@ -84,6 +84,7 @@ The app, server messages (channels, approvals, notices), built-in connector text
 | Item | Status |
 |---|---|
 | 1.1 Known bugs | **Done** (2026-09-29): 12 bugs fixed with tests, including the liberal level letting irreversible actions through. |
+| 1.3 Real-account validation | **Tooling built** (2026-09-29): `pimpo report` and `GET /api/report` measure runs, failures, silent failures, late runs, time Pimpo was off (a heartbeat records it from now on), repairs, approvals and cost; [VALIDATION.md](VALIDATION.md) says how. On the owner's own data for 14 days: 30 runs, 4 failed, 0 silent. **Waiting on time and people:** three households for three weeks. |
 | 1.2 Setup without Claude Code | **Built** (2026-09-29): the welcome screen sets every job up from what the computer has or from one API key, testing the main model. Proof without Claude Code: DeepSeek V4 Pro through opencode, **5/5** first-attempt accepted and passing the holdout, $0.06. **Waiting on people:** five new users reaching a routine unaided; **waiting on keys:** proofs on two API providers and on a local model (Ollama has no model installed here, and the disk has 9 GB free). |
 
 ## Pending decisions for the owner
