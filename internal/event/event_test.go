@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -70,7 +71,12 @@ func TestOpenCreatesTheDataFolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.Close()
-	if fi, err := os.Stat(dir); err != nil || fi.Mode().Perm() != 0o700 {
+	fi, err := os.Stat(dir)
+	if err != nil || !fi.IsDir() {
 		t.Fatalf("folder %v %v", fi, err)
+	}
+	// Windows has no Unix permissions to check.
+	if runtime.GOOS != "windows" && fi.Mode().Perm() != 0o700 {
+		t.Fatalf("folder mode %v", fi.Mode().Perm())
 	}
 }

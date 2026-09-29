@@ -70,8 +70,9 @@ jobs:
           tag="${{ inputs.tag }}"
           if [ -n "$tag" ]; then
             version="${tag#v}"
-            # The app takes the tag's version (Windows installers need x.y.z).
-            node -e 'const f="desktop/src-tauri/tauri.conf.json",fs=require("fs"),c=JSON.parse(fs.readFileSync(f));c.version=process.argv[1].split("-")[0];fs.writeFileSync(f,JSON.stringify(c,null,2)+"\n")' "$version"
+            # The app takes the tag's whole version, which updates compare;
+            # the MSI only accepts x.y.z, so it gets the version without -beta.N.
+            node -e 'const f="desktop/src-tauri/tauri.conf.json",fs=require("fs"),c=JSON.parse(fs.readFileSync(f)),v=process.argv[1];c.version=v;c.bundle.windows={...(c.bundle.windows||{}),wix:{...((c.bundle.windows||{}).wix||{}),version:v.split("-")[0]}};fs.writeFileSync(f,JSON.stringify(c,null,2)+"\n")' "$version"
           else
             version="$(node -p 'require("./desktop/src-tauri/tauri.conf.json").version')-$(git rev-parse --short HEAD)"
           fi
@@ -97,9 +98,11 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           # Unset what is empty, so a fork without secrets still builds.
-          for v in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+          for v in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD; do
             [ -n "${!v}" ] || unset "$v"
           done
           if [ "$RUNNER_OS" = macOS ] && [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
@@ -107,7 +110,13 @@ jobs:
           fi
           cd desktop
           npm ci --no-audit --no-fund
-          npx tauri build --ci --target "${{ matrix.target }}" --bundles "${{ matrix.bundles }}"
+          # With the updater's key, the bundles the updater installs are
+          # made and signed too.
+          extra=()
+          if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+            extra=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
+          fi
+          npx tauri build --ci --target "${{ matrix.target }}" --bundles "${{ matrix.bundles }}" "${extra[@]}"
 
       - name: Collect installers
         id: collect
@@ -120,12 +129,19 @@ jobs:
           arch="${{ matrix.goarch }}"
           shopt -s nullglob
           for f in "$bundle"/dmg/*.dmg; do cp "$f" "$out/Pimpo_${v}_macos_${arch}.dmg"; done
-          for d in "$bundle"/macos/*.app; do (cd "$(dirname "$d")" && tar -czf "$out/Pimpo_${v}_macos_${arch}.app.tar.gz" "$(basename "$d")"); done
+          # The updater's own archive of the app, signed, when it was made.
+          for f in "$bundle"/macos/*.app.tar.gz; do cp "$f" "$out/Pimpo_${v}_macos_${arch}.app.tar.gz"; done
+          for f in "$bundle"/macos/*.app.tar.gz.sig; do cp "$f" "$out/Pimpo_${v}_macos_${arch}.app.tar.gz.sig"; done
+          if [ ! -e "$out/Pimpo_${v}_macos_${arch}.app.tar.gz" ]; then
+            for d in "$bundle"/macos/*.app; do (cd "$(dirname "$d")" && tar -czf "$out/Pimpo_${v}_macos_${arch}.app.tar.gz" "$(basename "$d")"); done
+          fi
           for f in "$bundle"/nsis/*.exe; do cp "$f" "$out/Pimpo_${v}_windows_${arch}_setup.exe"; done
+          for f in "$bundle"/nsis/*.exe.sig; do cp "$f" "$out/Pimpo_${v}_windows_${arch}_setup.exe.sig"; done
           for f in "$bundle"/msi/*.msi; do cp "$f" "$out/Pimpo_${v}_windows_${arch}.msi"; done
           for f in "$bundle"/deb/*.deb; do cp "$f" "$out/Pimpo_${v}_linux_${arch}.deb"; done
           for f in "$bundle"/rpm/*.rpm; do cp "$f" "$out/Pimpo_${v}_linux_${arch}.rpm"; done
           for f in "$bundle"/appimage/*.AppImage; do cp "$f" "$out/Pimpo_${v}_linux_${arch}.AppImage"; done
+          for f in "$bundle"/appimage/*.AppImage.sig; do cp "$f" "$out/Pimpo_${v}_linux_${arch}.AppImage.sig"; done
           ls -la "$out"
           [ -n "$(ls -A "$out")" ] || { echo "no installers were built" >&2; exit 1; }
           echo "dir=$out" >> "$GITHUB_OUTPUT"
@@ -142,3 +158,33 @@ jobs:
         shell: bash
         env: { GH_TOKEN: "${{ github.token }}" }
         run: gh release upload "${{ inputs.tag }}" "${{ steps.collect.outputs.dir }}"/* --clobber --repo "${{ github.repository }}"
+
+  # The updater's manifest, once every system is built: in the release, and
+  # in channel-beta, which beta users follow (stable users follow the latest
+  # published release).
+  manifest:
+    needs: build
+    if: inputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: installers, merge-multiple: true }
+      - name: latest.json
+        id: manifest
+        shell: bash
+        env: { GH_TOKEN: "${{ github.token }}", TAG: "${{ inputs.tag }}" }
+        run: |
+          if ! ls installers/*.sig >/dev/null 2>&1; then
+            echo "::warning::no updater signatures: set the TAURI_SIGNING_PRIVATE_KEY secrets for automatic updates"
+            exit 0
+          fi
+          gh release view "$TAG" --repo "${{ github.repository }}" --json body -q .body > notes.md || true
+          python3 scripts/latest-json.py installers "${{ github.repository }}" "$TAG" notes.md > latest.json
+          cat latest.json
+          gh release upload "$TAG" latest.json --clobber --repo "${{ github.repository }}"
+          if ! gh release view channel-beta --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release create channel-beta --repo "${{ github.repository }}" --prerelease --title "Beta channel" \
+              --notes "The desktop app's beta channel reads latest.json here. Install Pimpo from the numbered releases."
+          fi
+          gh release upload channel-beta latest.json --clobber --repo "${{ github.repository }}"

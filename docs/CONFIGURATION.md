@@ -22,6 +22,7 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 | Command | Flags | What it does |
 |---|---|---|
 | `pimpo serve` | `--addr` (default `127.0.0.1:7788`), `--data DIR`, `--demo` | Runs the server, the web app and the channels. Prints the login link. |
+| `pimpo update` | `--check`, `--beta`, `--version vX.Y.Z`, `--rollback` | Replaces this binary with the latest release after checking it against the release's checksums, keeping the old one as `pimpo.previous`; `--rollback` puts it back. Restart Pimpo afterwards: its first start keeps a snapshot of the data (`before-VERSION`). The desktop app updates itself instead. |
 | `pimpo version` | | Prints the version. |
 | `pimpo export FILE.pimpo` | `--data DIR` | Writes everything to one file, secrets sealed with a passphrase. Refuses to overwrite an existing file. |
 | `pimpo import FILE.pimpo` | `--data DIR` | Replaces the data with a backup. Pimpo must be stopped. What was there is kept aside. |

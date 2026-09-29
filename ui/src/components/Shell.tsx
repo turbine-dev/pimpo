@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { UpdateBanner } from './Updates'
 import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Users } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
@@ -228,7 +229,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
             <div className="md:hidden"><InboxButton count={attention} /></div>
           </div>
         </header>
-        <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-6 md:px-8 md:pb-10">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-6 md:px-8 md:pb-10"><UpdateBanner />{children}</main>
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden" aria-label={t('shell.mainMobile')}>

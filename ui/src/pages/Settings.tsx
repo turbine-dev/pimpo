@@ -6,6 +6,7 @@ import { BackupCard } from '../components/BackupCard'
 import { CloudBackup } from '../components/CloudBackup'
 import { SnapshotsCard } from '../components/SnapshotsCard'
 import { inDesktopApp, mascotOn, setMascotOn } from '../components/Mascot'
+import { UpdateCard } from '../components/Updates'
 import { Head } from '../components/PimpoArt'
 import { ModelSetup } from '../components/ModelSetup'
 import { ProtectionCard } from '../components/ProtectionCard'
@@ -88,6 +89,7 @@ export function Settings() {
         <div className="min-w-0 flex-1 space-y-4">
           {section === 'geral' && <>
             <MascotCard />
+            <UpdateCard />
             <Card className="grid gap-4 p-5 sm:grid-cols-2">
               <label>
                 <span className="mb-1 block text-[12.5px] font-medium text-ink-2">{t('settings.language')}</span>

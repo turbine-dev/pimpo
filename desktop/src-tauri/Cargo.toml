@@ -21,5 +21,7 @@ getrandom = "0.3"
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
 tauri-plugin-autostart = "2"
+tauri-plugin-updater = "2"
+serde_json = "1"
 
 # No LTO or stripping: with them the iOS release build shows a blank page.

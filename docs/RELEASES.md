@@ -30,3 +30,14 @@ Fixes for serious issues ship within 7 days of a report, on stable and on every 
 
    The same desktop builds run on demand (**Actions › desktop › Run workflow**) and on pull requests that touch `desktop/`, keeping the installers as workflow artifacts for 14 days.
 4. A maintainer checks the draft and publishes it. `scripts/install.sh` verifies checksums before installing.
+
+## Updates
+
+**Desktop app.** It looks for a new version when it starts and every six hours, from the latest published release, or from the `channel-beta` release for people who turned on **Versões beta** in **Ajustes › Geral**. An update found shows at the top of the app and in the menu bar; installing it restarts Pimpo. Updates are signed: the app carries the project's public key (`plugins.updater.pubkey` in `desktop/src-tauri/tauri.conf.json`) and refuses anything not signed with the private one.
+
+Before installing, the app remembers the version it leaves. **Voltar para a versão anterior** then asks Pimpo to restore, on its next start, the snapshot the new version took of the data when it first started (`before-VERSION`), and installs the earlier version again.
+
+**Command line and servers.** `pimpo update` checks and installs the latest release for this system, verified against the release's checksums, and `pimpo update --rollback` puts the previous binary back (see [CONFIGURATION.md](CONFIGURATION.md#running-pimpo)).
+
+**For maintainers.** The release workflow signs update bundles when the repository has two secrets, `TAURI_SIGNING_PRIVATE_KEY` (the contents of the private key file) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. It then builds the macOS `.app.tar.gz`, the Windows setup and the Linux AppImage with their `.sig` files, writes `latest.json` (`scripts/latest-json.py`) and attaches it to the release and to `channel-beta`. Without the secrets the installers are built as before and the workflow warns that automatic updates are off. The key pair was generated with `npx tauri signer generate`; the private key is held by the maintainers, never in the repository. Losing it means shipping a new public key in a version users install by hand.
+
