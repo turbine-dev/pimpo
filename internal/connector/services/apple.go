@@ -19,10 +19,7 @@ import (
 // Nothing leaves the computer except what iCloud syncs as usual; macOS
 // asks the owner once to let Pimpo use each app.
 func init() {
-	if runtime.GOOS != "darwin" {
-		return
-	}
-	register(Kind{
+	k := Kind{
 		ID: "apple", Title: "Lembretes, Notas e Calendário da Apple", Description: "Os apps da Apple neste Mac: lembretes que tocam no iPhone e no relógio, notas e a agenda.",
 		Help: "Informe a pasta das Notas onde o Pimpo escreve (ela é criada se não existir) e, se quiser, a lista de Lembretes padrão. Na primeira vez, o macOS pede para deixar o Pimpo usar cada app: permita em Ajustes do Sistema › Privacidade e Segurança › Automação.",
 		Fields: []Field{
@@ -55,7 +52,17 @@ func init() {
 			_, err := callApple(ctx, cfg, "apple.notes.search", "", map[string]any{"query": "pimpo-probe", "max": 1})
 			return err
 		},
-	})
+	}
+	if runtime.GOOS != "darwin" {
+		// The apps exist only on a Mac, but their capabilities are known
+		// everywhere, so gallery routines that use them verify and install
+		// on any system; there they say Apple is not connected.
+		for _, sp := range k.Specs {
+			capability.Register(sp)
+		}
+		return
+	}
+	register(k)
 }
 
 // appleScript is the JavaScript for Automation that does every call. The
