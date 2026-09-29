@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // OpencodeCLI drives the opencode CLI with the providers the owner signed
@@ -73,6 +74,9 @@ func opencodeConfig(system, mcpURL string) []byte {
 	return b
 }
 
+// opencodeLockPause is the first wait after a locked database; it doubles.
+var opencodeLockPause = 500 * time.Millisecond
+
 // opencodeEffort maps Pimpo's levels onto opencode's model variants.
 func opencodeEffort(e string) string {
 	if e == "" {
@@ -103,13 +107,31 @@ func (c OpencodeCLI) run(ctx context.Context, prompt, system, model, effort, mcp
 		args = append(args, "--variant", v)
 	}
 	args = append(args, prompt)
-	cmd := exec.CommandContext(ctx, bin, args...)
-	cmd.Dir = dir
-	cmd.Env = append(append(os.Environ(), opencodeEnv...), "OPENCODE_CONFIG_CONTENT="+string(opencodeConfig(system, mcpURL)))
 	var stdout, stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	runErr := cmd.Run()
-	resp, session, failure := readOpencode(stdout.Bytes())
+	var runErr error
+	var resp Response
+	var session, failure string
+	// opencode keeps its state in one SQLite file: runs that start at the
+	// same moment can find it locked before any work begins, so those are
+	// tried again after a pause.
+	for attempt := 0; ; attempt++ {
+		stdout.Reset()
+		stderr.Reset()
+		cmd := exec.CommandContext(ctx, bin, args...)
+		cmd.Dir = dir
+		cmd.Env = append(append(os.Environ(), opencodeEnv...), "OPENCODE_CONFIG_CONTENT="+string(opencodeConfig(system, mcpURL)))
+		cmd.Stdout, cmd.Stderr = &stdout, &stderr
+		runErr = cmd.Run()
+		resp, session, failure = readOpencode(stdout.Bytes())
+		locked := session == "" && strings.Contains(stderr.String()+failure, "database is locked")
+		if !locked || attempt >= 5 || ctx.Err() != nil {
+			break
+		}
+		select {
+		case <-time.After(opencodeLockPause << attempt):
+		case <-ctx.Done():
+		}
+	}
 	if session != "" {
 		// Nothing of Pimpo's stays in the owner's opencode history.
 		del := exec.Command(bin, "session", "delete", session)

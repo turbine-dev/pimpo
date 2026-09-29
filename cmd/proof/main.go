@@ -20,7 +20,6 @@ import (
 	// The services' capabilities (RSS, GitHub, Todoist, Home Assistant…)
 	// join the catalog the compiler sees, as they do in the app.
 	_ "github.com/turbine-dev/pimpo/internal/connector/services"
-	"github.com/turbine-dev/pimpo/internal/llm"
 	"github.com/turbine-dev/pimpo/internal/repo"
 	"github.com/turbine-dev/pimpo/internal/routine"
 	"github.com/turbine-dev/pimpo/internal/trace"
@@ -40,7 +39,9 @@ type result struct {
 func main() {
 	dir := flag.String("dir", "testdata/proof", "directory of traces")
 	out := flag.String("out", "docs/proof", "where to write the report")
-	model := flag.String("model", "sonnet", "model for the compiler")
+	model := flag.String("model", "sonnet", "model for the compiler: sonnet, codex, opencode:provider/model, provider:name (key in PIMPO_<PROVIDER>_KEY) or ollama:name")
+	priceIn := flag.Float64("price-in", 0, "USD per million input tokens, for an API model")
+	priceOut := flag.Float64("price-out", 0, "USD per million output tokens, for an API model")
 	workers := flag.Int("workers", 3, "parallel compilations")
 	only := flag.String("only", "", "run only traces whose id contains one of these, comma-separated")
 	attempts := flag.Int("attempts", 3, "compile attempts, with feedback, as the app makes")
@@ -63,7 +64,12 @@ func main() {
 
 	paths, _ := filepath.Glob(filepath.Join(*dir, "*.json"))
 	sort.Strings(paths)
-	c := compiler.Compiler{Model: llm.ClaudeCLI{Model: *model}, Attempts: *attempts}
+	m, err := modelFor(*model, *priceIn, *priceOut)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
+	c := compiler.Compiler{Model: m, Attempts: *attempts}
 	results := make([]result, len(paths))
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, *workers)

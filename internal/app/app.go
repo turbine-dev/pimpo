@@ -295,6 +295,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.doctorRoutes()
 	a.mcpRoutes()
 	a.openapiRoutes()
+	a.quickSetupRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()
@@ -637,8 +638,20 @@ func (c claude) Generate(ctx context.Context, r llm.Request) (llm.Response, erro
 		if isCodex(model) {
 			return llm.CodexCLI{}.Generate(ctx, r)
 		}
+		if err := claudeCodeHere(); err != nil {
+			return llm.Response{}, err
+		}
 		return llm.ClaudeCLI{}.Generate(ctx, r)
 	})
+}
+
+// claudeCodeHere explains, when a job falls to Claude Code on a computer
+// without it, how to choose another model instead of naming a missing file.
+func claudeCodeHere() error {
+	if _, err := exec.LookPath("claude"); err != nil {
+		return errors.New("no model is set up yet: choose one in Ajustes › Modelos (an API key, Ollama, Codex, opencode or Claude Code). Claude Code is not installed")
+	}
+	return nil
 }
 
 func firstModel(ms ...string) string {
@@ -675,6 +688,9 @@ func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, erro
 		}
 		if isCodex(model) {
 			return llm.CodexCLI{}.Run(ctx, r)
+		}
+		if err := claudeCodeHere(); err != nil {
+			return llm.Response{}, err
 		}
 		return llm.ClaudeCLI{}.Run(ctx, r)
 	})

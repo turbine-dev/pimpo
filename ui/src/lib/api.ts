@@ -176,6 +176,7 @@ export type Reminder = { id: string; at: string; text: string }
 export type LocalItem = { id: string; kind: 'engine' | 'voice' | 'transcriber'; name: string; about?: string; languages?: string[]; size: number; installed: boolean; quality?: number }
 export type LocalJob = { id: string; item: string; name: string; state: 'downloading' | 'verifying' | 'unpacking' | 'done' | 'failed' | 'cancelled'; done: number; total: number; detail?: string; error?: string; started: string }
 export type LocalView = { engine?: LocalItem; voices: LocalItem[]; transcribers?: LocalItem[]; jobs: LocalJob[]; free: number; memory: number; suggestions: { model: string; about: string; size: number; min_ram: number }[]; ollama: { url: string; up?: boolean; models?: CatalogModel[] } }
+export type QuickChoice = { kind: 'claude_code' | 'codex' | 'opencode' | 'ollama' | 'lmstudio' | 'provider'; provider?: string; key?: string; model?: string }
 export type OpencodeModel = { id: string; provider: string; name: string; subscription: boolean }
 export type ModelTest = { ok: boolean; text?: string; cost_usd?: number; ms?: number; error?: string; problem?: string }
 
@@ -259,6 +260,7 @@ export const api = {
   spotifyOff: () => request<{ ok: boolean }>('DELETE', '/api/spotify'),
   reminders: () => request<Reminder[]>('GET', '/api/reminders'),
   cancelReminder: (id: string) => request<{ ok: boolean }>('DELETE', `/api/reminders/${id}`),
+  quickSetup: (c: QuickChoice) => request<{ explore: string; judge: string; text?: string; cost_usd: number; ms?: number }>('POST', '/api/setup/model', c),
   opencodeModels: () => request<OpencodeModel[]>('GET', '/api/models/opencode'),
   modelCatalog: (provider: string) => request<CatalogModel[]>('GET', `/api/models/catalog/${provider}`),
   tryModel: async (id: string, price_in: number, price_out: number): Promise<ModelTest> => {
