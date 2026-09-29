@@ -61,3 +61,6 @@ release:
     name: pimpo
   draft: true
   prerelease: auto
+  # Running a release again for the same tag (a re-pushed tag, a retry)
+  # replaces its files instead of failing on the ones already there.
+  replace_existing_artifacts: true
