@@ -68,7 +68,7 @@ func TestOpenClaw(t *testing.T) {
 	write(t, home, map[string]string{
 		"openclaw.json": `{
   // JSON5, as OpenClaw writes it
-  agents: { defaults: { workspace: "` + ws + `", userTimezone: "Europe/Lisbon" } },
+  agents: { defaults: { workspace: "` + strings.ReplaceAll(ws, `\`, `\\`) + `", userTimezone: "Europe/Lisbon" } },
   channels: { telegram: { enabled: true, botToken: "9:xyz", allowFrom: [42], dmPolicy: "allowlist" } },
   plugins: { entries: { imap: { config: { accounts: { main: { host: "imap.x.com", user: "me@x.com", password: { source: "env", id: "IMAP_PW" } } } } } } },
 }`,

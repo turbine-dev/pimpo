@@ -180,7 +180,7 @@ func TestObsidian(t *testing.T) {
 	if len(kept) != 1 {
 		t.Fatal("previous version not kept")
 	}
-	for _, bad := range []string{"../fora.md", "/etc/passwd", ".obsidian/workspace", ".pimpo/history/x"} {
+	for _, bad := range []string{"../fora.md", "/etc/passwd", `\Windows\win.ini`, "C:notas", "nota.md:oculto", ".obsidian/workspace", ".pimpo/history/x"} {
 		if _, err := call(t, "obsidian", c, "obsidian.append", map[string]any{"note": bad, "text": "x"}); err == nil && !strings.HasPrefix(bad, "../") {
 			t.Fatalf("wrote to %s", bad)
 		}

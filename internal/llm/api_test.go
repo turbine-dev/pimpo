@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -215,6 +216,9 @@ func TestEffort(t *testing.T) {
 
 // Claude Code gets the level as --effort.
 func TestClaudeCLIEffort(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the stand-in tool is a shell script")
+	}
 	dir := t.TempDir()
 	bin := dir + "/claude"
 	os.WriteFile(bin, []byte("#!/bin/sh\necho \"$@\" > "+dir+"/args\necho '{\"result\":\"ok\"}'\n"), 0o755)
