@@ -10,6 +10,9 @@ func TestReadsThisMachine(t *testing.T) {
 	if h.CPUs < 1 || h.DiskSize == 0 || h.DiskFree > h.DiskSize {
 		t.Fatalf("%+v", h)
 	}
+	if runtime.GOOS == "windows" && h.MemTotal == 0 {
+		t.Fatalf("memory missing: %+v", h)
+	}
 	if runtime.GOOS == "darwin" || runtime.GOOS == "linux" {
 		if h.MemTotal == 0 || h.Load[0] <= 0 {
 			t.Fatalf("load and memory missing: %+v", h)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,9 @@ import (
 // A fake opencode that finds its database locked on the first two runs,
 // as happens when several start at once, then answers.
 func TestOpencodeRetriesALockedDatabase(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the stand-in tool is a shell script")
+	}
 	dir := t.TempDir()
 	count := filepath.Join(dir, "count")
 	bin := filepath.Join(dir, "opencode")

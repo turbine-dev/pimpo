@@ -5,10 +5,14 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
 func TestRead(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the stand-in tool is a shell script")
+	}
 	dir := t.TempDir()
 	// A stand-in that knows only English and prints what it "sees".
 	os.WriteFile(filepath.Join(dir, "tesseract"), []byte("#!/bin/sh\n[ \"$4\" = eng ] || exit 1\ncat >/dev/null\nprintf 'Conta de luz\\n\\n  Vencimento   10/10  R$ 187,90\\n'\n"), 0o755)

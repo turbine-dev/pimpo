@@ -72,6 +72,13 @@ func TestInstallConnectorWithoutRestart(t *testing.T) {
 	}
 	ta := newApp(t, weatherAgent, &llm.Fake{})
 	ta.Home = t.TempDir()
+	// Stop the connector before its folder is removed (Windows refuses to
+	// remove a folder a running program uses).
+	t.Cleanup(func() {
+		for _, c := range ta.external {
+			c.Close()
+		}
+	})
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 	for _, name := range []string{"connector.json", "server.py"} {

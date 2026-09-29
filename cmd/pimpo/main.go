@@ -261,8 +261,7 @@ func alive(pidFile string) bool {
 	if err != nil {
 		return false
 	}
-	p, err := os.FindProcess(pid)
-	return err == nil && p.Signal(syscall.Signal(0)) == nil
+	return processAlive(pid)
 }
 
 func snapshots(cmd string, args []string) error {

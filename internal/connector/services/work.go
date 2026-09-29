@@ -300,7 +300,9 @@ type notionProps struct {
 
 // inVault resolves a note path and refuses anything that leaves the vault.
 func inVault(vault, note string) (string, error) {
-	if note == "" || filepath.IsAbs(note) {
+	// The same names are refused on every system: a rooted path, and a
+	// colon (a drive, or an NTFS alternate stream, on Windows).
+	if note == "" || filepath.IsAbs(note) || strings.HasPrefix(note, "/") || strings.HasPrefix(note, `\`) || strings.Contains(note, ":") {
 		return "", errors.New("note must be a path inside the vault")
 	}
 	p := filepath.Join(vault, filepath.Clean("/"+note))

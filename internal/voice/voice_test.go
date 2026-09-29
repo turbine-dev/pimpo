@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -17,6 +18,9 @@ func fakeTools(t *testing.T, whisperOut string) {
 }
 
 func TestTranscribe(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the stand-in tool is a shell script")
+	}
 	fakeTools(t, "  Me lembra de pagar\n a luz amanhã ")
 	model := filepath.Join(t.TempDir(), "ggml-base.bin")
 	w := Whisper{Model: model}
