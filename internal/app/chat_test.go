@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 // notes is a connector with one reversible capability.

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/docs"
+	"github.com/turbine-dev/pimpo/docs"
 )
 
 func TestSearchGuideFindsTheRightSection(t *testing.T) {

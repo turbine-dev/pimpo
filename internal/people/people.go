@@ -7,14 +7,14 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/i18n"
 	"math/big"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/event"
 )
 
 type Role string

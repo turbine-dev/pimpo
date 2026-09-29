@@ -12,16 +12,16 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/budget"
-	"github.com/denerFernandes/pimpo/internal/compiler"
-	"github.com/denerFernandes/pimpo/internal/connector"
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/memory"
-	"github.com/denerFernandes/pimpo/internal/routine"
-	"github.com/denerFernandes/pimpo/internal/store"
-	"github.com/denerFernandes/pimpo/internal/trace"
+	"github.com/turbine-dev/pimpo/internal/budget"
+	"github.com/turbine-dev/pimpo/internal/compiler"
+	"github.com/turbine-dev/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/memory"
+	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/trace"
 )
 
 type inbox struct {

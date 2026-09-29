@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	"github.com/denerFernandes/pimpo/internal/chatlink"
+	"github.com/turbine-dev/pimpo/internal/chatlink"
 )
 
 // Conversation channels: set up here like any connector, they let the

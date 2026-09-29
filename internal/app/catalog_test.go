@@ -7,9 +7,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/connector/services"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/connector/services"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 func TestCatalogConnectors(t *testing.T) {

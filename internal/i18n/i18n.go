@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 //go:embed locales/*.json
@@ -49,9 +50,19 @@ func Languages() []string {
 	return out
 }
 
-// Locale gives the owner's language tag (e.g. "pt-BR") for a request; the
-// app sets it from its settings. Without it messages are in Portuguese.
-var Locale func(ctx context.Context) string
+// locale gives the owner's language tag (e.g. "pt-BR") for a request; the
+// app sets it from its settings with SetLocale. Without it messages are in
+// Portuguese.
+var locale atomic.Pointer[func(ctx context.Context) string]
+
+// SetLocale sets where the owner's language comes from (nil for none).
+func SetLocale(f func(ctx context.Context) string) {
+	if f == nil {
+		locale.Store(nil)
+		return
+	}
+	locale.Store(&f)
+}
 
 // Lang is the language of a tag: "pt-BR" -> "pt". Unknown ones become "en".
 func Lang(tag string) string {
@@ -65,10 +76,11 @@ func Lang(tag string) string {
 
 // Of is the owner's language for this request.
 func Of(ctx context.Context) string {
-	if Locale == nil {
+	f := locale.Load()
+	if f == nil {
 		return "pt"
 	}
-	return Lang(Locale(ctx))
+	return Lang((*f)(ctx))
 }
 
 // Lookup finds a message in one language only.

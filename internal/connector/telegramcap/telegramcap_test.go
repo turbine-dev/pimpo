@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/telegram"
+	"github.com/turbine-dev/pimpo/internal/telegram"
 )
 
 type recorder struct{ sent []string }

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/denerFernandes/pimpo/internal/connector"
-	"github.com/denerFernandes/pimpo/internal/telegram"
+	"github.com/turbine-dev/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/telegram"
 )
 
 type Sender interface {

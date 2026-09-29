@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 // A call paid by a subscription costs no money and stays out of the

@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector"
-	"github.com/denerFernandes/pimpo/internal/i18n"
-	"github.com/denerFernandes/pimpo/internal/people"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // Reminders are one-shot messages at a time: "in 30 minutes, remind me to

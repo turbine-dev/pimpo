@@ -36,7 +36,7 @@ export function Help() {
         ))}
       </div>
       {ask.error && <p className="mt-3 text-[13px] text-danger">{ask.error.message}</p>}
-      <a href="https://github.com/denerFernandes/pimpo/blob/main/docs/USER_GUIDE.md" target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-1.5 text-[12.5px] text-ink-3 underline">
+      <a href="https://github.com/turbine-dev/pimpo/blob/main/docs/USER_GUIDE.md" target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-1.5 text-[12.5px] text-ink-3 underline">
         <BookOpen size={13} /> {t('help.guide')}
       </a>
     </div>

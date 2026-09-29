@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/owner"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/owner"
 )
 
 // A reminder asked for in chat is set during the exploration itself, is

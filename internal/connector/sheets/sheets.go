@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/connector"
 )
 
 type Sheets struct {

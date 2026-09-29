@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/denerFernandes/pimpo/internal/connector/services"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/runtime"
-	"github.com/denerFernandes/pimpo/internal/trace"
+	_ "github.com/turbine-dev/pimpo/internal/connector/services"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/trace"
 )
 
 // A real model compiles "tell me when Ana emails me" into a watch, not a

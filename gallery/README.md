@@ -1,6 +1,6 @@
 # Pimpo routine gallery
 
-Ready-made routines for [Pimpo](https://github.com/denerFernandes/pimpo). Each one is plain JavaScript you can read, with a manifest saying exactly what it may touch and tests that show what it does.
+Ready-made routines for [Pimpo](https://github.com/turbine-dev/pimpo). Each one is plain JavaScript you can read, with a manifest saying exactly what it may touch and tests that show what it does.
 
 Pimpo checks every routine before installing it:
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 // The Guard plugins for OpenClaw and Hermes run their own test suites

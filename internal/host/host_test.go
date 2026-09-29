@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/budget"
-	"github.com/denerFernandes/pimpo/internal/connector"
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/judge"
-	"github.com/denerFernandes/pimpo/internal/policy"
+	"github.com/turbine-dev/pimpo/internal/budget"
+	"github.com/turbine-dev/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/judge"
+	"github.com/turbine-dev/pimpo/internal/policy"
 )
 
 type fakeMail struct{ archived []string }

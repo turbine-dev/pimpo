@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/chatlink"
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/chatlink"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 type fakeLink struct {

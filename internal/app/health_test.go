@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/owner"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/owner"
 )
 
 func TestChannelHealth(t *testing.T) {

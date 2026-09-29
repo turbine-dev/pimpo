@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/capability"
 )
 
 type Manifest struct {

@@ -87,7 +87,7 @@ mod desktop {
     /// page's own storage changes with the port on every start.
     fn sync_mascot(app: &AppHandle, w: &tauri::WebviewWindow) {
         let on = if mascot_wanted(app) { "on" } else { "off" };
-        let _ = w.eval(&format!("try {{ localStorage.setItem('pimpo.mascot', '{on}'); window.dispatchEvent(new Event('pimpo:mascot')) }} catch (e) {{}}"));
+        let _ = w.eval(format!("try {{ localStorage.setItem('pimpo.mascot', '{on}'); window.dispatchEvent(new Event('pimpo:mascot')) }} catch (e) {{}}"));
     }
 
     pub struct MascotItem(pub CheckMenuItem<tauri::Wry>);

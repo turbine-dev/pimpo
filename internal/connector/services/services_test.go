@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/capability"
 )
 
 type hit struct {

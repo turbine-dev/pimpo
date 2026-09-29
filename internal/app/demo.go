@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/demo"
-	"github.com/denerFernandes/pimpo/internal/undo"
+	"github.com/turbine-dev/pimpo/internal/demo"
+	"github.com/turbine-dev/pimpo/internal/undo"
 )
 
 // EnableDemo swaps every external service for the demo's: an in-memory

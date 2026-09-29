@@ -15,7 +15,7 @@ import (
 
 	"github.com/dop251/goja"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/capability"
 )
 
 // Host performs capability calls on behalf of a routine. It is where the

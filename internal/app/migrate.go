@@ -7,10 +7,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/denerFernandes/pimpo/internal/memory"
-	"github.com/denerFernandes/pimpo/internal/migrate"
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/memory"
+	"github.com/turbine-dev/pimpo/internal/migrate"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 // ImportOptions says which parts of a plan to bring over.

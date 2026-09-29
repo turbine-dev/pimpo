@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/voice"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/voice"
 )
 
 // Dictation for browsers without their own speech recognition: the audio

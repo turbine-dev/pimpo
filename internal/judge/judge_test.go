@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 func TestJevSendsANoulQuestion(t *testing.T) {

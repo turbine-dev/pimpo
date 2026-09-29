@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/local"
+	"github.com/turbine-dev/pimpo/internal/local"
 )
 
 // localCmd lists and installs the models of the local catalog from the

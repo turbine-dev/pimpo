@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/capability"
 )
 
 // TestMain doubles as a fake connector when asked, so tests exercise a

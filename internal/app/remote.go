@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/denerFernandes/pimpo/internal/remote"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/remote"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // Two ways for the phone to reach this Pimpo, both remembered across

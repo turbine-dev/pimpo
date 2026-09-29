@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 type bucket struct {

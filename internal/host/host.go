@@ -11,14 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/budget"
-	"github.com/denerFernandes/pimpo/internal/capability"
-	"github.com/denerFernandes/pimpo/internal/connector"
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/judge"
-	"github.com/denerFernandes/pimpo/internal/people"
-	"github.com/denerFernandes/pimpo/internal/policy"
-	"github.com/denerFernandes/pimpo/internal/trace"
+	"github.com/turbine-dev/pimpo/internal/budget"
+	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/judge"
+	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/policy"
+	"github.com/turbine-dev/pimpo/internal/trace"
 )
 
 const (

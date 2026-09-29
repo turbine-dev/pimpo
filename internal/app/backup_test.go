@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 func upload(t *testing.T, ta *testApp, path string, file []byte, fields map[string]string) (int, map[string]any) {

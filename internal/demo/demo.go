@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/judge"
-	"github.com/denerFernandes/pimpo/internal/llm"
-	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/judge"
+	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/routine"
 )
 
 // Mailbox is an in-memory inbox that behaves like the mail connector.

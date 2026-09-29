@@ -15,16 +15,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/budget"
-	"github.com/denerFernandes/pimpo/internal/connector"
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/i18n"
-	"github.com/denerFernandes/pimpo/internal/owner"
-	"github.com/denerFernandes/pimpo/internal/people"
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/speech"
-	"github.com/denerFernandes/pimpo/internal/telegram"
+	"github.com/turbine-dev/pimpo/internal/budget"
+	"github.com/turbine-dev/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/owner"
+	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/speech"
+	"github.com/turbine-dev/pimpo/internal/telegram"
 )
 
 // audio.send reads a text aloud on this machine and sends the recording to

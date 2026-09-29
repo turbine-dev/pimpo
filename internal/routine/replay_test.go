@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/runtime"
-	"github.com/denerFernandes/pimpo/internal/trace"
+	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/trace"
 )
 
 // Every recorded search came from the real service with its recorded

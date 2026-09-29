@@ -1,9 +1,9 @@
 #!/bin/sh
-# Install Pimpo on Linux or macOS: curl -fsSL https://raw.githubusercontent.com/denerFernandes/pimpo/main/scripts/install.sh | sh
+# Install Pimpo on Linux or macOS: curl -fsSL https://raw.githubusercontent.com/turbine-dev/pimpo/main/scripts/install.sh | sh
 # Options: --service (run at boot with systemd, Linux), --version vX.Y.Z, --dir DIR
 set -eu
 
-repo="denerFernandes/pimpo"
+repo="turbine-dev/pimpo"
 version="latest"
 dir="${HOME}/.local/bin"
 service=0

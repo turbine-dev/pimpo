@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
-	"github.com/denerFernandes/pimpo/internal/connector/external"
-	"github.com/denerFernandes/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/connector/external"
+	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
 // weatherMCP is a remote MCP server answering plain JSON.

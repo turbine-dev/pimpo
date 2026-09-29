@@ -3,14 +3,14 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"github.com/denerFernandes/pimpo/internal/i18n"
+	"github.com/turbine-dev/pimpo/internal/i18n"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/denerFernandes/pimpo/internal/explore"
-	"github.com/denerFernandes/pimpo/internal/server"
-	"github.com/denerFernandes/pimpo/internal/snapshot"
+	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/snapshot"
 )
 
 // UpgradeKey holds {from, to, snapshot} after Pimpo starts on a new

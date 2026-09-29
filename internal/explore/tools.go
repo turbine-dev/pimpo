@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/capability"
-	"github.com/denerFernandes/pimpo/internal/host"
-	"github.com/denerFernandes/pimpo/internal/mcp"
-	"github.com/denerFernandes/pimpo/internal/memory"
+	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/mcp"
+	"github.com/turbine-dev/pimpo/internal/memory"
 )
 
 // toolName maps "gmail.search" to "gmail_search"; MCP tool names cannot

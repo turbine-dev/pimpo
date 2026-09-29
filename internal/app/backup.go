@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/denerFernandes/pimpo/internal/connector/external"
+	"github.com/turbine-dev/pimpo/internal/connector/external"
 
-	"github.com/denerFernandes/pimpo/internal/backup"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/backup"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 func (a *App) backupRoutes() {

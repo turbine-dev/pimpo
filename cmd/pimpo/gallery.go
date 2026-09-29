@@ -12,8 +12,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/gallery"
-	"github.com/denerFernandes/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/gallery"
+	"github.com/turbine-dev/pimpo/internal/routine"
 )
 
 const galleryUsage = `usage:

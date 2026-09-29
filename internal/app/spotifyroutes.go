@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/connector/spotify"
-	"github.com/denerFernandes/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/connector/spotify"
+	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 func (a *App) spotify() *spotify.Spotify {

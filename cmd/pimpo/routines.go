@@ -9,14 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/denerFernandes/pimpo/internal/event"
-	"github.com/denerFernandes/pimpo/internal/repo"
-	"github.com/denerFernandes/pimpo/internal/routine"
-	"github.com/denerFernandes/pimpo/internal/store"
+	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/repo"
+	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/store"
 
 	// Routines may call the services' capabilities; their specs must be
 	// known for the audit.
-	_ "github.com/denerFernandes/pimpo/internal/connector/services"
+	_ "github.com/turbine-dev/pimpo/internal/connector/services"
 )
 
 func routinesCmd(args []string, out io.Writer) error {
