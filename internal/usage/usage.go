@@ -28,10 +28,20 @@ const (
 )
 
 type Report struct {
-	Since    time.Time `json:"since"`
-	Until    time.Time `json:"until"`
-	Routines []Routine `json:"routines"`
-	Totals   Totals    `json:"totals"`
+	Since       time.Time   `json:"since"`
+	Until       time.Time   `json:"until"`
+	Routines    []Routine   `json:"routines"`
+	Totals      Totals      `json:"totals"`
+	Suggestions Suggestions `json:"suggestions"`
+}
+
+// Suggestions counts the routines Pimpo offered on its own and what the
+// owner did with them.
+type Suggestions struct {
+	Made     int `json:"made"`
+	Accepted int `json:"accepted"`
+	Declined int `json:"declined"`
+	Ignored  int `json:"ignored"`
 }
 
 type Totals struct {
@@ -101,6 +111,23 @@ func Build(ctx context.Context, ev *event.Store, st *store.Store, now time.Time,
 		return rep, err
 	}
 	sort.Slice(events, func(i, j int) bool { return events[i].ID < events[j].ID })
+	if sugg, err := ev.List(ctx, event.Query{Types: []string{"suggestion.made", "suggestion.accepted", "suggestion.dismissed", "suggestion.expired"}, Newest: true, Limit: 5000}); err == nil {
+		for _, e := range sugg {
+			if e.Time.Before(since) {
+				continue
+			}
+			switch e.Type {
+			case "suggestion.made":
+				rep.Suggestions.Made++
+			case "suggestion.accepted":
+				rep.Suggestions.Accepted++
+			case "suggestion.dismissed":
+				rep.Suggestions.Declined++
+			case "suggestion.expired":
+				rep.Suggestions.Ignored++
+			}
+		}
+	}
 
 	down := offline(events)
 	byRoutine := map[string][]event.Event{}
@@ -411,6 +438,9 @@ func (r Report) Markdown(zone *time.Location) string {
 		fmt.Fprintf(&b, " Another %d scheduled times fell while Pimpo was not running (stopped, or the computer asleep).", t.WhileOff)
 	}
 	b.WriteString("\n\n")
+	if s := r.Suggestions; s.Made > 0 {
+		fmt.Fprintf(&b, "Pimpo suggested %d routines on its own: %d accepted, %d declined, %d left unanswered.\n\n", s.Made, s.Accepted, s.Declined, s.Ignored)
+	}
 	b.WriteString("| Routine | State | Runs | Finished | Failed | Silent | Late | Repaired | Approvals | Cost |\n|---|---|---|---|---|---|---|---|---|---|\n")
 	for _, u := range r.Routines {
 		fmt.Fprintf(&b, "| %s | %s | %d | %d | %d | %d of %d | %d | %d | %d asked, %d denied, %d expired | $%.2f |\n",

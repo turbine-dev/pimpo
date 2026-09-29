@@ -1,0 +1,272 @@
+{
+ "name": "Preparação para reuniões de amanhã",
+ "description": "Toda noite, verifica as reuniões de amanhã que têm convidados e, para cada participante, busca os emails recentes que ele enviou. Envia no Telegram (ou destino escolhido) um resumo por reunião com os assuntos dos emails de cada participante, para o usuário chegar preparado.",
+ "manifest": {
+  "schedule": "0 20 * * *",
+  "capabilities": [
+   "calendar.events",
+   "gmail.search",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   },
+   {
+    "name": "diasBusca",
+    "label": "Dias de busca nos emails de cada participante",
+    "type": "number",
+    "default": 14,
+    "help": "Quantos dias retroceder ao buscar emails recentes de cada convidado"
+   },
+   {
+    "name": "maxEmails",
+    "label": "Máximo de emails por participante",
+    "type": "number",
+    "default": 5
+   }
+  ]
+ },
+ "code": "async function run() {\n  const tomorrowStart = dates.startOfDay(now(), 1);\n  const tomorrowEnd = dates.startOfDay(now(), 2);\n\n  const events = await calendar.events({ from: tomorrowStart, to: tomorrowEnd });\n  const meetings = events.filter(e => Array.isArray(e.attendees) && e.attendees.length > 0);\n\n  if (meetings.length === 0) {\n    log(\"Nenhuma reunião amanhã com convidados.\");\n    return;\n  }\n\n  const cache = {};\n  const blocks = [];\n\n  for (const ev of meetings) {\n    const lines = [];\n    for (const attendee of ev.attendees) {\n      if (!(attendee in cache)) {\n        cache[attendee] = await gmail.search({\n          query: `from:${attendee}`,\n          days: params.diasBusca,\n          max: params.maxEmails\n        });\n      }\n      const emails = cache[attendee] || [];\n      const name = (emails[0] && emails[0].from_name) ? emails[0].from_name : attendee;\n\n      if (emails.length === 0) {\n        lines.push(`• ${name} — sem emails recentes`);\n      } else {\n        const subjects = emails\n          .map(e => `\"${e.subject}\"${e.replied ? '' : ' (sem resposta)'}`)\n          .join('; ');\n        lines.push(`• ${name} — ${subjects}`);\n      }\n    }\n    const time = dates.format(ev.start, \"HH:mm\");\n    blocks.push(`${time} ${ev.title}\\n${lines.join('\\n')}`);\n  }\n\n  const header = `Preparação para amanhã (${dates.format(tomorrowStart, \"dd/MM\")})`;\n  const text = `${header}\\n\\n${blocks.join('\\n\\n')}`;\n\n  await notify.send({ text });\n}\n",
+ "tests": [
+  {
+   "name": "Duas reuniões com convidados, uma sem",
+   "now": "2026-09-29T23:00:00Z",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "m1",
+       "title": "Kickoff Cliente X",
+       "start": "2026-09-30T09:00:00-03:00",
+       "end": "2026-09-30T10:00:00-03:00",
+       "location": "Zoom",
+       "attendees": [
+        "ana@fornecedor.com",
+        "bruno@fornecedor.com"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "m2",
+       "title": "Almoço com amigo",
+       "start": "2026-09-30T12:00:00-03:00",
+       "end": "2026-09-30T13:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Pessoal"
+      },
+      {
+       "id": "m3",
+       "title": "Alinhamento com Fornecedor Y",
+       "start": "2026-09-30T14:00:00-03:00",
+       "end": "2026-09-30T15:00:00-03:00",
+       "location": "Sala 2",
+       "attendees": [
+        "carla@fornecedorz.com"
+       ],
+       "calendar": "Trabalho"
+      }
+     ]
+    },
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "e1",
+       "from": "ana@fornecedor.com",
+       "from_name": "Ana Souza",
+       "to": "owner@example.com",
+       "subject": "Orçamento atualizado",
+       "snippet": "Segue o orçamento revisado.",
+       "date": "2026-09-28T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": true,
+       "unread": false,
+       "can_unsubscribe": false
+      }
+     ]
+    },
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "e2",
+       "from": "bruno@fornecedor.com",
+       "from_name": "Bruno Lima",
+       "to": "owner@example.com",
+       "subject": "Data de entrega",
+       "snippet": "Precisamos alinhar a data.",
+       "date": "2026-09-27T15:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      },
+      {
+       "id": "e3",
+       "from": "bruno@fornecedor.com",
+       "from_name": "Bruno Lima",
+       "to": "owner@example.com",
+       "subject": "Confirmação de reunião",
+       "snippet": "Confirmando o horário.",
+       "date": "2026-09-25T09:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": true,
+       "unread": false,
+       "can_unsubscribe": false
+      }
+     ]
+    },
+    {
+     "capability": "gmail.search",
+     "result": []
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Kickoff Cliente X",
+      "Orçamento atualizado",
+      "Data de entrega",
+      "(sem resposta)",
+      "Alinhamento com Fornecedor Y",
+      "sem emails recentes"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Nenhuma reunião de amanhã tem convidados",
+   "now": "2026-09-29T23:00:00Z",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "m1",
+       "title": "Almoço",
+       "start": "2026-09-30T12:00:00-03:00",
+       "end": "2026-09-30T13:00:00-03:00",
+       "location": "",
+       "attendees": [],
+       "calendar": "Pessoal"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "Convidado repetido em duas reuniões (deduplicação) e params customizados",
+   "now": "2026-09-29T23:00:00Z",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "m1",
+       "title": "Reunião de Planejamento",
+       "start": "2026-09-30T09:00:00-03:00",
+       "end": "2026-09-30T10:00:00-03:00",
+       "location": "Meet",
+       "attendees": [
+        "diego@parceiro.com"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "m2",
+       "title": "Follow-up com Parceiro",
+       "start": "2026-09-30T11:00:00-03:00",
+       "end": "2026-09-30T11:30:00-03:00",
+       "location": "Meet",
+       "attendees": [
+        "diego@parceiro.com",
+        "elisa@parceiro.com"
+       ],
+       "calendar": "Trabalho"
+      }
+     ]
+    },
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "d1",
+       "from": "diego@parceiro.com",
+       "from_name": "Diego Fontes",
+       "to": "owner@example.com",
+       "subject": "Renovação de contrato",
+       "snippet": "Precisamos renovar até o fim do mês.",
+       "date": "2026-09-26T10:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": true,
+       "can_unsubscribe": false
+      }
+     ]
+    },
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "el1",
+       "from": "elisa@parceiro.com",
+       "from_name": "Elisa Rocha",
+       "to": "owner@example.com",
+       "subject": "Ajuste na proposta comercial",
+       "snippet": "Fizemos um ajuste nos valores.",
+       "date": "2026-09-25T08:00:00-03:00",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": true,
+       "unread": false,
+       "can_unsubscribe": false
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Reunião de Planejamento",
+      "Diego Fontes",
+      "Renovação de contrato",
+      "(sem resposta)",
+      "Follow-up com Parceiro",
+      "Elisa Rocha",
+      "Ajuste na proposta comercial"
+     ]
+    }
+   ],
+   "params": {
+    "diasBusca": 7,
+    "maxEmails": 2
+   }
+  }
+ ]
+}

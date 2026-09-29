@@ -1,0 +1,155 @@
+{
+ "name": "Vídeos do dia nos canais do YouTube",
+ "description": "Todo dia às 19h, verifica os feeds RSS dos canais do YouTube informados e envia no destino escolhido (ex.: Telegram) a lista dos vídeos publicados hoje, com título e link. Se nenhum canal publicou nada hoje, não envia mensagem.",
+ "manifest": {
+  "schedule": "0 19 * * *",
+  "capabilities": [
+   "rss.read:www.youtube.com",
+   "notify.send"
+  ],
+  "params": [
+   {
+    "name": "channelIds",
+    "label": "IDs dos canais do YouTube (separados por vírgula)",
+    "type": "text",
+    "default": "UCsBjURrPoezykLs9EqgamOA,UCbRP3c757lWg9M-U7TyEkXA",
+    "help": "Cole os IDs dos canais do YouTube que começam com UC, separados por vírgula."
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const channelIds = (params.channelIds || \"\")\n    .split(\",\")\n    .map(function (s) { return s.trim(); })\n    .filter(Boolean);\n\n  const today = dates.today();\n  let videos = [];\n\n  for (const id of channelIds) {\n    const url = \"https://www.youtube.com/feeds/videos.xml?channel_id=\" + id;\n    const items = await rss.read({ url: url, max: 10 });\n    for (const item of items) {\n      if (item.published && dates.sameDay(item.published, today)) {\n        videos.push(item);\n      }\n    }\n  }\n\n  if (videos.length === 0) {\n    log(\"Nenhum vídeo publicado hoje nos canais monitorados.\");\n    return;\n  }\n\n  videos.sort(function (a, b) {\n    return dates.isBefore(a.published, b.published) ? -1 : 1;\n  });\n\n  const lines = videos.map(function (v) {\n    return \"• \" + v.title + \" — \" + v.link;\n  });\n\n  const text = \"🎬 Vídeos de hoje:\\n\" + lines.join(\"\\n\");\n\n  await notify.send({ text: text });\n}\n",
+ "tests": [
+  {
+   "name": "Um vídeo publicado hoje entre vários canais",
+   "now": "2026-09-28T22:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.youtube.com/watch?v=xyz1",
+       "published": "2026-09-28T16:00:00Z",
+       "summary": "",
+       "title": "Como funciona o Rust hoje"
+      },
+      {
+       "link": "https://www.youtube.com/watch?v=xyz0",
+       "published": "2026-09-25T16:00:00Z",
+       "summary": "",
+       "title": "Vídeo antigo"
+      }
+     ]
+    },
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.youtube.com/watch?v=abc9",
+       "published": "2026-09-26T14:00:00Z",
+       "summary": "",
+       "title": "Outro vídeo antigo"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Como funciona o Rust hoje",
+      "https://www.youtube.com/watch?v=xyz1"
+     ],
+     "not_contains": [
+      "Vídeo antigo",
+      "Outro vídeo antigo"
+     ]
+    }
+   ],
+   "params": {
+    "channelIds": "UCsBjURrPoezykLs9EqgamOA,UCbRP3c757lWg9M-U7TyEkXA"
+   }
+  },
+  {
+   "name": "Nenhum vídeo publicado hoje - nada é enviado",
+   "now": "2026-09-28T22:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.youtube.com/watch?v=vid5",
+       "published": "2026-09-25T16:00:00Z",
+       "summary": "",
+       "title": "Video antigo 1"
+      }
+     ]
+    },
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.youtube.com/watch?v=vid6",
+       "published": "2026-09-20T10:00:00Z",
+       "summary": "",
+       "title": "Video antigo 2"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ],
+   "params": {
+    "channelIds": "UCsBjURrPoezykLs9EqgamOA,UCbRP3c757lWg9M-U7TyEkXA"
+   }
+  },
+  {
+   "name": "Canal único (parâmetro alterado) com dois vídeos hoje, ordem e formato diferentes",
+   "now": "2026-09-28T22:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://www.youtube.com/watch?v=lll2",
+       "published": "2026-09-28T06:30:00Z",
+       "summary": "resumo do vídeo",
+       "title": "LIVE: Postgres vs MySQL - o debate final"
+      },
+      {
+       "link": "https://www.youtube.com/watch?v=lll3",
+       "published": "2026-09-28T18:45:00Z",
+       "summary": "",
+       "title": "Novidades de hoje em IA"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "LIVE: Postgres vs MySQL - o debate final",
+      "Novidades de hoje em IA",
+      "https://www.youtube.com/watch?v=lll2",
+      "https://www.youtube.com/watch?v=lll3"
+     ]
+    }
+   ],
+   "params": {
+    "channelIds": "UCzzzTestChannel1234567890"
+   }
+  }
+ ]
+}

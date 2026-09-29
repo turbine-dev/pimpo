@@ -36,6 +36,7 @@ pimpo report --days 21 --json > report.json
 | While off | Scheduled times that fell while Pimpo was not running (stopped, or the computer asleep) | counted apart: not a Pimpo failure, but worth knowing on a server |
 | Approvals | Asked, denied, expired | irreversible actions always asked |
 | Cost | What the routines spent | cents per routine per day |
+| Suggestions | Routines Pimpo offered on its own: accepted, declined, left unanswered | at least a third accepted, and nobody turns them off for being noisy |
 
 Pimpo tells "not running" apart from "failed while running" with a heartbeat: it records when it starts (and when it was last alive before), and any gap of more than three minutes, such as a laptop asleep.
 

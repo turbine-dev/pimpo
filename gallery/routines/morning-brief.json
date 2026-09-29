@@ -1,0 +1,425 @@
+{
+ "name": "Resumo diário matinal",
+ "description": "Todo dia útil às 7h envia no Telegram (ou destino escolhido) um resumo: previsão do tempo, agenda do dia, e-mails não lidos realmente importantes e tarefas do Todoist de hoje ou atrasadas.",
+ "manifest": {
+  "schedule": "0 7 * * 1-5",
+  "capabilities": [
+   "http.getJSON:api.open-meteo.com",
+   "calendar.events",
+   "gmail.search",
+   "todoist.tasks",
+   "notify.send"
+  ],
+  "judgments": {
+   "important": "Este e-mail não lido é realmente importante e exige atenção do dono hoje (algo urgente, cobrança, prazo, escalada de trabalho), e não é promocional, automático ou de baixa prioridade?"
+  },
+  "params": [
+   {
+    "name": "location",
+    "label": "Cidade para o clima",
+    "type": "location",
+    "default": {
+     "latitude": -23.55,
+     "longitude": -46.63,
+     "name": "São Paulo",
+     "timezone": "America/Sao_Paulo"
+    }
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const loc = params.location || {latitude: -23.55, longitude: -46.63, name: 'São Paulo'};\n  const lat = loc.latitude;\n  const lon = loc.longitude;\n  const cityName = loc.name || 'sua cidade';\n\n  const today = dates.today();\n  const tomorrow = dates.addDays(today, 1);\n\n  // 1. Weather\n  const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=1';\n  const weather = await http.getJSON(weatherUrl);\n  let weatherLine = '';\n  if (weather && weather.daily && weather.daily.temperature_2m_max && weather.daily.temperature_2m_max.length > 0) {\n    const tmax = Math.round(weather.daily.temperature_2m_max[0]);\n    const tmin = Math.round(weather.daily.temperature_2m_min[0]);\n    const rain = weather.daily.precipitation_probability_max[0];\n    const emoji = rain >= 50 ? '🌧️' : '☀️';\n    weatherLine = emoji + ' Bom dia! ' + cityName + ': ' + tmin + '° a ' + tmax + '°, ' + rain + '% de chance de chuva.';\n  } else {\n    weatherLine = '☀️ Bom dia! Previsão do tempo indisponível.';\n  }\n\n  // 2. Calendar\n  const events = await calendar.events({from: today, to: tomorrow});\n  events.sort((a, b) => (a.start < b.start ? -1 : 1));\n  let agendaLine;\n  if (events.length === 0) {\n    agendaLine = '📅 Nenhum compromisso hoje.';\n  } else {\n    const parts = events.map(function(e) {\n      const time = e.start.length > 10 ? dates.format(e.start, 'HH:mm') : 'Dia todo';\n      return time + ' ' + e.title;\n    });\n    agendaLine = '📅 ' + parts.join(' · ');\n  }\n\n  // 3. Emails\n  const emails = await gmail.search({query: 'in:inbox is:unread', days: 1, unread: true, max: 20});\n  const important = [];\n  for (const email of emails) {\n    const res = await judge.important(email);\n    if (res.p >= 0.5) important.push(email);\n  }\n  let emailsLine;\n  if (important.length === 0) {\n    emailsLine = '📩 Nenhum e-mail importante.';\n  } else {\n    const parts = important.map(function(e) {\n      return e.subject + ' (' + (e.from_name || e.from) + ')';\n    });\n    emailsLine = '📩 ' + parts.join(' · ');\n  }\n\n  // 4. Todoist\n  const tasks = await todoist.tasks({filter: 'today | overdue'});\n  let tasksLine;\n  if (!tasks || tasks.length === 0) {\n    tasksLine = '✅ Nenhuma tarefa para hoje.';\n  } else {\n    const parts = tasks.map(function(t) {\n      const dueDate = t.due && t.due.date ? t.due.date : null;\n      const overdue = dueDate && dates.isBefore(dueDate, today);\n      return t.content + (overdue ? ' (atrasada)' : '');\n    });\n    tasksLine = '✅ ' + parts.join(' · ');\n  }\n\n  const text = [weatherLine, agendaLine, emailsLine, tasksLine].join('\\n');\n  log(text);\n  await notify.send({text: text});\n}\n",
+ "tests": [
+  {
+   "name": "Dia normal com mistura de itens",
+   "now": "2026-09-29T10:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "precipitation_probability_max": [
+        30
+       ],
+       "temperature_2m_max": [
+        25
+       ],
+       "temperature_2m_min": [
+        17.5
+       ],
+       "time": [
+        "2026-09-29"
+       ]
+      }
+     }
+    },
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e1",
+       "title": "Reunião com fornecedor",
+       "start": "2026-09-29T10:00:00-03:00",
+       "end": "2026-09-29T11:00:00-03:00",
+       "location": "Meet",
+       "attendees": [
+        "a@b.com"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e2",
+       "title": "Dentista",
+       "start": "2026-09-29T15:00:00-03:00",
+       "end": "2026-09-29T16:00:00-03:00",
+       "location": "Clínica",
+       "attendees": [],
+       "calendar": "Pessoal"
+      }
+     ]
+    },
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "m1",
+       "from": "diretoria@empresa.com",
+       "from_name": "Marcos Diretor",
+       "to": "eu@exemplo.com",
+       "subject": "URGENTE: aprovação do contrato até hoje",
+       "snippet": "Preciso da sua assinatura.",
+       "date": "2026-09-29T09:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "m2",
+       "from": "newsletter@revista.com",
+       "from_name": "Revista Semanal",
+       "to": "eu@exemplo.com",
+       "subject": "As 10 notícias da semana",
+       "snippet": "Confira nosso resumo.",
+       "date": "2026-09-29T08:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "m3",
+       "from": "suporte@banco.com",
+       "from_name": "Banco XYZ",
+       "to": "eu@exemplo.com",
+       "subject": "Fatura vence amanhã, evite juros",
+       "snippet": "Pague sua fatura.",
+       "date": "2026-09-29T07:30:00-03:00",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      }
+     ]
+    },
+    {
+     "capability": "todoist.tasks",
+     "result": [
+      {
+       "id": "t1",
+       "content": "Pagar aluguel",
+       "due": {
+        "date": "2026-09-28"
+       },
+       "priority": 3,
+       "project_id": "p1",
+       "labels": []
+      },
+      {
+       "id": "t2",
+       "content": "Ligar para o cliente",
+       "due": {
+        "date": "2026-09-29"
+       },
+       "priority": 2,
+       "project_id": "p1",
+       "labels": []
+      }
+     ]
+    },
+    {
+     "capability": "notify.send",
+     "result": {
+      "ok": true,
+      "delivered": [
+       "telegram"
+      ]
+     }
+    }
+   ],
+   "judgments": {
+    "important": {
+     "10 notícias da semana": 0.03,
+     "Fatura vence amanhã": 0.7,
+     "aprovação do contrato": 0.97
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Reunião com fornecedor",
+      "aprovação do contrato",
+      "Fatura vence amanhã",
+      "Pagar aluguel",
+      "atrasada",
+      "Ligar para o cliente"
+     ],
+     "not_contains": [
+      "10 notícias da semana"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [],
+    "location": {
+     "latitude": -23.55,
+     "longitude": -46.63,
+     "name": "São Paulo",
+     "timezone": "America/Sao_Paulo"
+    }
+   }
+  },
+  {
+   "name": "Dia tranquilo: nada importante, sem eventos, sem tarefas",
+   "now": "2026-09-30T10:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "precipitation_probability_max": [
+        10
+       ],
+       "temperature_2m_max": [
+        22
+       ],
+       "temperature_2m_min": [
+        14
+       ],
+       "time": [
+        "2026-09-30"
+       ]
+      }
+     }
+    },
+    {
+     "capability": "calendar.events",
+     "result": []
+    },
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "m4",
+       "from": "promo@loja.com",
+       "from_name": "Loja Y",
+       "to": "eu@exemplo.com",
+       "subject": "Desconto imperdível só hoje",
+       "snippet": "50% off",
+       "date": "2026-09-30T06:00:00-03:00",
+       "labels": [
+        "INBOX",
+        "UNREAD",
+        "CATEGORY_PROMOTIONS"
+       ],
+       "replied": false,
+       "unread": true
+      }
+     ]
+    },
+    {
+     "capability": "todoist.tasks",
+     "result": []
+    },
+    {
+     "capability": "notify.send",
+     "result": {
+      "ok": true,
+      "delivered": [
+       "telegram"
+      ]
+     }
+    }
+   ],
+   "judgments": {
+    "important": {
+     "Desconto imperdível": 0.01
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Nenhum compromisso hoje",
+      "Nenhum e-mail importante",
+      "Nenhuma tarefa para hoje"
+     ],
+     "not_contains": [
+      "Desconto imperdível"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [],
+    "location": {
+     "latitude": -23.55,
+     "longitude": -46.63,
+     "name": "São Paulo",
+     "timezone": "America/Sao_Paulo"
+    }
+   }
+  },
+  {
+   "name": "Outra cidade e rótulos diferentes nos e-mails",
+   "now": "2026-10-01T10:00:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "daily": {
+       "precipitation_probability_max": [
+        85
+       ],
+       "temperature_2m_max": [
+        31
+       ],
+       "temperature_2m_min": [
+        24
+       ],
+       "time": [
+        "2026-10-01"
+       ]
+      }
+     }
+    },
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e3",
+       "title": "Treino",
+       "start": "2026-10-01",
+       "end": "2026-10-01",
+       "location": "",
+       "attendees": [],
+       "calendar": "Pessoal"
+      }
+     ]
+    },
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "m5",
+       "from": "cobranca@juridico.com",
+       "from_name": "Escritório Jurídico Alves",
+       "to": "eu@exemplo.com",
+       "subject": "Notificação: prazo de resposta em 24h",
+       "snippet": "Favor responder com urgência.",
+       "date": "2026-10-01T06:50:00-03:00",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "m6",
+       "from": "no-reply@sistema.com",
+       "from_name": "Sistema Automático",
+       "to": "eu@exemplo.com",
+       "subject": "Seu relatório mensal está pronto",
+       "snippet": "Acesse o painel.",
+       "date": "2026-10-01T06:20:00-03:00",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      }
+     ]
+    },
+    {
+     "capability": "todoist.tasks",
+     "result": [
+      {
+       "id": "t3",
+       "content": "Revisar contrato de aluguel",
+       "due": {
+        "date": "2026-09-29"
+       },
+       "priority": 4,
+       "project_id": "p1",
+       "labels": []
+      }
+     ]
+    },
+    {
+     "capability": "notify.send",
+     "result": {
+      "ok": true,
+      "delivered": [
+       "telegram"
+      ]
+     }
+    }
+   ],
+   "judgments": {
+    "important": {
+     "prazo de resposta em 24h": 0.9,
+     "relatório mensal está pronto": 0.1
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Treino",
+      "prazo de resposta em 24h",
+      "Revisar contrato de aluguel",
+      "atrasada"
+     ],
+     "not_contains": [
+      "relatório mensal"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [],
+    "location": {
+     "latitude": -22.9,
+     "longitude": -43.2,
+     "name": "Rio de Janeiro",
+     "timezone": "America/Sao_Paulo"
+    }
+   }
+  }
+ ]
+}

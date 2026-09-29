@@ -1,0 +1,266 @@
+{
+ "name": "Alerta de imóveis por e-mail",
+ "description": "Todo dia, procura nos e-mails de anúncios de imóveis (QuintoAndar, ZAP e outros) os que cabem no bairro, no número de quartos e no preço máximo que você definir, e avisa com os links.",
+ "manifest": {
+  "schedule": "30 8 * * *",
+  "capabilities": [
+   "gmail.search",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "dominios",
+    "label": "Domínios dos e-mails de anúncios",
+    "type": "text",
+    "default": "quintoandar.com.br OR zapimoveis.com.br",
+    "help": "Usado na busca do Gmail como from:(...)"
+   },
+   {
+    "name": "bairro",
+    "label": "Bairro desejado",
+    "type": "text",
+    "default": "Pinheiros"
+   },
+   {
+    "name": "quartos",
+    "label": "Número de quartos",
+    "type": "number",
+    "default": 2
+   },
+   {
+    "name": "precoMaximo",
+    "label": "Aluguel máximo (R$)",
+    "type": "number",
+    "default": 3000
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const query = `from:(${params.dominios})`;\n  const items = await gmail.search({ query, days: 1, max: 30 });\n\n  const bairro = (params.bairro || '').toLowerCase();\n  const quartosAlvo = Number(params.quartos);\n  const precoMax = Number(params.precoMaximo);\n\n  const matches = [];\n\n  for (const it of items) {\n    const text = `${it.subject} ${it.snippet}`;\n    const lower = text.toLowerCase();\n\n    // precisa ser aluguel, não venda\n    if (!lower.includes('alug')) continue;\n    if (lower.includes('venda')) continue;\n\n    // bairro\n    if (bairro && !lower.includes(bairro)) continue;\n\n    // número de quartos/dormitórios\n    const bedMatch = text.match(/(\\d+)\\s*(quartos?|dormit[óo]rios?)/i);\n    if (!bedMatch) continue;\n    const bedrooms = parseInt(bedMatch[1], 10);\n    if (bedrooms !== quartosAlvo) continue;\n\n    // preço do aluguel\n    const price = money.parse(text);\n    if (price === null || price === undefined) continue;\n    if (price > precoMax) continue;\n\n    matches.push({ item: it, price, bedrooms });\n  }\n\n  if (matches.length === 0) {\n    log('Nenhum imóvel compatível encontrado nas últimas 24h.');\n    return;\n  }\n\n  const lines = matches.map((m) => {\n    const areaMatch =\n      m.item.snippet.match(/(\\d+)\\s*m²/i) || m.item.subject.match(/(\\d+)\\s*m²/i);\n    const area = areaMatch ? `${areaMatch[1]} m², ` : '';\n    return `• ${m.item.subject} — ${area}${money.format(m.price, 'BRL')}`;\n  });\n\n  const header =\n    matches.length === 1\n      ? '🏠 Apartamento que bate com o que você procura:'\n      : `🏠 ${matches.length} apartamentos que batem com o que você procura:`;\n\n  await notify.send({ text: `${header}\\n${lines.join('\\n')}` });\n}\n",
+ "tests": [
+  {
+   "name": "vários anúncios, apenas um bate com os critérios",
+   "now": "2026-09-28T11:30:00Z",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "m1",
+       "from": "alertas@quintoandar.com.br",
+       "from_name": "QuintoAndar",
+       "to": "eu@exemplo.com",
+       "subject": "Novo lançamento: Edifício Jardim Pinheiros",
+       "snippet": "Apto de 2 dormitórios, 55 m², bairro Pinheiros, Aluguel: R$ 2.600,00.",
+       "date": "2026-09-28T09:00:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "m2",
+       "from": "alertas@zapimoveis.com.br",
+       "from_name": "ZAP",
+       "to": "eu@exemplo.com",
+       "subject": "Cobertura para venda em Pinheiros",
+       "snippet": "3 quartos, 120 m², Venda R$ 950.000,00.",
+       "date": "2026-09-28T09:05:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "m3",
+       "from": "alertas@quintoandar.com.br",
+       "from_name": "QuintoAndar",
+       "to": "eu@exemplo.com",
+       "subject": "Apartamento na Vila Madalena",
+       "snippet": "2 quartos, aluguel R$ 2.400,00, próximo ao metrô.",
+       "date": "2026-09-28T09:10:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "m4",
+       "from": "alertas@zapimoveis.com.br",
+       "from_name": "ZAP",
+       "to": "eu@exemplo.com",
+       "subject": "Studio em Pinheiros para alugar",
+       "snippet": "1 quarto, 30 m², aluguel R$ 3.300,00.",
+       "date": "2026-09-28T09:15:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Jardim Pinheiros",
+      "2.600,00"
+     ],
+     "not_contains": [
+      "Vila Madalena",
+      "Studio",
+      "Cobertura"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nenhum anúncio compatível - não envia nada",
+   "now": "2026-09-28T11:30:00Z",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "n1",
+       "from": "alertas@quintoandar.com.br",
+       "from_name": "QuintoAndar",
+       "to": "eu@exemplo.com",
+       "subject": "Cobertura para venda em Pinheiros",
+       "snippet": "3 quartos, 120 m², Venda R$ 950.000,00.",
+       "date": "2026-09-28T09:05:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "n2",
+       "from": "alertas@quintoandar.com.br",
+       "from_name": "QuintoAndar",
+       "to": "eu@exemplo.com",
+       "subject": "Apartamento na Vila Madalena",
+       "snippet": "2 quartos, aluguel R$ 2.400,00, próximo ao metrô.",
+       "date": "2026-09-28T09:10:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "n3",
+       "from": "alertas@zapimoveis.com.br",
+       "from_name": "ZAP",
+       "to": "eu@exemplo.com",
+       "subject": "Studio em Pinheiros para alugar",
+       "snippet": "1 quarto, 30 m², aluguel R$ 3.300,00.",
+       "date": "2026-09-28T09:15:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      }
+     ]
+    }
+   ],
+   "expect": []
+  },
+  {
+   "name": "parâmetros alterados: Vila Madalena, 3 quartos, até R$ 5.000",
+   "now": "2026-09-28T11:30:00Z",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "p1",
+       "from": "alertas@zapimoveis.com.br",
+       "from_name": "ZAP",
+       "to": "eu@exemplo.com",
+       "subject": "Excelente opção na Vila Madalena",
+       "snippet": "3 quartos, 85 m², aluguel R$ 4.200,00.",
+       "date": "2026-09-28T09:20:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "p2",
+       "from": "alertas@zapimoveis.com.br",
+       "from_name": "ZAP",
+       "to": "eu@exemplo.com",
+       "subject": "Casa para venda na Vila Madalena",
+       "snippet": "3 quartos, Venda R$ 800.000,00.",
+       "date": "2026-09-28T09:25:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "p3",
+       "from": "alertas@quintoandar.com.br",
+       "from_name": "QuintoAndar",
+       "to": "eu@exemplo.com",
+       "subject": "Apartamento em Pinheiros",
+       "snippet": "3 quartos, aluguel R$ 2.900,00.",
+       "date": "2026-09-28T09:30:00Z",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Vila Madalena",
+      "4.200,00"
+     ],
+     "not_contains": [
+      "Pinheiros",
+      "venda"
+     ]
+    }
+   ],
+   "params": {
+    "bairro": "Vila Madalena",
+    "precoMaximo": 5000,
+    "quartos": 3
+   }
+  }
+ ]
+}

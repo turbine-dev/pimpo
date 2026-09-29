@@ -157,6 +157,10 @@ If a channel keeps failing for three minutes (Telegram, Discord, Slack or Signal
 
 Browse ready-made routines, filtered by what they can touch. Pimpo checks the author's signature, runs the routine's tests, and audits what it really calls before installing. To share one of yours, use **Publicar** on its page.
 
+## Suggestions
+
+Once a day Pimpo may notice something you repeat and offer a routine: "you pay this bill every month; want a routine for it?". The suggestion arrives in **Precisa de você** and on your channel, and says what Pimpo would do. **Sim, aprenda** starts it the usual way (you watch it once and approve it); **Não, obrigado** makes sure it does not come back. For this Pimpo looks only at who writes to you and about what, your upcoming events and your routines, never at what emails say. Turn it off in **Ajustes › Notificações › Sugestões**.
+
 ## Updates
 
 The desktop app updates itself: when a new version is ready it says so at the top of the app and in the menu bar, and **Atualizar e reiniciar** installs it. Before a new version touches anything, Pimpo keeps a copy of your data. **Ajustes › Geral › Atualizações** looks for updates now, turns on beta versions, and goes back to the version you had before, with your data as it was then. On a server, run `pimpo update` (and `pimpo update --rollback` to go back).

@@ -146,6 +146,8 @@ export function Settings() {
             ]} onToggle={(k, on) => setS({ ...s, mute: on ? (s.mute ?? []).filter((x) => x !== k) : [...(s.mute ?? []), k] })} />
             <Toggles title={t('settings.email')} text={t('settings.emailText')} items={[{ key: 'email', label: t('set.emailOn'), on: !!s.email_channel }]}
               onToggle={(_, on) => setS({ ...s, email_channel: on })} />
+            <Toggles title={t('settings.suggestTitle')} text={t('settings.suggestText')} items={[{ key: 'suggest', label: t('settings.suggestTitle'), on: !s.suggest_off }]}
+              onToggle={(_, on) => setS({ ...s, suggest_off: !on })} />
           </>}
 
           {section === 'backup' && <>

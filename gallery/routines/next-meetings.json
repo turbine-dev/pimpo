@@ -1,0 +1,127 @@
+{
+ "name": "Aviso de reuniões da próxima hora",
+ "description": "A cada hora, das 8h às 18h, verifica o calendário e avisa no destino escolhido sobre as reuniões que começam na próxima hora, com horário, local e participantes. Não envia nada se não houver reuniões.",
+ "manifest": {
+  "schedule": "0 8-18 * * *",
+  "capabilities": [
+   "calendar.events",
+   "notify.send"
+  ],
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const from = now();\n  const to = dates.addHours(from, 1);\n  const events = await calendar.events({ from, to });\n  if (!events || events.length === 0) {\n    log(\"Nenhuma reunião no calendário no período informado\");\n    return;\n  }\n  const upcoming = events.filter(ev => {\n    if (!ev.start || ev.start.length <= 10) return false; // evento de dia inteiro, sem horário\n    return !dates.isBefore(ev.start, from) && dates.isBefore(ev.start, to);\n  });\n  if (upcoming.length === 0) {\n    log(\"Nenhuma reunião começa na próxima hora\");\n    return;\n  }\n  for (const ev of upcoming) {\n    const time = dates.format(ev.start, \"HH:mm\");\n    const location = ev.location ? ev.location : \"sem local\";\n    const attendees = (ev.attendees && ev.attendees.length) ? ev.attendees.join(\", \") : \"sem participantes\";\n    const text = `⏰ ${time} ${ev.title} — ${location} — ${attendees}`;\n    await notify.send({ text });\n  }\n}\n",
+ "tests": [
+  {
+   "name": "Uma reunião começando na próxima hora",
+   "now": "2026-09-28T16:00:00Z",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e1",
+       "title": "Alinhamento com cliente",
+       "start": "2026-09-28T16:30:00Z",
+       "end": "2026-09-28T17:00:00Z",
+       "location": "Sala Ipiranga",
+       "attendees": [
+        "ana@cliente.com",
+        "carlos@empresa.com.br"
+       ],
+       "calendar": "Trabalho"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "16:30",
+      "Alinhamento com cliente",
+      "Sala Ipiranga",
+      "ana@cliente.com",
+      "carlos@empresa.com.br"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Nenhuma reunião no período",
+   "now": "2026-09-28T09:00:00Z",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": []
+    }
+   ],
+   "expect": []
+  },
+  {
+   "name": "Várias reuniões: uma dentro da janela, uma fora e um evento de dia inteiro",
+   "now": "2026-09-28T12:00:00Z",
+   "responses": [
+    {
+     "capability": "calendar.events",
+     "result": [
+      {
+       "id": "e2",
+       "title": "Daily do time",
+       "start": "2026-09-28T12:20:00Z",
+       "end": "2026-09-28T12:35:00Z",
+       "location": null,
+       "attendees": [
+        "time@empresa.com.br"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e3",
+       "title": "Revisão trimestral",
+       "start": "2026-09-28T15:30:00Z",
+       "end": "2026-09-28T16:30:00Z",
+       "location": "Auditório",
+       "attendees": [
+        "diretoria@empresa.com.br"
+       ],
+       "calendar": "Trabalho"
+      },
+      {
+       "id": "e4",
+       "title": "Feriado da empresa",
+       "start": "2026-09-28",
+       "end": "2026-09-29",
+       "location": null,
+       "attendees": [],
+       "calendar": "Trabalho"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "12:20",
+      "Daily do time",
+      "sem local",
+      "time@empresa.com.br"
+     ],
+     "not_contains": [
+      "Revisão trimestral",
+      "Feriado da empresa"
+     ]
+    }
+   ]
+  }
+ ]
+}

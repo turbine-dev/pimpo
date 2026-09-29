@@ -1,0 +1,256 @@
+{
+ "name": "Resumo diário de newsletters",
+ "description": "Todos os dias às 18h, junta num só Telegram as newsletters recebidas no dia (remetente e assunto) e arquiva os e-mails originais.",
+ "manifest": {
+  "schedule": "0 18 * * *",
+  "capabilities": [
+   "gmail.search",
+   "gmail.archive",
+   "notify.send"
+  ],
+  "judgments": {
+   "newsletter": "Este e-mail é uma newsletter (boletim informativo recorrente), e não uma mensagem pessoal ou de trabalho?"
+  },
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const today = dates.today();\n  const emails = await gmail.search({ query: \"in:inbox\", days: 1, max: 50 });\n\n  const newsletters = [];\n  for (const e of emails) {\n    if (!dates.sameDay(e.date, today)) continue;\n    const j = await judge.newsletter(e);\n    if (j.p >= 0.5) newsletters.push(e);\n  }\n\n  if (newsletters.length === 0) {\n    log(\"Nenhuma newsletter hoje.\");\n    return;\n  }\n\n  const lines = newsletters.map(e => `• ${e.from_name || e.from} — ${e.subject}`);\n  const text = `📰 Newsletters de hoje:\\n${lines.join(\"\\n\")}`;\n\n  await notify.send({ text });\n\n  for (const e of newsletters) {\n    await gmail.archive({ id: e.id });\n  }\n}\n",
+ "tests": [
+  {
+   "name": "caso normal - duas newsletters, um e-mail pessoal",
+   "now": "2026-09-28T21:00:00Z",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "a1",
+       "from": "newsletter@morningbrew.com",
+       "from_name": "Morning Brew",
+       "subject": "Your daily brew ☕",
+       "snippet": "Good morning...",
+       "date": "2026-09-28T09:00:00Z",
+       "to": "eu@exemplo.com",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "a2",
+       "from": "team@substack.com",
+       "from_name": "Stratechery",
+       "subject": "Weekly Update",
+       "snippet": "This week in tech...",
+       "date": "2026-09-28T12:00:00Z",
+       "to": "eu@exemplo.com",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "a3",
+       "from": "joao@empresa.com",
+       "from_name": "João",
+       "subject": "Proposta comercial",
+       "snippet": "Segue nossa proposta...",
+       "date": "2026-09-28T14:00:00Z",
+       "to": "eu@exemplo.com",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "newsletter": {
+     "a1": 0.9,
+     "a2": 0.85,
+     "a3": 0.05
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Morning Brew",
+      "Stratechery"
+     ],
+     "not_contains": [
+      "João",
+      "Proposta comercial"
+     ]
+    },
+    {
+     "capability": "gmail.archive",
+     "count": 2
+    }
+   ]
+  },
+  {
+   "name": "edge case - nenhuma newsletter hoje",
+   "now": "2026-09-28T21:00:00Z",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "b1",
+       "from": "maria@cliente.com",
+       "from_name": "Maria Silva",
+       "subject": "Dúvida sobre contrato",
+       "snippet": "Podemos conversar?",
+       "date": "2026-09-28T10:00:00Z",
+       "to": "eu@exemplo.com",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "b2",
+       "from": "financeiro@empresa.com",
+       "from_name": "Financeiro",
+       "subject": "Nota fiscal em anexo",
+       "snippet": "Segue a nota...",
+       "date": "2026-09-28T13:00:00Z",
+       "to": "eu@exemplo.com",
+       "labels": [
+        "INBOX"
+       ],
+       "replied": false,
+       "unread": false
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "newsletter": {
+     "b1": 0.03,
+     "b2": 0.1
+    }
+   },
+   "expect": []
+  },
+  {
+   "name": "varias newsletters, uma de ontem excluida, destino customizado",
+   "now": "2026-09-28T21:00:00Z",
+   "responses": [
+    {
+     "capability": "gmail.search",
+     "result": [
+      {
+       "id": "n1",
+       "from": "noreply@techcrunch.com",
+       "from_name": "TechCrunch Daily",
+       "subject": "Top Tech News Today",
+       "snippet": "Here are today's top stories",
+       "date": "2026-09-28T08:00:00Z",
+       "to": "eu@exemplo.com",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "n2",
+       "from": "digest@producthunt.com",
+       "from_name": "Product Hunt",
+       "subject": "Today's top products",
+       "snippet": "Check out today's launches",
+       "date": "2026-09-28T11:00:00Z",
+       "to": "eu@exemplo.com",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "n3",
+       "from": "maria@cliente.com",
+       "from_name": "Maria Silva",
+       "subject": "Dúvida sobre contrato",
+       "snippet": "Podemos conversar?",
+       "date": "2026-09-28T15:00:00Z",
+       "to": "eu@exemplo.com",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      },
+      {
+       "id": "n4",
+       "from": "info@meetup.com",
+       "from_name": "Meetup",
+       "subject": "Eventos essa semana",
+       "snippet": "Confira os eventos",
+       "date": "2026-09-27T10:00:00Z",
+       "to": "eu@exemplo.com",
+       "labels": [
+        "INBOX",
+        "UNREAD"
+       ],
+       "replied": false,
+       "unread": true
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "newsletter": {
+     "n1": 0.95,
+     "n2": 0.9,
+     "n3": 0.1,
+     "n4": 0.99
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "TechCrunch Daily",
+      "Product Hunt"
+     ],
+     "not_contains": [
+      "Meetup",
+      "Maria Silva"
+     ]
+    },
+    {
+     "capability": "gmail.archive",
+     "count": 2
+    }
+   ],
+   "params": {
+    "destinos": [
+     "Canal Trabalho"
+    ]
+   }
+  }
+ ]
+}

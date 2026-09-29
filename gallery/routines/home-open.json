@@ -1,0 +1,139 @@
+{
+ "name": "Portas e janelas abertas à noite",
+ "description": "Todo dia às 23h, verifica no Home Assistant se alguma porta ou janela ficou aberta e avisa no destino escolhido (ex: Telegram). Se tudo estiver fechado, não envia nada.",
+ "manifest": {
+  "schedule": "0 23 * * *",
+  "capabilities": [
+   "ha.states",
+   "notify.send"
+  ],
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const sensors = await ha.states({ domain: \"binary_sensor\" });\n\n  const keywords = [\"porta\", \"janela\", \"door\", \"window\", \"gate\", \"garagem\", \"garage\", \"portao\", \"portão\"];\n\n  function isDoorOrWindow(sensor) {\n    const haystack = ((sensor.name || \"\") + \" \" + (sensor.entity_id || \"\")).toLowerCase();\n    return keywords.some(function (k) { return haystack.indexOf(k) !== -1; });\n  }\n\n  const open = sensors.filter(function (s) {\n    return isDoorOrWindow(s) && s.state === \"on\";\n  });\n\n  log(\"Sensores de porta/janela encontrados: \" + sensors.filter(isDoorOrWindow).length + \", abertos: \" + open.length);\n\n  if (open.length === 0) {\n    return;\n  }\n\n  const names = open.map(function (s) { return s.name || s.entity_id; });\n  const text = \"🚪 Ficou aberto: \" + names.join(\", \");\n\n  await notify.send({ text: text });\n}\n",
+ "tests": [
+  {
+   "name": "tudo fechado - sem aviso",
+   "now": "2026-09-28T02:00:00Z",
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "binary_sensor.porta_da_frente",
+       "name": "Porta da frente",
+       "state": "off",
+       "changed": "2026-09-27T22:00:00Z"
+      },
+      {
+       "entity_id": "binary_sensor.janela_do_quarto",
+       "name": "Janela do quarto",
+       "state": "off",
+       "changed": "2026-09-27T22:00:00Z"
+      },
+      {
+       "entity_id": "binary_sensor.movimento_sala",
+       "name": "Movimento sala",
+       "state": "on",
+       "changed": "2026-09-27T22:00:00Z"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ]
+  },
+  {
+   "name": "varias abertas em ingles",
+   "now": "2026-09-28T02:00:00Z",
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "binary_sensor.front_door",
+       "name": "Front Door",
+       "state": "on",
+       "changed": "2026-09-27T22:00:00Z"
+      },
+      {
+       "entity_id": "binary_sensor.kitchen_window",
+       "name": "Kitchen Window",
+       "state": "on",
+       "changed": "2026-09-27T22:00:00Z"
+      },
+      {
+       "entity_id": "binary_sensor.garage_gate",
+       "name": "Garage Gate",
+       "state": "off",
+       "changed": "2026-09-27T22:00:00Z"
+      },
+      {
+       "entity_id": "binary_sensor.motion_hallway",
+       "name": "Motion Hallway",
+       "state": "on",
+       "changed": "2026-09-27T22:00:00Z"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Front Door",
+      "Kitchen Window"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "uma janela aberta, com destino customizado",
+   "now": "2026-09-28T02:00:00Z",
+   "responses": [
+    {
+     "capability": "ha.states",
+     "result": [
+      {
+       "entity_id": "binary_sensor.janela_da_varanda",
+       "name": "Janela da varanda",
+       "state": "on",
+       "changed": "2026-09-27T22:00:00Z"
+      },
+      {
+       "entity_id": "binary_sensor.porta_dos_fundos",
+       "name": "Porta dos fundos",
+       "state": "off",
+       "changed": "2026-09-27T22:00:00Z"
+      }
+     ]
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Janela da varanda"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [
+     "telegram:casa"
+    ]
+   }
+  }
+ ]
+}

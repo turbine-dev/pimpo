@@ -1,0 +1,64 @@
+{
+ "name": "Check-in diário de treino e água",
+ "description": "Todos os dias às 21h envia uma mensagem no Telegram perguntando se o usuário treinou e se bebeu 2 litros de água.",
+ "manifest": {
+  "schedule": "0 21 * * *",
+  "capabilities": [
+   "notify.send"
+  ],
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const text = \"💪 Check-in do dia: você treinou hoje? E bebeu os 2 litros de água?\";\n  await notify.send({ text });\n}\n",
+ "tests": [
+  {
+   "name": "Envia o check-in normalmente em uma terça-feira qualquer",
+   "now": "2026-09-29T21:00:00-03:00",
+   "responses": [],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "treinou",
+      "água"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Envia o check-in também no fim de semana (todo dia, sem exceção)",
+   "now": "2026-10-04T21:00:00-03:00",
+   "responses": [],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "2 litros"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Continua enviando em outra data qualquer do mês seguinte",
+   "now": "2026-11-10T21:00:00-03:00",
+   "responses": [],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "treinou"
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,196 @@
+{
+ "name": "Notícias de IA do Hacker News",
+ "description": "Toda segunda às 9h, lê o feed \"best\" do Hacker News, usa um julgamento para separar as histórias sobre inteligência artificial publicadas na última semana (ignorando as já enviadas antes), e envia ao dono uma mensagem no Telegram com o título e o link de cada uma. Se nenhuma história de IA for encontrada, nada é enviado.",
+ "manifest": {
+  "schedule": "0 9 * * 1",
+  "capabilities": [
+   "rss.read:hnrss.org",
+   "notify.send"
+  ],
+  "judgments": {
+   "about_ai": "Esta notícia do Hacker News é sobre inteligência artificial?"
+  },
+  "params": [
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const items = await rss.read({ url: \"https://hnrss.org/best\", max: 30 });\n\n  const cutoff = dates.addDays(now(), -7);\n  const seen = state.get(\"sent_links\") || [];\n\n  const aiItems = [];\n  for (const item of items) {\n    if (item.published && dates.isBefore(item.published, cutoff)) continue;\n    if (seen.includes(item.link)) continue;\n    const j = await judge.about_ai(item);\n    if (j.p >= 0.5) aiItems.push(item);\n  }\n\n  if (aiItems.length === 0) {\n    log(\"Nenhuma notícia de IA encontrada esta semana.\");\n    return;\n  }\n\n  let text = \"🤖 IA no Hacker News:\\n\";\n  for (const item of aiItems) {\n    text += `• ${item.title} — ${item.link}\\n`;\n  }\n\n  await notify.send({ text: text.trim() });\n\n  const newSeen = seen.concat(aiItems.map((i) => i.link)).slice(-100);\n  state.set(\"sent_links\", newSeen);\n}\n",
+ "tests": [
+  {
+   "name": "caso normal: algumas histórias de IA, outras excluídas",
+   "now": "2026-10-05T12:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://news.ycombinator.com/item?id=2001",
+       "published": "2026-10-04T14:00:00Z",
+       "summary": "",
+       "title": "New LLM architecture beats transformers"
+      },
+      {
+       "link": "https://news.ycombinator.com/item?id=2002",
+       "published": "2026-10-04T10:00:00Z",
+       "summary": "",
+       "title": "Why Rust is memory safe"
+      },
+      {
+       "link": "https://news.ycombinator.com/item?id=2003",
+       "published": "2026-10-03T18:00:00Z",
+       "summary": "",
+       "title": "OpenAI releases new reasoning model"
+      },
+      {
+       "link": "https://news.ycombinator.com/item?id=2004",
+       "published": "2026-10-03T09:00:00Z",
+       "summary": "",
+       "title": "Show HN: my new blog engine"
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "about_ai": {
+     "id=2001": 0.9,
+     "id=2002": 0.05,
+     "id=2003": 0.85,
+     "id=2004": 0.03
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "New LLM architecture beats transformers",
+      "https://news.ycombinator.com/item?id=2001",
+      "OpenAI releases new reasoning model",
+      "https://news.ycombinator.com/item?id=2003"
+     ],
+     "not_contains": [
+      "Why Rust is memory safe",
+      "Show HN: my new blog engine"
+     ]
+    }
+   ],
+   "expect_state": {
+    "sent_links": [
+     "https://news.ycombinator.com/item?id=2001",
+     "https://news.ycombinator.com/item?id=2003"
+    ]
+   }
+  },
+  {
+   "name": "caso extremo: nenhuma história de IA",
+   "now": "2026-10-05T12:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://news.ycombinator.com/item?id=2101",
+       "published": "2026-10-04T14:00:00Z",
+       "summary": "",
+       "title": "Tips for better sleep"
+      },
+      {
+       "link": "https://news.ycombinator.com/item?id=2102",
+       "published": "2026-10-04T10:00:00Z",
+       "summary": "",
+       "title": "New JavaScript framework released"
+      },
+      {
+       "link": "https://news.ycombinator.com/item?id=2103",
+       "published": "2026-10-03T18:00:00Z",
+       "summary": "",
+       "title": "History of the printing press"
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "about_ai": {
+     "id=2101": 0.04,
+     "id=2102": 0.1,
+     "id=2103": 0.02
+    }
+   },
+   "expect": []
+  },
+  {
+   "name": "palavras diferentes, item duplicado (já enviado) e item antigo excluídos",
+   "now": "2026-10-12T12:00:00Z",
+   "responses": [
+    {
+     "capability": "rss.read",
+     "result": [
+      {
+       "link": "https://news.ycombinator.com/item?id=3001",
+       "published": "2026-10-11T14:00:00Z",
+       "summary": "",
+       "title": "GPT-5 rumors surface online"
+      },
+      {
+       "link": "https://news.ycombinator.com/item?id=3002",
+       "published": "2026-10-11T10:00:00Z",
+       "summary": "",
+       "title": "Anthropic Claude update improves reasoning"
+      },
+      {
+       "link": "https://news.ycombinator.com/item?id=3003",
+       "published": "2026-10-10T08:00:00Z",
+       "summary": "",
+       "title": "The best keyboards of 2026"
+      },
+      {
+       "link": "https://news.ycombinator.com/item?id=3004",
+       "published": "2026-09-20T08:00:00Z",
+       "summary": "",
+       "title": "Old AI story from last month"
+      }
+     ]
+    }
+   ],
+   "judgments": {
+    "about_ai": {
+     "id=3001": 0.92,
+     "id=3002": 0.88,
+     "id=3003": 0.06,
+     "id=3004": 0.9
+    }
+   },
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "Anthropic Claude update improves reasoning",
+      "https://news.ycombinator.com/item?id=3002"
+     ],
+     "not_contains": [
+      "GPT-5 rumors surface online",
+      "Old AI story from last month",
+      "keyboards"
+     ]
+    }
+   ],
+   "state": {
+    "sent_links": [
+     "https://news.ycombinator.com/item?id=3001"
+    ]
+   },
+   "expect_state": {
+    "sent_links": [
+     "https://news.ycombinator.com/item?id=3001",
+     "https://news.ycombinator.com/item?id=3002"
+    ]
+   }
+  }
+ ]
+}

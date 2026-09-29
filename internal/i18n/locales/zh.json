@@ -169,5 +169,11 @@
   "svc.websearch.field.searxng_url.placeholder": "https://searx.example.org",
   "svc.websearch.help": "使用 Brave Search API（在 api-dashboard.search.brave.com 免费获取密钥，每月 2,000 次）、Perplexity 搜索（在 perplexity.ai/account/api 获取密钥，每千次约 5 美元，由 Perplexity 收费），或你自己或可信的、已开启 JSON 格式的 SearXNG 地址。填写多个时按此顺序：Brave、Perplexity、SearXNG。",
   "svc.websearch.title": "网页搜索",
-  "msg.budgetOver": "今天的支出上限已用完。"
+  "msg.budgetOver": "今天的支出上限已用完。",
+  "msg.suggestion": "💡 建议：{title}\n{why}\n\n要我学会吗？我会做：“{request}”",
+  "btn.suggestYes": "好，学会它",
+  "btn.suggestNo": "不用了，谢谢",
+  "msg.suggestion.gone": "这条建议已经不在了。",
+  "msg.suggestion.started": "已开始：我会在你看着的时候先做一次；批准后就变成例程。",
+  "msg.suggestion.declined": "好的，我不会再建议这个。"
 }

@@ -1,0 +1,154 @@
+{
+ "name": "Cotações da B3 com destaque",
+ "description": "Todo dia útil às 10h30, envia no Telegram (ou destino escolhido) a cotação de uma lista de tickers da B3, destacando com ⚠️ os que variaram mais de um limite percentual no dia (padrão 2%).",
+ "manifest": {
+  "schedule": "30 10 * * 1-5",
+  "capabilities": [
+   "http.getJSON:brapi.dev",
+   "notify.send"
+  ],
+  "locale": "pt-BR",
+  "params": [
+   {
+    "name": "tickers",
+    "label": "Tickers (separados por vírgula)",
+    "type": "text",
+    "default": "PETR4,ITUB4,MXRF11",
+    "help": "Códigos B3 a consultar, ex: PETR4,ITUB4,MXRF11"
+   },
+   {
+    "name": "threshold",
+    "label": "Variação para destacar (%)",
+    "type": "number",
+    "default": 2
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const tickersParam = (params.tickers || \"PETR4,ITUB4,MXRF11\");\n  const tickers = tickersParam.split(\",\").map(t => t.trim().toUpperCase()).filter(Boolean);\n  if (tickers.length === 0) {\n    log(\"Nenhum ticker configurado\");\n    return;\n  }\n\n  const url = \"https://brapi.dev/api/quote/\" + tickers.join(\",\");\n  const data = await http.getJSON(url);\n  const results = (data && data.results) || [];\n\n  const threshold = (params.threshold !== undefined && params.threshold !== null) ? params.threshold : 2;\n\n  const lines = [];\n  for (const t of tickers) {\n    const r = results.find(x => x.symbol === t);\n    if (!r) continue;\n    const price = money.format(r.regularMarketPrice, \"BRL\");\n    const pct = r.regularMarketChangePercent;\n    const sign = pct > 0 ? \"+\" : \"\";\n    const pctText = sign + pct.toFixed(1).replace(\".\", \",\") + \"%\";\n    const warn = Math.abs(pct) > threshold ? \"⚠️ \" : \"\";\n    lines.push(warn + t + \" \" + price + \" (\" + pctText + \")\");\n  }\n\n  if (lines.length === 0) {\n    log(\"Nenhuma cotação encontrada para os tickers configurados\");\n    return;\n  }\n\n  const text = \"📈 Cotações:\\n\" + lines.join(\"\\n\");\n  await notify.send({ text });\n}\n",
+ "tests": [
+  {
+   "name": "Caso normal: uma queda forte e uma alta forte destacadas",
+   "now": "2026-09-28T13:30:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "results": [
+       {
+        "symbol": "MXRF11",
+        "regularMarketPrice": 10.35,
+        "regularMarketChangePercent": 2.5
+       },
+       {
+        "symbol": "PETR4",
+        "regularMarketPrice": 36.9,
+        "regularMarketChangePercent": -3.5
+       },
+       {
+        "symbol": "ITUB4",
+        "regularMarketPrice": 34.8,
+        "regularMarketChangePercent": 1
+       }
+      ]
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "⚠️ PETR4",
+      "⚠️ MXRF11",
+      "ITUB4 R$ 34,80 (+1,0%)"
+     ],
+     "not_contains": [
+      "⚠️ ITUB4"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Nenhuma variação passa do limite: mensagem sem destaque",
+   "now": "2026-09-29T13:30:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "results": [
+       {
+        "symbol": "PETR4",
+        "regularMarketPrice": 37.5,
+        "regularMarketChangePercent": 0.4
+       },
+       {
+        "symbol": "ITUB4",
+        "regularMarketPrice": 35,
+        "regularMarketChangePercent": -1.2
+       },
+       {
+        "symbol": "MXRF11",
+        "regularMarketPrice": 10.2,
+        "regularMarketChangePercent": 0
+       }
+      ]
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "PETR4",
+      "ITUB4",
+      "MXRF11"
+     ],
+     "not_contains": [
+      "⚠️"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Tickers e limite personalizados, um símbolo ausente na resposta",
+   "now": "2026-09-30T13:30:00Z",
+   "responses": [
+    {
+     "capability": "http.getJSON",
+     "result": {
+      "results": [
+       {
+        "symbol": "BBDC4",
+        "regularMarketPrice": 28.9,
+        "regularMarketChangePercent": 1.8
+       }
+      ]
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "⚠️ BBDC4 R$ 28,90 (+1,8%)"
+     ],
+     "not_contains": [
+      "WEGE3"
+     ]
+    }
+   ],
+   "params": {
+    "threshold": 1,
+    "tickers": "BBDC4, WEGE3"
+   }
+  }
+ ]
+}

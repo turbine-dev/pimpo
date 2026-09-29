@@ -1,0 +1,161 @@
+{
+ "name": "Alerta de preço numa página de loja",
+ "description": "A cada hora, lê a página do produto que você escolher e avisa quando o preço cair abaixo do valor definido.",
+ "manifest": {
+  "schedule": "0 * * * *",
+  "capabilities": [
+   "web.read:www.kabum.com.br",
+   "notify.send"
+  ],
+  "params": [
+   {
+    "name": "url",
+    "label": "URL do produto",
+    "type": "text",
+    "default": "https://www.kabum.com.br/produto/520369",
+    "help": "Página do produto na KaBuM!"
+   },
+   {
+    "name": "threshold",
+    "label": "Avisar se abaixo de",
+    "type": "number",
+    "default": 1100,
+    "help": "Valor em reais; avisa quando o preço ficar abaixo deste valor"
+   },
+   {
+    "name": "destinos",
+    "label": "Onde avisar",
+    "type": "destinations",
+    "default": []
+   }
+  ]
+ },
+ "code": "async function run() {\n  const url = params.url;\n  const result = await web.read({ url });\n  let price = null;\n\n  if (Array.isArray(result.data)) {\n    for (const item of result.data) {\n      if (item && item['@type'] === 'Product' && item.offers) {\n        const offers = Array.isArray(item.offers) ? item.offers : [item.offers];\n        for (const offer of offers) {\n          if (offer && offer.price !== undefined && offer.price !== null && offer.price !== '') {\n            const parsed = money.parse(String(offer.price));\n            if (parsed !== null) {\n              price = parsed;\n              break;\n            }\n          }\n        }\n      }\n      if (price !== null) break;\n    }\n  }\n\n  if (price === null && result.text) {\n    const found = money.find(result.text);\n    if (found) {\n      price = money.parse(found);\n    }\n  }\n\n  if (price === null) {\n    log('Preço não encontrado na página');\n    return;\n  }\n\n  if (price < params.threshold) {\n    const text =\n      'Ryzen 7 5700X3D por ' +\n      money.format(price, 'BRL') +\n      ' (abaixo de ' +\n      money.format(params.threshold, 'BRL') +\n      '): ' +\n      url;\n    await notify.send({ text });\n  } else {\n    log('Preço acima do limite: ' + money.format(price, 'BRL'));\n  }\n}\n",
+ "tests": [
+  {
+   "name": "Preço abaixo do limite - avisa",
+   "now": "2026-09-28T15:00:00Z",
+   "responses": [
+    {
+     "capability": "web.read",
+     "result": {
+      "url": "https://www.kabum.com.br/produto/520369",
+      "title": "Processador AMD Ryzen 7 5700X3D AM4 | KaBuM!",
+      "description": "",
+      "truncated": false,
+      "links": [],
+      "data": [
+       {
+        "@type": "Product",
+        "name": "Processador AMD Ryzen 7 5700X3D",
+        "offers": {
+         "@type": "Offer",
+         "availability": "https://schema.org/InStock",
+         "price": "1039.90",
+         "priceCurrency": "BRL"
+        }
+       }
+      ],
+      "text": "Processador AMD Ryzen 7 5700X3D\nÀ vista no PIX\nR$ 1039,90\nEm até 10x sem juros"
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "R$ 1.039,90",
+      "R$ 1.100,00",
+      "kabum.com.br/produto/520369"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [],
+    "threshold": 1100,
+    "url": "https://www.kabum.com.br/produto/520369"
+   }
+  },
+  {
+   "name": "Preço acima do limite - não avisa",
+   "now": "2026-09-28T16:00:00Z",
+   "responses": [
+    {
+     "capability": "web.read",
+     "result": {
+      "url": "https://www.kabum.com.br/produto/520369",
+      "title": "Processador AMD Ryzen 7 5700X3D AM4 | KaBuM!",
+      "description": "",
+      "truncated": false,
+      "links": [],
+      "data": [
+       {
+        "@type": "Product",
+        "name": "Processador AMD Ryzen 7 5700X3D",
+        "offers": {
+         "@type": "Offer",
+         "availability": "https://schema.org/InStock",
+         "price": "1199.00",
+         "priceCurrency": "BRL"
+        }
+       }
+      ],
+      "text": "Processador AMD Ryzen 7 5700X3D\nÀ vista no PIX\nR$ 1199,00\nEm até 10x sem juros"
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 0
+    }
+   ],
+   "params": {
+    "destinos": [],
+    "threshold": 1100,
+    "url": "https://www.kabum.com.br/produto/520369"
+   }
+  },
+  {
+   "name": "Formato diferente sem offers, sem preço estruturado, limite alterado - avisa",
+   "now": "2026-09-28T17:00:00Z",
+   "responses": [
+    {
+     "capability": "web.read",
+     "result": {
+      "url": "https://www.kabum.com.br/produto/520369",
+      "title": "Processador AMD Ryzen™ 7 5700X3D AM4 | KaBuM!",
+      "description": "",
+      "truncated": false,
+      "links": [],
+      "data": [
+       {
+        "@type": "Product",
+        "name": "Processador AMD Ryzen™ 7 5700X3D AM4",
+        "offers": {}
+       }
+      ],
+      "text": "Processador AMD Ryzen™ 7 5700X3D AM4\nAté 12x sem juros\nR$ 989,90 à vista no PIX\nFrete grátis para todo o Brasil"
+     }
+    }
+   ],
+   "expect": [
+    {
+     "capability": "notify.send",
+     "count": 1,
+     "contains": [
+      "R$ 989,90",
+      "R$ 1.000,00",
+      "kabum.com.br/produto/520369"
+     ]
+    }
+   ],
+   "params": {
+    "destinos": [],
+    "threshold": 1000,
+    "url": "https://www.kabum.com.br/produto/520369"
+   }
+  }
+ ]
+}
