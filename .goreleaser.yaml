@@ -24,7 +24,7 @@ archives:
       - goos: windows
         formats: [zip]
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}"
-    files: [LICENSE*, README*]
+    files: [LICENSE*, NOTICE*, README*]
 
 checksum:
   name_template: checksums.txt
@@ -36,6 +36,6 @@ changelog:
 
 release:
   github:
-    owner: denerFernandes
+    owner: turbine-dev
     name: pimpo
   draft: true

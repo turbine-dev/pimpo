@@ -1,0 +1,32 @@
+name: Connector request
+description: A service Pimpo should connect to.
+labels: [connector]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Many services need no new code: an MCP server (Conexões › Explorar), a REST API with an OpenAPI description (Conexões › Por OpenAPI) or a JSON connector are enough. See docs/CONNECTORS.md.
+  - type: input
+    id: service
+    attributes:
+      label: Service
+      placeholder: e.g. Linear, Nubank, Philips Hue
+    validations: { required: true }
+  - type: textarea
+    id: actions
+    attributes:
+      label: What Pimpo should read or do there
+      placeholder: |
+        - read: list my open issues
+        - change: move an issue to Done
+    validations: { required: true }
+  - type: input
+    id: api
+    attributes:
+      label: API documentation or OpenAPI description
+      description: A link, if there is one.
+  - type: dropdown
+    id: tried
+    attributes:
+      label: Did you try an existing way?
+      options: [No, An MCP server did not work, The OpenAPI import did not work, There is no public API]
