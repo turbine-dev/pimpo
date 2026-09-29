@@ -77,6 +77,7 @@
       <a class="btn primary" id="main-download" href="#download">Download</a>
       <a class="btn" href="https://github.com/turbine-dev/pimpo">Source on GitHub</a>
     </div>
+    <p class="small" id="download-note"></p>
     <p class="small">Free and open source (Apache 2.0). macOS, Windows, Linux, and servers. No telemetry.</p>
   </div>
 
@@ -147,25 +148,58 @@
   </footer>
 </div>
 <script>
-// Point the downloads at this system's files in the latest release, when
-// there is one; otherwise the links stay on the releases page.
-(function () {
-  var ua = navigator.userAgent, os = /Mac/.test(ua) ? 'mac' : /Win/.test(ua) ? 'windows' : /Linux|X11/.test(ua) ? 'linux' : ''
+// Downloads point straight at this system's installer in the newest
+// release (a beta when there is no final one yet). Without JavaScript, or
+// if GitHub does not answer, the links stay on the releases page.
+(async function () {
+  var ua = navigator.userAgent
+  var os = /iPhone|iPad|Android/.test(ua) ? '' : /Mac/.test(ua) ? 'mac' : /Win/.test(ua) ? 'windows' : /Linux|X11|CrOS/.test(ua) ? 'linux' : ''
+  // Chromium browsers say the CPU; Safari does not, and most Macs sold
+  // since 2020 are Apple Silicon.
+  var arch = /arm|aarch64/i.test(ua) ? 'arm64' : 'amd64'
+  try {
+    var hints = navigator.userAgentData && await navigator.userAgentData.getHighEntropyValues(['architecture'])
+    if (hints && hints.architecture) arch = /arm/i.test(hints.architecture) ? 'arm64' : 'amd64'
+    else if (os === 'mac') arch = 'arm64'
+  } catch (e) { if (os === 'mac') arch = 'arm64' }
+
+  var files = {
+    mac: [['_macos_arm64.dmg', 'Apple Silicon (.dmg)', 'arm64'], ['_macos_amd64.dmg', 'Intel (.dmg)', 'amd64']],
+    windows: [['_windows_amd64_setup.exe', 'Installer (.exe)', 'amd64'], ['_windows_amd64.msi', '.msi', 'amd64']],
+    linux: [['_linux_' + arch + '.AppImage', 'AppImage', arch], ['_linux_' + arch + '.deb', '.deb', arch], ['_linux_' + arch + '.rpm', '.rpm', arch],
+      ['_linux_' + (arch === 'arm64' ? 'amd64' : 'arm64') + '.deb', (arch === 'arm64' ? 'x64' : 'arm64') + ' .deb', '']],
+  }
+  var names = { mac: 'macOS', windows: 'Windows', linux: 'Linux' }
   var mine = os && document.querySelector('[data-os="' + os + '"]')
   if (mine) mine.classList.add('mine')
-  var files = { mac: [/_macos_arm64\.dmg$/, 'Apple Silicon (.dmg)', /_macos_amd64\.dmg$/, 'Intel (.dmg)'], windows: [/_windows_amd64_setup\.exe$/, 'Installer (.exe)', /_windows_amd64\.msi$/, '.msi'], linux: [/_linux_amd64\.deb$/, 'x64 .deb', /_linux_amd64\.AppImage$/, 'x64 AppImage', /_linux_arm64\.deb$/, 'arm64 .deb'] }
-  fetch('https://api.github.com/repos/turbine-dev/pimpo/releases/latest').then(function (r) { return r.ok ? r.json() : null }).then(function (rel) {
-    if (!rel || !rel.assets) return
-    Object.keys(files).forEach(function (k) {
-      var card = document.querySelector('[data-os="' + k + '"]'), list = files[k], links = []
-      for (var i = 0; i < list.length; i += 2) {
-        var a = rel.assets.find(function (x) { return list[i].test(x.name) })
-        if (a) links.push('<a class="file" href="' + a.browser_download_url + '">' + list[i + 1] + '</a>')
-      }
-      if (links.length) card.querySelector('a.file').outerHTML = links.join('') + '<p class="small">Version ' + rel.tag_name.replace(/^v/, '') + '</p>'
+
+  var rel
+  try {
+    var r = await fetch('https://api.github.com/repos/turbine-dev/pimpo/releases?per_page=10')
+    var list = r.ok ? await r.json() : []
+    rel = list.find(function (x) { return !x.draft && /^v\d/.test(x.tag_name) && x.assets.some(function (a) { return /_setup\.exe$|\.dmg$/.test(a.name) }) })
+  } catch (e) {}
+  if (!rel) return
+  var version = rel.tag_name.replace(/^v/, '') + (rel.prerelease ? ' (beta)' : '')
+  var asset = function (suffix) { return rel.assets.find(function (a) { return a.name.endsWith(suffix) }) }
+
+  Object.keys(files).forEach(function (k) {
+    var card = document.querySelector('[data-os="' + k + '"]'), links = []
+    files[k].forEach(function (f) {
+      var a = asset(f[0])
+      if (a) links.push('<a class="file" href="' + a.browser_download_url + '">' + f[1] + '</a>')
     })
-    if (mine) document.getElementById('main-download').textContent = 'Download for ' + { mac: 'macOS', windows: 'Windows', linux: 'Linux' }[os]
-  }).catch(function () {})
+    if (links.length) card.querySelector('a.file').outerHTML = links.join('') + '<p class="small">Version ' + version + '</p>'
+  })
+
+  if (!os) return
+  var pick = files[os].find(function (f) { return (f[2] === arch || f[2] === 'amd64' && os === 'windows') && asset(f[0]) }) || files[os].find(function (f) { return asset(f[0]) })
+  if (!pick) return
+  var btn = document.getElementById('main-download')
+  btn.href = asset(pick[0]).browser_download_url
+  btn.textContent = 'Download for ' + names[os] + (os === 'mac' ? (arch === 'arm64' ? ' (Apple Silicon)' : ' (Intel)') : '')
+  var note = document.getElementById('download-note')
+  note.innerHTML = 'Version ' + version + '. <a href="#download">Other systems and formats</a>' + (os === 'mac' && !(navigator.userAgentData) ? ' · <a href="' + (asset('_macos_amd64.dmg') || {}).browser_download_url + '">Mac with Intel?</a>' : '')
 })()
 </script>
 </body>
