@@ -157,6 +157,10 @@ If a channel keeps failing for three minutes (Telegram, Discord, Slack or Signal
 
 Browse ready-made routines, filtered by what they can touch. Pimpo checks the author's signature, runs the routine's tests, and audits what it really calls before installing. To share one of yours, use **Publicar** on its page.
 
+## Updates
+
+The desktop app updates itself: when a new version is ready it says so at the top of the app and in the menu bar, and **Atualizar e reiniciar** installs it. Before a new version touches anything, Pimpo keeps a copy of your data. **Ajustes › Geral › Atualizações** looks for updates now, turns on beta versions, and goes back to the version you had before, with your data as it was then. On a server, run `pimpo update` (and `pimpo update --rollback` to go back).
+
 ## Moving and backups
 
 - **Ajustes › Backup automático na nuvem** keeps a copy of everything in your own storage, every day or every week, and keeps the last copies you choose:

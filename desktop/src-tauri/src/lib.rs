@@ -20,6 +20,7 @@ mod desktop {
     use tauri_plugin_autostart::ManagerExt as _;
     use tauri_plugin_shell::process::{CommandChild, CommandEvent};
     use tauri_plugin_shell::ShellExt;
+    use tauri_plugin_updater::UpdaterExt;
 
     pub struct Server(pub Mutex<Option<CommandChild>>);
 
@@ -29,6 +30,9 @@ mod desktop {
 
     /// Local is the address of this computer's Pimpo once it answers.
     pub struct Local(pub Mutex<Option<String>>);
+
+    /// Token signs the desktop app's own calls to this computer's Pimpo.
+    pub struct Token(pub Mutex<Option<String>>);
 
     fn mascot_file(app: &AppHandle) -> Option<std::path::PathBuf> {
         app.path().app_config_dir().ok().map(|d| d.join("mascot-on"))
@@ -299,16 +303,41 @@ mod desktop {
             // Ajustes switches the floating Pimpo by visiting /desktop/mascot,
             // so the page needs no native access.
             .on_navigation(move |u| {
-                if u.path() != "/desktop/mascot" || !is_local(&nav, u) {
+                if !is_local(&nav, u) {
                     return true;
                 }
-                let on = u.query_pairs().any(|(k, v)| k == "on" && v == "1");
-                set_mascot(&nav, on);
-                false
+                match u.path() {
+                    "/desktop/mascot" => {
+                        let on = u.query_pairs().any(|(k, v)| k == "on" && v == "1");
+                        set_mascot(&nav, on);
+                        false
+                    }
+                    // Updates are asked for the same way. The page can only
+                    // ask: what gets installed is the signed update the app
+                    // itself found.
+                    "/desktop/update" => {
+                        match u.query_pairs().find(|(k, _)| k == "do").map(|(_, v)| v.to_string()).as_deref() {
+                            Some("install") => install_update(&nav),
+                            Some("rollback") => rollback(&nav),
+                            Some("beta") => {
+                                set_beta(&nav, true);
+                                check_updates(&nav, true);
+                            }
+                            Some("stable") => {
+                                set_beta(&nav, false);
+                                check_updates(&nav, true);
+                            }
+                            _ => check_updates(&nav, true),
+                        }
+                        false
+                    }
+                    _ => true,
+                }
             })
             .on_page_load(move |w, p| {
                 if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
                     sync_mascot(&loaded, &w);
+                    sync_update(&loaded, &w);
                 }
             })
             .on_new_window(move |url, _| {
@@ -321,6 +350,8 @@ mod desktop {
         app.manage(Shell(Mutex::new(w.url().ok())));
         app.manage(Local(Mutex::new(None)));
         app.manage(Server(Mutex::new(None)));
+        app.manage(Token(Mutex::new(None)));
+        app.manage(Updates::default());
         Ok(())
     }
 
@@ -370,6 +401,7 @@ mod desktop {
         }
         let port = free_port()?;
         let token = token();
+        *app.state::<Token>().0.lock().unwrap() = Some(token.clone());
         let addr = format!("127.0.0.1:{port}");
         let (mut rx, child) = app
             .shell()
@@ -445,8 +477,10 @@ mod desktop {
         let login = CheckMenuItem::with_id(app, "login", "Abrir ao iniciar o computador", true, at_login, None::<&str>)?;
         let cat = CheckMenuItem::with_id(app, "mascot", "Pimpo na área de trabalho", true, mascot_wanted(app), None::<&str>)?;
         app.manage(MascotItem(cat.clone()));
+        let update = MenuItem::with_id(app, "update", "Procurar atualizações", true, None::<&str>)?;
+        app.manage(UpdateItem(update.clone()));
         let quit = MenuItem::with_id(app, "quit", "Sair do Pimpo", true, Some("CmdOrCtrl+Q"))?;
-        let menu = Menu::with_items(app, &[&open, &cat, &login, &PredefinedMenuItem::separator(app)?, &remote, &local, &PredefinedMenuItem::separator(app)?, &quit])?;
+        let menu = Menu::with_items(app, &[&open, &cat, &login, &PredefinedMenuItem::separator(app)?, &remote, &local, &PredefinedMenuItem::separator(app)?, &update, &quit])?;
         TrayIconBuilder::with_id("pimpo")
             .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
             .icon_as_template(true)
@@ -468,6 +502,14 @@ mod desktop {
                     let _ = use_local(app.clone());
                     show(app);
                 }
+                "update" => {
+                    if app.state::<Updates>().found.lock().unwrap().is_some() {
+                        install_update(app);
+                    } else {
+                        check_updates(app, true);
+                        show(app);
+                    }
+                }
                 "login" => {
                     let al = app.autolaunch();
                     let _ = if al.is_enabled().unwrap_or(false) { al.disable() } else { al.enable() };
@@ -485,6 +527,231 @@ mod desktop {
             })
             .build(app)?;
         Ok(())
+    }
+
+    // Updates come from the project's releases, signed with its key (the
+    // public half is in tauri.conf.json): stable from the latest release,
+    // beta from the channel-beta release the release workflow keeps current.
+    // Before installing, the version being left is remembered, so "go back"
+    // can restore the snapshot Pimpo took of the data when the new version
+    // started and reinstall the old one.
+
+    const RELEASES: &str = "https://github.com/turbine-dev/pimpo/releases";
+
+    #[derive(Default)]
+    pub struct Updates {
+        pub found: Mutex<Option<tauri_plugin_updater::Update>>,
+        pub error: Mutex<String>,
+        pub busy: Mutex<bool>,
+    }
+
+    pub struct UpdateItem(pub MenuItem<tauri::Wry>);
+
+    fn data_file(app: &AppHandle, name: &str) -> Option<std::path::PathBuf> {
+        app.path().app_data_dir().ok().map(|d| d.join(name))
+    }
+
+    fn beta(app: &AppHandle) -> bool {
+        data_file(app, "update-beta").is_some_and(|p| p.exists())
+    }
+
+    fn set_beta(app: &AppHandle, on: bool) {
+        if let Some(p) = data_file(app, "update-beta") {
+            let _ = if on {
+                p.parent().map(std::fs::create_dir_all);
+                std::fs::write(p, "beta")
+            } else {
+                std::fs::remove_file(p)
+            };
+        }
+    }
+
+    fn previous(app: &AppHandle) -> Option<String> {
+        data_file(app, "previous-version").and_then(|p| std::fs::read_to_string(p).ok()).map(|v| v.trim().to_string()).filter(|v| !v.is_empty())
+    }
+
+    pub fn update_endpoint(beta: bool) -> Url {
+        let u = if beta { format!("{RELEASES}/download/channel-beta/latest.json") } else { format!("{RELEASES}/latest/download/latest.json") };
+        Url::parse(&u).unwrap()
+    }
+
+    pub fn version_endpoint(version: &str) -> Url {
+        Url::parse(&format!("{RELEASES}/download/v{version}/latest.json")).unwrap()
+    }
+
+    fn update_state(app: &AppHandle) -> String {
+        let u = app.state::<Updates>();
+        let found = u.found.lock().unwrap();
+        serde_json::json!({
+            "current": app.package_info().version.to_string(),
+            "found": found.as_ref().map(|f| f.version.clone()),
+            "notes": found.as_ref().and_then(|f| f.body.clone()),
+            "beta": beta(app),
+            "previous": previous(app),
+            "busy": *u.busy.lock().unwrap(),
+            "error": u.error.lock().unwrap().clone(),
+        })
+        .to_string()
+    }
+
+    /// sync_update tells the page what the app knows about updates, the
+    /// same way as the floating Pimpo's switch.
+    fn sync_update(app: &AppHandle, w: &tauri::WebviewWindow) {
+        let state = update_state(app);
+        let _ = w.eval(format!("try {{ localStorage.setItem('pimpo.update', {state:?}); window.dispatchEvent(new Event('pimpo:update')) }} catch (e) {{}}"));
+    }
+
+    fn broadcast_update(app: &AppHandle) {
+        if let Some(w) = app.get_webview_window("main") {
+            sync_update(app, &w);
+        }
+        if let Some(item) = app.try_state::<UpdateItem>() {
+            let text = match app.state::<Updates>().found.lock().unwrap().as_ref() {
+                Some(f) => format!("Instalar a versão {} e reiniciar", f.version),
+                None => "Procurar atualizações".to_string(),
+            };
+            let _ = item.0.set_text(text);
+        }
+    }
+
+    fn set_error(app: &AppHandle, e: impl std::fmt::Display) {
+        *app.state::<Updates>().error.lock().unwrap() = e.to_string();
+        *app.state::<Updates>().busy.lock().unwrap() = false;
+        broadcast_update(app);
+    }
+
+    pub fn check_updates(app: &AppHandle, manual: bool) {
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            {
+                let u = app.state::<Updates>();
+                if *u.busy.lock().unwrap() {
+                    return;
+                }
+                *u.busy.lock().unwrap() = manual;
+                u.error.lock().unwrap().clear();
+            }
+            if manual {
+                broadcast_update(&app);
+            }
+            let updater = match app.updater_builder().endpoints(vec![update_endpoint(beta(&app))]).and_then(|b| b.build()) {
+                Ok(u) => u,
+                Err(e) => return set_error(&app, e),
+            };
+            match updater.check().await {
+                Ok(found) => *app.state::<Updates>().found.lock().unwrap() = found,
+                // A check in the background that fails says nothing.
+                Err(e) if manual => return set_error(&app, e),
+                Err(_) => {}
+            }
+            *app.state::<Updates>().busy.lock().unwrap() = false;
+            broadcast_update(&app);
+        });
+    }
+
+    /// check_periodically looks for updates at start and every six hours.
+    pub fn check_periodically(app: &AppHandle) {
+        let app = app.clone();
+        std::thread::spawn(move || loop {
+            std::thread::sleep(Duration::from_secs(60));
+            check_updates(&app, false);
+            std::thread::sleep(Duration::from_secs(6 * 3600 - 60));
+        });
+    }
+
+    pub fn install_update(app: &AppHandle) {
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let Some(update) = app.state::<Updates>().found.lock().unwrap().take() else {
+                return check_updates(&app, true);
+            };
+            *app.state::<Updates>().busy.lock().unwrap() = true;
+            broadcast_update(&app);
+            if let Some(p) = data_file(&app, "previous-version") {
+                p.parent().map(std::fs::create_dir_all);
+                let _ = std::fs::write(p, app.package_info().version.to_string());
+            }
+            match update.download_and_install(|_, _| {}, || {}).await {
+                Ok(()) => {
+                    stop(&app);
+                    app.restart();
+                }
+                Err(e) => set_error(&app, e),
+            }
+        });
+    }
+
+    /// rollback goes back to the version installed before the last update:
+    /// Pimpo restores the snapshot the new version took of the data when
+    /// it first started (newer data may not suit an older Pimpo), then the
+    /// old version is installed and started.
+    pub fn rollback(app: &AppHandle) {
+        let app = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let Some(prev) = previous(&app) else {
+                return set_error(&app, "there is no earlier version to go back to");
+            };
+            *app.state::<Updates>().busy.lock().unwrap() = true;
+            broadcast_update(&app);
+            let current = app.package_info().version.to_string();
+            if let Some(list) = local_api(&app, "GET", "/api/snapshots", None) {
+                let names: Vec<String> = serde_json::from_str::<serde_json::Value>(&list)
+                    .ok()
+                    .and_then(|v| v["snapshots"].as_array().cloned())
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|s| s["name"].as_str().map(str::to_string))
+                    .collect();
+                if let Some(name) = names.iter().filter(|n| n.contains(&format!("before-{current}"))).max() {
+                    let body = serde_json::json!({ "name": name }).to_string();
+                    if local_api(&app, "POST", "/api/snapshots/restore", Some(&body)).is_none() {
+                        return set_error(&app, "Pimpo could not prepare the snapshot of the data; nothing was changed");
+                    }
+                }
+            }
+            let older = app
+                .updater_builder()
+                .endpoints(vec![version_endpoint(&prev)])
+                .map(|b| b.version_comparator(|cur, release| release.version != cur))
+                .and_then(|b| b.build());
+            let update = match older {
+                Ok(u) => u.check().await,
+                Err(e) => return set_error(&app, e),
+            };
+            match update {
+                Ok(Some(u)) => match u.download_and_install(|_, _| {}, || {}).await {
+                    Ok(()) => {
+                        if let Some(p) = data_file(&app, "previous-version") {
+                            let _ = std::fs::remove_file(p);
+                        }
+                        stop(&app);
+                        app.restart();
+                    }
+                    Err(e) => set_error(&app, e),
+                },
+                Ok(None) => set_error(&app, format!("version {prev} is not available to install")),
+                Err(e) => set_error(&app, e),
+            }
+        });
+    }
+
+    /// local_api calls this computer's Pimpo as its owner, over HTTP/1.0 so
+    /// the answer is never chunked.
+    fn local_api(app: &AppHandle, method: &str, path: &str, body: Option<&str>) -> Option<String> {
+        use std::io::{Read, Write};
+        let base = app.state::<Local>().0.lock().unwrap().clone()?;
+        let token = app.state::<Token>().0.lock().unwrap().clone()?;
+        let addr = base.strip_prefix("http://")?.to_string();
+        let mut conn = TcpStream::connect_timeout(&addr.parse().ok()?, Duration::from_secs(3)).ok()?;
+        conn.set_read_timeout(Some(Duration::from_secs(30))).ok()?;
+        let body = body.unwrap_or("");
+        let req = format!("{method} {path} HTTP/1.0\r\nHost: {addr}\r\nAuthorization: Bearer {token}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}", body.len());
+        conn.write_all(req.as_bytes()).ok()?;
+        let mut out = String::new();
+        conn.read_to_string(&mut out).ok()?;
+        let (head, rest) = out.split_once("\r\n\r\n")?;
+        let ok = head.split_whitespace().nth(1).is_some_and(|code| code.starts_with('2'));
+        ok.then(|| rest.to_string())
     }
 
     pub fn keep_running_on_close(ev: &WindowEvent, window: &tauri::Window) {
@@ -506,7 +773,14 @@ mod desktop {
 
 #[cfg(all(test, desktop))]
 mod tests {
-    use super::desktop::check_link;
+    use super::desktop::{check_link, update_endpoint, version_endpoint};
+
+    #[test]
+    fn updates_come_from_the_project_releases() {
+        assert_eq!(update_endpoint(false).as_str(), "https://github.com/turbine-dev/pimpo/releases/latest/download/latest.json");
+        assert_eq!(update_endpoint(true).as_str(), "https://github.com/turbine-dev/pimpo/releases/download/channel-beta/latest.json");
+        assert_eq!(version_endpoint("0.6.0-beta.2").as_str(), "https://github.com/turbine-dev/pimpo/releases/download/v0.6.0-beta.2/latest.json");
+    }
 
     #[test]
     fn links_need_https_or_a_private_address_and_a_token() {
@@ -530,12 +804,14 @@ pub fn run() {
     let builder = builder
         .plugin(tauri_plugin_single_instance::init(|app, _, _| desktop::show(app)))
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .on_window_event(|w, ev| desktop::keep_running_on_close(ev, w))
         .invoke_handler(tauri::generate_handler![desktop::remote, desktop::use_remote, desktop::use_local])
         .setup(|app| {
             desktop::window(app.handle())?;
             desktop::tray(app.handle())?;
             desktop::start(app.handle())?;
+            desktop::check_periodically(app.handle());
             Ok(())
         });
 
