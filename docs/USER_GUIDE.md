@@ -165,6 +165,12 @@ You do not pick a skill: the agent knows the ones installed and uses one when a 
 
 A skill is text someone else wrote, so Pimpo never treats it as your words: every action still passes your rules and approvals, the scripts it carries are not run, a skill the protection list reports is refused, and a skill changed on disk stops until you install it again.
 
+## Using sites without an API
+
+With **Ajustes › Laboratório › Usar um navegador** on (it needs Google Chrome), the agent can open sites, read them, follow links, fill in fields and press buttons, in a browser profile of Pimpo's own, not your usual Chrome. Use **Abrir o navegador do Pimpo** in the same screen to sign in to the sites your routines should use; Pimpo never types passwords, it uses the sessions you leave there.
+
+Reading a page and following a link change nothing. Typing and choosing are kept undoable, and **pressing a button asks you first**, because it may submit, buy or send. A routine can only reach the sites it names, and a page that sends it anywhere else is refused. Everything a page says is treated as the site's words, never as instructions.
+
 ## Running code
 
 With **Ajustes › Laboratório › Rodar código isolado** on (it needs Docker), the agent can run a short Python, JavaScript or shell program for a task, such as converting a spreadsheet or adding up a CSV. Each program runs in a fresh container with no network, no access to your files or keys, and 60 seconds at most; it gets only the files the task gives it and returns what it prints and writes. Routines can use it too, and their tests record its results like any other step.

@@ -238,6 +238,7 @@ export const api = {
   chatDo: (id: string, turn: string) => request<ChatTurn>('POST', `/api/chats/${id}/turns/${turn}/do`),
   deleteChat: (id: string) => request<{ deleted: string }>('DELETE', `/api/chats/${id}`),
   assistants: () => request<Assistant[]>('GET', '/api/assistants'),
+  browserLogin: (url: string) => request<{ state: string }>('POST', '/api/browser/login', { url }),
   skills: () => request<InstalledSkill[]>('GET', '/api/skills'),
   previewSkill: async (src: { file?: File; url?: string }) => {
     if (src.file) {

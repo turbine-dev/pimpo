@@ -92,6 +92,11 @@ func (b *Browser) start() error {
 	root, _ := chromedp.NewContext(b.alloc)
 	if err := chromedp.Run(root, browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorDeny)); err != nil {
 		b.stop()
+		if strings.Contains(err.Error(), "No usable sandbox") {
+			// Pages are untrusted, so Chrome keeps its sandbox; some Linux
+			// systems only allow it for Chrome installed from Google's package.
+			return ErrNoSandbox
+		}
 		return fmt.Errorf("could not start Chrome (is it installed?): %w", err)
 	}
 	b.root, b.tabs, b.started = root, map[string]*tab{}, true
@@ -118,7 +123,12 @@ func (b *Browser) sweep() {
 	}
 }
 
-// Close stops Chrome.
+// ErrNoSandbox says Chrome could not start its sandbox, which Pimpo does
+// not turn off.
+var ErrNoSandbox = errors.New("Chrome cannot start its sandbox on this system (unprivileged user namespaces are off). Install Google Chrome from Google's .deb or .rpm, which allows it, or run Pimpo where Chrome's sandbox works; Pimpo does not run pages without it")
+
+// Close stops Chrome and waits for it to exit, so its profile is left
+// alone afterwards.
 func (b *Browser) Close() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -126,6 +136,7 @@ func (b *Browser) Close() {
 		for _, t := range b.tabs {
 			t.cancel()
 		}
+		chromedp.Cancel(b.root)
 		b.stop()
 		b.started = false
 	}

@@ -165,6 +165,7 @@ export function Settings() {
             <Toggles title={t('labs.powerTitle')} text={t('labs.powerText')} items={(['code_sandbox', 'browser'] as const).map((k) => ({
               key: k, label: t(`labs.${k}`), hint: t(`labs.${k}Hint`), on: (s.labs_on ?? []).includes(k),
             }))} onToggle={(k, on) => setS({ ...s, labs_on: on ? [...(s.labs_on ?? []), k] : (s.labs_on ?? []).filter((x) => x !== k) })} />
+            {(s.labs_on ?? []).includes('browser') && <BrowserLogin />}
           </>)}
 
           {section === 'trazer' && (
@@ -236,3 +237,24 @@ function MascotCard() {
     </Card>
   )
 }
+
+// BrowserLogin opens a window of Pimpo's own browser profile, for signing
+// in to the sites routines will use.
+function BrowserLogin() {
+  const t = useT()
+  const [url, setUrl] = useState('')
+  const open = useMutation({ mutationFn: () => api.browserLogin(url) })
+  return (
+    <Card className="space-y-2 p-5">
+      <div className="text-[15px] font-medium">{t('labs.browserLogin')}</div>
+      <p className="text-[13px] text-ink-3">{t('labs.browserLoginHint')}</p>
+      <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); open.mutate() }}>
+        <input className="h-9 min-w-[220px] flex-1 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" aria-label={t('labs.browserLoginUrl')} inputMode="url" />
+        <Button type="submit" disabled={open.isPending}>{t('labs.browserLogin')}</Button>
+      </form>
+      {open.isSuccess && <p className="text-[12.5px] text-read">{t('labs.browserLoginOpened')}</p>}
+      {open.error && <p className="text-[12.5px] text-danger">{open.error.message}</p>}
+    </Card>
+  )
+}
+

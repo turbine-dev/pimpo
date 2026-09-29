@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -62,6 +63,9 @@ func TestBrowseFillAndSubmit(t *testing.T) {
 	only := func(h string) bool { return h == "127.0.0.1" }
 
 	p, err := b.Open(ctx, "run1", srv.URL+"/", only)
+	if errors.Is(err, ErrNoSandbox) {
+		t.Skip(err)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

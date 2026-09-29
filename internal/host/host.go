@@ -136,6 +136,11 @@ type destinationsKey struct{}
 // DestinationsFrom returns the destinations of the run ctx belongs to.
 type sourceKey struct{}
 
+// WithSource marks ctx as a call from source, as the host does.
+func WithSource(ctx context.Context, source string) context.Context {
+	return context.WithValue(ctx, sourceKey{}, source)
+}
+
 // SourceOf is who makes a call: routine:<id>#<run>, exploration:<id>…
 func SourceOf(ctx context.Context) string {
 	s, _ := ctx.Value(sourceKey{}).(string)

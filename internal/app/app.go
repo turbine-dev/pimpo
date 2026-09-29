@@ -20,6 +20,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/docs"
 	"github.com/turbine-dev/pimpo/internal/approval"
+	"github.com/turbine-dev/pimpo/internal/browser"
 	"github.com/turbine-dev/pimpo/internal/budget"
 	"github.com/turbine-dev/pimpo/internal/compiler"
 	"github.com/turbine-dev/pimpo/internal/connector"
@@ -169,6 +170,7 @@ type App struct {
 	Protect   *protect.Guard
 	Remote    *remote.Remote
 	LAN       *remote.LAN
+	browser   *browser.Browser
 	// ListenAddr is where the server listens (--addr); the home network uses its port.
 	ListenAddr string
 	Google     *oauth.Google
@@ -309,6 +311,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.quickSetupRoutes()
 	a.suggestionRoutes()
 	a.skillRoutes()
+	a.browserRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()
@@ -336,6 +339,15 @@ func (a *App) Start(ctx context.Context) error {
 	go a.reminderLoop(ctx, 20*time.Second)
 	go a.aliveLoop(ctx, time.Minute)
 	go a.suggestLoop(ctx, 30*time.Minute)
+	go func() {
+		<-ctx.Done()
+		a.mu.Lock()
+		b := a.browser
+		a.mu.Unlock()
+		if b != nil {
+			b.Close()
+		}
+	}()
 	a.restartListener(ctx)
 	return nil
 }
@@ -509,6 +521,7 @@ func (a *App) router() *connector.Router {
 		notifyCap{a},
 		reminderCap{a},
 		codeCap{a},
+		browserCap{a},
 		audioCap{a},
 		askCap{a},
 		a.spotify(),
