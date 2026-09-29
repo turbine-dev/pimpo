@@ -445,6 +445,8 @@ export const it: Record<Key, string> & Record<string, string> = {
   'inbox.suggestionYes': "Sì, imparalo",
   'inbox.suggestionNo': "No, grazie",
   'settings.suggestTitle': "Suggerimenti",
+  'settings.learnTitle': "Impara le mie preferenze",
+  'settings.learnText': "Una volta a settimana, Pimpo può imparare come ti piace che si facciano le cose, solo dalle tue richieste e scelte, mai da ciò che legge in email o pagine. Ogni preferenza appare in Memoria come appresa, dove la confermi o la rimuovi.",
   'settings.suggestText': "Una volta al giorno Pimpo può suggerire una routine da ciò che vede ripetersi: chi ti scrive e su cosa, i prossimi impegni, le routine che falliscono. Per questo non legge mai il contenuto delle email, e un suggerimento parte solo se lo accetti.",
   'sk.title': "Skill",
   'sk.text': "Le skill di OpenClaw, Hermes e agentskills.io (un SKILL.md) insegnano all’agente a fare un tipo di compito. Conosce quelle installate e ne usa una quando il compito corrisponde; nel frattempo può usare solo le capacità che permetti qui.",
@@ -519,6 +521,8 @@ export const it: Record<Key, string> & Record<string, string> = {
   'memory.emptyTitle': 'Ancora niente salvato',
   'memory.emptyText': 'Di’ a Pimpo qualcosa che deve ricordare sempre: chi è il tuo capo, come preferisci i riassunti, dove abiti.',
   'memory.notConfirmed': 'non confermato',
+  'memory.learned': "appreso",
+  'memory.learnedHint': "Pimpo l’ha imparato dalle tue richieste e scelte. Guida le risposte finché non lo confermi o lo rimuovi.",
   'memory.confirm': 'Conferma',
   'memory.forget': 'Dimentica: {text}',
 

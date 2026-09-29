@@ -29,6 +29,10 @@ const (
 	High Trust = "high"
 	// Low is what the agent read somewhere: an email, a web page.
 	Low Trust = "low"
+	// Learned is a preference inferred from the owner's own requests and
+	// choices, never from what the agent read. It guides answers as
+	// learned, not as the owner's words, until the owner confirms it.
+	Learned Trust = "learned"
 )
 
 type Fact struct {
@@ -110,8 +114,11 @@ func (m *Memory) save(facts []Fact, message string) error {
 		fmt.Fprintf(&md, "# %s\n\n", strings.ToUpper(string(r[:1]))+string(r[1:]))
 		for _, f := range fs {
 			mark := ""
-			if f.Trust == Low {
+			switch f.Trust {
+			case Low:
 				mark = " _(não confirmado)_"
+			case Learned:
+				mark = " _(aprendido)_"
 			}
 			fmt.Fprintf(&md, "- %s%s  \n  <sub>%s · %s</sub>\n", f.Text, mark, f.Source, f.Created.Format("02/01/2006"))
 		}
@@ -186,7 +193,7 @@ func (m *Memory) AddFor(text, topic, source string, trust Trust, person string) 
 	if topic = strings.Join(strings.Fields(topic), " "); topic == "" {
 		topic = "geral"
 	}
-	if trust != High {
+	if trust != High && trust != Learned {
 		trust = Low
 	}
 	m.mu.Lock()
@@ -197,7 +204,7 @@ func (m *Memory) AddFor(text, topic, source string, trust Trust, person string) 
 	}
 	for i, f := range facts {
 		if f.Person == person && strings.EqualFold(f.Text, text) {
-			if trust == High && f.Trust == Low {
+			if trust == High && f.Trust != High {
 				facts[i].Trust, facts[i].Source = High, source
 				return facts[i], m.save(facts, "confirm: "+text)
 			}
@@ -257,6 +264,19 @@ func visible(f Fact, reader string) bool {
 
 // Instructions are the facts an agent may treat as the owner's word.
 func (m *Memory) Instructions() ([]Fact, error) { return m.InstructionsFor("") }
+
+// LearnedFor are the preferences learned for this person, not yet
+// confirmed.
+func (m *Memory) LearnedFor(person string) ([]Fact, error) {
+	facts, err := m.List()
+	var out []Fact
+	for _, f := range facts {
+		if f.Trust == Learned && visible(f, person) {
+			out = append(out, f)
+		}
+	}
+	return out, err
+}
 
 // InstructionsFor are the confirmed facts a run for this person may follow.
 func (m *Memory) InstructionsFor(person string) ([]Fact, error) {

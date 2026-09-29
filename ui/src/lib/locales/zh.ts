@@ -437,6 +437,8 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'inbox.suggestionYes': "好，学会它",
   'inbox.suggestionNo': "不用了，谢谢",
   'settings.suggestTitle': "建议",
+  'settings.learnTitle': "学习我的偏好",
+  'settings.learnText': "每周一次，Pimpo 可以只根据你自己的请求和选择，学习你喜欢的做事方式，绝不根据它在邮件或网页中读到的内容。每条偏好都会以“学到的”出现在记忆中，由你确认或删除。",
   'settings.suggestText': "Pimpo 每天可能会根据反复出现的情况建议一个例程：谁给你写信、关于什么，你接下来的日程，失败的例程。为此它从不读取邮件内容，建议只有在你接受后才会执行。",
   'sk.title': "技能",
   'sk.text': "OpenClaw、Hermes 和 agentskills.io 的技能(一个 SKILL.md)教代理如何完成某类任务。代理了解已安装的技能，在任务匹配时使用；使用期间只能用你在这里允许的能力。",
@@ -510,6 +512,8 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'memory.emptyTitle': '还没有保存任何内容',
   'memory.emptyText': '告诉 Pimpo 一些需要一直记住的事：你的上司是谁、你喜欢什么样的摘要、你住在哪里。',
   'memory.notConfirmed': '未确认',
+  'memory.learned': "学到的",
+  'memory.learnedHint': "这是 Pimpo 从你自己的请求和选择中学到的。在你确认或删除之前，它会影响回答。",
   'memory.confirm': '确认',
   'memory.forget': '忘记：{text}',
 

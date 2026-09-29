@@ -437,6 +437,8 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'inbox.suggestionYes': "はい、覚えて",
   'inbox.suggestionNo': "いいえ、結構です",
   'settings.suggestTitle': "提案",
+  'settings.learnTitle': "好みを学習する",
+  'settings.learnText': "週に一度、Pimpo はあなた自身の依頼と選択だけから、好みのやり方を学べます。メールやページで読んだ内容からは学びません。学んだ好みはメモリーに「学習」として表示され、確認または削除できます。",
   'settings.suggestText': "1日に1回、Pimpo は繰り返し見かけること(誰から何のメールが来るか、今後の予定、失敗するルーティン)からルーティンを提案することがあります。そのためにメールの本文を読むことはなく、提案は承認したときだけ実行されます。",
   'sk.title': "スキル",
   'sk.text': "OpenClaw、Hermes、agentskills.io のスキル(SKILL.md)は、ある種類の作業のやり方をエージェントに教えます。エージェントはインストール済みのスキルを知っていて、作業に合うときに使います。使っている間は、ここで許可した機能しか使えません。",
@@ -510,6 +512,8 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'memory.emptyTitle': 'まだ何も保存されていません',
   'memory.emptyText': 'Pimpo に覚えておいてほしいことを伝えてください。上司は誰か、要約の好み、住んでいる場所など。',
   'memory.notConfirmed': '未確認',
+  'memory.learned': "学習",
+  'memory.learnedHint': "あなた自身の依頼と選択から Pimpo が学んだことです。確認するか削除するまで、回答の参考にします。",
   'memory.confirm': '確認',
   'memory.forget': '忘れる：{text}',
 

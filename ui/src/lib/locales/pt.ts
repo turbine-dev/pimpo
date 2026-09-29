@@ -437,6 +437,8 @@ export const pt = {
   'inbox.suggestionYes': "Sim, aprenda",
   'inbox.suggestionNo': "Não, obrigado",
   'settings.suggestTitle': "Sugestões",
+  'settings.learnTitle': "Aprender minhas preferências",
+  'settings.learnText': "Uma vez por semana, o Pimpo pode aprender como você gosta das coisas, só pelos seus próprios pedidos e escolhas, nunca pelo que lê em e-mails ou páginas. Cada preferência aparece em Memória como aprendida, onde você confirma ou remove.",
   'settings.suggestText': "Uma vez por dia, o Pimpo pode sugerir uma rotina pelo que vê se repetir: quem te escreve e sobre o quê, seus próximos compromissos, rotinas que falham. Para isso ele nunca lê o conteúdo dos e-mails, e uma sugestão só roda se você aceitar.",
   'sk.title': "Skills",
   'sk.text': "Skills do OpenClaw, do Hermes e do agentskills.io (um SKILL.md) ensinam o agente a fazer um tipo de tarefa. Ele conhece as instaladas e usa uma quando a tarefa combina; enquanto usa, só pode usar as capacidades que você permitir aqui.",
@@ -510,6 +512,8 @@ export const pt = {
   'memory.emptyTitle': 'Nada guardado ainda',
   'memory.emptyText': 'Conte algo que o Pimpo deve sempre lembrar: quem é sua chefe, como prefere os resumos, onde você mora.',
   'memory.notConfirmed': 'não confirmado',
+  'memory.learned': "aprendido",
+  'memory.learnedHint': "O Pimpo aprendeu isso com seus próprios pedidos e escolhas. Orienta as respostas até você confirmar ou remover.",
   'memory.confirm': 'Confirmar',
   'memory.forget': 'Esquecer: {text}',
 

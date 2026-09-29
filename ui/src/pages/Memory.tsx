@@ -59,9 +59,10 @@ export function Memory() {
           {f.person && <span className="mr-1.5 rounded-full bg-explore-soft px-1.5 py-px text-[11px] font-medium text-explore">{nameOf(f.person)}</span>}
           {sourceText(f)} · {relative(f.created)}
           {f.trust === 'low' && <span className="ml-1.5 font-medium text-change">{t('memory.notConfirmed')}</span>}
+          {f.trust === 'learned' && <span className="ml-1.5 font-medium text-explore" title={t('memory.learnedHint')}>{t('memory.learned')}</span>}
         </div>
       </div>
-      {f.trust === 'low' && (
+      {(f.trust === 'low' || f.trust === 'learned') && (
         <Button size="sm" onClick={() => confirm.mutate(f.id)}>
           <Check size={14} /> {t('memory.confirm')}
         </Button>

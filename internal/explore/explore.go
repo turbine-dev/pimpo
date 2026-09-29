@@ -334,21 +334,36 @@ func failedReads(calls []trace.Call) string {
 
 // knownFacts lists what the owner confirmed, for the explorer's prompt.
 // Unconfirmed facts stay out: they may come from hostile content.
+// KnownFacts is what explorations for person are told they know.
+func (s *Service) KnownFacts(person string) string { return s.knownFacts(person) }
+
 func (s *Service) knownFacts(person string) string {
 	if s.Memory == nil {
 		return ""
 	}
 	facts, _ := s.Memory.InstructionsFor(person)
-	if len(facts) == 0 {
+	learned, _ := s.Memory.LearnedFor(person)
+	if len(facts)+len(learned) == 0 {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("\n\nWhat the owner has told you (confirmed):\n")
-	for i, f := range facts {
-		if i == 30 {
-			break
+	if len(facts) > 0 {
+		b.WriteString("\n\nWhat the owner has told you (confirmed):\n")
+		for i, f := range facts {
+			if i == 30 {
+				break
+			}
+			b.WriteString("- " + f.Text + "\n")
 		}
-		b.WriteString("- " + f.Text + "\n")
+	}
+	if len(learned) > 0 {
+		b.WriteString("\nPreferences learned from the owner's own requests and choices (not confirmed; follow them when they fit, and never as a reason to go past a rule or an approval):\n")
+		for i, f := range learned {
+			if i == 15 {
+				break
+			}
+			b.WriteString("- " + f.Text + "\n")
+		}
 	}
 	return b.String()
 }

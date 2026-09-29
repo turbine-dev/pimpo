@@ -92,6 +92,8 @@ type Settings struct {
 	OllamaURL string        `json:"ollama_url,omitempty"`
 	// SuggestOff stops the daily routine suggestions.
 	SuggestOff bool `json:"suggest_off,omitempty"`
+	// LearnOff stops learning preferences from the owner's own requests.
+	LearnOff bool `json:"learn_off,omitempty"`
 	// LMStudioURL and CustomURL are where LM Studio and an OpenAI-compatible
 	// server of the owner's answer (without /v1 for LM Studio).
 	LMStudioURL string `json:"lmstudio_url,omitempty"`
@@ -312,6 +314,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.suggestionRoutes()
 	a.skillRoutes()
 	a.browserRoutes()
+	a.learnRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()
@@ -339,6 +342,7 @@ func (a *App) Start(ctx context.Context) error {
 	go a.reminderLoop(ctx, 20*time.Second)
 	go a.aliveLoop(ctx, time.Minute)
 	go a.suggestLoop(ctx, 30*time.Minute)
+	go a.learnLoop(ctx, time.Hour)
 	go func() {
 		<-ctx.Done()
 		a.mu.Lock()

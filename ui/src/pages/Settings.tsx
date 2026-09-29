@@ -148,6 +148,8 @@ export function Settings() {
               onToggle={(_, on) => setS({ ...s, email_channel: on })} />
             <Toggles title={t('settings.suggestTitle')} text={t('settings.suggestText')} items={[{ key: 'suggest', label: t('settings.suggestTitle'), on: !s.suggest_off }]}
               onToggle={(_, on) => setS({ ...s, suggest_off: !on })} />
+            <Toggles title={t('settings.learnTitle')} text={t('settings.learnText')} items={[{ key: 'learn', label: t('settings.learnTitle'), on: !s.learn_off }]}
+              onToggle={(_, on) => setS({ ...s, learn_off: !on })} />
           </>}
 
           {section === 'backup' && <>

@@ -89,6 +89,10 @@ Pimpo remembers what you tell it. Facts it read somewhere are marked "não confi
 
 Search memory in plain words ("what can't I eat?"): with Jev set up, Pimpo finds facts by meaning, not only by the words they share, and the agent uses the same search. Every night Pimpo merges facts that say the same thing, never trading one you confirmed for one it read somewhere, and never merging facts that differ in a date, place or name. **Organizar** does it now, and **Histórico** undoes it.
 
+### Preferences Pimpo learns
+
+Once a week Pimpo looks at what you asked and decided yourself (the requests you made, the approvals you denied or made permanent, the suggestions you took or declined) and may note up to five preferences, such as "answers in Portuguese" or "nothing before 8". It never learns from an email, a page or anything else it read. Each one shows up in **Memória** marked *learned*, with what showed it: **Confirm** makes it a fact like any other, and removing it means it is not learned again. Turn it off in **Ajustes › Notificações**.
+
 ## People
 
 In **Pessoas**, invite family members as a member or a guest. They send the invite code to the bot and get their own memory and accounts. Choose who approves each person's requests: a guest's changes always wait for that person. Only the owner makes lasting rules.

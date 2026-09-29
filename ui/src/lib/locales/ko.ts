@@ -437,6 +437,8 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'inbox.suggestionYes': "네, 배워 줘",
   'inbox.suggestionNo': "아니요, 괜찮아요",
   'settings.suggestTitle': "제안",
+  'settings.learnTitle': "내 선호 학습",
+  'settings.learnText': "일주일에 한 번, Pimpo는 오직 당신의 요청과 선택만으로 선호하는 방식을 배울 수 있어요. 이메일이나 페이지에서 읽은 내용으로는 배우지 않아요. 배운 선호는 메모리에 '학습됨'으로 표시되고, 확인하거나 지울 수 있어요.",
   'settings.suggestText': "하루에 한 번, Pimpo는 반복되는 것(누가 무슨 메일을 보내는지, 다가오는 일정, 실패하는 루틴)을 보고 루틴을 제안할 수 있어요. 이를 위해 메일 내용은 절대 읽지 않고, 제안은 수락할 때만 실행돼요.",
   'sk.title': "스킬",
   'sk.text': "OpenClaw, Hermes, agentskills.io의 스킬(SKILL.md)은 에이전트에게 어떤 종류의 작업을 하는 법을 가르쳐요. 에이전트는 설치된 스킬을 알고 작업에 맞을 때 사용해요. 사용하는 동안에는 여기서 허용한 기능만 쓸 수 있어요.",
@@ -510,6 +512,8 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'memory.emptyTitle': '아직 저장된 내용이 없어요',
   'memory.emptyText': 'Pimpo가 항상 기억해야 할 것을 알려 주세요. 상사가 누구인지, 요약을 어떻게 받고 싶은지, 어디에 사는지 등이요.',
   'memory.notConfirmed': '확인 안 됨',
+  'memory.learned': "학습됨",
+  'memory.learnedHint': "Pimpo가 당신의 요청과 선택에서 배운 거예요. 확인하거나 지울 때까지 답변에 반영돼요.",
   'memory.confirm': '확인',
   'memory.forget': '잊기: {text}',
 

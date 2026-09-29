@@ -168,7 +168,7 @@ export type ActionRecord = {
 
 export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
-export type Settings = { labs_on?: string[]; suggest_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
+export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
 export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
 export type Provider = { id: string; name: string; key_url?: string; needs_key: boolean; local?: boolean }
@@ -187,7 +187,7 @@ export type Approval = { id: string; action: { capability: string; scope?: strin
 export type Rule = { id: string; text: string; when: { capabilities?: string[]; min_risk?: string; source?: string; args_contain?: string[]; hosts?: string[]; people?: string[]; roles?: string[] }; then: 'allow' | 'reversible' | 'ask' | 'block'; off?: boolean }
 export type CostView = { today: number; limit: number; month: number; projected_month: number; by_day: Record<string, number>; by_source: Record<string, number>; by_model?: Record<string, number>; by_job?: Record<string, number>; calls_by_model?: Record<string, number>; subscription?: { today: number; month: number; by_model: Record<string, number> } }
 
-export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low'; person?: string; created: string }
+export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low' | 'learned'; person?: string; created: string }
 export type MemoryVersion = { hash: string; message: string; when: string }
 
 export class ApiError extends Error {
