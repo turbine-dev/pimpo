@@ -1,0 +1,116 @@
+openapi: 3.0.3
+info:
+  title: Petstore
+  description: |
+    A sample [pet store](https://example.com).
+servers:
+  - url: /api/v3
+components:
+  securitySchemes:
+    api_key:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+    petstore_auth:
+      type: oauth2
+      flows: {}
+  schemas:
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {type: string}
+        status:
+          type: string
+          enum: [available, pending, sold]
+        tags:
+          type: array
+          items: {$ref: '#/components/schemas/Tag'}
+    Tag:
+      type: object
+      properties:
+        name: {type: string}
+  parameters:
+    PetId:
+      name: petId
+      in: path
+      required: true
+      schema: {type: integer}
+paths:
+  /pet/findByStatus:
+    get:
+      operationId: findPetsByStatus
+      summary: Finds pets by status
+      parameters:
+        - name: status
+          in: query
+          required: true
+          schema: {type: string, default: available, enum: [available, pending, sold]}
+        - name: page[size]
+          in: query
+          schema: {type: integer}
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Pet'}
+  /pet/{petId}:
+    parameters:
+      - $ref: '#/components/parameters/PetId'
+    get:
+      operationId: getPetById
+      summary: Find pet by ID
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+    delete:
+      operationId: deletePet
+      summary: Deletes a pet
+      responses:
+        "200": {description: ok}
+  /pet:
+    post:
+      operationId: addPet
+      summary: Add a new pet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Pet'}
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+  /pet/search:
+    post:
+      operationId: searchPets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                q: {type: string}
+      responses:
+        "200": {description: ok}
+  /pet/{petId}/uploadImage:
+    parameters:
+      - $ref: '#/components/parameters/PetId'
+    post:
+      operationId: uploadFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {type: object}
+      responses:
+        "200": {description: ok}

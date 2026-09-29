@@ -36,6 +36,9 @@ export type CapRisk = 'read' | 'notify' | 'reversible' | 'irreversible'
 export type McpInput = { kind: 'env' | 'header' | 'arg'; name: string; description?: string; secret?: boolean; required?: boolean; default?: string }
 export type McpListing = { id: string; name: string; title: string; description: string; version: string; repository?: string; kind: 'npm' | 'pypi' | 'remote' | 'unsupported'; command?: string; args?: string[]; url?: string; inputs: McpInput[] }
 export type McpSource = { name: string; command?: string; args?: string[]; url?: string; env?: Record<string, string>; headers?: Record<string, string>; arg_values?: Record<string, string> }
+export type OpenApiOp = { id: string; method: string; path: string; summary: string; risk: CapRisk }
+export type OpenApiPreview = { title: string; description: string; base: string; keys: { name: string; description: string }[]; operations: OpenApiOp[]; unsupported: { id: string; why: string }[] }
+export type OpenApiSource = { url?: string; spec?: string; header?: string }
 export type McpTool = { tool: string; capability: string; title?: string; description: string; risk: CapRisk }
 
 export type RecentRun = { id: number; routine: string; name: string; version: number; started_at: string; ended_at?: string; outcome: 'ok' | 'failed' | 'skipped' | 'running'; error?: string; cost_usd: number; calls: number }
@@ -218,6 +221,8 @@ export const api = {
   mcpSearch: (q: string, cursor = '') => request<{ servers: McpListing[]; next: string }>('GET', `/api/connectors/registry?q=${encodeURIComponent(q)}&cursor=${encodeURIComponent(cursor)}`),
   mcpProbe: (s: McpSource) => request<{ tools: McpTool[] }>('POST', '/api/connectors/probe', s),
   mcpAdd: (s: McpSource & { description?: string; source?: string; tools: Record<string, CapRisk> }) => request<{ loaded: number }>('POST', '/api/connectors/add', s),
+  openapiPreview: (s: OpenApiSource) => request<OpenApiPreview>('POST', '/api/connectors/openapi/preview', s),
+  openapiAdd: (s: OpenApiSource & { name: string; operations: Record<string, CapRisk>; keys: Record<string, string> }) => request<{ loaded: number }>('POST', '/api/connectors/openapi/add', s),
   mcpRemove: (name: string) => request<{ loaded: number }>('DELETE', `/api/connectors/${name}`),
   recentRuns: (outcome = '', before = 0) => request<RecentRun[]>('GET', `/api/runs?outcome=${outcome}&before=${before}&limit=50`),
   searchMemory: (q: string) => request<{ facts: (Fact & { by: 'words' | 'meaning'; score: number })[]; meaning: boolean }>('GET', `/api/memory/search?q=${encodeURIComponent(q)}`),

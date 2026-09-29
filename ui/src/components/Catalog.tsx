@@ -7,6 +7,7 @@ import { api, type CatalogKind } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT } from '../lib/i18n'
 import { McpExplore, McpManual } from './McpServers'
+import { OpenApiImport } from './OpenApiImport'
 import { Button, Card, RiskBadge } from './ui'
 
 export const channelKinds = ['discordchat', 'slackchat', 'signal']
@@ -32,7 +33,7 @@ export function Catalog() {
   const t = useT()
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['catalog'], queryFn: api.catalog })
-  const [tab, setTab] = useState<'installed' | 'explore' | 'manual'>('installed')
+  const [tab, setTab] = useState<'installed' | 'explore' | 'manual' | 'openapi'>('installed')
   const refresh = () => qc.invalidateQueries({ queryKey: ['catalog'] })
   const reload = useMutation({ mutationFn: () => fetch('/api/connectors/reload', { method: 'POST', credentials: 'same-origin' }), onSuccess: refresh })
   const install = useMutation({
@@ -47,15 +48,16 @@ export function Catalog() {
   return (
     <section aria-label={t('catalog.title')}>
       <div role="tablist" aria-label={t('catalog.title')} className="mb-4 flex gap-1 border-b border-line">
-        {(['installed', 'explore', 'manual'] as const).map((k) => (
+        {(['installed', 'explore', 'manual', 'openapi'] as const).map((k) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
             className={cn('-mb-px border-b-2 px-3 py-2 text-[13px] transition', tab === k ? 'border-accent font-medium text-ink' : 'border-transparent text-ink-3 hover:text-ink')}>
-            {t(k === 'installed' ? 'mcp.tabInstalled' : k === 'explore' ? 'mcp.tabExplore' : 'mcp.tabManual')}
+            {t(k === 'installed' ? 'mcp.tabInstalled' : k === 'explore' ? 'mcp.tabExplore' : k === 'manual' ? 'mcp.tabManual' : 'oa.tab')}
           </button>
         ))}
       </div>
       {tab === 'explore' && <McpExplore />}
       {tab === 'manual' && <McpManual />}
+      {tab === 'openapi' && <OpenApiImport />}
       {tab === 'installed' && <>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 py-1.5 text-[13px] hover:border-line-strong">
