@@ -374,20 +374,23 @@ Explorations in the app have no holdout. The holdout is used by the compiler pro
 
 ### Running the proof
 
-`cmd/proof` compiles every trace in a folder and checks each routine against the replay, its own tests and the holdout. It uses the Claude Code CLI (`llm.ClaudeCLI`), so Claude Code must be installed and signed in.
+`cmd/proof` compiles every trace in a folder and checks each routine against the replay, its own tests and the holdout. It compiles with Claude Code by default; `-model` takes any model the app takes: `codex`, `opencode:<provider>/<model>`, `ollama:<name>`, or `<provider>:<name>` through its API, with the key in `PIMPO_<PROVIDER>_KEY` (for example `PIMPO_OPENAI_KEY`) and the price given with `-price-in` and `-price-out`, since a price is never guessed.
 
 ```sh
 make proof                                          # go run ./cmd/proof -workers 4
 go run ./cmd/proof -dir testdata/openclaw -out docs/proof/openclaw
 go run ./cmd/proof -dir testdata/openclaw -only oc-22,oc-23 -attempts 1
 go run ./cmd/proof -out docs/proof/openclaw -reuse -export /tmp/oc-routines
+go run ./cmd/proof -model opencode:deepseek/deepseek-v4-pro -out /tmp/proof-deepseek
+PIMPO_OPENAI_KEY=… go run ./cmd/proof -model openai:gpt-5 -price-in 1.25 -price-out 10 -out /tmp/proof-openai
 ```
 
 | Flag | Default | Meaning |
 |---|---|---|
 | `-dir` | `testdata/proof` | Folder of traces (`*.json`) |
 | `-out` | `docs/proof` | Where `results.json` and `README.md` go |
-| `-model` | `sonnet` | Model for the compiler |
+| `-model` | `sonnet` | Model for the compiler (see above) |
+| `-price-in`, `-price-out` | | USD per million tokens, for an API model |
 | `-workers` | 3 | Compilations in parallel |
 | `-only` | | Only traces whose id contains one of these, comma-separated |
 | `-attempts` | 3 | Compile attempts, with feedback, as the app makes |

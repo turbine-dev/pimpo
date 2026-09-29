@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Check, Coins, Mail, MessageCircle, Repeat, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, Bot, Check, Coins, Mail, MessageCircle, Repeat, ShieldCheck, Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { QuickModel } from '../components/QuickModel'
 import { Logo } from '../components/Shell'
 import { Button, Card } from '../components/ui'
 import { api } from '../lib/api'
@@ -61,6 +62,11 @@ export function Welcome({ onFirstTask }: { onFirstTask: () => void }) {
         </div>
       ),
     },
+    ...(s?.demo ? [] : [{
+      icon: <Bot size={20} />,
+      title: t('welcome.model'),
+      body: <QuickModel />,
+    }]),
     {
       icon: <MessageCircle size={20} />,
       title: t('welcome.talk'),

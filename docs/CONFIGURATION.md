@@ -153,11 +153,13 @@ The limit is stored apart from the other settings and changed with `PUT /api/bud
 
 ### Models per job
 
+The welcome screen sets all three at once (**Qual modelo pensa pelo Pimpo**): it offers what this computer already has (Claude Code, Codex, opencode, Ollama or LM Studio models) or one API key. With a key, Pimpo lists the provider's models, picks its current main model for exploring and compiling and a light one for judgments, requires a known price for both, tests the main one with a single word, and only then saves. The same happens with `POST /api/setup/model` and `{"kind": "provider", "provider": "openai", "key": "…"}` (or `kind` `claude_code`, `codex`, `opencode`, `ollama`, `lmstudio` with a `model`). A job left on Claude Code on a computer without it says so and points to **Ajustes › Modelos**.
+
 Pimpo has three jobs, each with its own model. A model is named in one of these ways: `sonnet`, `opus`, `haiku` or `claude-…` (Claude Code); `codex` or `codex:<model>` (Codex); `opencode:<provider>/<model>` (opencode); or `<provider>:<model>` for a provider's API (`anthropic:…`, `openrouter:…`, `ollama:…`). See [Models](#models).
 
 | Setting | Default | Label in **Ajustes › Modelos › Modelos em uso** | Used for |
 |---|---|---|---|
-| `explore_model` | `sonnet` | **Fazer tarefas e conversar** | Explorations (doing a task the first time) and chats. |
+| `explore_model` | `sonnet`, or what the welcome screen chose | **Fazer tarefas e conversar** | Explorations (doing a task the first time) and chats. |
 | `compile_model` | `sonnet` | **Escrever rotinas** | Turning a task into a routine with tests. |
 | `judge_model` | `haiku` | **Julgamentos e textos curtos** | The routines' yes-or-no questions and short texts, when the judgment backend is **Seu modelo** or as the last step of the others. |
 | `models` | none | **Provedores** and **Neste computador** | Your API models, each with its price in USD per million tokens in and out (0 to 1000). A provider model must be in this list, with its price, before any job may use it. opencode models carry no price: opencode reports each call's cost. |

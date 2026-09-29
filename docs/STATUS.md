@@ -79,6 +79,13 @@ Ranked with Jev (`tools/jev/decisions_openclaw_docs.py`), then ordered by user v
 
 The app, server messages (channels, approvals, notices), built-in connector texts, routine dates and money, and the phone/desktop shell page are in ten languages: pt, en, es, fr, de, it, ja, zh, ko, ru, with each language's plural rules. Portuguese is the source; the translations were written by a model and checked for keys, {slots} and plural forms, not reviewed by native speakers yet. Texts speak about Pimpo in the third person; first person is kept only for the owner's own words (example requests, preset rules). The user guide is English only.
 
+## Roadmap to v1.0 (docs/ROADMAP.md)
+
+| Item | Status |
+|---|---|
+| 1.1 Known bugs | **Done** (2026-09-29): 12 bugs fixed with tests, including the liberal level letting irreversible actions through. |
+| 1.2 Setup without Claude Code | **Built** (2026-09-29): the welcome screen sets every job up from what the computer has or from one API key, testing the main model. Proof without Claude Code: DeepSeek V4 Pro through opencode, **5/5** first-attempt accepted and passing the holdout, $0.06. **Waiting on people:** five new users reaching a routine unaided; **waiting on keys:** proofs on two API providers and on a local model (Ollama has no model installed here, and the disk has 9 GB free). |
+
 ## Pending decisions for the owner
 
 - **License**: Apache License 2.0 (chosen 2026-09-29).
