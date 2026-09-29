@@ -179,5 +179,19 @@
   "msg.job.budget": "le budget du travail est épuisé",
   "msg.job.done": "🧩 Travail terminé : {request}\nCoût {cost} $. Le rapport est dans Travaux.",
   "msg.job.stopped": "⏹️ Travail arrêté : {request}\n{why}",
-  "msg.job.byOwner": "arrêté par vous"
+  "msg.job.byOwner": "arrêté par vous",
+  "msg.link.approveElsewhere": "Pour choisir, utilisez l’app Pimpo ou un autre canal ; celui-ci n’approuve jamais rien.",
+  "svc.imessage.title": "iMessage",
+  "svc.imessage.description": "Parlez à Pimpo par iMessage, sur le Mac.",
+  "svc.imessage.help": "Mac uniquement. Connectez Messages à un identifiant Apple (idéalement un rien que pour Pimpo) et donnez à Pimpo l’accès complet au disque dans Réglages Système › Confidentialité et sécurité, pour qu’il lise les messages reçus. Puis envoyez à cet identifiant Apple, depuis votre iPhone : pimpo et le code d’association de Connexions.",
+  "svc.imessage.field.account.label": "Identifiant Apple de Pimpo dans Messages",
+  "svc.imessage.field.account.placeholder": "pimpo@icloud.com",
+  "svc.wapersonal.title": "WhatsApp personnel (non officiel)",
+  "svc.wapersonal.description": "Parlez à Pimpo depuis votre propre numéro WhatsApp, via un pont non officiel.",
+  "svc.wapersonal.help": "Attention : WhatsApp ne l’autorise pas. Le numéro peut être banni et le pont cesse de fonctionner sans prévenir quand WhatsApp change. Utilisez un numéro que vous pouvez perdre ; le WhatsApp officiel (Business) dans Connexions n’a pas ce risque. Il ne marche qu’avec Labo › WhatsApp personnel activé, et n’approuve jamais rien : les choix attendent l’app ou un autre canal. Lancez WAHA (github.com/devlikeapro/waha) sur cet ordinateur, connectez-vous avec le QR code et envoyez à ce numéro : pimpo et le code d’association de Connexions.",
+  "svc.wapersonal.field.url.label": "Adresse de WAHA",
+  "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
+  "svc.wapersonal.field.session.label": "Session",
+  "svc.wapersonal.field.session.placeholder": "default",
+  "svc.wapersonal.field.api_key.label": "Clé d’API de WAHA"
 }

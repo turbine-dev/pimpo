@@ -183,5 +183,19 @@
   "msg.job.budget": "бюджет задания исчерпан",
   "msg.job.done": "🧩 Задание готово: {request}\nСтоимость ${cost}. Отчёт — в разделе «Задания».",
   "msg.job.stopped": "⏹️ Задание остановлено: {request}\n{why}",
-  "msg.job.byOwner": "остановлено вами"
+  "msg.job.byOwner": "остановлено вами",
+  "msg.link.approveElsewhere": "Чтобы выбрать, используйте приложение Pimpo или другой канал; этот никогда ничего не одобряет.",
+  "svc.imessage.title": "iMessage",
+  "svc.imessage.description": "Общайтесь с Pimpo через iMessage на Mac.",
+  "svc.imessage.help": "Только на Mac. Войдите в «Сообщения» с Apple ID (лучше отдельным для Pimpo) и дайте Pimpo полный доступ к диску в Системных настройках › Конфиденциальность и безопасность, чтобы он читал входящие сообщения. Затем отправьте на этот Apple ID со своего iPhone: pimpo и код сопряжения из раздела «Подключения».",
+  "svc.imessage.field.account.label": "Apple ID Pimpo в «Сообщениях»",
+  "svc.imessage.field.account.placeholder": "pimpo@icloud.com",
+  "svc.wapersonal.title": "Личный WhatsApp (неофициально)",
+  "svc.wapersonal.description": "Общайтесь с Pimpo со своего номера WhatsApp через неофициальный мост.",
+  "svc.wapersonal.help": "Внимание: WhatsApp это запрещает. Номер могут заблокировать, а мост перестаёт работать без предупреждения, когда WhatsApp меняется. Используйте номер, который не жалко потерять; у официального WhatsApp (Business) в «Подключениях» такого риска нет. Работает только при включённом Лаборатория › Личный WhatsApp и никогда ничего не одобряет: выбор ждёт приложения или другого канала. Запустите WAHA (github.com/devlikeapro/waha) на этом компьютере, войдите по QR-коду и отправьте на этот номер: pimpo и код сопряжения из раздела «Подключения».",
+  "svc.wapersonal.field.url.label": "Адрес WAHA",
+  "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
+  "svc.wapersonal.field.session.label": "Сессия",
+  "svc.wapersonal.field.session.placeholder": "default",
+  "svc.wapersonal.field.api_key.label": "Ключ API WAHA"
 }

@@ -179,5 +179,19 @@
   "msg.job.budget": "작업 예산이 다 떨어졌어요",
   "msg.job.done": "🧩 작업 완료: {request}\n비용 ${cost}. 보고서는 작업에 있어요.",
   "msg.job.stopped": "⏹️ 작업 중지: {request}\n{why}",
-  "msg.job.byOwner": "직접 중지함"
+  "msg.job.byOwner": "직접 중지함",
+  "msg.link.approveElsewhere": "선택하려면 Pimpo 앱이나 다른 채널을 쓰세요. 이 채널로는 아무것도 승인하지 않아요.",
+  "svc.imessage.title": "iMessage",
+  "svc.imessage.description": "Mac에서 iMessage로 Pimpo와 대화해요.",
+  "svc.imessage.help": "Mac 전용. 메시지 앱에 Apple ID(가능하면 Pimpo 전용)로 로그인하고, 받은 메시지를 읽을 수 있도록 시스템 설정 › 개인정보 보호 및 보안에서 Pimpo에 전체 디스크 접근 권한을 주세요. 그런 다음 iPhone에서 그 Apple ID로 보내세요: pimpo와 연결의 페어링 코드.",
+  "svc.imessage.field.account.label": "메시지의 Pimpo Apple ID",
+  "svc.imessage.field.account.placeholder": "pimpo@icloud.com",
+  "svc.wapersonal.title": "개인 WhatsApp (비공식)",
+  "svc.wapersonal.description": "비공식 브리지로 내 WhatsApp 번호에서 Pimpo와 대화해요.",
+  "svc.wapersonal.help": "주의: WhatsApp은 이를 허용하지 않아요. 번호가 정지될 수 있고, WhatsApp이 바뀌면 브리지가 예고 없이 멈춰요. 잃어도 되는 번호를 쓰세요. 연결의 공식 WhatsApp(Business)에는 이런 위험이 없어요. 실험실 › 개인 WhatsApp이 켜져 있을 때만 동작하고 아무것도 승인하지 않아요. 선택은 앱이나 다른 채널을 기다려요. 이 컴퓨터에서 WAHA(github.com/devlikeapro/waha)를 실행하고 QR 코드로 로그인한 뒤 그 번호로 보내세요: pimpo와 연결의 페어링 코드.",
+  "svc.wapersonal.field.url.label": "WAHA 주소",
+  "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
+  "svc.wapersonal.field.session.label": "세션",
+  "svc.wapersonal.field.session.placeholder": "default",
+  "svc.wapersonal.field.api_key.label": "WAHA API 키"
 }

@@ -462,6 +462,8 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'labs.powerText': "에이전트가 할 수 있는 범위가 넓어져서 처음엔 꺼져 있어요. 각각 여전히 규칙과 승인을 거쳐요.",
   'labs.code_sandbox': "격리된 코드 실행",
   'labs.code_sandboxHint': "네트워크도 비밀도 없는 Docker 컨테이너에서 Python, JavaScript, 셸을 최대 60초 실행해요. Docker가 필요해요.",
+  'labs.whatsapp_personal': "개인 WhatsApp (비공식)",
+  'labs.whatsapp_personalHint': "비공식 브리지로 내 WhatsApp 번호에서 Pimpo와 대화해요. WhatsApp은 이를 허용하지 않아요. 번호가 정지될 수 있고 예고 없이 멈출 수 있어요. 아무것도 승인하지 않아요.",
   'labs.browser': "브라우저 사용",
   'labs.browserHint': "Pimpo 전용 브라우저 프로필로 API 없는 사이트를 열고 읽고 채워요. 제출, 구매, 보내기는 항상 먼저 물어봐요. Chrome이 필요해요.",
   'labs.browserLogin': "Pimpo 브라우저 열기",

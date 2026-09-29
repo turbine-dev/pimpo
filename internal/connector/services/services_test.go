@@ -66,9 +66,9 @@ func TestEveryCapabilityIsDocumented(t *testing.T) {
 			}
 		}
 	}
-	want := 12
+	want := 13
 	if runtime.GOOS == "darwin" {
-		want = 13 // Apple's apps
+		want = 15 // Apple's apps and iMessage
 	}
 	if len(All()) != want {
 		t.Fatalf("catalog has %d kinds", len(All()))

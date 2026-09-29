@@ -462,6 +462,8 @@ export const de: Record<Key, string> & Record<string, string> = {
   'labs.powerText': "Sie geben dem Agenten mehr Reichweite und sind daher zunächst aus. Jede läuft weiter durch deine Regeln und Freigaben.",
   'labs.code_sandbox': "Code isoliert ausführen",
   'labs.code_sandboxHint': "Python, JavaScript oder Shell in einem Docker-Container ohne Netzwerk und ohne Geheimnisse, höchstens 60 Sekunden. Braucht Docker.",
+  'labs.whatsapp_personal': "Privates WhatsApp (inoffiziell)",
+  'labs.whatsapp_personalHint': "Sprich mit Pimpo über deine eigene WhatsApp-Nummer über eine inoffizielle Brücke. WhatsApp erlaubt das nicht: Die Nummer kann gesperrt werden, und es kann ohne Vorwarnung ausfallen. Es genehmigt nie etwas.",
   'labs.browser': "Einen Browser nutzen",
   'labs.browserHint': "Pimpo öffnet, liest und füllt Seiten ohne API im eigenen Browserprofil; Absenden, Kaufen oder Senden fragt immer vorher. Braucht Chrome.",
   'labs.browserLogin': "Pimpos Browser öffnen",

@@ -179,5 +179,19 @@
   "msg.job.budget": "o orçamento do trabalho acabou",
   "msg.job.done": "🧩 Trabalho pronto: {request}\nCusto US$ {cost}. O relatório está em Trabalhos.",
   "msg.job.stopped": "⏹️ Trabalho parado: {request}\n{why}",
-  "msg.job.byOwner": "parado por você"
+  "msg.job.byOwner": "parado por você",
+  "msg.link.approveElsewhere": "Para escolher, use o app do Pimpo ou outro canal; este nunca aprova nada.",
+  "svc.imessage.title": "iMessage",
+  "svc.imessage.description": "Converse com o Pimpo pelo iMessage, no Mac.",
+  "svc.imessage.help": "Só no Mac. Entre no app Mensagens com um Apple ID (de preferência um só do Pimpo) e dê Acesso Total ao Disco para o Pimpo em Ajustes do Sistema › Privacidade e Segurança, para ele ler as mensagens que chegam. Depois mande para esse Apple ID, do seu iPhone: pimpo e o código de pareamento de Conexões.",
+  "svc.imessage.field.account.label": "Apple ID do Pimpo no Mensagens",
+  "svc.imessage.field.account.placeholder": "pimpo@icloud.com",
+  "svc.wapersonal.title": "WhatsApp pessoal (não oficial)",
+  "svc.wapersonal.description": "Converse com o Pimpo pelo seu próprio número de WhatsApp, por uma ponte não oficial.",
+  "svc.wapersonal.help": "Atenção: o WhatsApp não permite isso. O número pode ser banido e a ponte para de funcionar sem aviso quando o WhatsApp muda. Use um número que você pode perder; o WhatsApp oficial (Business) em Conexões não tem esse risco. Só funciona com o Laboratório › WhatsApp pessoal ligado, e nunca aprova nada: escolhas esperam o app ou outro canal. Rode o WAHA (github.com/devlikeapro/waha) neste computador, entre com o QR code e mande para esse número: pimpo e o código de pareamento de Conexões.",
+  "svc.wapersonal.field.url.label": "Endereço do WAHA",
+  "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
+  "svc.wapersonal.field.session.label": "Sessão",
+  "svc.wapersonal.field.session.placeholder": "default",
+  "svc.wapersonal.field.api_key.label": "Chave da API do WAHA"
 }

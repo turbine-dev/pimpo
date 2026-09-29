@@ -470,6 +470,8 @@ export const es: Record<Key, string> & Record<string, string> = {
   'labs.powerText': "Dan más alcance al agente, así que empiezan apagados. Cada uno sigue pasando por tus reglas y aprobaciones.",
   'labs.code_sandbox': "Ejecutar código aislado",
   'labs.code_sandboxHint': "Python, JavaScript o shell en un contenedor Docker sin red ni secretos, 60 segundos como máximo. Necesita Docker.",
+  'labs.whatsapp_personal': "WhatsApp personal (no oficial)",
+  'labs.whatsapp_personalHint': "Habla con Pimpo desde tu propio número de WhatsApp mediante un puente no oficial. WhatsApp no lo permite: el número puede ser bloqueado y puede dejar de funcionar sin aviso. Nunca aprueba nada.",
   'labs.browser': "Usar un navegador",
   'labs.browserHint': "Pimpo abre, lee y rellena sitios sin API en su propio perfil de navegador; enviar, comprar o mandar algo siempre pregunta antes. Necesita Chrome.",
   'labs.browserLogin': "Abrir el navegador de Pimpo",

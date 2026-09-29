@@ -462,6 +462,8 @@ export const en: Record<Key, string> = {
   'labs.powerText': "These give the agent more reach, so they start off. Each still passes your rules and approvals.",
   'labs.code_sandbox': "Run code in isolation",
   'labs.code_sandboxHint': "Python, JavaScript or shell in a Docker container with no network and no secrets, 60 seconds at most. Needs Docker.",
+  'labs.whatsapp_personal': "Personal WhatsApp (unofficial)",
+  'labs.whatsapp_personalHint': "Talk to Pimpo on your own WhatsApp number through an unofficial bridge. WhatsApp does not allow it: the number can be banned and it can break without notice. It never approves anything.",
   'labs.browser': "Use a browser",
   'labs.browserHint': "Pimpo opens, reads and fills sites without an API in its own browser profile; submitting, buying or sending always asks first. Needs Chrome.",
   'labs.browserLogin': "Open Pimpo’s browser",

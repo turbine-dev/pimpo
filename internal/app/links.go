@@ -51,8 +51,16 @@ func (a *App) restartLink(ctx context.Context, kind string) {
 		delete(a.links, kind)
 		a.health.forget(kind)
 	}
-	k, _ := services.Get(kind)
+	k, found := services.Get(kind)
+	if !found {
+		return // iMessage off a Mac
+	}
 	if ok, _ := a.catalogConfigured(ctx, k); !ok {
+		return
+	}
+	// The unofficial WhatsApp runs only when the owner chose it in Labs,
+	// knowing the number can be banned.
+	if kind == "wapersonal" && !a.chose(ctx, "whatsapp_personal") {
 		return
 	}
 	l, err := services.NewLink(ctx, kind, a.catalogConfig(kind))
@@ -90,7 +98,7 @@ func (a *App) linkMessage(ctx context.Context, kind string, run *linkRun, in cha
 	}
 	pctx := people.With(ctx, people.OwnerID)
 	h := handler{a}
-	if n, err := strconv.Atoi(text); err == nil {
+	if n, err := strconv.Atoi(text); err == nil && !noApprovals(run.link) {
 		run.mu.Lock()
 		pending := run.pending
 		run.mu.Unlock()
@@ -116,6 +124,11 @@ func (a *App) linkMessage(ctx context.Context, kind string, run *linkRun, in cha
 	reply(out)
 }
 
+func noApprovals(l chatlink.Link) bool {
+	n, ok := l.(chatlink.NoApprovals)
+	return ok && n.NoApprovals()
+}
+
 // mirrorLinks sends the owner's notices to every paired channel, with the
 // choices numbered.
 func (a *App) mirrorLinks(ctx context.Context, n explore.Notice) {
@@ -134,7 +147,11 @@ func (a *App) mirrorLinks(ctx context.Context, n explore.Notice) {
 			continue
 		}
 		text := n.Text
-		if len(n.Actions) > 0 {
+		if len(n.Actions) > 0 && noApprovals(run.link) {
+			// A channel that can break or be taken over is never the way
+			// to approve: the choice waits for the app or another channel.
+			text += "\n\n" + i18n.T(ctx, "msg.link.approveElsewhere")
+		} else if len(n.Actions) > 0 {
 			var opts []string
 			for i, act := range n.Actions {
 				opts = append(opts, fmt.Sprintf("%d = %s", i+1, act.Label))

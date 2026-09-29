@@ -84,7 +84,7 @@ type Settings struct {
 	// mcp_registry.
 	LabsOff []string `json:"labs_off,omitempty"`
 	// LabsOn turns on features that stay off until the owner chooses them:
-	// code_sandbox, browser.
+	// code_sandbox, browser, whatsapp_personal.
 	LabsOn []string `json:"labs_on,omitempty"`
 	// Models are API models the owner set up, with their price; the model
 	// settings above may name one as provider:model.
@@ -136,7 +136,7 @@ type ModelOption struct {
 var (
 	mutable = map[string]bool{"task": true, "failure": true, "backup": true}
 	labs    = map[string]bool{"memory_organize": true, "meaning_search": true, "mcp_registry": true}
-	optIn   = map[string]bool{"code_sandbox": true, "browser": true}
+	optIn   = map[string]bool{"code_sandbox": true, "browser": true, "whatsapp_personal": true}
 )
 
 // lab reports whether a newer feature is on.

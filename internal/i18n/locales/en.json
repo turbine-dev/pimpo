@@ -179,5 +179,19 @@
   "msg.job.budget": "the job's budget ran out",
   "msg.job.done": "🧩 Job finished: {request}\nCost ${cost}. The report is in Trabalhos.",
   "msg.job.stopped": "⏹️ Job stopped: {request}\n{why}",
-  "msg.job.byOwner": "stopped by the owner"
+  "msg.job.byOwner": "stopped by the owner",
+  "msg.link.approveElsewhere": "To choose, use the Pimpo app or another channel; this one never approves anything.",
+  "svc.imessage.title": "iMessage",
+  "svc.imessage.description": "Talk to Pimpo on iMessage, on a Mac.",
+  "svc.imessage.help": "Mac only. Sign in to Messages with an Apple ID (ideally one just for Pimpo) and give Pimpo Full Disk Access in System Settings › Privacy & Security, so it can read the messages that arrive. Then send to that Apple ID, from your iPhone: pimpo and the pairing code from Connections.",
+  "svc.imessage.field.account.label": "Pimpo’s Apple ID in Messages",
+  "svc.imessage.field.account.placeholder": "pimpo@icloud.com",
+  "svc.wapersonal.title": "Personal WhatsApp (unofficial)",
+  "svc.wapersonal.description": "Talk to Pimpo on your own WhatsApp number, through an unofficial bridge.",
+  "svc.wapersonal.help": "Warning: WhatsApp does not allow this. The number can be banned and the bridge stops working without notice when WhatsApp changes. Use a number you can lose; the official WhatsApp (Business) in Connections has no such risk. It works only with Labs › Personal WhatsApp on, and it never approves anything: choices wait for the app or another channel. Run WAHA (github.com/devlikeapro/waha) on this computer, sign in with the QR code and send to that number: pimpo and the pairing code from Connections.",
+  "svc.wapersonal.field.url.label": "WAHA address",
+  "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
+  "svc.wapersonal.field.session.label": "Session",
+  "svc.wapersonal.field.session.placeholder": "default",
+  "svc.wapersonal.field.api_key.label": "WAHA API key"
 }

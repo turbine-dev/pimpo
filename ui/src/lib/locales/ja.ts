@@ -462,6 +462,8 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'labs.powerText': "エージェントの届く範囲が広がるので、最初はオフです。どれもルールと承認を通ります。",
   'labs.code_sandbox': "隔離してコードを実行",
   'labs.code_sandboxHint': "ネットワークも秘密もない Docker コンテナで Python、JavaScript、シェルを最長60秒実行します。Docker が必要です。",
+  'labs.whatsapp_personal': "個人の WhatsApp（非公式）",
+  'labs.whatsapp_personalHint': "非公式のブリッジで自分の WhatsApp 番号から Pimpo と話します。WhatsApp は許可していません。番号が停止されることがあり、予告なく動かなくなることもあります。何も承認しません。",
   'labs.browser': "ブラウザを使う",
   'labs.browserHint': "Pimpo 専用のブラウザプロファイルで、API のないサイトを開いて読み、入力します。送信・購入・送付は必ず先に確認します。Chrome が必要です。",
   'labs.browserLogin': "Pimpo のブラウザを開く",

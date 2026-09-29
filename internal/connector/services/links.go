@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"runtime"
 
 	"github.com/turbine-dev/pimpo/internal/chatlink"
 )
@@ -10,7 +11,7 @@ import (
 // owner talk to Pimpo in private messages. They offer no capabilities.
 
 // LinkKinds lists the catalog entries that are conversation channels.
-var LinkKinds = []string{"discordchat", "slackchat", "signal"}
+var LinkKinds = []string{"discordchat", "slackchat", "signal", "imessage", "wapersonal"}
 
 // NewLink builds a channel from its configuration.
 func NewLink(ctx context.Context, kind string, cfg Config) (chatlink.Link, error) {
@@ -31,6 +32,13 @@ func NewLink(ctx context.Context, kind string, cfg Config) (chatlink.Link, error
 		url, _ := cfg(ctx, "url")
 		acct, _ := cfg(ctx, "account")
 		return &chatlink.Signal{URL: url, Account: acct}, nil
+	case "imessage":
+		return &chatlink.IMessage{}, nil
+	case "wapersonal":
+		url, _ := cfg(ctx, "url")
+		session, _ := cfg(ctx, "session")
+		key, _ := cfg(ctx, "api_key")
+		return &chatlink.WhatsAppPersonal{URL: url, Session: session, APIKey: key}, nil
 	}
 	return nil, nil
 }
@@ -65,5 +73,22 @@ func init() {
 			"Depois mande para esse número, pelo seu Signal: pimpo e o código de pareamento de Conexões.",
 		Fields: []Field{{Name: "url", Label: "Endereço do signal-cli", Placeholder: "http://127.0.0.1:8080"}, {Name: "account", Label: "Número do Pimpo no Signal", Placeholder: "+5511…", Optional: true}},
 		Probe:  checkLink("signal"),
+	})
+	imessage := Kind{
+		ID: "imessage", Title: "iMessage", Description: "Converse com o Pimpo pelo iMessage, no Mac.",
+		Help: "Só no Mac. Entre no app Mensagens com um Apple ID (de preferência um só do Pimpo) e dê Acesso Total ao Disco para o Pimpo em Ajustes do Sistema › Privacidade e Segurança, para ele ler as mensagens que chegam. " +
+			"Depois mande para esse Apple ID, do seu iPhone: pimpo e o código de pareamento de Conexões.",
+		Fields: []Field{{Name: "account", Label: "Apple ID do Pimpo no Mensagens", Placeholder: "pimpo@icloud.com"}},
+		Probe:  checkLink("imessage"),
+	}
+	if runtime.GOOS == "darwin" {
+		register(imessage)
+	}
+	register(Kind{
+		ID: "wapersonal", Title: "WhatsApp pessoal (não oficial)", Description: "Converse com o Pimpo pelo seu próprio número de WhatsApp, por uma ponte não oficial.",
+		Help: "Atenção: o WhatsApp não permite isso. O número pode ser banido e a ponte para de funcionar sem aviso quando o WhatsApp muda. Use um número que você pode perder; o WhatsApp oficial (Business) em Conexões não tem esse risco. " +
+			"Só funciona com o Laboratório › WhatsApp pessoal ligado, e nunca aprova nada: escolhas esperam o app ou outro canal. Rode o WAHA (github.com/devlikeapro/waha) neste computador, entre com o QR code e mande para esse número: pimpo e o código de pareamento de Conexões.",
+		Fields: []Field{{Name: "url", Label: "Endereço do WAHA", Placeholder: "http://127.0.0.1:3000"}, {Name: "session", Label: "Sessão", Placeholder: "default", Optional: true}, {Name: "api_key", Label: "Chave da API do WAHA", Secret: true, Optional: true}},
+		Probe:  checkLink("wapersonal"),
 	})
 }

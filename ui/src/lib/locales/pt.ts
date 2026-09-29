@@ -462,6 +462,8 @@ export const pt = {
   'labs.powerText': "Estes dão mais alcance ao agente, então começam desligados. Cada um continua passando pelas suas regras e aprovações.",
   'labs.code_sandbox': "Rodar código isolado",
   'labs.code_sandboxHint': "Python, JavaScript ou shell num contêiner Docker sem rede e sem segredos, por no máximo 60 segundos. Precisa do Docker.",
+  'labs.whatsapp_personal': "WhatsApp pessoal (não oficial)",
+  'labs.whatsapp_personalHint': "Converse com o Pimpo pelo seu próprio número de WhatsApp, por uma ponte não oficial. O WhatsApp não permite: o número pode ser banido e pode parar sem aviso. Ele nunca aprova nada.",
   'labs.browser': "Usar um navegador",
   'labs.browserHint': "O Pimpo abre, lê e preenche sites sem API no próprio perfil de navegador; enviar, comprar ou mandar algo sempre pergunta antes. Precisa do Chrome.",
   'labs.browserLogin': "Abrir o navegador do Pimpo",

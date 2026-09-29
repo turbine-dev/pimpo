@@ -480,6 +480,8 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'labs.powerText': "Они расширяют то, что может агент, поэтому сначала выключены. Каждая по-прежнему проходит ваши правила и одобрения.",
   'labs.code_sandbox': "Запуск кода в изоляции",
   'labs.code_sandboxHint': "Python, JavaScript или shell в контейнере Docker без сети и без секретов, не дольше 60 секунд. Нужен Docker.",
+  'labs.whatsapp_personal': "Личный WhatsApp (неофициально)",
+  'labs.whatsapp_personalHint': "Общайтесь с Pimpo со своего номера WhatsApp через неофициальный мост. WhatsApp это запрещает: номер могут заблокировать, и всё может перестать работать без предупреждения. Он никогда ничего не одобряет.",
   'labs.browser': "Использовать браузер",
   'labs.browserHint': "Pimpo открывает, читает и заполняет сайты без API в собственном профиле браузера; отправка, покупка или пересылка всегда требуют согласия. Нужен Chrome.",
   'labs.browserLogin': "Открыть браузер Pimpo",

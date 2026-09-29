@@ -179,5 +179,19 @@
   "msg.job.budget": "任务预算已用完",
   "msg.job.done": "🧩 任务完成：{request}\n费用 ${cost}。报告在“任务”中。",
   "msg.job.stopped": "⏹️ 任务已停止：{request}\n{why}",
-  "msg.job.byOwner": "已由你停止"
+  "msg.job.byOwner": "已由你停止",
+  "msg.link.approveElsewhere": "要选择，请使用 Pimpo 应用或其他渠道；这个渠道从不批准任何操作。",
+  "svc.imessage.title": "iMessage",
+  "svc.imessage.description": "在 Mac 上通过 iMessage 与 Pimpo 对话。",
+  "svc.imessage.help": "仅限 Mac。用一个 Apple ID（最好是 Pimpo 专用的）登录“信息”，并在系统设置 › 隐私与安全性中给 Pimpo 完全磁盘访问权限，以便它读取收到的信息。然后用你的 iPhone 发送到该 Apple ID：pimpo 加上“连接”中的配对码。",
+  "svc.imessage.field.account.label": "Pimpo 在“信息”中的 Apple ID",
+  "svc.imessage.field.account.placeholder": "pimpo@icloud.com",
+  "svc.wapersonal.title": "个人 WhatsApp（非官方）",
+  "svc.wapersonal.description": "通过非官方桥接，用你自己的 WhatsApp 号码与 Pimpo 对话。",
+  "svc.wapersonal.help": "注意：WhatsApp 不允许这样做。号码可能被封，WhatsApp 一变动桥接就会毫无预警地失效。请使用可以丢失的号码；“连接”中的官方 WhatsApp（Business）没有这个风险。只有在实验室 › 个人 WhatsApp 开启时才工作，而且从不批准任何操作：选择等待应用或其他渠道。在这台电脑上运行 WAHA（github.com/devlikeapro/waha），用二维码登录，然后发送到该号码：pimpo 加上“连接”中的配对码。",
+  "svc.wapersonal.field.url.label": "WAHA 地址",
+  "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
+  "svc.wapersonal.field.session.label": "会话",
+  "svc.wapersonal.field.session.placeholder": "default",
+  "svc.wapersonal.field.api_key.label": "WAHA API 密钥"
 }

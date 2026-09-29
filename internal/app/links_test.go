@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/turbine-dev/pimpo/internal/chatlink"
+	"github.com/turbine-dev/pimpo/internal/connector/services"
 	"github.com/turbine-dev/pimpo/internal/explore"
 	"github.com/turbine-dev/pimpo/internal/llm"
 	"github.com/turbine-dev/pimpo/internal/store"
@@ -85,4 +86,55 @@ func waitFor(t *testing.T, ok func() bool) {
 		time.Sleep(20 * time.Millisecond)
 	}
 	t.Fatal("timed out")
+}
+
+// noApproveLink is a channel like the unofficial WhatsApp.
+type noApproveLink struct{ fakeLink }
+
+func (*noApproveLink) NoApprovals() bool { return true }
+
+func TestUnofficialWhatsAppNeverApproves(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ctx := context.Background()
+	l := &noApproveLink{}
+	run := &linkRun{link: l, cancel: func() {}}
+	ta.links = map[string]*linkRun{"wapersonal": run}
+	ta.linkMessage(ctx, "wapersonal", run, chatlink.Inbound{From: "5511@c.us", Text: "pimpo " + ta.Channel.PairingCode()})
+	ta.linkMessage(ctx, "wapersonal", run, chatlink.Inbound{From: "5511@c.us", Text: "Todo dia às 7h me manda bom dia"})
+	ta.Explore.Wait()
+	exps, _ := ta.Store.Explorations(ctx, store.ExplorationReady)
+	if len(exps) != 1 {
+		t.Fatalf("explorations %d", len(exps))
+	}
+	ta.mirrorLinks(ctx, explore.Notice{Text: "Quer uma rotina?", Actions: []explore.Action{{Label: "Transformar em rotina", Data: "compile:" + exps[0].ID}, {Label: "Descartar", Data: "discard:" + exps[0].ID}}})
+	waitFor(t, func() bool { return strings.Contains(l.last(), "nunca aprova") })
+	if strings.Contains(l.last(), "1 =") {
+		t.Fatalf("numbered choices on a channel that never approves: %q", l.last())
+	}
+	ta.linkMessage(ctx, "wapersonal", run, chatlink.Inbound{From: "5511@c.us", Text: "2"})
+	ta.Explore.Wait()
+	if e, _ := ta.Store.Exploration(ctx, exps[0].ID); e.State != store.ExplorationReady {
+		t.Fatalf("a number on the unofficial WhatsApp decided: %s", e.State)
+	}
+}
+
+func TestUnofficialWhatsAppWaitsForLabs(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ctx := context.Background()
+	ta.Events.Put(ctx, catalogKey("wapersonal", "url"), "http://127.0.0.1:1")
+	if ok, _ := ta.catalogConfigured(ctx, mustKind(t, "wapersonal")); !ok {
+		t.Fatal("not configured")
+	}
+	ta.restartLink(ctx, "wapersonal")
+	if ta.links["wapersonal"] != nil {
+		t.Fatal("the unofficial WhatsApp started without the owner choosing it in Labs")
+	}
+}
+
+func mustKind(t *testing.T, id string) services.Kind {
+	k, ok := services.Get(id)
+	if !ok {
+		t.Fatalf("no kind %s", id)
+	}
+	return k
 }

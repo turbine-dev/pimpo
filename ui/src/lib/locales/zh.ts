@@ -462,6 +462,8 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'labs.powerText': "它们让代理能做更多事，所以默认关闭。每一项仍要经过你的规则和批准。",
   'labs.code_sandbox': "隔离运行代码",
   'labs.code_sandboxHint': "在没有网络、没有密钥的 Docker 容器中运行 Python、JavaScript 或 shell，最长 60 秒。需要 Docker。",
+  'labs.whatsapp_personal': "个人 WhatsApp（非官方）",
+  'labs.whatsapp_personalHint': "通过非官方桥接用你自己的 WhatsApp 号码和 Pimpo 对话。WhatsApp 不允许这样做：号码可能被封，也可能随时失效。它从不批准任何操作。",
   'labs.browser': "使用浏览器",
   'labs.browserHint': "Pimpo 用自己的浏览器配置打开、阅读并填写没有 API 的网站；提交、购买或发送前总会先询问。需要 Chrome。",
   'labs.browserLogin': "打开 Pimpo 的浏览器",

@@ -179,5 +179,19 @@
   "msg.job.budget": "das Budget der Aufgabe ist aufgebraucht",
   "msg.job.done": "🧩 Aufgabe fertig: {request}\nKosten {cost} $. Der Bericht ist unter Aufgaben.",
   "msg.job.stopped": "⏹️ Aufgabe gestoppt: {request}\n{why}",
-  "msg.job.byOwner": "von dir gestoppt"
+  "msg.job.byOwner": "von dir gestoppt",
+  "msg.link.approveElsewhere": "Zum Auswählen nutze die Pimpo-App oder einen anderen Kanal; dieser genehmigt nie etwas.",
+  "svc.imessage.title": "iMessage",
+  "svc.imessage.description": "Sprich mit Pimpo über iMessage, auf dem Mac.",
+  "svc.imessage.help": "Nur auf dem Mac. Melde Nachrichten mit einer Apple-ID an (am besten einer nur für Pimpo) und gib Pimpo in Systemeinstellungen › Datenschutz & Sicherheit vollen Festplattenzugriff, damit es eingehende Nachrichten lesen kann. Schicke dann an diese Apple-ID, von deinem iPhone: pimpo und den Kopplungscode aus Verbindungen.",
+  "svc.imessage.field.account.label": "Pimpos Apple-ID in Nachrichten",
+  "svc.imessage.field.account.placeholder": "pimpo@icloud.com",
+  "svc.wapersonal.title": "Privates WhatsApp (inoffiziell)",
+  "svc.wapersonal.description": "Sprich mit Pimpo über deine eigene WhatsApp-Nummer, über eine inoffizielle Brücke.",
+  "svc.wapersonal.help": "Achtung: WhatsApp erlaubt das nicht. Die Nummer kann gesperrt werden, und die Brücke fällt ohne Vorwarnung aus, wenn WhatsApp sich ändert. Nutze eine Nummer, die du verlieren kannst; das offizielle WhatsApp (Business) unter Verbindungen hat dieses Risiko nicht. Es funktioniert nur mit Labor › Privates WhatsApp an und genehmigt nie etwas: Auswahlen warten auf die App oder einen anderen Kanal. Starte WAHA (github.com/devlikeapro/waha) auf diesem Computer, melde dich per QR-Code an und schicke an diese Nummer: pimpo und den Kopplungscode aus Verbindungen.",
+  "svc.wapersonal.field.url.label": "WAHA-Adresse",
+  "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
+  "svc.wapersonal.field.session.label": "Sitzung",
+  "svc.wapersonal.field.session.placeholder": "default",
+  "svc.wapersonal.field.api_key.label": "WAHA-API-Schlüssel"
 }
