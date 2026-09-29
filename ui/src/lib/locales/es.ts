@@ -68,6 +68,7 @@ export const es: Record<Key, string> & Record<string, string> = {
 
   'nav.routines': 'Rutinas',
   'nav.inbox': 'Te necesita',
+  'nav.skills': "Skills",
   'nav.gallery': 'Galería',
   'nav.receipts': 'Recibos',
   'nav.rules': 'Reglas',
@@ -446,7 +447,7 @@ export const es: Record<Key, string> & Record<string, string> = {
   'settings.suggestTitle': "Sugerencias",
   'settings.suggestText': "Una vez al día, Pimpo puede sugerir una rutina por lo que ve repetirse: quién te escribe y sobre qué, tus próximos compromisos, rutinas que fallan. Para esto nunca lee el contenido de los correos, y una sugerencia solo se ejecuta si la aceptas.",
   'sk.title': "Skills",
-  'sk.text': "Las skills de OpenClaw, Hermes y agentskills.io (un SKILL.md) funcionan aquí como asistentes: el agente sigue sus instrucciones, solo con las capacidades que permitas.",
+  'sk.text': "Las skills de OpenClaw, Hermes y agentskills.io (un SKILL.md) enseñan al agente a hacer un tipo de tarea. Conoce las instaladas y usa una cuando la tarea encaja; mientras la usa, solo puede usar las capacidades que permitas aquí.",
   'sk.none': "Sin capacidades: solo instrucciones",
   'sk.remove': "Quitar {name}",
   'sk.url': "Enlace de GitHub a la carpeta de la skill",

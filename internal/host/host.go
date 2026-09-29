@@ -75,6 +75,10 @@ type Host struct {
 	// Allowed, when set, is every capability this run may use; an
 	// assistant limited to a few tools runs this way.
 	Allowed map[string]bool
+	// narrowed, once a skill is in use, is what this run may still use.
+	narrowMu  sync.Mutex
+	narrowed  map[string]bool
+	narrowWhy string
 	// QuietReads leaves successful reads out of the event log; a watch
 	// polling every few minutes would otherwise bury the receipts.
 	QuietReads bool
@@ -164,6 +168,9 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	d := pol.Decide(ctx, act)
 	if h.Allowed != nil && !h.Allowed[name] {
 		d = policy.Decision{Verdict: policy.Block, Reason: "this assistant may not use " + name}
+	}
+	if ok, why := h.stillAllowed(name); !ok {
+		d = policy.Decision{Verdict: policy.Block, Reason: why}
 	}
 	rec.Verdict, rec.Reason, rec.Rule = d.Verdict, d.Reason, d.Rule
 	simulated := h.DryRun && spec.Risk >= capability.Reversible
@@ -378,4 +385,28 @@ func truncateAny(v any) any {
 		return v
 	}
 	return string(b[:4096]) + "…"
+}
+
+// Narrow limits the rest of the run to caps (and what it already could
+// use): a skill in use reaches only what the owner granted it. Several
+// skills narrow to what all of them allow.
+func (h *Host) Narrow(caps []string, who string) {
+	h.narrowMu.Lock()
+	defer h.narrowMu.Unlock()
+	next := map[string]bool{}
+	for _, c := range caps {
+		if h.narrowed == nil || h.narrowed[c] {
+			next[c] = true
+		}
+	}
+	h.narrowed, h.narrowWhy = next, who
+}
+
+func (h *Host) stillAllowed(name string) (bool, string) {
+	h.narrowMu.Lock()
+	defer h.narrowMu.Unlock()
+	if h.narrowed == nil || h.narrowed[name] {
+		return true, ""
+	}
+	return false, h.narrowWhy + " may not use " + name
 }

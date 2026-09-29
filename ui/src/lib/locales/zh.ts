@@ -66,6 +66,7 @@ export const zh: Record<Key, string> & Record<string, string> = {
 
   'nav.routines': '例程',
   'nav.inbox': '待你处理',
+  'nav.skills': "技能",
   'nav.gallery': '例程库',
   'nav.receipts': '记录',
   'nav.rules': '规则',
@@ -438,7 +439,7 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'settings.suggestTitle': "建议",
   'settings.suggestText': "Pimpo 每天可能会根据反复出现的情况建议一个例程：谁给你写信、关于什么，你接下来的日程，失败的例程。为此它从不读取邮件内容，建议只有在你接受后才会执行。",
   'sk.title': "技能",
-  'sk.text': "OpenClaw、Hermes 和 agentskills.io 的技能(一个 SKILL.md)在这里作为助手使用：代理会遵循它的说明，但只能使用你允许的能力。",
+  'sk.text': "OpenClaw、Hermes 和 agentskills.io 的技能(一个 SKILL.md)教代理如何完成某类任务。代理了解已安装的技能，在任务匹配时使用；使用期间只能用你在这里允许的能力。",
   'sk.none': "没有能力：仅说明",
   'sk.remove': "移除 {name}",
   'sk.url': "指向技能文件夹的 GitHub 链接",

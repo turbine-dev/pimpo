@@ -159,7 +159,9 @@ Browse ready-made routines, filtered by what they can touch. Pimpo checks the au
 
 ## Skills
 
-Skills written for OpenClaw, Hermes or agentskills.io (a folder with a `SKILL.md`) work in Pimpo as assistants. In **Assistentes › Skills**, paste a GitHub link to the skill's folder or send its `.zip`. Pimpo shows what the skill is, its full text, and which capabilities its text seems to need, all unchecked except those; **you choose what it may use**, and a skill granted nothing can only give advice. Then pick it like any assistant in a chat.
+Skills written for OpenClaw, Hermes or agentskills.io (a folder with a `SKILL.md`) teach the agent how to do a kind of task. Install them in **Mais › Skills**: paste a GitHub link to the skill's folder or send its `.zip`. Pimpo shows what the skill is, its full text, and which capabilities its text seems to need; **you choose what it may use**.
+
+You do not pick a skill: the agent knows the ones installed and uses one when a task matches. From that moment, and until the task ends, it can use only the capabilities you allowed that skill; a skill allowed nothing can only guide it.
 
 A skill is text someone else wrote, so Pimpo never treats it as your words: every action still passes your rules and approvals, the scripts it carries are not run, a skill the protection list reports is refused, and a skill changed on disk stops until you install it again.
 

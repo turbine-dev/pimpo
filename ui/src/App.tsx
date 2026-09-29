@@ -1,3 +1,4 @@
+import { Skills } from './pages/Skills'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/chat" element={<Chat />} />
         <Route path="/chat/:id" element={<Chat />} />
         <Route path="/assistants" element={<Assistants />} />
+        <Route path="/skills" element={<Skills />} />
         <Route path="/help" element={<Help />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/receipts" element={<Receipts />} />

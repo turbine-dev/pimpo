@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bot, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { capabilityLabel } from '../components/RoutineCard'
-import { Skills } from '../components/Skills'
 import { Button, Card, EmptyState, RiskBadge } from '../components/ui'
 import { api, type Assistant } from '../lib/api'
 import { useT } from '../lib/i18n'
@@ -20,7 +19,7 @@ export function Assistants() {
   const list = useQuery({ queryKey: ['assistants'], queryFn: api.assistants })
   const remove = useMutation({ mutationFn: api.deleteAssistant, onSuccess: () => qc.invalidateQueries({ queryKey: ['assistants'] }) })
   const [editing, setEditing] = useState<Assistant | null>(null)
-  const items = (list.data ?? []).filter((as) => !as.skill)
+  const items = list.data ?? []
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-end justify-between gap-4">
@@ -48,7 +47,6 @@ export function Assistants() {
           ))}
         </div>
       )}
-      <Skills />
       {editing && <Editor start={editing} onClose={() => setEditing(null)} />}
     </div>
   )

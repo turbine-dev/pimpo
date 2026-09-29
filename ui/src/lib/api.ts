@@ -53,7 +53,7 @@ export type Routed = { model: string; tier?: 'simple' | 'normal' | 'hard'; by: '
 export type ChatTurn = { model?: Routed; id: string; request: string; state: 'running' | 'ready' | 'compiling' | 'done' | 'failed' | 'discarded'; summary?: string; error?: string; cost_usd: number; routine?: string; created_at: string
   actions: ChatAction[]; done?: { state: 'running' | 'done' | 'failed'; at: string; results: { capability: string; ok: boolean; error?: string }[] } }
 
-export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[]; skill?: boolean }
+export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[] }
 export type InstalledSkill = { id: string; name: string; description: string; source: string; capabilities: string[]; scripts: string[]; unsupported: string[]; installed: string }
 export type SkillPreview = { token: string; exists: boolean; skill: { id: string; name: string; description: string; body: string; files: string[]; scripts: string[]; suggested: string[]; unsupported: string[]; secrets: string[] } }
 export type CapabilitySpec = { name: string; risk: CapRisk; signature: string; returns: string }

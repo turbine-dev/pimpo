@@ -66,6 +66,7 @@ export const ja: Record<Key, string> & Record<string, string> = {
 
   'nav.routines': 'ルーティン',
   'nav.inbox': '要対応',
+  'nav.skills': "スキル",
   'nav.gallery': 'ギャラリー',
   'nav.receipts': '記録',
   'nav.rules': 'ルール',
@@ -438,7 +439,7 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'settings.suggestTitle': "提案",
   'settings.suggestText': "1日に1回、Pimpo は繰り返し見かけること(誰から何のメールが来るか、今後の予定、失敗するルーティン)からルーティンを提案することがあります。そのためにメールの本文を読むことはなく、提案は承認したときだけ実行されます。",
   'sk.title': "スキル",
-  'sk.text': "OpenClaw、Hermes、agentskills.io のスキル(SKILL.md)は、ここではアシスタントとして動きます。エージェントは指示に従いますが、使えるのはあなたが許可した機能だけです。",
+  'sk.text': "OpenClaw、Hermes、agentskills.io のスキル(SKILL.md)は、ある種類の作業のやり方をエージェントに教えます。エージェントはインストール済みのスキルを知っていて、作業に合うときに使います。使っている間は、ここで許可した機能しか使えません。",
   'sk.none': "機能なし: 指示のみ",
   'sk.remove': "{name} を削除",
   'sk.url': "スキルのフォルダへの GitHub リンク",
