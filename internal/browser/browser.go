@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	goruntime "runtime"
 	"strings"
 	"sync"
 	"time"
@@ -92,7 +93,7 @@ func (b *Browser) start() error {
 	root, _ := chromedp.NewContext(b.alloc)
 	if err := chromedp.Run(root, browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorDeny)); err != nil {
 		b.stop()
-		if strings.Contains(err.Error(), "No usable sandbox") {
+		if strings.Contains(err.Error(), "No usable sandbox") || userNamespacesRestricted() {
 			// Pages are untrusted, so Chrome keeps its sandbox; some Linux
 			// systems only allow it for Chrome installed from Google's package.
 			return ErrNoSandbox
@@ -102,6 +103,17 @@ func (b *Browser) start() error {
 	b.root, b.tabs, b.started = root, map[string]*tab{}, true
 	go b.sweep()
 	return nil
+}
+
+// userNamespacesRestricted: Ubuntu 23.10+ keeps unprivileged user
+// namespaces from programs without an AppArmor profile, and Chrome then
+// cannot start its sandbox; it may hang instead of saying so.
+func userNamespacesRestricted() bool {
+	if goruntime.GOOS != "linux" {
+		return false
+	}
+	v, err := os.ReadFile("/proc/sys/kernel/apparmor_restrict_unprivileged_userns")
+	return err == nil && strings.TrimSpace(string(v)) == "1"
 }
 
 // sweep closes tabs no run used for a while.
