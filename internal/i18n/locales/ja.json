@@ -175,5 +175,9 @@
   "btn.suggestNo": "いいえ、結構です",
   "msg.suggestion.gone": "その提案はもうありません。",
   "msg.suggestion.started": "始めました。見ている間に一度やります。承認するとルーティンになります。",
-  "msg.suggestion.declined": "わかりました。もう提案しません。"
+  "msg.suggestion.declined": "わかりました。もう提案しません。",
+  "msg.job.budget": "ジョブの予算を使い切りました",
+  "msg.job.done": "🧩 ジョブ完了: {request}\n費用 ${cost}。レポートはジョブにあります。",
+  "msg.job.stopped": "⏹️ ジョブ停止: {request}\n{why}",
+  "msg.job.byOwner": "あなたが停止"
 }

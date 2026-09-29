@@ -173,6 +173,11 @@ type App struct {
 	Remote    *remote.Remote
 	LAN       *remote.LAN
 	browser   *browser.Browser
+	// startedAt tells parts of jobs a restart interrupted from running ones.
+	startedAt  time.Time
+	jobRunning sync.Mutex
+	jobRuns    map[string]bool
+	jobPoll    time.Duration
 	// ListenAddr is where the server listens (--addr); the home network uses its port.
 	ListenAddr string
 	Google     *oauth.Google
@@ -227,7 +232,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	if err != nil {
 		return nil, err
 	}
-	a := &App{Events: events, Vault: v, Store: st}
+	a := &App{Events: events, Vault: v, Store: st, startedAt: time.Now().UTC(), jobPoll: 2 * time.Second}
 	a.Rules = &policy.Engine{Events: events}
 	a.initProtection(ctx)
 	a.Policy = a.Rules
@@ -316,6 +321,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.browserRoutes()
 	a.learnRoutes()
 	a.phoneRoutes()
+	a.jobRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()
@@ -344,6 +350,7 @@ func (a *App) Start(ctx context.Context) error {
 	go a.aliveLoop(ctx, time.Minute)
 	go a.suggestLoop(ctx, 30*time.Minute)
 	go a.learnLoop(ctx, time.Hour)
+	a.resumeJobs(ctx)
 	go func() {
 		<-ctx.Done()
 		a.mu.Lock()

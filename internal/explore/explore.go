@@ -127,6 +127,13 @@ type Options struct {
 	Model string
 	// Effort is how hard the model thinks for this request, "" for the default.
 	Effort string
+	// MaxCostUSD caps this exploration below the day's remaining budget,
+	// for one part of a larger job; 0 is no extra cap.
+	MaxCostUSD float64
+	// Timeout and MaxTurns let a part of a long job work longer than a
+	// chat request (15 minutes, 40 turns).
+	Timeout  time.Duration
+	MaxTurns int
 }
 
 // Assistant is a named role for the agent with the capabilities it may use.
@@ -209,7 +216,14 @@ func (s *Service) start(ctx context.Context, request, actor, target string, o Op
 func (s *Service) Wait() { s.wg.Wait() }
 
 func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
+	timeout, turns := 15*time.Minute, 40
+	if o.Timeout > 0 {
+		timeout = min(o.Timeout, 2*time.Hour)
+	}
+	if o.MaxTurns > 0 {
+		turns = min(o.MaxTurns, 120)
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: true, Person: e.Person}
 	role := ""
@@ -257,8 +271,8 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		MCPURL:     fmt.Sprintf("%s/mcp/explore/%s?key=%s", s.BaseURL, e.ID, key),
 		Model:      firstNonEmpty(o.Model, s.Model),
 		Effort:     o.Effort,
-		MaxCostUSD: s.maxCost(ctx),
-		MaxTurns:   40,
+		MaxCostUSD: capCost(s.maxCost(ctx), o.MaxCostUSD),
+		MaxTurns:   turns,
 	})
 	h.AddCost(ctx, resp.CostUSD, "exploration")
 	e.CostUSD = h.Cost()
@@ -376,6 +390,17 @@ func (s *Service) maxCost(ctx context.Context) float64 {
 		return min(1, max(r, 0.05))
 	}
 	return 1
+}
+
+// capCost is the lower of two limits, where 0 means no limit.
+func capCost(a, b float64) float64 {
+	switch {
+	case b <= 0:
+		return a
+	case a <= 0:
+		return b
+	}
+	return min(a, b)
 }
 
 func (s *Service) zone() *time.Location {

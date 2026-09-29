@@ -175,5 +175,9 @@
   "btn.suggestNo": "Não, obrigado",
   "msg.suggestion.gone": "Essa sugestão não está mais aqui.",
   "msg.suggestion.started": "Comecei: faço uma vez enquanto você acompanha; aprove para virar rotina.",
-  "msg.suggestion.declined": "Certo, não sugiro isso de novo."
+  "msg.suggestion.declined": "Certo, não sugiro isso de novo.",
+  "msg.job.budget": "o orçamento do trabalho acabou",
+  "msg.job.done": "🧩 Trabalho pronto: {request}\nCusto US$ {cost}. O relatório está em Trabalhos.",
+  "msg.job.stopped": "⏹️ Trabalho parado: {request}\n{why}",
+  "msg.job.byOwner": "parado por você"
 }

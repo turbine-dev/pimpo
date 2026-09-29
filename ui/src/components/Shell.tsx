@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { UpdateBanner } from './Updates'
-import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Users, Puzzle } from 'lucide-react'
+import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, Users, Puzzle } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
@@ -23,6 +23,7 @@ export const primary: NavItem[] = [
 
 export const secondary: NavItem[] = [
   { to: '/gallery', label: 'nav.gallery', icon: <LibraryBig size={17} /> },
+  { to: '/jobs', label: 'nav.jobs', icon: <Layers size={17} /> },
   { to: '/skills', label: 'nav.skills', icon: <Puzzle size={17} /> },
   { to: '/phone', label: 'nav.phone', icon: <Smartphone size={17} /> },
   { to: '/connections', label: 'nav.connections', icon: <Plug size={17} /> },

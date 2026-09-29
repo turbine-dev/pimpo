@@ -1,5 +1,6 @@
 import { Skills } from './pages/Skills'
 import { Phone } from './pages/Phone'
+import { Jobs } from './pages/Jobs'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
@@ -78,6 +79,8 @@ export default function App() {
         <Route path="/assistants" element={<Assistants />} />
         <Route path="/skills" element={<Skills />} />
         <Route path="/phone" element={<Phone />} />
+        <Route path="/jobs" element={<Jobs />} />
+        <Route path="/jobs/:id" element={<Jobs />} />
         <Route path="/help" element={<Help />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/receipts" element={<Receipts />} />

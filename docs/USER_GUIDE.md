@@ -68,6 +68,10 @@ Every routine page starts with **Ajustes da rotina**:
 
 To add more Telegram bots, go to **Conexões › Bots extras do Telegram**. Create the bot with @BotFather, paste its token, send it a message (or add it to a group), and tap **Detectar chat**.
 
+## Long jobs
+
+For work too big for one answer ("compare these 20 suppliers on price, delivery and reviews and prepare a proposal"), open **Trabalhos**, describe it and give it a budget (up to $20). Pimpo first shows a plan: up to eight parts, each with only the tools it needs. Nothing runs until you tap **Começar**. The parts then run in the background, three at a time, for as long as they need (up to 90 minutes each); like the chat, they read for real and only propose changes. **Trabalhos** shows each part's progress and cost against the budget; when the budget runs out, the job stops and says so. If Pimpo restarts, finished parts stay finished and interrupted ones start again. At the end a report puts the parts together, and you are told on your usual channel.
+
 ## Run history
 
 **Rotinas › Execuções** lists every run of every routine, newest first, with its cost, how many calls it made and how long it took. **Com falha** shows only what went wrong, with the error. A routine can run as often as every 5 minutes (**A cada alguns minutos** in its schedule).
