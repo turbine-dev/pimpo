@@ -66,7 +66,13 @@ flowchart LR
 curl -fsSL https://raw.githubusercontent.com/turbine-dev/pimpo/main/scripts/install.sh | sh
 ```
 
-Add `--service` to run it at boot with systemd. Then start it and open the address it prints:
+Add `--service` to run it at boot with systemd. **Docker**, for a home server or a VPS:
+
+```bash
+docker run -d --name pimpo -p 127.0.0.1:7788:7788 -v pimpo:/data ghcr.io/turbine-dev/pimpo
+```
+
+See [running on a server](docs/SELF_HOSTING.md) for Compose, Tailscale and connecting the apps. Then start it and open the address it prints:
 
 ```bash
 pimpo serve

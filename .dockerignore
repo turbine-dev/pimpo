@@ -1,0 +1,13 @@
+.git
+**/node_modules
+desktop/src-tauri/target
+desktop/src-tauri/gen
+dist
+bin
+ui/test-results
+ui/playwright-report
+tools/judge/mlx
+tools/judge/adapters
+tools/judge/data
+.venv
+.claude

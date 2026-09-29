@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 concurrency:
   group: release-${{ inputs.version || github.ref_name }}
@@ -76,3 +77,11 @@ jobs:
     with:
       tag: ${{ needs.tag.outputs.tag }}
     secrets: inherit
+
+  docker:
+    needs: [tag, binaries]
+    uses: ./.github/workflows/docker.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+    secrets: inherit
+

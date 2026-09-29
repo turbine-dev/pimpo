@@ -1,0 +1,69 @@
+name: docker
+
+# The server image, for amd64 and arm64, at ghcr.io/turbine-dev/pimpo:
+# "edge" follows main, a release adds its version and, when it is not a
+# pre-release, "latest".
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**.md", "desktop/**"]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-${{ inputs.tag || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || '' }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Tags
+        id: tags
+        shell: bash
+        env: { TAG: "${{ inputs.tag }}" }
+        run: |
+          image=ghcr.io/${GITHUB_REPOSITORY,,}
+          if [ -n "$TAG" ]; then
+            version=${TAG#v}
+            tags="$image:$version"
+            case "$version" in *-*) ;; *) tags="$tags,$image:latest" ;; esac
+          else
+            version="edge-$(git rev-parse --short HEAD)"
+            tags="$image:edge"
+          fi
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: VERSION=${{ steps.tags.outputs.version }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=Pimpo, a personal AI agent that learns a task once and then does it on its own
+            org.opencontainers.image.licenses=Apache-2.0
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

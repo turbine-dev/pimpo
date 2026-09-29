@@ -26,7 +26,9 @@ Fixes for serious issues ship within 7 days of a report, on stable and on every 
    | Windows x64 | `_setup.exe` (NSIS) and `.msi` |
    | Linux x64 and arm64 | `.deb`, `.rpm` and `.AppImage` |
 
-   macOS builds are signed and notarized when the repository has the `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD` and `APPLE_TEAM_ID` secrets; without them they are signed ad hoc, and macOS asks to confirm the first time they open. Windows installers are not signed yet.
+   macOS builds are signed and notarized when the repository has the `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD` and `APPLE_TEAM_ID` secrets; without them they are signed ad hoc, and macOS asks to confirm the first time they open. Windows installers are signed when it has `WINDOWS_CERTIFICATE` (a code-signing `.pfx`, base64) and `WINDOWS_CERTIFICATE_PASSWORD`; without them SmartScreen warns on first run. The same run publishes the server image `ghcr.io/turbine-dev/pimpo` with the version's tag (and `latest` for a final release); `edge` follows main.
+
+   Getting the certificates (a maintainer's task): **Apple**, join the Apple Developer Program, create a *Developer ID Application* certificate, export it as `.p12` (its base64 is `APPLE_CERTIFICATE`), and create an app-specific password for notarization (`APPLE_PASSWORD`). **Windows**, buy an OV or EV code-signing certificate from a certificate authority and export it as `.pfx`. Set each secret with `gh secret set NAME < file`.
 
    The same desktop builds run on demand (**Actions › desktop › Run workflow**) and on pull requests that touch `desktop/`, keeping the installers as workflow artifacts for 14 days.
 4. A maintainer checks the draft and publishes it. `scripts/install.sh` verifies checksums before installing.

@@ -1,0 +1,27 @@
+# Pimpo on a home server or a VPS:
+#   docker compose up -d
+#   docker compose logs pimpo | grep auth     # the login link
+# Reach it from elsewhere through Tailscale (Ajustes › Celular) or a reverse
+# proxy with https; the port is published on this machine only.
+services:
+  pimpo:
+    image: ghcr.io/turbine-dev/pimpo:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7788:7788"
+    volumes:
+      - pimpo-data:/data
+    environment:
+      # Routines keep local times in this zone.
+      TZ: ${TZ:-Europe/Lisbon}
+  # A local model for judgments and explorations, if the machine has the
+  # memory for it (8 GB or more). Then use ollama_url http://ollama:11434.
+  # ollama:
+  #   image: ollama/ollama
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ollama-data:/root/.ollama
+
+volumes:
+  pimpo-data:
+  # ollama-data:

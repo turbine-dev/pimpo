@@ -4,6 +4,7 @@
 
 - [User guide](USER_GUIDE.md): getting started and everything you can do, screen by screen.
 - [Configuration](CONFIGURATION.md): the command line, settings, models, channels, the data folder, network access and backups.
+- [Running on a server](SELF_HOSTING.md): Docker, systemd, reaching it safely, and the apps opening it.
 - [Validating on real accounts](VALIDATION.md): what `pimpo report` measures and what counts as done.
 - [Routines](ROUTINES.md): how a request becomes a routine, what triggers it, how it is tested, and how to write or edit one.
 

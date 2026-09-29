@@ -89,6 +89,23 @@ jobs:
           go build -trimpath -ldflags "-s -w -X main.version=${{ steps.version.outputs.version }}" \
             -o "desktop/src-tauri/binaries/pimpo-${{ matrix.target }}${{ matrix.ext }}" ./cmd/pimpo
 
+      # Windows installers are signed when the repository has a code-signing
+      # certificate (a .pfx, base64) and its password.
+      - name: Windows signing certificate
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CERTIFICATE) { Write-Host "no certificate: Windows installers stay unsigned"; exit 0 }
+          $pfx = Join-Path $env:RUNNER_TEMP "cert.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $password = ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -Force -AsPlainText
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          Remove-Item $pfx
+          "WINDOWS_THUMBPRINT=$($cert.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Desktop app
         shell: bash
         env:
@@ -114,7 +131,10 @@ jobs:
           # made and signed too.
           extra=()
           if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
-            extra=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
+            extra+=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
+          fi
+          if [ -n "${WINDOWS_THUMBPRINT:-}" ]; then
+            extra+=(--config "{\"bundle\":{\"windows\":{\"certificateThumbprint\":\"$WINDOWS_THUMBPRINT\",\"digestAlgorithm\":\"sha256\",\"timestampUrl\":\"http://timestamp.digicert.com\"}}}")
           fi
           npx tauri build --ci --target "${{ matrix.target }}" --bundles "${{ matrix.bundles }}" "${extra[@]}"
 
