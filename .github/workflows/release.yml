@@ -1,17 +1,66 @@
 name: release
+
+# A release runs when a vX.Y.Z tag is pushed, or by hand from
+# Actions › release › Run workflow, which tags the chosen branch first.
+# Either way it ends in a draft release that a maintainer checks and
+# publishes (docs/RELEASES.md).
+
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, as vX.Y.Z (or vX.Y.Z-beta.N). The branch chosen above is tagged with it."
+        type: string
+        required: true
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
-  binaries:
+  tag:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+      - id: tag
+        name: Tag
+        shell: bash
+        env: { VERSION: "${{ inputs.version }}" }
+        run: |
+          if [ "${{ github.event_name }}" != workflow_dispatch ]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! printf '%s' "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$'; then
+            echo "::error::version must look like v1.2.3 or v1.2.3-beta.1, got '$VERSION'"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null || git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null; then
+            echo "::error::$VERSION already exists; choose a new version"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Pimpo $VERSION"
+          # Pushed with the workflow's token, the tag does not start this
+          # workflow a second time.
+          git push origin "refs/tags/$VERSION"
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+
+  binaries:
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0, ref: "refs/tags/${{ needs.tag.outputs.tag }}" }
       - uses: actions/setup-go@v5
         with: { go-version-file: go.mod }
       - uses: actions/setup-node@v4
@@ -22,8 +71,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   desktop:
-    needs: binaries
+    needs: [tag, binaries]
     uses: ./.github/workflows/desktop.yml
     with:
-      tag: ${{ github.ref_name }}
+      tag: ${{ needs.tag.outputs.tag }}
     secrets: inherit

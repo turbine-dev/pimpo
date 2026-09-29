@@ -39,3 +39,4 @@ release:
     owner: turbine-dev
     name: pimpo
   draft: true
+  prerelease: auto

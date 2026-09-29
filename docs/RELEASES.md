@@ -18,7 +18,7 @@ Fixes for serious issues ship within 7 days of a report, on stable and on every 
 
 1. `make check` and `make e2e` pass on main.
 2. `govulncheck ./...` and `npm audit --omit=dev` are clean.
-3. Tag `vX.Y.Z`. CI (`release.yml`) builds binaries for Linux, macOS, Windows and Raspberry Pi with checksums, and a draft release; then `desktop.yml` builds the desktop installers and attaches them:
+3. Tag `vX.Y.Z`, either by pushing the tag or from **Actions › release › Run workflow**, which asks for the version and tags the branch you pick (it refuses a version that is malformed or already exists). CI (`release.yml`) builds binaries for Linux, macOS, Windows and Raspberry Pi with checksums, and a draft release; then `desktop.yml` builds the desktop installers and attaches them:
 
    | System | Files |
    |---|---|
