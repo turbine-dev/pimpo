@@ -9,9 +9,7 @@ if ! make check >"$log" 2>&1; then
   exit 1
 fi
 git add -A
-git -c user.name="Dener Fernandes" -c user.email="owner@example.com" commit -q -m "$1
+git -c user.name="denerFernandes" -c user.email="837495+denerFernandes@users.noreply.github.com" commit -q -m "$1
 
-${2:-}
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+${2:-}"
 git log --oneline -1
