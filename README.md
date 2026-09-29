@@ -111,7 +111,7 @@ Contributions are welcome, and the easiest way in needs no Go: a connector is of
 
 ## Status
 
-Pimpo is young and moves fast. See [what changed](CHANGELOG.md), [what is done and what waits](docs/STATUS.md), and [how releases are supported](docs/RELEASES.md).
+Pimpo is young and moves fast. See [what comes next](docs/ROADMAP.md), [what changed](CHANGELOG.md), [what is done and what waits](docs/STATUS.md), and [how releases are supported](docs/RELEASES.md).
 
 ## License
 

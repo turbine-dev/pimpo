@@ -1,0 +1,1694 @@
+{
+ "release": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.82,
+    "confidence": 0.0,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.16,
+     "1": 0.2,
+     "2": 0.29,
+     "3": 0.35
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 0.72,
+    "confidence": 0.28,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.53,
+     "1": 0.26,
+     "2": 0.16,
+     "3": 0.05
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.12,
+    "confidence": 0.7,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.09,
+     "1": 0.7,
+     "2": 0.21,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 2.27,
+    "confidence": 0.55,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.02,
+     "1": 0.06,
+     "2": 0.5599999999999999,
+     "3": 0.36
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 0.73,
+    "confidence": 0.59,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.34,
+     "1": 0.59,
+     "2": 0.06,
+     "3": 0.01
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1460,
+   "output_tokens": 82
+  }
+ },
+ "updater": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.29,
+    "confidence": 0.41,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.15,
+     "1": 0.45,
+     "2": 0.35,
+     "3": 0.05
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 2.52,
+    "confidence": 0.52,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.08,
+     "2": 0.28,
+     "3": 0.63
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.2,
+    "confidence": 0.73,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.04,
+     "1": 0.73,
+     "2": 0.23,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.28,
+    "confidence": 0.64,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.04,
+     "1": 0.65,
+     "2": 0.31,
+     "3": 0.0
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.71,
+    "confidence": 0.45,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.08,
+     "1": 0.26,
+     "2": 0.53,
+     "3": 0.13
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1462,
+   "output_tokens": 82
+  }
+ },
+ "signing": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.03,
+    "confidence": 0.42,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.28,
+     "1": 0.46,
+     "2": 0.22,
+     "3": 0.04
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.9,
+    "confidence": 0.0,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.1,
+     "1": 0.29,
+     "2": 0.22,
+     "3": 0.39
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.11,
+    "confidence": 0.66,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.12,
+     "1": 0.65,
+     "2": 0.23,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.44,
+    "confidence": 0.41,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.07,
+     "1": 0.44,
+     "2": 0.48,
+     "3": 0.01
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 0.63,
+    "confidence": 0.37,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.49,
+     "1": 0.41,
+     "2": 0.08,
+     "3": 0.02
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1463,
+   "output_tokens": 82
+  }
+ },
+ "docker": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.27,
+    "confidence": 0.41,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.16,
+     "1": 0.45,
+     "2": 0.34,
+     "3": 0.05
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.0,
+    "confidence": 0.0,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.37,
+     "1": 0.32,
+     "2": 0.24,
+     "3": 0.07
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.46,
+    "confidence": 0.51,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.02,
+     "1": 0.5,
+     "2": 0.48,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.47,
+    "confidence": 0.42,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.11,
+     "1": 0.34,
+     "2": 0.53,
+     "3": 0.02
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.67,
+    "confidence": 0.57,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.04,
+     "1": 0.31,
+     "2": 0.6,
+     "3": 0.05
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1461,
+   "output_tokens": 82
+  }
+ },
+ "ecosystem_repos": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.58,
+    "confidence": 0.45,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.05,
+     "1": 0.38,
+     "2": 0.5,
+     "3": 0.07
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.56,
+    "confidence": 0.34,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.13,
+     "1": 0.3,
+     "2": 0.45999999999999996,
+     "3": 0.11
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.38,
+    "confidence": 0.56,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.03,
+     "1": 0.57,
+     "2": 0.4,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.18,
+    "confidence": 0.49,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.17,
+     "1": 0.5,
+     "2": 0.32,
+     "3": 0.01
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.32,
+    "confidence": 0.63,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.03,
+     "1": 0.66,
+     "2": 0.28,
+     "3": 0.03
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1464,
+   "output_tokens": 82
+  }
+ },
+ "discovery": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 0.76,
+    "confidence": 0.24,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.43,
+     "1": 0.4,
+     "2": 0.15,
+     "3": 0.02
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.1,
+    "confidence": 0.0,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.37,
+     "1": 0.3,
+     "2": 0.19,
+     "3": 0.14
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.11,
+    "confidence": 0.64,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.13,
+     "1": 0.64,
+     "2": 0.23,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.74,
+    "confidence": 0.6,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.05,
+     "1": 0.22,
+     "2": 0.66,
+     "3": 0.07
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 0.58,
+    "confidence": 0.42,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.53,
+     "1": 0.39,
+     "2": 0.07,
+     "3": 0.01
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1455,
+   "output_tokens": 82
+  }
+ },
+ "browser": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.91,
+    "confidence": 0.57,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.03,
+     "1": 0.21,
+     "2": 0.59,
+     "3": 0.17
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 0.91,
+    "confidence": 0.09,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.4,
+     "1": 0.32,
+     "2": 0.26,
+     "3": 0.02
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.99,
+    "confidence": 0.97,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.02,
+     "2": 0.97,
+     "3": 0.01
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.4,
+    "confidence": 0.39,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.09,
+     "1": 0.43,
+     "2": 0.47,
+     "3": 0.01
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 2.86,
+    "confidence": 0.86,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.0,
+     "2": 0.14,
+     "3": 0.86
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1477,
+   "output_tokens": 82
+  }
+ },
+ "sandbox": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.6,
+    "confidence": 0.28,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.1,
+     "1": 0.36,
+     "2": 0.38,
+     "3": 0.16
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.08,
+    "confidence": 0.0,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.35,
+     "1": 0.28,
+     "2": 0.32,
+     "3": 0.05
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.78,
+    "confidence": 0.78,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.21,
+     "2": 0.79,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.53,
+    "confidence": 0.47,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.06,
+     "1": 0.38,
+     "2": 0.53,
+     "3": 0.03
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 2.69,
+    "confidence": 0.69,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.01,
+     "2": 0.29,
+     "3": 0.7
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1473,
+   "output_tokens": 82
+  }
+ },
+ "subagents": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 0.9,
+    "confidence": 0.64,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.23,
+     "1": 0.64,
+     "2": 0.12,
+     "3": 0.01
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.04,
+    "confidence": 0.0,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.39,
+     "1": 0.27,
+     "2": 0.25,
+     "3": 0.09
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.9,
+    "confidence": 0.89,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.1,
+     "2": 0.89,
+     "3": 0.01
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 0.75,
+    "confidence": 0.59,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.33,
+     "1": 0.6,
+     "2": 0.07,
+     "3": 0.0
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.93,
+    "confidence": 0.81,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.11,
+     "2": 0.82,
+     "3": 0.06
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1466,
+   "output_tokens": 82
+  }
+ },
+ "skills": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.59,
+    "confidence": 0.38,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.09,
+     "1": 0.34,
+     "2": 0.47,
+     "3": 0.1
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.67,
+    "confidence": 0.25,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.15,
+     "1": 0.23,
+     "2": 0.41,
+     "3": 0.21
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.92,
+    "confidence": 0.92,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.08,
+     "2": 0.92,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.25,
+    "confidence": 0.44,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.15,
+     "1": 0.46,
+     "2": 0.38,
+     "3": 0.01
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.93,
+    "confidence": 0.53,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.26,
+     "2": 0.54,
+     "3": 0.2
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1471,
+   "output_tokens": 82
+  }
+ },
+ "phone_node": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.16,
+    "confidence": 0.61,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.12,
+     "1": 0.63,
+     "2": 0.23,
+     "3": 0.02
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 0.92,
+    "confidence": 0.08,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.51,
+     "1": 0.18,
+     "2": 0.2,
+     "3": 0.11
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.8,
+    "confidence": 0.8,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.17,
+     "2": 0.81,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 0.97,
+    "confidence": 0.62,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.21,
+     "1": 0.62,
+     "2": 0.17,
+     "3": 0.0
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 2.06,
+    "confidence": 0.81,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.06,
+     "2": 0.81,
+     "3": 0.13
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1456,
+   "output_tokens": 82
+  }
+ },
+ "channels": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.37,
+    "confidence": 0.45,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.09,
+     "1": 0.49,
+     "2": 0.38,
+     "3": 0.04
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 0.21,
+    "confidence": 0.79,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.84,
+     "1": 0.12,
+     "2": 0.03,
+     "3": 0.01
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.89,
+    "confidence": 0.89,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.1,
+     "2": 0.89,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.39,
+    "confidence": 0.37,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.09,
+     "1": 0.44,
+     "2": 0.46,
+     "3": 0.01
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 2.75,
+    "confidence": 0.75,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.02,
+     "2": 0.18,
+     "3": 0.79
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1456,
+   "output_tokens": 82
+  }
+ },
+ "voice_mode": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 0.9,
+    "confidence": 0.68,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.21,
+     "1": 0.68,
+     "2": 0.11,
+     "3": 0.0
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 0.81,
+    "confidence": 0.19,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.57,
+     "1": 0.15,
+     "2": 0.19,
+     "3": 0.09
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.87,
+    "confidence": 0.86,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.13,
+     "2": 0.87,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 0.63,
+    "confidence": 0.55,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.41,
+     "1": 0.55,
+     "2": 0.04,
+     "3": 0.0
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.71,
+    "confidence": 0.65,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.04,
+     "1": 0.24,
+     "2": 0.69,
+     "3": 0.03
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1451,
+   "output_tokens": 82
+  }
+ },
+ "proactive": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 2.11,
+    "confidence": 0.65,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.1,
+     "2": 0.66,
+     "3": 0.23
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.01,
+    "confidence": 0.0,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.45,
+     "1": 0.19,
+     "2": 0.27,
+     "3": 0.09
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.72,
+    "confidence": 0.71,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.27,
+     "2": 0.72,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.32,
+    "confidence": 0.39,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.14,
+     "1": 0.43,
+     "2": 0.39,
+     "3": 0.04
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.45,
+    "confidence": 0.5,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.02,
+     "1": 0.52,
+     "2": 0.46,
+     "3": 0.0
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1470,
+   "output_tokens": 82
+  }
+ },
+ "user_model": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.78,
+    "confidence": 0.63,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.03,
+     "1": 0.23,
+     "2": 0.67,
+     "3": 0.07
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.32,
+    "confidence": 0.08,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.3,
+     "1": 0.2,
+     "2": 0.38,
+     "3": 0.12
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.68,
+    "confidence": 0.64,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.32,
+     "2": 0.65,
+     "3": 0.02
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.0,
+    "confidence": 0.59,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.2,
+     "1": 0.6,
+     "2": 0.19,
+     "3": 0.01
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.37,
+    "confidence": 0.53,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.05,
+     "1": 0.53,
+     "2": 0.42,
+     "3": 0.0
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1461,
+   "output_tokens": 82
+  }
+ },
+ "easy_setup": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 1.87,
+    "confidence": 0.38,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.09,
+     "1": 0.19,
+     "2": 0.47,
+     "3": 0.25
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.54,
+    "confidence": 0.27,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.13,
+     "1": 0.33,
+     "2": 0.41,
+     "3": 0.13
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.46,
+    "confidence": 0.46,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.04,
+     "1": 0.47,
+     "2": 0.49,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 2.35,
+    "confidence": 0.59,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.02,
+     "2": 0.59,
+     "3": 0.38
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.1,
+    "confidence": 0.5,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.2,
+     "1": 0.55,
+     "2": 0.21,
+     "3": 0.04
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1455,
+   "output_tokens": 82
+  }
+ },
+ "real_validation": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 2.83,
+    "confidence": 0.83,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.01,
+     "1": 0.01,
+     "2": 0.11,
+     "3": 0.87
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.1,
+    "confidence": 0.0,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.39999999999999997,
+     "1": 0.2,
+     "2": 0.29,
+     "3": 0.11
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.93,
+    "confidence": 0.93,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.0,
+     "1": 0.07,
+     "2": 0.93,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 2.16,
+    "confidence": 0.5,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.03,
+     "1": 0.1,
+     "2": 0.54,
+     "3": 0.33
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 1.26,
+    "confidence": 0.61,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.07,
+     "1": 0.7,
+     "2": 0.13,
+     "3": 0.1
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1457,
+   "output_tokens": 82
+  }
+ },
+ "bugfixes": {
+  "model": "jev-1.13.0",
+  "answers": {
+   "user_value": {
+    "type": "score",
+    "score": 2.27,
+    "confidence": 0.27,
+    "legend": {
+     "0": "Little: nice to have, most users would not notice",
+     "1": "Some: useful occasionally",
+     "2": "High: solves a pain they feel often",
+     "3": "Critical: a main reason they would switch or stay"
+    },
+    "probabilities": {
+     "0": 0.04,
+     "1": 0.12,
+     "2": 0.38,
+     "3": 0.45999999999999996
+    }
+   },
+   "differentiation": {
+    "type": "score",
+    "score": 1.15,
+    "confidence": 0.0,
+    "legend": {
+     "0": "Parity: both already have it",
+     "1": "Slightly better: a modest improvement on what they have",
+     "2": "Clearly better: they have a weak or off-by-default version",
+     "3": "Unique: neither has anything like it"
+    },
+    "probabilities": {
+     "0": 0.33,
+     "1": 0.31,
+     "2": 0.24,
+     "3": 0.12
+    }
+   },
+   "build_risk": {
+    "type": "score",
+    "score": 1.14,
+    "confidence": 0.63,
+    "legend": {
+     "0": "Low: standard engineering",
+     "1": "Moderate: some tricky parts with known solutions",
+     "2": "High: hard problems, many edge cases or fragile third-party APIs",
+     "3": "Very high: open research problem"
+    },
+    "probabilities": {
+     "0": 0.12,
+     "1": 0.62,
+     "2": 0.26,
+     "3": 0.0
+    }
+   },
+   "adoption_block": {
+    "type": "score",
+    "score": 1.87,
+    "confidence": 0.57,
+    "legend": {
+     "0": "Not at all: people adopt Pimpo fine without it",
+     "1": "A little: some people miss it after a while",
+     "2": "Much: many people give up or never start without it",
+     "3": "Blocking: almost nobody can start or keep using Pimpo without it"
+    },
+    "probabilities": {
+     "0": 0.04,
+     "1": 0.21,
+     "2": 0.6,
+     "3": 0.15
+    }
+   },
+   "safety_risk": {
+    "type": "score",
+    "score": 0.58,
+    "confidence": 0.58,
+    "legend": {
+     "0": "None: it does not touch what the agent can do",
+     "1": "Low: contained by the existing capabilities, rules and approvals",
+     "2": "Medium: new powers that need a new containment design",
+     "3": "High: broad powers (arbitrary code, logged-in sessions, unofficial APIs) that are hard to contain"
+    },
+    "probabilities": {
+     "0": 0.42,
+     "1": 0.58,
+     "2": 0.0,
+     "3": 0.0
+    }
+   }
+  },
+  "usage": {
+   "input_tokens": 1475,
+   "output_tokens": 82
+  }
+ }
+}
