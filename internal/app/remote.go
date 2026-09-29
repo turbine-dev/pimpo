@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/turbine-dev/pimpo/internal/remote"
 	"github.com/turbine-dev/pimpo/internal/server"
@@ -14,7 +16,8 @@ import (
 // restarts: Tailscale inside the binary (a stable https link from
 // anywhere) and the home network (no account, same Wi-Fi only).
 
-const lanPort = 7788
+// defaultLANPort is used when the main server's address is unknown.
+const defaultLANPort = 7788
 
 // AttachRemote prepares both; newNode is nil for the real Tailscale.
 func (a *App) AttachRemote(home string, newNode func() remote.Node) {
@@ -27,7 +30,15 @@ func (a *App) AttachRemote(home string, newNode func() remote.Node) {
 	a.Remote = &remote.Remote{NewNode: newNode, Handler: a.Server, OnURL: func(url string) {
 		a.Events.Put(context.Background(), "public_url", url)
 	}}
-	a.LAN = &remote.LAN{Port: lanPort, Handler: a.Server}
+	port, served := defaultLANPort, false
+	if host, p, err := net.SplitHostPort(a.ListenAddr); err == nil {
+		if n, err := strconv.Atoi(p); err == nil && n > 0 {
+			port = n
+		}
+		ip := net.ParseIP(host)
+		served = host == "" || ip != nil && ip.IsUnspecified()
+	}
+	a.LAN = &remote.LAN{Port: port, Handler: a.Server, Served: served}
 }
 
 // tailscaleName is the machine's name on the tailnet, which is part of the

@@ -63,7 +63,7 @@ A saved routine has one of three states:
 | `paused` | **Pausada** | No. Webhook calls get `409`. |
 | `broken` | **Precisa de atenção** | No, until you run, resume or repair it |
 
-**Pausar** and **Reativar** on the routine's page switch between active and paused. **Rodar agora** runs the routine once and also makes it active again.
+**Pausar** and **Reativar** on the routine's page switch between active and paused. **Rodar agora** runs the routine once. A paused routine stays paused; a routine stopped after a failure (**Precisa de atenção**) goes back on its schedule.
 
 ### Versions
 
@@ -144,7 +144,7 @@ What the routine receives:
 - `key` names the question. It defaults to the question text. A new question with the same key, from the same routine and for the same person, replaces the one still pending.
 - Unanswered questions expire after 24 hours.
 
-Your answer runs the same routine again with:
+Your answer runs the same routine again (unless it is paused: then the answer is recorded, and you are told the routine will not act on it) with:
 
 ```json
 {"answer": {"key": "treino", "question": "Treinou hoje?", "choice": "Sim", "index": 0, "asked": "2026-09-29T21:00:00-03:00"}}
@@ -304,7 +304,7 @@ A date that is not ISO throws `dates: "…" is not an ISO date`. Calendar all-da
 | Schedule you set | at most every 5 minutes | `internal/app` |
 | Watch interval | 5 minutes to 24 hours, default 10 minutes | `runtime.Watch` |
 | Webhook body and rate | 256 KB, 30 calls a minute | `internal/app/webhooks.go` |
-| Approval wait | 30 minutes, but the run itself ends at 15 | `internal/approval` |
+| Approval wait | 30 minutes; the time a run waits for approval does not count toward its 15 minutes | `internal/approval`, `internal/pause` |
 | Repository files | 1 MB each, no symbolic links | `internal/repo` |
 
 The time limit counts only the routine's own work. A work clock stops while the routine waits on the host (a capability call, a judgment, a text, a helper routine) and starts again when the answer comes back. A routine that judges 200 emails one by one is therefore bounded by the 15-minute limit, not by the 90 seconds. Past its limit, the run fails with "routine ran past its time limit".
@@ -473,7 +473,7 @@ When you write a routine by hand, follow the rules the compiler follows:
 pimpo routines import [--active] [--data DIR] FOLDER
 ```
 
-`FOLDER` holds a `routines/` directory in the layout above. `--data` is the data directory and defaults to `~/.pimpo`. Each routine is checked before it is saved:
+`FOLDER` holds a `routines/` directory in the layout above. `--data` is the data directory and defaults to `~/.pimpo`; it is created if it does not exist. Each routine is checked before it is saved:
 
 1. The manifest is valid.
 2. Every one of its own tests passes.
@@ -565,7 +565,7 @@ Before a routine is saved from any source (compiler, repository, import or galle
 
 ### Repair
 
-**Refazer com o agente** (on the routine's page, in the failure notice, or in **Precisa de você**) starts a new exploration of the original request, linked to the routine. You watch it and approve it as usual. Approving compiles a new version, and that version must also pass the tests of the version it replaces:
+**Refazer com o agente** (on the routine's page, in the failure notice, or in **Precisa de você**) starts a new exploration of the original request, linked to the routine, telling the agent the error of the last failed run. You watch it and approve it as usual. Approving compiles a new version, and that version must also pass the tests of the version it replaces:
 
 - The old tests are carried over (`carryTests`).
 - A test that set a parameter the repair removed keeps working if it set that parameter to its old default. The value is simply dropped.

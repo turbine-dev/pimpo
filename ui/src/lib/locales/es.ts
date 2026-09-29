@@ -376,7 +376,7 @@ export const es: Record<Key, string> & Record<string, string> = {
   'welcome.balanced': 'Equilibrado',
   'welcome.balancedText': 'Lee y avisa libremente; hace cambios reversibles, siempre con opción de deshacer; siempre pregunta antes de algo irreversible.',
   'welcome.liberal': 'Liberal',
-  'welcome.liberalText': 'Solo pregunta antes de enviar algo a otras personas. Borrar mueve a la papelera.',
+  'welcome.liberalText': 'Pregunta antes de enviar algo a otras personas o de lo que no se puede deshacer. Borrar un correo lo mueve a la papelera sin preguntar.',
   'welcome.hello': 'Te damos la bienvenida a Pimpo',
   'welcome.intro': 'Pides algo que haces cada semana. La primera vez, Pimpo lo hace con un modelo de lenguaje mientras miras.',
   'welcome.routinesText': 'Lo que funcionó se convierte en código con pruebas que corre solo, casi gratis.',

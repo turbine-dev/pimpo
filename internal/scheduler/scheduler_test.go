@@ -117,3 +117,20 @@ func TestPausedRoutinesAreNotScheduled(t *testing.T) {
 		t.Fatal("paused routine is scheduled")
 	}
 }
+
+func TestWebhookOnlyRoutinesAreNotScheduledOrFailed(t *testing.T) {
+	s, _, _ := setup(t, `async function run() {}`)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	s.Store.SaveRoutine(ctx, "hook", routine.Routine{Name: "Pedido novo", Code: `async function run() {}`,
+		Manifest: runtime.Manifest{Webhook: true, Capabilities: []string{"telegram.send"}}}, "test", "owner")
+	s.Start(ctx)
+	s.Changed(ctx, "hook")
+	if !s.Next("hook").IsZero() {
+		t.Fatal("a routine without a schedule got one")
+	}
+	evs, _ := s.Env.Events.List(ctx, event.Query{Types: []string{EventRunFailed}})
+	if len(evs) != 0 {
+		t.Fatalf("false failures: %+v", evs)
+	}
+}

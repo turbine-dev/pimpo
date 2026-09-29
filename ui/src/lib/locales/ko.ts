@@ -368,7 +368,7 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'welcome.balanced': '균형',
   'welcome.balancedText': '읽기와 알림은 자유롭게, 되돌릴 수 있는 변경은 항상 실행 취소와 함께 하고, 되돌릴 수 없는 작업은 항상 물어봐요.',
   'welcome.liberal': '자유',
-  'welcome.liberalText': '다른 사람에게 무언가를 보낼 때만 물어봐요. 삭제는 휴지통으로 이동해요.',
+  'welcome.liberalText': '다른 사람에게 보내기 전과 되돌릴 수 없는 작업 전에 물어봐요. 이메일 삭제는 묻지 않고 휴지통으로 옮겨요.',
   'welcome.hello': 'Pimpo에 오신 것을 환영해요',
   'welcome.intro': '매주 하는 일을 요청하세요. 처음에는 Pimpo가 언어 모델로 작업하고, 그 과정을 지켜볼 수 있어요.',
   'welcome.routinesText': '잘된 작업은 테스트를 갖춘 코드가 되어, 거의 무료로 알아서 실행돼요.',

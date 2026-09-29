@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -59,5 +60,17 @@ func TestListFiltersAndSubscribe(t *testing.T) {
 	s.Put(ctx, "k", "v2")
 	if v, _ := s.Get(ctx, "k"); v != "v2" {
 		t.Fatalf("kv %q", v)
+	}
+}
+
+func TestOpenCreatesTheDataFolder(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "new", "pimpo")
+	s, err := Open(filepath.Join(dir, "pimpo.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Close()
+	if fi, err := os.Stat(dir); err != nil || fi.Mode().Perm() != 0o700 {
+		t.Fatalf("folder %v %v", fi, err)
 	}
 }

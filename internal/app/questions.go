@@ -19,6 +19,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 // A routine may ask the person it works for something and act on the
@@ -133,6 +134,10 @@ func (a *App) answer(ctx context.Context, id string, index int) (string, error) 
 		choice := q.Options[index]
 		a.Events.Append(ctx, "question.answered", actor(ctx), map[string]any{"id": q.ID, "routine": q.Routine, "key": q.Key, "choice": choice})
 		if q.Routine != "" {
+			// Like a webhook, an answer does not wake a paused routine.
+			if r, err := a.Store.Routine(ctx, q.Routine); err == nil && r.State != store.RoutineActive {
+				return i18n.T(ctx, "msg.answer.paused", "choice", choice, "name", r.Body.Name), nil
+			}
 			ev := map[string]any{"answer": map[string]any{"key": q.Key, "question": q.Question, "choice": choice, "index": index, "asked": q.Asked.Format(time.RFC3339)}}
 			go a.Scheduler.RunWith(context.WithoutCancel(ctx), q.Routine, "answer", ev)
 		}

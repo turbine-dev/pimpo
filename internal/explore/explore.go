@@ -156,10 +156,27 @@ func (s *Service) Repair(ctx context.Context, routineID, problem, actor string) 
 			}
 		}
 	}
+	if problem == "" {
+		problem = lastFailure(ctx, s.Store, routineID)
+	}
 	if problem != "" {
 		request += "\n\n(Last time the automatic routine failed with: " + problem + ")"
 	}
 	return s.start(people.With(ctx, r.Person), request, actor, routineID, Options{})
+}
+
+// lastFailure is the error of the routine's latest run, when that run
+// failed, so a repair knows what broke.
+func lastFailure(ctx context.Context, st *store.Store, routineID string) string {
+	runs, err := st.Runs(ctx, routineID, 1)
+	if err != nil || len(runs) == 0 || runs[0].Outcome != store.RunFailed {
+		return ""
+	}
+	e := strings.TrimSpace(runs[0].Error)
+	if r := []rune(e); len(r) > 600 {
+		e = string(r[:600]) + "…"
+	}
+	return e
 }
 
 func (s *Service) start(ctx context.Context, request, actor, target string, o Options) (string, error) {

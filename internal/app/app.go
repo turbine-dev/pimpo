@@ -158,7 +158,9 @@ type App struct {
 	Protect   *protect.Guard
 	Remote    *remote.Remote
 	LAN       *remote.LAN
-	Google    *oauth.Google
+	// ListenAddr is where the server listens (--addr); the home network uses its port.
+	ListenAddr string
+	Google     *oauth.Google
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
 	Agent llm.Agent
@@ -383,7 +385,7 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 			continue
 		}
 		if !slices.Contains(llm.Providers, provider) || strings.TrimSpace(name) == "" {
-			return server.StatusError{Status: 400, Msg: "a model is provider:name, with provider anthropic, openai, openrouter or ollama"}
+			return server.StatusError{Status: 400, Msg: "a model is provider:name, with provider one of " + strings.Join(llm.Providers, ", ") + " (or opencode:provider/model)"}
 		}
 		if m.PriceIn < 0 || m.PriceOut < 0 || m.PriceIn > 1000 || m.PriceOut > 1000 {
 			return server.StatusError{Status: 400, Msg: "prices are USD per million tokens, from 0 to 1000"}
@@ -557,7 +559,7 @@ func (a *App) judge(ctx context.Context, question string, item any) (judge.Answe
 	}
 	set := a.Settings(ctx)
 	backends := map[string]judge.Judge{
-		"local": judge.Chain{judge.Local{URL: set.LocalJudgeURL}, judge.Ollama{Model: set.OllamaModel}},
+		"local": judge.Chain{judge.Local{URL: set.LocalJudgeURL}, judge.Ollama{BaseURL: a.ollamaBase(ctx), Model: set.OllamaModel}},
 		"jev":   judge.Jev{Key: func(ctx context.Context) (string, error) { return a.secret(ctx, "typesafe.key") }},
 		"llm":   judge.LLM{Model: a.LLM, Name: firstModel(host.ModelOf(ctx), set.JudgeModel)},
 	}
@@ -1046,8 +1048,7 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 	case "discard":
 		return i18n.T(ctx, "msg.discarded"), h.a.Explore.Discard(ctx, id, who)
 	case "run":
-		h.a.Store.SetRoutineState(ctx, id, store.RoutineActive)
-		h.a.Scheduler.Changed(ctx, id)
+		h.a.unstop(ctx, id)
 		if _, err := h.a.Scheduler.RunNow(ctx, id, "owner"); err != nil {
 			return "", err
 		}

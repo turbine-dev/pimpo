@@ -368,7 +368,7 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'welcome.balanced': 'バランス',
   'welcome.balancedText': '読み取りと通知は自由に行い、元に戻せる変更は取り消し可能な形で実行し、元に戻せない操作は必ず確認します。',
   'welcome.liberal': 'おまかせ',
-  'welcome.liberalText': '他の人に何かを送る前だけ確認します。削除はゴミ箱への移動になります。',
+  'welcome.liberalText': '他の人に何かを送る前と、元に戻せない操作の前に確認します。メールの削除は確認せずゴミ箱へ移動します。',
   'welcome.hello': 'Pimpo へようこそ',
   'welcome.intro': '毎週やっていることを依頼すると、最初は Pimpo が言語モデルを使って目の前で実行します。',
   'welcome.routinesText': 'うまくいったものはテスト付きのコードになり、ほぼ無料で自動実行されます。',

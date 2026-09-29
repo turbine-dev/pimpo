@@ -34,6 +34,7 @@
   "effort.medium": "médio",
   "msg.answer.gone": "Essa pergunta já foi respondida ou expirou.",
   "msg.answer.noted": "✅ Anotado: {choice}",
+  "msg.answer.paused": "Anotado: {choice}. {name} está pausada, então não vai agir sobre isso até você retomá-la.",
   "msg.approval.always": "Permitido. Isto não será perguntado de novo.",
   "msg.approval.approve": "Permitido.",
   "msg.approval.batch": "Permitido para o resto desta execução.",
@@ -99,6 +100,7 @@
   "rule.preset-delete": "Apagar sempre vira mover para a lixeira.",
   "rule.preset-irreversible": "Sempre me pergunte antes de qualquer coisa que não dá para desfazer.",
   "rule.preset-others": "Só me pergunte antes de enviar algo para outras pessoas.",
+  "rule.preset-liberal": "Me pergunte antes de enviar algo para outras pessoas ou de qualquer coisa que não dá para desfazer.",
   "svc.apple.description": "Os apps da Apple neste Mac: lembretes que tocam no iPhone e no relógio, notas e a agenda.",
   "svc.apple.field.notes_folder.label": "Pasta das Notas",
   "svc.apple.field.notes_folder.placeholder": "Pimpo",
@@ -166,5 +168,6 @@
   "svc.websearch.field.searxng_url.label": "Endereço do SearXNG",
   "svc.websearch.field.searxng_url.placeholder": "https://searx.exemplo.org",
   "svc.websearch.help": "Use a API do Brave Search (chave grátis em api-dashboard.search.brave.com, 2.000 buscas por mês), a busca da Perplexity (chave em perplexity.ai/account/api, cerca de US$ 5 por mil buscas, cobrados pela Perplexity) ou o endereço de uma instância SearXNG sua ou de confiança, com o formato JSON ligado. Se preencher mais de um, vale nesta ordem: Brave, Perplexity, SearXNG.",
-  "svc.websearch.title": "Busca na web"
+  "svc.websearch.title": "Busca na web",
+  "msg.budgetOver": "O limite de gasto do dia acabou."
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/explore"
 	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/pause"
 	"github.com/turbine-dev/pimpo/internal/runtime"
 	"github.com/turbine-dev/pimpo/internal/store"
 )
@@ -99,7 +100,9 @@ func (s *Scheduler) Changed(ctx context.Context, id string) {
 	if err != nil || r.State != store.RoutineActive {
 		return
 	}
-	if r.Schedule() == "" && r.Body.Manifest.Watch != nil {
+	// Without a schedule a routine starts only by its watch, its webhook,
+	// an answer or by hand.
+	if r.Schedule() == "" {
 		return
 	}
 	sched, err := parser.Parse(r.Schedule())
@@ -238,7 +241,8 @@ func (s *Scheduler) run(ctx context.Context, id, trigger string, event any) (sto
 	// The routine's own code has 90 seconds; waiting on services and
 	// models, as a judgment per item does, may take longer, up to 15
 	// minutes in all.
-	ctx, cancel := context.WithTimeout(host.WithEffort(host.WithModel(ctx, r.Settings.Model), r.Settings.Effort), 15*time.Minute)
+	// Waiting for the owner's approval does not count.
+	ctx, cancel := pause.WithTimeout(host.WithEffort(host.WithModel(ctx, r.Settings.Model), r.Settings.Effort), 15*time.Minute)
 	defer cancel()
 	res, runErr := runtime.Run(ctx, r.Body.Code, r.Body.Manifest, h, runtime.Options{Now: s.now(), Zone: s.zone(), Timeout: 90 * time.Second,
 		Params: r.Settings.Params, Event: event, State: s.State(ctx, id), Library: s.Library, ID: id})
@@ -261,16 +265,16 @@ func (s *Scheduler) run(ctx context.Context, id, trigger string, event any) (sto
 	s.Store.SetRoutineState(context.WithoutCancel(ctx), id, store.RoutineBroken)
 	s.Changed(ctx, id)
 	s.Notify.Notify(context.WithoutCancel(ctx), explore.Notice{
-		Text:    i18n.T(ctx, "msg.routine.failed", "name", r.Body.Name, "error", friendly(errText)),
+		Text:    i18n.T(ctx, "msg.routine.failed", "name", r.Body.Name, "error", friendly(ctx, errText)),
 		Actions: []explore.Action{{Label: i18n.T(ctx, "btn.runAgain"), Data: "run:" + id}, {Label: i18n.T(ctx, "btn.redo"), Data: "repair:" + id}},
 		Kind:    "failure",
 	})
 	return run, runErr
 }
 
-func friendly(err string) string {
+func friendly(ctx context.Context, err string) string {
 	if strings.Contains(err, "budget") {
-		return "O limite de gasto do dia acabou."
+		return i18n.T(ctx, "msg.budgetOver")
 	}
 	if len(err) > 400 {
 		err = err[:400] + "…"

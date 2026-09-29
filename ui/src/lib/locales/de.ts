@@ -368,7 +368,7 @@ export const de: Record<Key, string> & Record<string, string> = {
   'welcome.balanced': 'Ausgewogen',
   'welcome.balancedText': 'Liest und benachrichtigt frei; macht umkehrbare Änderungen, immer mit Rückgängig; fragt immer vor allem Nicht-Umkehrbaren.',
   'welcome.liberal': 'Großzügig',
-  'welcome.liberalText': 'Fragt nur, bevor etwas an andere Personen geht. Löschen verschiebt in den Papierkorb.',
+  'welcome.liberalText': 'Fragt, bevor etwas an andere Personen geht oder etwas nicht rückgängig zu machen ist. Gelöschte E-Mails landen ohne Nachfrage im Papierkorb.',
   'welcome.hello': 'Willkommen bei Pimpo',
   'welcome.intro': 'Du bittest um etwas, das du jede Woche machst. Beim ersten Mal erledigt Pimpo es mit einem Sprachmodell, während du zusiehst.',
   'welcome.routinesText': 'Was geklappt hat, wird zu Code mit Tests, der von selbst läuft, fast kostenlos.',

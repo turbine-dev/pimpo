@@ -376,7 +376,7 @@ export const it: Record<Key, string> & Record<string, string> = {
   'welcome.balanced': 'Equilibrato',
   'welcome.balancedText': 'Legge e avvisa liberamente; fa modifiche reversibili, sempre annullabili; chiede sempre prima di qualcosa di irreversibile.',
   'welcome.liberal': 'Libero',
-  'welcome.liberalText': 'Chiede solo prima di inviare qualcosa ad altre persone. Eliminare significa spostare nel cestino.',
+  'welcome.liberalText': 'Chiede prima di inviare qualcosa ad altre persone o di fare ciò che non si può annullare. Eliminare un’email la sposta nel cestino senza chiedere.',
   'welcome.hello': 'Pimpo ti dà il benvenuto',
   'welcome.intro': 'Chiedi qualcosa che fai ogni settimana. La prima volta, Pimpo lo fa con un modello linguistico mentre tu guardi.',
   'welcome.routinesText': 'Ciò che ha funzionato diventa codice con test, che va da solo e quasi gratis.',

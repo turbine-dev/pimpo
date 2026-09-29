@@ -132,7 +132,7 @@ Outside the data folder, the desktop app caches the shell's `PATH` in the user c
 
 ## Settings
 
-Settings are stored in the database and changed in **Ajustes** in the app. Almost every change takes effect at once, without a restart. The web app reads and writes them with `GET /api/settings` and `PUT /api/settings`; a `PUT` replaces the whole object, so read it, change it and send it back whole. Both need a login (see [Network and access](#network-and-access)).
+Settings are stored in the database and changed in **Ajustes** in the app. Almost every change takes effect at once, without a restart. The web app reads and writes them with `GET /api/settings` and `PUT /api/settings`; a `PUT` changes only the fields it carries, so a client can send just what changed. Both need a login (see [Network and access](#network-and-access)).
 
 **Ajustes** has these sections: **Geral**, **Celular**, **Modelos**, **Notificações**, **Backup**, **Privacidade**, **Laboratório** and **Trazer de outro agente**. Preferences wait in a bar at the bottom until you press save; cards with their own button (models, backups, pairing) save at once.
 
@@ -190,7 +190,7 @@ The thinking level follows the same weighing: `low` for simple requests, `high` 
 | `local_judge_url` | `http://127.0.0.1:11500` | **Endereço do modelo local** | Pimpo's small judgment model (`tools/judge/serve.py`), or any server speaking the [Judge API](SDK.md#judge-api). |
 | `ollama_model` | `qwen3:1.7b` | not in the app | The Ollama model the local backend tries when the local judge does not answer. |
 
-With `local`, the local judge answers first (then Ollama); answers it is unsure about go on to Jev, when its key is set, and then to your model. With `jev` or `llm`, that backend goes first and the others follow. The Jev key is set in **Conexões** (**Jev (julgamentos calibrados, opcional)**).
+With `local`, the local judge answers first (then Ollama, at `ollama_url`); answers it is unsure about go on to Jev, when its key is set, and then to your model. With `jev` or `llm`, that backend goes first and the others follow. The Jev key is set in **Conexões** (**Jev (julgamentos calibrados, opcional)**).
 
 ### Voices
 
@@ -294,7 +294,7 @@ At start, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`. Opening i
 
 **Ajustes › Celular** (**Abrir no celular**) turns on one or both ways in. Both are remembered across restarts.
 
-- **Em casa**: Pimpo also listens on this computer's private address on the home network, port 7788 (`http://192.168.x.x:7788`). Only private addresses are used.
+- **Em casa**: Pimpo also listens on this computer's private address on the home network, on the same port as `--addr` (`http://192.168.x.x:7788` by default). Only private addresses are used. With `--addr 0.0.0.0:PORT` the server already answers on the home network, and this option only shows its address.
 - **De qualquer lugar**: Tailscale runs inside Pimpo, as a node named `pimpo` (installs from before the rename keep `zodim`), and serves Pimpo with Tailscale Funnel on port 443, giving an `https://pimpo.<your-network>.ts.net` link. Funnel makes that link reachable from the internet, protected by the login token. The first time, you sign in to Tailscale in the browser; your tailnet must allow HTTPS and Funnel.
 - **Usar outro endereço**: an address of your own (a reverse proxy, `tailscale serve`). It must be https, or http on a private address.
 
@@ -332,7 +332,7 @@ Secrets (tokens, API keys, passwords, the backup passphrase) are encrypted in th
 
 ### Rules and approvals
 
-- **Safety level**, chosen on the welcome screen: conservative (asks before any change, even reversible ones), balanced (asks before anything that cannot be undone) or liberal (asks only before sending email to other people, and turns deletes into moving to the trash).
+- **Safety level**, chosen on the welcome screen: conservative (asks before any change, even reversible ones), balanced (asks before anything that cannot be undone) or liberal (asks before sending anything to other people and before anything else that cannot be undone, but deleting email moves it to the trash without asking). Installs that chose liberal before 2026-09-29 had a rule that asked only before sending email; it is replaced the next time Pimpo starts, unless you had edited it.
 - **Regras**: your own rules, in plain words, turned into checks that run without a model. A rule can match capabilities, a minimum risk, a routine or explorations, words in the arguments, web hosts, and people or roles. When several match, the strictest wins, and a block always wins.
 - Without a matching rule, the risk decides: reversible changes go through and stay undoable, and everything else goes through. It is the safety level's rules that make changes ask, so do not delete them unless you mean it.
 - The first time an exploration reaches a new web host, it asks; a host you refused stays blocked.

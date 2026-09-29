@@ -17,6 +17,9 @@ type LAN struct {
 	Handler http.Handler
 	// Addr finds the machine's address on the home network; tests replace it.
 	Addr func() (net.IP, error)
+	// Served says the main server already listens on every interface
+	// (--addr 0.0.0.0:PORT), so the home address only needs to be known.
+	Served bool
 
 	mu  sync.Mutex
 	srv *http.Server
@@ -60,6 +63,10 @@ func (l *LAN) Start() (string, error) {
 	}
 	if !ip.IsPrivate() {
 		return "", fmt.Errorf("%s is not a home network address", ip)
+	}
+	if l.Served {
+		l.srv, l.url = &http.Server{}, "http://"+net.JoinHostPort(ip.String(), fmt.Sprint(l.Port))
+		return l.url, nil
 	}
 	ln, err := net.Listen("tcp", net.JoinHostPort(ip.String(), fmt.Sprint(l.Port)))
 	if err != nil {

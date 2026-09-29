@@ -368,7 +368,7 @@ export const pt = {
   'welcome.balanced': 'Equilibrado',
   'welcome.balancedText': 'Lê e avisa à vontade; faz mudanças reversíveis, sempre com desfazer; o irreversível sempre pergunta.',
   'welcome.liberal': 'Liberal',
-  'welcome.liberalText': 'Só pergunta antes de mandar algo para outras pessoas. Apagar vira lixeira.',
+  'welcome.liberalText': 'Pergunta antes de mandar algo para outras pessoas ou do que não dá para desfazer. Apagar e-mail vai para a lixeira sem perguntar.',
   'welcome.hello': 'Boas-vindas ao Pimpo',
   'welcome.intro': 'Você pede algo que faz toda semana. Na primeira vez, o Pimpo faz com um modelo de linguagem, com você acompanhando.',
   'welcome.routinesText': 'O que deu certo vira código com testes, que roda sozinho e quase de graça.',
