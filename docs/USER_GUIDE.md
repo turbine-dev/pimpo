@@ -163,6 +163,10 @@ Skills written for OpenClaw, Hermes or agentskills.io (a folder with a `SKILL.md
 
 A skill is text someone else wrote, so Pimpo never treats it as your words: every action still passes your rules and approvals, the scripts it carries are not run, a skill the protection list reports is refused, and a skill changed on disk stops until you install it again.
 
+## Running code
+
+With **Ajustes › Laboratório › Rodar código isolado** on (it needs Docker), the agent can run a short Python, JavaScript or shell program for a task, such as converting a spreadsheet or adding up a CSV. Each program runs in a fresh container with no network, no access to your files or keys, and 60 seconds at most; it gets only the files the task gives it and returns what it prints and writes. Routines can use it too, and their tests record its results like any other step.
+
 ## Suggestions
 
 Once a day Pimpo may notice something you repeat and offer a routine: "you pay this bill every month; want a routine for it?". The suggestion arrives in **Precisa de você** and on your channel, and says what Pimpo would do. **Sim, aprenda** starts it the usual way (you watch it once and approve it); **Não, obrigado** makes sure it does not come back. For this Pimpo looks only at who writes to you and about what, your upcoming events and your routines, never at what emails say. Turn it off in **Ajustes › Notificações › Sugestões**.

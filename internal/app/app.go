@@ -82,6 +82,9 @@ type Settings struct {
 	// LabsOff turns off newer features: memory_organize, meaning_search,
 	// mcp_registry.
 	LabsOff []string `json:"labs_off,omitempty"`
+	// LabsOn turns on features that stay off until the owner chooses them:
+	// code_sandbox, browser.
+	LabsOn []string `json:"labs_on,omitempty"`
 	// Models are API models the owner set up, with their price; the model
 	// settings above may name one as provider:model.
 	Models    []ModelOption `json:"models,omitempty"`
@@ -130,11 +133,17 @@ type ModelOption struct {
 var (
 	mutable = map[string]bool{"task": true, "failure": true, "backup": true}
 	labs    = map[string]bool{"memory_organize": true, "meaning_search": true, "mcp_registry": true}
+	optIn   = map[string]bool{"code_sandbox": true, "browser": true}
 )
 
 // lab reports whether a newer feature is on.
 func (a *App) lab(ctx context.Context, name string) bool {
 	return !slices.Contains(a.Settings(ctx).LabsOff, name)
+}
+
+// chose says whether the owner turned on a feature that starts off.
+func (a *App) chose(ctx context.Context, name string) bool {
+	return slices.Contains(a.Settings(ctx).LabsOn, name)
 }
 
 func defaultSettings() Settings {
@@ -380,6 +389,11 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 			return server.StatusError{Status: 400, Msg: "unknown feature " + k}
 		}
 	}
+	for _, k := range s.LabsOn {
+		if !optIn[k] {
+			return server.StatusError{Status: 400, Msg: "unknown feature " + k}
+		}
+	}
 	known := map[string]bool{}
 	for _, m := range s.Models {
 		provider, name, _ := strings.Cut(m.ID, ":")
@@ -494,6 +508,7 @@ func (a *App) router() *connector.Router {
 		whatsappCap{a},
 		notifyCap{a},
 		reminderCap{a},
+		codeCap{a},
 		audioCap{a},
 		askCap{a},
 		a.spotify(),
