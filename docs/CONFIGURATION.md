@@ -286,6 +286,8 @@ Only the paired owner is answered on Slack, Discord and Signal; strangers get no
 
 ## Network and access
 
+For a server (Docker or systemd) and reaching it safely from elsewhere, see [SELF_HOSTING.md](SELF_HOSTING.md).
+
 ### Listening address
 
 `pimpo serve` listens on `127.0.0.1:7788`, this computer only. `--addr` changes it. The server speaks plain http, so an address other than loopback sends your login token in the clear over the network; use the two ways below instead of `--addr 0.0.0.0:…`.
