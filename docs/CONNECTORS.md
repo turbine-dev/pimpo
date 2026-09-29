@@ -87,6 +87,30 @@ Pimpo also enforces, for JSON connectors:
 - 30 seconds per request and at most 5 MB of answer;
 - errors say what happened: a refused key (401/403), too many requests (429), or the service's own message.
 
+A `POST` that only reads (many APIs search that way) may be declared `read` with `"safe": true` in its request; it says so openly in the manifest.
+
+### From an OpenAPI description
+
+Most REST APIs publish an OpenAPI (Swagger) description, and Pimpo can write the `connector.json` from it:
+
+- **Conexões › Por OpenAPI**: give the address of the description (`.json` or `.yaml`) or paste it. Pimpo lists the operations; choose the ones to include (at most 100) and each one's risk, fill in the keys, and install. Reads (`GET`) start as `read`; everything else starts as `irreversible`, so it asks first until you decide otherwise.
+- Or from the terminal, which writes a folder you can review and edit before installing:
+
+```bash
+pimpo connector openapi https://petstore3.swagger.io/api/v3/openapi.json
+pimpo connector openapi --only get https://petstore3.swagger.io/api/v3/openapi.json petstore ./petstore
+pimpo connector check ./petstore
+```
+
+What the import does:
+
+- OpenAPI 3.x and Swagger 2.0, JSON or YAML; local `$ref`s are followed. The service's address comes from `servers` (or `host` and `basePath`), resolved against the description's address when relative.
+- Keys come from the security schemes: an API key in a header or the query, a bearer token (also for OAuth, where you paste a token; Pimpo does not run the sign-in) or Basic (`user:password` in base64). When the description declares none but the API needs one, **Esta API pede uma chave** (or `--header Authorization`) adds a header whose whole value is a key.
+- Path, query and header parameters and the JSON or form body become the capability's arguments, with their schema and descriptions; `readOnly` fields are left out of the body.
+- Operations that upload files or need cookies are listed as unsupported.
+- The operation's summary and the shape of its answer (`[{id, name, status}]`) become what the model reads; a list answer is capped at 50 items.
+- Contract cases are written only for reads whose required arguments have a default or a fixed set of values; Pimpo never invents an id.
+
 ## What Pimpo enforces
 
 - The process must offer exactly the declared tools. One extra tool and the connector does not start.

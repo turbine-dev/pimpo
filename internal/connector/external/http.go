@@ -48,6 +48,9 @@ type Request struct {
 	Body any `json:"body,omitempty"`
 	// Form sends the body as form fields instead of JSON.
 	Form bool `json:"form,omitempty"`
+	// Safe says a request other than GET only reads (a search sent as
+	// POST), so the capability may be declared read.
+	Safe bool `json:"safe,omitempty"`
 }
 
 // Result picks what the capability returns from the response.
@@ -109,8 +112,8 @@ func (h *HTTPSpec) validate(caps []Capability, env []string) error {
 		default:
 			return fmt.Errorf("capability %q: method must be GET, POST, PUT, PATCH or DELETE", c.Name)
 		}
-		if strings.ToUpper(r.Method) != "GET" && risks[c.Risk] == risks["read"] {
-			return fmt.Errorf("capability %q changes something (%s), so its risk cannot be read", c.Name, r.Method)
+		if strings.ToUpper(r.Method) != "GET" && risks[c.Risk] == risks["read"] && !r.Safe {
+			return fmt.Errorf("capability %q uses %s, which changes things; its risk can be read only with \"safe\": true in its request", c.Name, r.Method)
 		}
 		if !strings.HasPrefix(r.Path, "/") || strings.Contains(r.Path, "://") || strings.Contains(r.Path, "..") {
 			return fmt.Errorf("capability %q: path must start with / and stay on the base's host", c.Name)
@@ -383,7 +386,9 @@ func (c *Connector) callHTTP(ctx context.Context, name string, args any) (any, e
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", name, err)
 		}
-		if r.Form {
+		if filled == nil {
+			// the whole body was an argument that was not given
+		} else if r.Form {
 			form := url.Values{}
 			if m, ok := filled.(map[string]any); ok {
 				for k, v := range m {
