@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowUp, Check, Loader2, Mic, Repeat, Square, Trash2, Volume2, X } from 'lucide-react'
+import { ArrowUp, AudioLines, Check, Loader2, Mic, Repeat, Square, Trash2, Volume2, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ModelPicker, useRoutedText } from '../components/ModelPicker'
@@ -10,6 +10,7 @@ import { cn } from '../lib/cn'
 import { relative, usd } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
 import { readAloud as listen, stopReading, useDictation, useReading, warmReading } from '../lib/voice'
+import { useConversation } from '../lib/conversation'
 
 const suggestions: TKey[] = ['chat.s1', 'chat.s2', 'chat.s3', 'chat.s4']
 
@@ -42,10 +43,12 @@ export function Chat() {
   const location = useLocation()
   const settings = useQuery({ queryKey: ['settings'], queryFn: api.settings })
   const [readAloud, setReadAloud] = useState<string>((location.state as { readAloud?: string } | null)?.readAloud ?? '')
+  const [talking, setTalking] = useState('')
   const send = useMutation({
-    mutationFn: ({ text }: { text: string; spoken: boolean }) => (id ? api.sendChat(id, text, picked ? model : '', picked ? effort : '') : api.newChat(text, who, model, effort)),
-    onSuccess: (r, v) => { if (v.spoken) setReadAloud(r.turn); setPicked(false); if (!id) nav(`/chat/${r.chat}`); refresh() },
+    mutationFn: ({ text }: { text: string; spoken: boolean; talk?: boolean }) => (id ? api.sendChat(id, text, picked ? model : '', picked ? effort : '') : api.newChat(text, who, model, effort)),
+    onSuccess: (r, v) => { if (v.talk) setTalking(r.turn); else if (v.spoken) setReadAloud(r.turn); setPicked(false); if (!id) nav(`/chat/${r.chat}`); refresh() },
   })
+  const conversation = useConversation((text) => send.mutate({ text, spoken: true, talk: true }))
   useEffect(() => {
     const done = turns.find((x) => x.id === readAloud && x.state !== 'running')
     if (done) {
@@ -53,6 +56,15 @@ export function Chat() {
       setReadAloud('')
     }
   }, [turns, readAloud])
+  // In a conversation the answer is read and Pimpo listens again. What it
+  // would do is never approved by voice: it waits for a tap.
+  useEffect(() => {
+    const done = turns.find((x) => x.id === talking && x.state !== 'running')
+    if (!done) return
+    setTalking('')
+    const text = (done.summary || done.error || '') + (done.actions.length > 0 && !done.done ? ' ' + t('talk.confirmOnScreen') : '')
+    conversation.replied(() => listen(text, settings.data?.chat_voice, done.id))
+  }, [turns, talking])
   const remove = useMutation({ mutationFn: api.deleteChat, onSuccess: (_, gone) => { if (gone === id) nav('/chat'); qc.invalidateQueries({ queryKey: ['chats'] }) } })
   // The newest answer's first sentence is read ahead, with a free voice.
   const last = turns.at(-1)
@@ -107,7 +119,28 @@ export function Chat() {
         )}
       </div>
       {send.error && <p className="mb-2 text-center text-[13px] text-danger">{send.error.message}</p>}
+      {conversation.supported && <ConversationBar c={conversation} />}
       <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} model={model} onModel={(m) => { setModel(m); setPicked(true) }} effort={effort} onEffort={(e) => { setEffort(e); setPicked(true) }} />
+    </div>
+  )
+}
+
+// ConversationBar turns the spoken conversation on and says what it is doing.
+function ConversationBar({ c }: { c: ReturnType<typeof useConversation> }) {
+  const t = useT()
+  const on = c.state !== 'off'
+  return (
+    <div className="mx-auto mb-2 flex w-full max-w-3xl flex-wrap items-center gap-2 text-[12.5px]">
+      <button type="button" onClick={() => (on ? c.stop() : c.start())} aria-pressed={on}
+        className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition', on ? 'border-ink bg-ink text-bg' : 'border-line text-ink-2 hover:border-line-strong')}>
+        <AudioLines size={14} className={on && c.state !== 'thinking' ? 'animate-pulse-soft' : ''} /> {t(on ? 'talk.stop' : 'talk.start')}
+      </button>
+      {c.state !== 'off' && <span className="text-ink-2" aria-live="polite">{t(`talk.${c.state}`)}</span>}
+      {on && c.heard && c.state === 'thinking' && <span className="truncate text-ink-3">“{c.heard}”</span>}
+      <label className="ml-auto inline-flex items-center gap-1.5 text-ink-3">
+        <input type="checkbox" checked={c.useWake} onChange={(e) => c.setUseWake(e.target.checked)} /> {t('talk.wake')}
+      </label>
+      {c.error && <span className="w-full text-danger">{c.error}</span>}
     </div>
   )
 }
