@@ -66,6 +66,7 @@ export const pt = {
 
   'nav.routines': 'Rotinas',
   'nav.inbox': 'Precisa de você',
+  'nav.skills': "Skills",
   'nav.gallery': 'Galeria',
   'nav.receipts': 'Recibos',
   'nav.rules': 'Regras',
@@ -438,7 +439,7 @@ export const pt = {
   'settings.suggestTitle': "Sugestões",
   'settings.suggestText': "Uma vez por dia, o Pimpo pode sugerir uma rotina pelo que vê se repetir: quem te escreve e sobre o quê, seus próximos compromissos, rotinas que falham. Para isso ele nunca lê o conteúdo dos e-mails, e uma sugestão só roda se você aceitar.",
   'sk.title': "Skills",
-  'sk.text': "Skills do OpenClaw, do Hermes e do agentskills.io (um SKILL.md) funcionam aqui como assistentes: o agente segue as instruções delas, só com as capacidades que você permitir.",
+  'sk.text': "Skills do OpenClaw, do Hermes e do agentskills.io (um SKILL.md) ensinam o agente a fazer um tipo de tarefa. Ele conhece as instaladas e usa uma quando a tarefa combina; enquanto usa, só pode usar as capacidades que você permitir aqui.",
   'sk.none': "Nenhuma capacidade: só instruções",
   'sk.remove': "Remover {name}",
   'sk.url': "Link do GitHub para a pasta da skill",

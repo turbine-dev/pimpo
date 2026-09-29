@@ -36,9 +36,9 @@ export function Skills() {
   const sk = preview?.skill
 
   return (
-    <section className="mt-10" aria-labelledby="skills-title">
-      <h2 id="skills-title" className="mb-1 flex items-center gap-2 text-[17px] font-semibold tracking-tight"><Puzzle size={17} /> {t('sk.title')}</h2>
-      <p className="mb-4 text-[13px] text-ink-2">{t('sk.text')}</p>
+    <section aria-labelledby="skills-title">
+      <h1 id="skills-title" className="mb-1 flex items-center gap-2 text-[22px] font-semibold tracking-tight"><Puzzle size={20} /> {t('sk.title')}</h1>
+      <p className="mb-6 text-sm text-ink-2">{t('sk.text')}</p>
 
       {(list.data ?? []).length > 0 && (
         <div className="mb-4 grid gap-3 sm:grid-cols-2">

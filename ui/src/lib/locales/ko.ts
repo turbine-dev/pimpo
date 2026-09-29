@@ -66,6 +66,7 @@ export const ko: Record<Key, string> & Record<string, string> = {
 
   'nav.routines': '루틴',
   'nav.inbox': '확인 필요',
+  'nav.skills': "스킬",
   'nav.gallery': '갤러리',
   'nav.receipts': '기록',
   'nav.rules': '규칙',
@@ -438,7 +439,7 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'settings.suggestTitle': "제안",
   'settings.suggestText': "하루에 한 번, Pimpo는 반복되는 것(누가 무슨 메일을 보내는지, 다가오는 일정, 실패하는 루틴)을 보고 루틴을 제안할 수 있어요. 이를 위해 메일 내용은 절대 읽지 않고, 제안은 수락할 때만 실행돼요.",
   'sk.title': "스킬",
-  'sk.text': "OpenClaw, Hermes, agentskills.io의 스킬(SKILL.md)은 여기서 어시스턴트로 동작해요. 에이전트는 지시를 따르지만 허용한 기능만 쓸 수 있어요.",
+  'sk.text': "OpenClaw, Hermes, agentskills.io의 스킬(SKILL.md)은 에이전트에게 어떤 종류의 작업을 하는 법을 가르쳐요. 에이전트는 설치된 스킬을 알고 작업에 맞을 때 사용해요. 사용하는 동안에는 여기서 허용한 기능만 쓸 수 있어요.",
   'sk.none': "기능 없음: 지시만",
   'sk.remove': "{name} 제거",
   'sk.url': "스킬 폴더의 GitHub 링크",

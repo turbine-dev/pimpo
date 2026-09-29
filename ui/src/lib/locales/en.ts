@@ -66,6 +66,7 @@ export const en: Record<Key, string> = {
 
   'nav.routines': 'Routines',
   'nav.inbox': 'Needs you',
+  'nav.skills': "Skills",
   'nav.gallery': 'Gallery',
   'nav.receipts': 'Receipts',
   'nav.rules': 'Rules',
@@ -438,7 +439,7 @@ export const en: Record<Key, string> = {
   'settings.suggestTitle': "Suggestions",
   'settings.suggestText': "Once a day, Pimpo may suggest a routine from what it sees repeated: who writes to you and about what, your upcoming events, routines that fail. It never reads an email’s content for this, and a suggestion only runs if you accept it.",
   'sk.title': "Skills",
-  'sk.text': "Skills from OpenClaw, Hermes and agentskills.io (a SKILL.md) work here as assistants: the agent follows their instructions, with only the capabilities you allow.",
+  'sk.text': "Skills from OpenClaw, Hermes and agentskills.io (a SKILL.md) teach the agent how to do a kind of task. It reads the ones installed and uses one when a task matches; while it does, it can use only the capabilities you allow here.",
   'sk.none': "No capabilities: instructions only",
   'sk.remove': "Remove {name}",
   'sk.url': "GitHub link to the skill's folder",

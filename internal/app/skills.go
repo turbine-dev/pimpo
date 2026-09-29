@@ -15,14 +15,16 @@ import (
 	"time"
 
 	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/explore"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/skills"
 )
 
 // Skills in the SKILL.md format (OpenClaw, Hermes, agentskills.io) are
-// installed from a zip or a GitHub link, reviewed first, and then work as
-// assistants: the agent follows the skill's text as a third party's
-// reference, with only the capabilities the owner granted. A skill the
+// installed from a zip or a GitHub link and reviewed first. The agent sees
+// the installed ones in every exploration and loads one when the task
+// matches it; from then on that exploration may use only the capabilities
+// the owner granted the skill. A skill the
 // protection list knows as malicious is refused, a skill changed on disk
 // stops working until it is installed again, and scripts are never run.
 
@@ -55,23 +57,28 @@ func (a *App) saveSkills(ctx context.Context, list []installedSkill) error {
 	return a.Events.Put(ctx, skillsKey, string(b))
 }
 
-// skillAssistant is an installed skill as a role for explorations. It is
-// read from disk each time and must still be what was installed.
-func (a *App) skillAssistant(ctx context.Context, id string) (Assistant, error) {
-	for _, s := range a.installedSkills(ctx) {
-		if s.ID != id {
-			continue
-		}
-		sk, err := skills.Read(filepath.Join(a.skillsDir(), id))
-		if err != nil {
-			return Assistant{}, err
-		}
-		if sk.Hash != s.Hash {
-			return Assistant{}, errors.New("the skill " + s.Name + " changed on disk since it was installed; install it again to review it")
-		}
-		return Assistant{ID: "skill:" + id, Name: s.Name, Emoji: "🧩", Instructions: sk.Instructions(), Capabilities: s.Capabilities, Skill: true}, nil
+// skillText reads an installed skill from disk; it must still be what was
+// installed.
+func (a *App) skillText(s installedSkill) (string, error) {
+	sk, err := skills.Read(filepath.Join(a.skillsDir(), s.ID))
+	if err != nil {
+		return "", err
 	}
-	return Assistant{}, errors.New("that skill is not installed")
+	if sk.Hash != s.Hash {
+		return "", errors.New("the skill " + s.Name + " changed on disk since it was installed; install it again to review it")
+	}
+	return sk.Instructions(), nil
+}
+
+// exploreSkills are the installed skills as the explorer sees them.
+func (a *App) exploreSkills(ctx context.Context) []explore.Skill {
+	var out []explore.Skill
+	for _, s := range a.installedSkills(ctx) {
+		s := s
+		out = append(out, explore.Skill{ID: s.ID, Name: s.Name, Description: s.Description, Capabilities: s.Capabilities,
+			Instructions: func() (string, error) { return a.skillText(s) }})
+	}
+	return out
 }
 
 func (a *App) skillRoutes() {

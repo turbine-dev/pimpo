@@ -72,6 +72,8 @@ type Service struct {
 	Recall Recall
 	// Guide is the user guide, for questions about Pimpo itself.
 	Guide string
+	// Skills lists the skills installed, which the agent may load.
+	Skills func(ctx context.Context) []Skill
 
 	mu       sync.Mutex
 	sessions map[string]session
@@ -131,10 +133,8 @@ type Options struct {
 type Assistant struct {
 	Name         string
 	Instructions string
-	// Capabilities limits the tools; empty means all of them, unless
-	// OnlyListed, when empty means none (a skill granted nothing).
+	// Capabilities limits the tools; empty means all of them.
 	Capabilities []string
-	OnlyListed   bool
 }
 
 // StartWith starts an exploration with options, for the in-app chat.
@@ -214,7 +214,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: true, Person: e.Person}
 	role := ""
 	if as := o.Assistant; as != nil {
-		if len(as.Capabilities) > 0 || as.OnlyListed {
+		if len(as.Capabilities) > 0 {
 			h.Allowed = map[string]bool{}
 			for _, c := range as.Capabilities {
 				h.Allowed[c] = true
@@ -233,7 +233,12 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	if s.sessions == nil {
 		s.sessions = map[string]session{}
 	}
-	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "pimpo", Tools: tools(h, s.Memory, s.Recall, s.Guide)}}
+	var skills []Skill
+	if s.Skills != nil {
+		skills = s.Skills(ctx)
+	}
+	all := append(tools(h, s.Memory, s.Recall, s.Guide), skillTools(h, skills)...)
+	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "pimpo", Tools: all}}
 	s.mu.Unlock()
 	defer func() {
 		s.mu.Lock()
@@ -247,7 +252,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		prompt = "The conversation so far:\n" + o.Context + "\n\nNow the owner says: " + e.Request
 	}
 	resp, err := s.Agent.Run(ctx, llm.AgentRequest{
-		System:     explorerPrompt(now) + s.knownFacts(e.Person) + role,
+		System:     explorerPrompt(now) + s.knownFacts(e.Person) + role + skillsPrompt(skills),
 		Prompt:     prompt,
 		MCPURL:     fmt.Sprintf("%s/mcp/explore/%s?key=%s", s.BaseURL, e.ID, key),
 		Model:      firstNonEmpty(o.Model, s.Model),
