@@ -1,0 +1,10 @@
+{
+  "name": "Resumo da manhã",
+  "description": "Às 8h, manda um resumo dos e-mails não lidos.",
+  "manifest": {
+    "schedule": "",
+    "capabilities": null
+  },
+  "code": "export default async function (ctx) { const m = await ctx.call('mail.search', {query: 'is:unread'}); await ctx.call('notify.owner', {text: m.length + ' não lidos'}) }",
+  "tests": null
+}

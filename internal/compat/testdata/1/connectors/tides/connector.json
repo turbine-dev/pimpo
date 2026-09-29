@@ -1,0 +1,11 @@
+{
+  "name": "tides",
+  "description": "Tide tables",
+  "command": "./tides",
+  "env": ["TIDES_KEY"],
+  "capabilities": [
+    {"name": "tides.today", "risk": "read", "signature": "tides.today({port})", "returns": "[{port, high}]", "schema": {"type": "object"}},
+    {"name": "tides.alert", "risk": "notify", "signature": "tides.alert({text})", "returns": "{ok}"}
+  ],
+  "contract": [{"capability": "tides.today", "args": {"port": "Santos"}, "keys": ["port", "high"]}]
+}

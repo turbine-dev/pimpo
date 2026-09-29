@@ -27,4 +27,4 @@ None of these needs recompiling Pimpo.
 
 - [Contributing](../CONTRIBUTING.md) · [Engineering practices](../ENGINEERING.md) · [Governance](../GOVERNANCE.md) · [Code of Conduct](../CODE_OF_CONDUCT.md)
 - [Roadmap](ROADMAP.md): what comes next, milestone by milestone, up to v1.0.
-- [Changelog](../CHANGELOG.md) · [Releases and support](RELEASES.md) · [Status](STATUS.md) · [Plan](PLANNING.md) · [RFCs](rfcs/)
+- [Changelog](../CHANGELOG.md) · [Releases and support](RELEASES.md) · [Data formats](FORMATS.md) · [Status](STATUS.md) · [Plan](PLANNING.md) · [RFCs](rfcs/)

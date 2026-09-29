@@ -2,7 +2,7 @@
 
 ## Versions
 
-Pimpo uses semantic versioning. From v1.0 on, the event log, routine and backup formats are stable: newer versions read older data, and every upgrade takes a snapshot first (`pimpo restore` brings it back).
+Pimpo uses semantic versioning. From v1.0 on, the event log, routine, connector and backup formats are stable ([FORMATS.md](FORMATS.md)): newer versions read older data, a version refuses data a newer one wrote rather than damage it, and every upgrade takes a snapshot first (`pimpo restore` brings it back).
 
 | Channel | What | Support |
 |---|---|---|

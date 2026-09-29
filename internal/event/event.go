@@ -54,6 +54,10 @@ func Open(path string) (*Store, error) {
 		db.Close()
 		return nil, fmt.Errorf("migrate %s: %w", path, err)
 	}
+	if err := stampFormat(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
 	return &Store{db: db, now: time.Now, subs: map[chan Event]struct{}{}}, nil
 }
 
@@ -72,6 +76,31 @@ CREATE TABLE IF NOT EXISTS kv (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );`
+
+// Format is the version of the database format, frozen from v1.0
+// (docs/FORMATS.md): a newer Pimpo reads every older one, changes only
+// add tables and columns, and a Pimpo refuses a database a newer one
+// wrote in a format it does not know, instead of damaging it.
+const Format = 1
+
+var ErrNewerFormat = errors.New("this data was written by a newer Pimpo; update Pimpo, or restore the snapshot taken before the update")
+
+// stampFormat records the format in SQLite's user_version. Databases from
+// before the stamp (0) are format 1.
+func stampFormat(db *sql.DB) error {
+	var v int
+	if err := db.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil {
+		return err
+	}
+	if v > Format {
+		return fmt.Errorf("%w (format %d, this Pimpo knows up to %d)", ErrNewerFormat, v, Format)
+	}
+	if v < Format {
+		_, err := db.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, Format))
+		return err
+	}
+	return nil
+}
 
 func (s *Store) DB() *sql.DB                 { return s.db }
 func (s *Store) Close() error                { return s.db.Close() }
