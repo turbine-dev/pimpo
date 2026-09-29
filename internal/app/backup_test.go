@@ -41,7 +41,7 @@ func upload(t *testing.T, ta *testApp, path string, file []byte, fields map[stri
 
 func TestBackupFromTheWebApp(t *testing.T) {
 	ta := newApp(t, weatherAgent, &llm.Fake{})
-	ta.Home, ta.Version = t.TempDir(), "test"
+	ta.Home = t.TempDir()
 	ta.Vault.Set(t.Context(), "telegram.token", "1:secret")
 	if code, _ := ta.do(t, "POST", "/api/backup/export", map[string]string{"passphrase": "short"}); code != 400 {
 		t.Fatalf("short passphrase: %d", code)

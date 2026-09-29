@@ -132,8 +132,8 @@ func TestJobStopsAtItsBudget(t *testing.T) {
 			done++
 		}
 	}
-	if done == 5 {
-		t.Fatal("every part ran past the budget")
+	if done != 3 || j.SpentUSD > 0.32 {
+		t.Fatalf("parts done %d, spent %.2f: parts started past the budget", done, j.SpentUSD)
 	}
 }
 

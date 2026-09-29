@@ -69,17 +69,19 @@ type JobPart struct {
 }
 
 type Job struct {
-	ID        string    `json:"id"`
-	Request   string    `json:"request"`
-	Person    string    `json:"person,omitempty"`
-	State     string    `json:"state"`
-	BudgetUSD float64   `json:"budget_usd"`
-	SpentUSD  float64   `json:"spent_usd"`
-	Parts     []JobPart `json:"parts"`
-	Report    string    `json:"report,omitempty"`
-	Error     string    `json:"error,omitempty"`
-	Created   time.Time `json:"created"`
-	Updated   time.Time `json:"updated"`
+	ID        string  `json:"id"`
+	Request   string  `json:"request"`
+	Person    string  `json:"person,omitempty"`
+	State     string  `json:"state"`
+	BudgetUSD float64 `json:"budget_usd"`
+	SpentUSD  float64 `json:"spent_usd"`
+	// Share is what each part may spend, fixed when the job starts.
+	Share   float64   `json:"share_usd,omitempty"`
+	Parts   []JobPart `json:"parts"`
+	Report  string    `json:"report,omitempty"`
+	Error   string    `json:"error,omitempty"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
 }
 
 var jobsMu sync.Mutex
@@ -239,16 +241,37 @@ func (a *App) runPart(ctx context.Context, jobID, partID string) {
 		}
 		i := slices.IndexFunc(j.Parts, func(p JobPart) bool { return p.ID == partID })
 		p := j.Parts[i]
-		left := j.BudgetUSD - j.SpentUSD
-		if left <= 0.01 {
-			a.stopJob(ctx, jobID, i18n.T(ctx, "msg.job.budget"))
-			return
-		}
 		if p.Attempts >= partAttempts {
 			a.updateJob(ctx, jobID, func(j *Job) { j.Parts[i].State, j.Parts[i].Ended = PartFailed, time.Now().UTC() })
 			return
 		}
-		share := left / float64(max(1, remainingParts(j)))
+		// A part starts only if its share fits beside what is spent and
+		// what the running parts may still spend, so parts at the same
+		// time cannot together pass the budget.
+		fits := false
+		j, _ = a.updateJob(ctx, jobID, func(j *Job) {
+			if j.Share <= 0 {
+				j.Share = (j.BudgetUSD - j.SpentUSD) / float64(max(1, len(j.Parts)))
+			}
+			running := 0
+			for _, x := range j.Parts {
+				if x.State == PartRunning {
+					running++
+				}
+			}
+			fits = j.State == JobRunning && j.SpentUSD+float64(running+1)*j.Share <= j.BudgetUSD+1e-9
+			if fits {
+				j.Parts[i].State, j.Parts[i].Started, j.Parts[i].Error = PartRunning, time.Now().UTC(), ""
+				j.Parts[i].Attempts++
+			}
+		})
+		if !fits {
+			if j.State == JobRunning {
+				a.stopJob(ctx, jobID, i18n.T(ctx, "msg.job.budget"))
+			}
+			return
+		}
+		share := j.Share
 		instructions := "This is one part (" + p.Title + ") of a larger job the owner asked for: \"" + j.Request + "\". Do only this part and end with its result, complete, for whoever puts the parts together:\n\n" + p.Instructions
 		expID, err := a.Explore.StartWith(ctx, instructions, "job:"+jobID, explore.Options{
 			Quiet:      true,
@@ -264,10 +287,7 @@ func (a *App) runPart(ctx context.Context, jobID, partID string) {
 			})
 			return
 		}
-		a.updateJob(ctx, jobID, func(j *Job) {
-			j.Parts[i].State, j.Parts[i].Exploration, j.Parts[i].Started, j.Parts[i].Error = PartRunning, expID, time.Now().UTC(), ""
-			j.Parts[i].Attempts++
-		})
+		a.updateJob(ctx, jobID, func(j *Job) { j.Parts[i].Exploration = expID })
 		e := a.waitExploration(ctx, expID)
 		failed := e.State == store.ExplorationFailed || e.State == store.ExplorationRunning
 		j, _ = a.updateJob(ctx, jobID, func(j *Job) {
@@ -285,16 +305,6 @@ func (a *App) runPart(ctx context.Context, jobID, partID string) {
 			return
 		}
 	}
-}
-
-func remainingParts(j Job) int {
-	n := 0
-	for _, p := range j.Parts {
-		if p.State == PartWaiting || p.State == PartRunning {
-			n++
-		}
-	}
-	return n
 }
 
 func nonEmpty(caps []string) []string {

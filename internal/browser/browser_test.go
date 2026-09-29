@@ -63,7 +63,7 @@ func TestBrowseFillAndSubmit(t *testing.T) {
 	only := func(h string) bool { return h == "127.0.0.1" }
 
 	p, err := b.Open(ctx, "run1", srv.URL+"/", only)
-	if errors.Is(err, ErrNoSandbox) {
+	if errors.Is(err, ErrNoSandbox) || HeadlessHangsHere(err) {
 		t.Skip(err)
 	}
 	if err != nil {
