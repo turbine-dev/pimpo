@@ -48,7 +48,7 @@ jobs:
           # A release builds exactly the tagged commit.
           ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || '' }}
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with: { go-version-file: go.mod }
       - uses: actions/setup-node@v4
         with: { node-version-file: .nvmrc, cache: npm, cache-dependency-path: "ui/package-lock.json" }
