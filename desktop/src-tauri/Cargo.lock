@@ -2734,7 +2734,7 @@ dependencies = [
 name = "pimpo-desktop"
 version = "0.5.0"
 dependencies = [
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "serde_json",
  "tauri",
  "tauri-build",
