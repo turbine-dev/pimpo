@@ -620,7 +620,18 @@ mod desktop {
         broadcast_update(app);
     }
 
+    /// A Flatpak is updated by Flathub, not by the app.
+    fn managed_elsewhere() -> bool {
+        std::env::var_os("FLATPAK_ID").is_some()
+    }
+
     pub fn check_updates(app: &AppHandle, manual: bool) {
+        if managed_elsewhere() {
+            if manual {
+                set_error(app, "this Pimpo is updated by Flathub");
+            }
+            return;
+        }
         let app = app.clone();
         tauri::async_runtime::spawn(async move {
             {

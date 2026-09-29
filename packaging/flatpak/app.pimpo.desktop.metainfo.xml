@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.pimpo.desktop</id>
+  <name>Pimpo</name>
+  <summary>A personal AI agent that learns a task once, then does it on its own</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <developer id="dev.turbine">
+    <name>Turbine Dev</name>
+  </developer>
+  <url type="homepage">https://github.com/turbine-dev/pimpo</url>
+  <url type="bugtracker">https://github.com/turbine-dev/pimpo/issues</url>
+  <description>
+    <p>You ask in plain words. The first time, Pimpo does the task with a language model while you watch, rehearsing every change. When it works, Pimpo turns it into a routine: readable code with tests and a list of the only things it may touch, which then runs on schedule without a language model.</p>
+    <p>Every action passes your rules and lands in a tamper-evident log, and anything that cannot be undone waits for your approval. Your data stays on your computer.</p>
+  </description>
+  <launchable type="desktop-id">app.pimpo.desktop.desktop</launchable>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="@VERSION@" date="@DATE@"/>
+  </releases>
+</component>

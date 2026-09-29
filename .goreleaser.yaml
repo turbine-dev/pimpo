@@ -34,6 +34,27 @@ changelog:
   filters:
     exclude: ["^docs:", "^test:"]
 
+# Homebrew: `brew install turbine-dev/tap/pimpo` installs the command-line
+# Pimpo. It is published to the turbine-dev/homebrew-tap repository when
+# the release has HOMEBREW_TAP_TOKEN (a token that can push there), and
+# skipped otherwise.
+homebrew_casks:
+  - name: pimpo
+    repository:
+      owner: turbine-dev
+      name: homebrew-tap
+      token: '{{ index .Env "HOMEBREW_TAP_TOKEN" }}'
+    homepage: https://github.com/turbine-dev/pimpo
+    description: Personal AI agent that learns a task once, then does it on its own
+    license: Apache-2.0
+    skip_upload: '{{ if or (not (index .Env "HOMEBREW_TAP_TOKEN")) .Prerelease }}true{{ end }}'
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/pimpo"]
+          end
+
 release:
   github:
     owner: turbine-dev
