@@ -4,10 +4,10 @@ Every way to extend Pimpo works with the binary you already have: no recompiling
 
 | Extend | With | Details |
 |---|---|---|
-| New services | **Connectors**: any language, MCP over stdio, a `connector.json` | [CONNECTORS.md](CONNECTORS.md) |
+| New services | **Connectors**: a JSON file of HTTP requests, an imported OpenAPI description, any MCP server, or a program in any language | [CONNECTORS.md](CONNECTORS.md) |
 | New chat apps | **Channel API**: a signed webhook out, two endpoints in | below |
 | New judgment models | **Judge API**: one HTTP endpoint | below |
-| Ready-made automations | **Gallery routines**: a signed JSON file, with typed settings (`params`) people change without code | [gallery/README.md](../gallery/README.md) |
+| Ready-made automations | **Routines**: JavaScript with a manifest and tests; gallery routines are signed, with typed settings (`params`) people change without code | [ROUTINES.md](ROUTINES.md), [gallery/README.md](../gallery/README.md) |
 | Other agents | **Guard API**: ask before running a tool | [guard/README.md](../guard/README.md) |
 | Threat intelligence | **Protection list**: signed entries | [protection/README.md](../protection/README.md) |
 

@@ -1,0 +1,8 @@
+# Two approvals are required for the safety-critical paths (CONTRIBUTING.md).
+*                     @denerFernandes
+/internal/policy/     @denerFernandes
+/internal/vault/      @denerFernandes
+/internal/runtime/    @denerFernandes
+/internal/host/       @denerFernandes
+/internal/approval/   @denerFernandes
+/.github/             @denerFernandes

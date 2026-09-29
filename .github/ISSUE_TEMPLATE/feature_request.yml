@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest something Pimpo should do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you want to get done
+      description: The task or problem, in your own words. What you would ask Pimpo if it already worked.
+    validations: { required: true }
+  - type: textarea
+    id: today
+    attributes:
+      label: What you do today
+      description: How you handle it now, and what is missing.
+  - type: textarea
+    id: idea
+    attributes:
+      label: How it could work
+      description: Optional. A sketch, a similar product, the connector or channel it needs.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: This would let Pimpo act on something it cannot reach today (a new capability, channel or permission).

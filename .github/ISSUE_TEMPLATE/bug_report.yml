@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in Pimpo does not work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Security problems go through a private report instead** (see SECURITY.md): anything that acts without approval, leaks a secret or reaches someone else's data.
+        Never paste keys, tokens, emails or other personal data here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Ask Pimpo "…"
+        2. Approve the routine
+        3. …
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The output of `pimpo version`, or Ajustes › Sobre.
+    validations: { required: true }
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      multiple: true
+      options: [Desktop app (macOS), Desktop app (Windows), Desktop app (Linux), Web app, Phone app, Chat channel (Telegram, WhatsApp, …), Command line]
+    validations: { required: true }
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Which model or CLI the job used (Claude Code, Codex, opencode, an API provider, Ollama…), if it matters.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or receipts
+      description: The error message, the relevant lines of the log, or a receipt. Remove anything personal first.
+      render: text

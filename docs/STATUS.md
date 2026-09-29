@@ -81,6 +81,6 @@ The app, server messages (channels, approvals, notices), built-in connector text
 
 ## Pending decisions for the owner
 
-- **License**: the plan says free and open source; the exact license is not chosen yet.
+- **License**: Apache License 2.0 (chosen 2026-09-29).
 - **Publishing**: the `pimpo-gallery` and `pimpo-protection` repositories, releases and signing keys (the maintainer keys are in `~/.config/pimpo/`).
 - **Android emulator image**: about 1.5 GB to download before the APK can be run locally.

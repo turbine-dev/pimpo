@@ -1,0 +1,141 @@
+name: desktop
+
+# Builds the desktop app for macOS (Apple Silicon and Intel), Windows and
+# Linux (x64 and arm64). Each run keeps the installers as workflow
+# artifacts; a release (see release.yml) also attaches them to the draft
+# release of its tag.
+#
+# macOS builds are signed and notarized when the APPLE_* secrets are set,
+# and signed ad hoc otherwise (the app then opens with right-click › Open).
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - desktop/**
+      - .github/workflows/desktop.yml
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag (vX.Y.Z) whose version the app takes and whose draft release gets the installers
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-${{ github.ref }}-${{ inputs.tag }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macOS (Apple Silicon), os: macos-latest, target: aarch64-apple-darwin, goos: darwin, goarch: arm64, bundles: "app,dmg" }
+          - { name: macOS (Intel), os: macos-latest, target: x86_64-apple-darwin, goos: darwin, goarch: amd64, bundles: "app,dmg" }
+          - { name: Windows (x64), os: windows-latest, target: x86_64-pc-windows-msvc, goos: windows, goarch: amd64, ext: .exe, bundles: "nsis,msi" }
+          - { name: Linux (x64), os: ubuntu-22.04, target: x86_64-unknown-linux-gnu, goos: linux, goarch: amd64, bundles: "deb,rpm,appimage" }
+          - { name: Linux (arm64), os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, goos: linux, goarch: arm64, bundles: "deb,rpm,appimage" }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: npm, cache-dependency-path: "ui/package-lock.json" }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: "${{ matrix.target }}" }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: "desktop/src-tauri -> target", key: "${{ matrix.target }}" }
+
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 file rpm
+
+      - name: Version
+        id: version
+        shell: bash
+        run: |
+          tag="${{ inputs.tag }}"
+          if [ -n "$tag" ]; then
+            version="${tag#v}"
+            # The app takes the tag's version (Windows installers need x.y.z).
+            node -e 'const f="desktop/src-tauri/tauri.conf.json",fs=require("fs"),c=JSON.parse(fs.readFileSync(f));c.version=process.argv[1].split("-")[0];fs.writeFileSync(f,JSON.stringify(c,null,2)+"\n")' "$version"
+          else
+            version="$(node -p 'require("./desktop/src-tauri/tauri.conf.json").version')-$(git rev-parse --short HEAD)"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Web app
+        run: cd ui && npm ci --no-audit --no-fund && npx vite build
+
+      - name: Server sidecar
+        shell: bash
+        env: { CGO_ENABLED: "0", GOOS: "${{ matrix.goos }}", GOARCH: "${{ matrix.goarch }}" }
+        run: |
+          mkdir -p desktop/src-tauri/binaries
+          go build -trimpath -ldflags "-s -w -X main.version=${{ steps.version.outputs.version }}" \
+            -o "desktop/src-tauri/binaries/pimpo-${{ matrix.target }}${{ matrix.ext }}" ./cmd/pimpo
+
+      - name: Desktop app
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Unset what is empty, so a fork without secrets still builds.
+          for v in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            [ -n "${!v}" ] || unset "$v"
+          done
+          if [ "$RUNNER_OS" = macOS ] && [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
+            export APPLE_SIGNING_IDENTITY=-   # ad hoc: Apple Silicon refuses unsigned apps
+          fi
+          cd desktop
+          npm ci --no-audit --no-fund
+          npx tauri build --ci --target "${{ matrix.target }}" --bundles "${{ matrix.bundles }}"
+
+      - name: Collect installers
+        id: collect
+        shell: bash
+        run: |
+          out="$RUNNER_TEMP/installers"
+          mkdir -p "$out"
+          bundle="desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
+          v="${{ steps.version.outputs.version }}"
+          arch="${{ matrix.goarch }}"
+          shopt -s nullglob
+          for f in "$bundle"/dmg/*.dmg; do cp "$f" "$out/Pimpo_${v}_macos_${arch}.dmg"; done
+          for d in "$bundle"/macos/*.app; do (cd "$(dirname "$d")" && tar -czf "$out/Pimpo_${v}_macos_${arch}.app.tar.gz" "$(basename "$d")"); done
+          for f in "$bundle"/nsis/*.exe; do cp "$f" "$out/Pimpo_${v}_windows_${arch}_setup.exe"; done
+          for f in "$bundle"/msi/*.msi; do cp "$f" "$out/Pimpo_${v}_windows_${arch}.msi"; done
+          for f in "$bundle"/deb/*.deb; do cp "$f" "$out/Pimpo_${v}_linux_${arch}.deb"; done
+          for f in "$bundle"/rpm/*.rpm; do cp "$f" "$out/Pimpo_${v}_linux_${arch}.rpm"; done
+          for f in "$bundle"/appimage/*.AppImage; do cp "$f" "$out/Pimpo_${v}_linux_${arch}.AppImage"; done
+          ls -la "$out"
+          [ -n "$(ls -A "$out")" ] || { echo "no installers were built" >&2; exit 1; }
+          echo "dir=$out" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pimpo-desktop-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ steps.collect.outputs.dir }}/*
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Attach to the draft release
+        if: inputs.tag != ''
+        shell: bash
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh release upload "${{ inputs.tag }}" "${{ steps.collect.outputs.dir }}"/* --clobber --repo "${{ github.repository }}"

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/turbine-dev/pimpo/security/advisories/new
+    about: Privately, please. See SECURITY.md for what to expect.
+  - name: Documentation
+    url: https://github.com/turbine-dev/pimpo/tree/main/docs
+    about: Using, configuring and extending Pimpo, including how to write connectors and routines.

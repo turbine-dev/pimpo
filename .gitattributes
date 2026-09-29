@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.png binary
+*.icns binary
+*.ico binary
+*.woff2 binary
+ui/package-lock.json linguist-generated
+desktop/package-lock.json linguist-generated
+desktop/src-tauri/Cargo.lock linguist-generated
+desktop/src-tauri/gen/** linguist-generated

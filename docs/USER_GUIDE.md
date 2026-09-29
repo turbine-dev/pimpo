@@ -1,5 +1,7 @@
 # Pimpo user guide
 
+This guide walks through the app. For the command line, settings and the data folder see [Configuration](CONFIGURATION.md); for how routines work inside and how to write one see [Routines](ROUTINES.md); to add services see [Connectors](CONNECTORS.md).
+
 Pimpo was called Zodim, and Vigia before that. An existing install moves over on its own the first time Pimpo opens (with the old app closed): data, keys, backups and paired phones keep working.
 
 ## Getting around
@@ -8,7 +10,7 @@ Pimpo was called Zodim, and Vigia before that. An existing install moves over on
 
 ## First steps
 
-1. **Install.** Use the desktop app, or run `curl -fsSL https://raw.githubusercontent.com/denerFernandes/pimpo/main/scripts/install.sh | sh` and then `pimpo serve`. Open the link it prints.
+1. **Install.** Use the desktop app from the [releases page](https://github.com/turbine-dev/pimpo/releases) (macOS, Windows, Linux), or run `curl -fsSL https://raw.githubusercontent.com/turbine-dev/pimpo/main/scripts/install.sh | sh` and then `pimpo serve`. Open the link it prints.
 2. **Pick your safety level.** The welcome screen offers conservative, balanced (recommended) and liberal.
 3. **Connect what you need** in Conexões: Telegram or WhatsApp to talk from your phone, then email and calendar. "Entrar com Google" connects both at once with your own Google client.
 4. **Ask for something you do every week.** Use "Nova tarefa", or send a message on Telegram.
