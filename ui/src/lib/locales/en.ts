@@ -368,7 +368,7 @@ export const en: Record<Key, string> = {
   'welcome.balanced': 'Balanced',
   'welcome.balancedText': 'Reads and notifies freely; makes reversible changes, always with undo; always asks before anything irreversible.',
   'welcome.liberal': 'Liberal',
-  'welcome.liberalText': 'Only asks before sending something to other people. Deleting moves to the trash.',
+  'welcome.liberalText': 'Asks before sending anything to other people or anything that can’t be undone. Deleting email moves it to the trash without asking.',
   'welcome.hello': 'Welcome to Pimpo',
   'welcome.intro': 'You ask for something you do every week. The first time, Pimpo does it with a language model while you watch.',
   'welcome.routinesText': 'What worked becomes code with tests that runs on its own, almost for free.',

@@ -228,8 +228,7 @@ func (a *App) routineAction(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch r.PathValue("action") {
 	case "run":
-		a.Store.SetRoutineState(ctx, id, store.RoutineActive)
-		a.Scheduler.Changed(ctx, id)
+		a.unstop(ctx, id)
 		run, runErr := a.Scheduler.RunNow(context.WithoutCancel(ctx), id, "owner")
 		server.WriteJSON(w, 200, map[string]any{"run": run, "error": errText(runErr)})
 		return
@@ -349,7 +348,8 @@ func (a *App) explorationAction(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) putSettings(w http.ResponseWriter, r *http.Request) {
-	var s Settings
+	// Fields left out keep their value: a client may send only what changed.
+	s := a.Settings(r.Context())
 	if err := server.Decode(r, &s); err != nil {
 		server.WriteError(w, err)
 		return
@@ -540,5 +540,14 @@ func respond(w http.ResponseWriter) func(v any, err error) {
 			return
 		}
 		server.WriteJSON(w, 200, v)
+	}
+}
+
+// unstop puts a routine stopped by a failure back on its schedule before
+// running it by hand; a paused one runs once and stays paused.
+func (a *App) unstop(ctx context.Context, id string) {
+	if r, err := a.Store.Routine(ctx, id); err == nil && r.State == store.RoutineBroken {
+		a.Store.SetRoutineState(ctx, id, store.RoutineActive)
+		a.Scheduler.Changed(ctx, id)
 	}
 }

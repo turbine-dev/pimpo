@@ -34,6 +34,7 @@
   "effort.medium": "medium",
   "msg.answer.gone": "That question was already answered or has expired.",
   "msg.answer.noted": "✅ Noted: {choice}",
+  "msg.answer.paused": "Noted: {choice}. {name} is paused, so it will not act on it until you resume it.",
   "msg.approval.always": "Allowed. This won’t be asked again.",
   "msg.approval.approve": "Allowed.",
   "msg.approval.batch": "Allowed for the rest of this run.",
@@ -99,6 +100,7 @@
   "rule.preset-delete": "Deleting always becomes moving to the trash.",
   "rule.preset-irreversible": "Always ask me before anything that can’t be undone.",
   "rule.preset-others": "Only ask me before sending something to other people.",
+  "rule.preset-liberal": "Ask me before sending anything to other people or anything that can’t be undone.",
   "svc.apple.description": "Apple's apps on this Mac: reminders that ring on the iPhone and Watch, notes and the calendar.",
   "svc.apple.field.notes_folder.label": "Notes folder",
   "svc.apple.field.notes_folder.placeholder": "Pimpo",
@@ -166,5 +168,6 @@
   "svc.websearch.field.searxng_url.label": "SearXNG address",
   "svc.websearch.field.searxng_url.placeholder": "https://searx.example.org",
   "svc.websearch.help": "Use the Brave Search API (free key at api-dashboard.search.brave.com, 2,000 searches a month), Perplexity's search (key at perplexity.ai/account/api, about US$5 per thousand searches, billed by Perplexity) or the address of a SearXNG instance of yours or one you trust, with the JSON format on. If you fill in more than one, this order applies: Brave, Perplexity, SearXNG.",
-  "svc.websearch.title": "Web search"
+  "svc.websearch.title": "Web search",
+  "msg.budgetOver": "The day's spending limit ran out."
 }

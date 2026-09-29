@@ -34,6 +34,7 @@
   "effort.medium": "средний",
   "msg.answer.gone": "На этот вопрос уже ответили, или он истёк.",
   "msg.answer.noted": "✅ Записано: {choice}",
+  "msg.answer.paused": "Записано: {choice}. {name} на паузе, поэтому ничего не сделает, пока вы её не возобновите.",
   "msg.approval.always": "Разрешено. Этот вопрос больше не появится.",
   "msg.approval.approve": "Разрешено.",
   "msg.approval.batch": "Разрешено до конца этого запуска.",
@@ -103,6 +104,7 @@
   "rule.preset-delete": "Удаление — всегда перемещение в корзину.",
   "rule.preset-irreversible": "Всегда спрашивай меня перед тем, что нельзя отменить.",
   "rule.preset-others": "Спрашивай меня, только когда что-то отправляется другим людям.",
+  "rule.preset-liberal": "Спрашивай меня, прежде чем что-то отправить другим людям или сделать то, что нельзя отменить.",
   "svc.apple.description": "Приложения Apple на этом Mac: напоминания, которые звенят на iPhone и часах, заметки и календарь.",
   "svc.apple.field.notes_folder.label": "Папка Заметок",
   "svc.apple.field.notes_folder.placeholder": "Pimpo",
@@ -170,5 +172,6 @@
   "svc.websearch.field.searxng_url.label": "Адрес SearXNG",
   "svc.websearch.field.searxng_url.placeholder": "https://searx.example.org",
   "svc.websearch.help": "Используйте API Brave Search (бесплатный ключ на api-dashboard.search.brave.com, 2000 запросов в месяц), поиск Perplexity (ключ на perplexity.ai/account/api, около 5 US$ за тысячу запросов, оплачивается в Perplexity) или адрес своего либо доверенного SearXNG с включённым форматом JSON. Если заполнено несколько, порядок такой: Brave, Perplexity, SearXNG.",
-  "svc.websearch.title": "Веб-поиск"
+  "svc.websearch.title": "Веб-поиск",
+  "msg.budgetOver": "Дневной лимит расходов исчерпан."
 }

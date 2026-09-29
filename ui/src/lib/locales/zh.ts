@@ -368,7 +368,7 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'welcome.balanced': '均衡',
   'welcome.balancedText': '可自由读取和通知；可做可撤销的更改，并始终可撤销；不可撤销的操作一律先询问。',
   'welcome.liberal': '宽松',
-  'welcome.liberalText': '只在向他人发送内容前询问。删除会移到回收站。',
+  'welcome.liberalText': '向他人发送内容或做无法撤销的操作前会询问。删除邮件会直接移到回收站，不再询问。',
   'welcome.hello': '欢迎使用 Pimpo',
   'welcome.intro': '说一件你每周都要做的事。第一次，Pimpo 会用语言模型完成，你可以在旁边看着。',
   'welcome.routinesText': '成功的做法会变成带测试的代码，自动运行，几乎免费。',

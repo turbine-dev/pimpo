@@ -128,3 +128,48 @@ func TestWhatsAppToOthersAlwaysAsks(t *testing.T) {
 		t.Fatalf("%+v", d)
 	}
 }
+
+// The liberal level promises to ask before anything goes to other people
+// or cannot be undone; only deleting email goes through, to the trash.
+func TestLiberalPresetKeepsItsPromise(t *testing.T) {
+	e := engine(t)
+	ctx := context.Background()
+	if err := e.SaveRules(ctx, Presets()["liberal"], "human:owner"); err != nil {
+		t.Fatal(err)
+	}
+	capability.Register(capability.Spec{Name: "acme.transfer", Risk: capability.Irreversible, Signature: "acme.transfer({to})", Returns: "{ok}"})
+	defer capability.Unregister("acme.transfer")
+	for name, tc := range map[string]struct {
+		a    Action
+		want Verdict
+	}{
+		"email to others":  {Action{Capability: "gmail.send", Risk: capability.Irreversible, Source: "routine:x#1"}, Ask},
+		"github comment":   {Action{Capability: "github.comment", Risk: capability.Irreversible, Source: "routine:x#1"}, Ask},
+		"clearing a sheet": {Action{Capability: "sheets.clear", Risk: capability.Irreversible, Source: "routine:x#1"}, Ask},
+		"imported tool":    {Action{Capability: "acme.transfer", Risk: capability.Irreversible, Source: "routine:x#1"}, Ask},
+		"deleting email":   {Action{Capability: "gmail.delete", Risk: capability.Irreversible, Source: "routine:x#1"}, Reversible},
+		"reversible":       {Action{Capability: "gmail.archive", Risk: capability.Reversible, Source: "routine:x#1"}, Reversible},
+		"message to owner": {Action{Capability: "telegram.send", Risk: capability.Notify, Source: "routine:x#1"}, Allow},
+	} {
+		if got := e.Decide(ctx, tc.a); got.Verdict != tc.want {
+			t.Errorf("%s: got %s (%s), want %s", name, got.Verdict, got.Reason, tc.want)
+		}
+	}
+}
+
+func TestOldLiberalRuleIsUpgraded(t *testing.T) {
+	e := engine(t)
+	ctx := context.Background()
+	old := `[{"id":"preset-others","text":"Só me pergunte antes de enviar algo para outras pessoas.","when":{"capabilities":["gmail.send"]},"then":"ask"},
+	 {"id":"preset-delete","text":"Apagar sempre vira mover para a lixeira.","when":{"capabilities":["gmail.delete"]},"then":"reversible"}]`
+	e.Events.Put(ctx, rulesKey, old)
+	if got := e.Decide(ctx, Action{Capability: "sheets.clear", Risk: capability.Irreversible, Source: "routine:x#1"}); got.Verdict != Ask {
+		t.Fatalf("old liberal rules still let sheets.clear through: %s", got.Verdict)
+	}
+	edited := `[{"id":"preset-others","text":"Mine","when":{"capabilities":["gmail.send","github.comment"]},"then":"ask"}]`
+	e2 := engine(t)
+	e2.Events.Put(ctx, rulesKey, edited)
+	if r := e2.Rules(ctx); len(r) != 1 || r[0].Text != "Mine" {
+		t.Fatalf("an edited rule was replaced: %+v", r)
+	}
+}

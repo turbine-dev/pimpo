@@ -285,3 +285,25 @@ func TestNoRoutineOfferWhenNothingWasRead(t *testing.T) {
 		}
 	}
 }
+
+func TestRepairTellsWhatBroke(t *testing.T) {
+	s, _, _, _ := setup(t)
+	ctx := context.Background()
+	id, _ := s.Start(ctx, "Arquiva as newsletters não lidas e me avisa", "human:owner")
+	s.Wait()
+	r, err := s.Approve(ctx, id, "human:owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, _ := s.Store.StartRun(ctx, r.ID, r.Version)
+	s.Store.FinishRun(ctx, run, store.RunFailed, "gmail.search: 401 token expired", 0, 1)
+	rid, err := s.Repair(ctx, r.ID, "", "human:owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Wait()
+	e, _ := s.Store.Exploration(ctx, rid)
+	if !strings.Contains(e.Request, "gmail.search: 401 token expired") {
+		t.Fatalf("repair request does not say what broke: %q", e.Request)
+	}
+}

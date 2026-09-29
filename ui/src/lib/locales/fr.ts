@@ -376,7 +376,7 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'welcome.balanced': 'Équilibré',
   'welcome.balancedText': 'Lit et prévient librement ; fait des modifications réversibles, toujours annulables ; demande toujours avant tout ce qui est irréversible.',
   'welcome.liberal': 'Libre',
-  'welcome.liberalText': 'Ne demande qu’avant d’envoyer quelque chose à d’autres personnes. Supprimer met à la corbeille.',
+  'welcome.liberalText': 'Demande avant d’envoyer quelque chose à d’autres personnes ou de faire ce qui ne s’annule pas. Supprimer un e-mail le met à la corbeille sans demander.',
   'welcome.hello': 'Bienvenue dans Pimpo',
   'welcome.intro': 'Vous demandez quelque chose que vous faites chaque semaine. La première fois, Pimpo le fait avec un modèle de langage, sous vos yeux.',
   'welcome.routinesText': 'Ce qui a marché devient du code testé qui tourne tout seul, presque gratuitement.',

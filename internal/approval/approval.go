@@ -15,6 +15,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/pause"
 	"github.com/turbine-dev/pimpo/internal/policy"
 )
 
@@ -143,6 +144,7 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 	}
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
+	defer pause.Pause(ctx)()
 	select {
 	case ans := <-ch:
 		m.mu.Lock()
@@ -164,6 +166,11 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 		m.Events.Append(context.WithoutCancel(ctx), EventResolved, "system", map[string]string{"id": id, "answer": "expired"})
 		return Deny, ErrExpired
 	case <-ctx.Done():
+		// The run ended: the request can no longer be answered.
+		m.mu.Lock()
+		delete(m.pending, id)
+		m.mu.Unlock()
+		m.Events.Append(context.WithoutCancel(ctx), EventResolved, "system", map[string]string{"id": id, "answer": "expired"})
 		return Deny, ctx.Err()
 	}
 }

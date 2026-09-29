@@ -161,3 +161,17 @@ func TestHTTPSRefusalNamesHTTPS(t *testing.T) {
 		t.Fatal(msg)
 	}
 }
+
+// With the main server on every interface, the home address is only
+// reported, not listened on again.
+func TestLANAlreadyServed(t *testing.T) {
+	l := &LAN{Port: 8123, Served: true, Addr: func() (net.IP, error) { return net.ParseIP("192.168.1.20"), nil }}
+	url, err := l.Start()
+	if err != nil || url != "http://192.168.1.20:8123" || l.URL() != url {
+		t.Fatalf("%q %v", url, err)
+	}
+	l.Stop()
+	if l.URL() != "" {
+		t.Fatal("still reported after stop")
+	}
+}

@@ -38,10 +38,16 @@ type When struct {
 	// People and Roles match who the run acts for ("ana"; "member", "guest").
 	People []string `json:"people,omitempty"`
 	Roles  []string `json:"roles,omitempty"`
+	// Except leaves these capabilities out, e.g. every irreversible action
+	// but one another rule handles.
+	Except []string `json:"except,omitempty"`
 }
 
 func (w When) matches(a Action) bool {
 	if len(w.Capabilities) > 0 && !contains(w.Capabilities, a.Capability) {
+		return false
+	}
+	if contains(w.Except, a.Capability) {
 		return false
 	}
 	if w.MinRisk != "" && a.Risk < parseRisk(w.MinRisk) {
@@ -125,7 +131,7 @@ func (r Rule) Validate() error {
 	default:
 		return fmt.Errorf("rule decision must be allow, reversible, ask or block, not %q", r.Then)
 	}
-	for _, c := range r.When.Capabilities {
+	for _, c := range append(append([]string{}, r.When.Capabilities...), r.When.Except...) {
 		if _, ok := capability.Catalog[c]; !ok {
 			return fmt.Errorf("unknown capability %q", c)
 		}
@@ -159,11 +165,31 @@ func Presets() map[string][]Rule {
 			{ID: "preset-changes", Text: "Me pergunte antes de qualquer mudança, mesmo as reversíveis.", When: When{MinRisk: "reversible"}, Then: Ask},
 		},
 		"balanced": Preset(),
-		"liberal": {
-			{ID: "preset-others", Text: "Só me pergunte antes de enviar algo para outras pessoas.", When: When{Capabilities: []string{"gmail.send"}}, Then: Ask},
+		"liberal": {liberalAsk,
 			{ID: "preset-delete", Text: "Apagar sempre vira mover para a lixeira.", When: When{Capabilities: []string{"gmail.delete"}}, Then: Reversible},
 		},
 	}
+}
+
+// liberalAsk keeps the liberal level's promise: sending to other people,
+// and anything else that cannot be undone, asks first. Only deleting email,
+// which becomes moving it to the trash, goes through.
+var liberalAsk = Rule{ID: "preset-liberal", Text: "Me pergunte antes de enviar algo para outras pessoas ou de qualquer coisa que não dá para desfazer.",
+	When: When{MinRisk: "irreversible", Except: []string{"gmail.delete"}}, Then: Ask}
+
+// upgrade replaces the liberal level's first rule, which asked only
+// before gmail.send and so let other irreversible actions through
+// (messages on other services, clearing a sheet, imported tools). A rule
+// the owner edited is left alone.
+func upgrade(rules []Rule) []Rule {
+	for i, r := range rules {
+		if r.ID == "preset-others" && r.Then == Ask && len(r.When.Capabilities) == 1 && r.When.Capabilities[0] == "gmail.send" &&
+			r.When.MinRisk == "" && r.When.Source == "" && len(r.When.People) == 0 && len(r.When.Roles) == 0 && len(r.When.ArgsContain) == 0 {
+			rules[i] = liberalAsk
+			rules[i].Off = r.Off
+		}
+	}
+	return rules
 }
 
 // alwaysAsk lists capabilities no rule may let through unasked.
@@ -202,6 +228,7 @@ func (e *Engine) Rules(ctx context.Context) []Rule {
 		rules = Preset()
 	} else {
 		json.Unmarshal([]byte(raw), &rules)
+		rules = upgrade(rules)
 	}
 	e.cache = rules
 	return rules

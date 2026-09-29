@@ -12,6 +12,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/explore"
+	"github.com/turbine-dev/pimpo/internal/pause"
 	"github.com/turbine-dev/pimpo/internal/policy"
 )
 
@@ -119,5 +120,34 @@ func TestSuggestsAlwaysAfterThreeApprovals(t *testing.T) {
 	}
 	if !strings.Contains(n.list[3].Text, "3 vezes") || strings.Contains(n.list[2].Text, "3 vezes") {
 		t.Fatalf("suggestion missing or early:\n%s\n%s", n.list[2].Text, n.list[3].Text)
+	}
+}
+
+// A scheduled run has 15 minutes of its own; waiting for the owner does
+// not use them up, and a request whose run ended cannot be answered.
+func TestWaitingForTheOwnerStopsTheRunClock(t *testing.T) {
+	m, n := manager(t, time.Minute)
+	ctx, cancel := pause.WithTimeout(context.Background(), 60*time.Millisecond)
+	defer cancel()
+	go func() {
+		<-n.got
+		time.Sleep(150 * time.Millisecond) // longer than the run's own limit
+		m.Resolve(context.Background(), idOf(n.list[0]), Once, "human:owner")
+	}()
+	if _, err := m.Ask(ctx, policy.Action{Capability: "gmail.send", Risk: 3}, "r"); err != nil {
+		t.Fatalf("the run ran out of time while waiting: %v", err)
+	}
+	if ctx.Err() != nil {
+		t.Fatal("the run's clock kept counting")
+	}
+
+	m2, n2 := manager(t, time.Minute)
+	ctx2, cancel2 := context.WithCancel(context.Background())
+	go func() { <-n2.got; cancel2() }()
+	if _, err := m2.Ask(ctx2, policy.Action{Capability: "gmail.send", Risk: 3}, "r"); err == nil {
+		t.Fatal("a cancelled run was approved")
+	}
+	if len(m2.Open()) != 0 || m2.Resolve(context.Background(), idOf(n2.list[0]), Once, "human:owner") {
+		t.Fatal("the request of an ended run can still be answered")
 	}
 }

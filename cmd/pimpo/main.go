@@ -162,6 +162,7 @@ func serve(args []string) error {
 	a.VoiceModel = filepath.Join(home, "models", "ggml-base.bin")
 	a.Home, a.Version = home, version
 	if !*demoMode {
+		a.ListenAddr = *addr
 		a.AttachRemote(home, nil)
 	}
 	a.DesktopNotify = os.Getenv("PIMPO_DESKTOP_NOTIFY") != ""

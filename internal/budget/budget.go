@@ -105,7 +105,7 @@ func (b *Budget) CheckFor(ctx context.Context, estimate float64) error {
 		return err
 	}
 	if spent >= limit || spent+estimate > limit+1e-9 {
-		return fmt.Errorf("%w ($%.2f of $%.2f); raise it in Custo or wait until tomorrow", ErrOverBudget, spent, limit)
+		return fmt.Errorf("%w ($%.2f of $%.2f); raise it in Ajustes › Geral or wait until tomorrow", ErrOverBudget, spent, limit)
 	}
 	return nil
 }
