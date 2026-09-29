@@ -5,6 +5,12 @@ on:
   pull_request:
 
 jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: No references the repository must not carry
+        run: "! git grep -n -i -E 'be[e]vo|bs[o]lus' -- ."
   go:
     strategy:
       fail-fast: false

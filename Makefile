@@ -28,6 +28,7 @@ proof:
 # check stops at the first failure: run it before every commit.
 check:
 	test -z "$$(gofmt -l .)" || (gofmt -l . && exit 1)
+	@! git grep -n -i -E 'be[e]vo|bs[o]lus' -- . ':!*.bundle' || (echo "remove the references above: the repository must not name them" && exit 1)
 	go vet ./...
 	cd ui && npx tsc -b && npx vitest run && npx vite build
 	go test -race ./...
