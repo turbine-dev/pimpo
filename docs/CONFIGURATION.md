@@ -29,6 +29,7 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 | `pimpo snapshot [LABEL…]` | `--data DIR` | Takes a snapshot now. |
 | `pimpo restore NAME` | `--data DIR` | Goes back to a snapshot. Pimpo must be stopped. The current state is snapshotted first. |
 | `pimpo routines import FOLDER` | `--data DIR`, `--active` | Installs routines from a folder in the repository layout (`routines/<id>/routine.json`) after checking their manifest, tests and audit. They arrive paused unless `--active`. |
+| `pimpo report` | `--data DIR`, `--days N` (default 21), `--json` | How the routines did in real use: runs, failures, silent failures (scheduled runs that never happened while Pimpo ran), late runs, times Pimpo was off, repairs, approvals and cost. Also `GET /api/report?days=N`. See [VALIDATION.md](VALIDATION.md). |
 | `pimpo local list` | `--data DIR` | Lists the local model catalog; `✓` marks what is installed. |
 | `pimpo local install ID…` | `--data DIR` | Downloads catalog items, with the same checks as the app. |
 | `pimpo local remove ID…` | `--data DIR` | Removes installed items. |

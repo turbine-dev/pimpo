@@ -16,6 +16,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
 	"github.com/turbine-dev/pimpo/internal/telegram"
+	"github.com/turbine-dev/pimpo/internal/usage"
 )
 
 func (a *App) routes() {
@@ -37,6 +38,7 @@ func (a *App) routes() {
 	s.Handle("DELETE /api/connections/{kind}", a.deleteConnection)
 	s.Handle("POST /api/open", a.openLink)
 	s.Handle("GET /api/runs", a.recentRuns)
+	s.Handle("GET /api/report", a.usageReport)
 }
 
 // recentRuns is the run history of every routine.
@@ -550,4 +552,22 @@ func (a *App) unstop(ctx context.Context, id string) {
 		a.Store.SetRoutineState(ctx, id, store.RoutineActive)
 		a.Scheduler.Changed(ctx, id)
 	}
+}
+
+// usageReport is how routines did in real use over the last days.
+func (a *App) usageReport(w http.ResponseWriter, r *http.Request) {
+	days, _ := strconv.Atoi(r.URL.Query().Get("days"))
+	if days <= 0 || days > 365 {
+		days = 21
+	}
+	zone, err := time.LoadLocation(a.Settings(r.Context()).Zone)
+	if err != nil {
+		zone = time.Local
+	}
+	rep, err := usage.Build(r.Context(), a.Events, a.Store, time.Now(), days, zone)
+	if err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	server.WriteJSON(w, 200, map[string]any{"report": rep, "markdown": rep.Markdown(zone)})
 }
