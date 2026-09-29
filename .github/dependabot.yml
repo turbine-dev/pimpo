@@ -10,6 +10,10 @@ updates:
     schedule: { interval: weekly }
     groups:
       ui: { patterns: ["*"], update-types: [minor, patch] }
+    ignore:
+      # Node's types follow the Node that runs Pimpo (.nvmrc), not the newest.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /desktop
     schedule: { interval: monthly }
