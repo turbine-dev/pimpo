@@ -21,6 +21,7 @@ No version has been tagged yet. The first release will include everything built 
 - Outside password managers: any secret field can hold a reference to 1Password (`op://…`, with the op CLI or a Connect server) or HashiCorp Vault (`vault://…#field`), read when a connection needs it; the house's are set up in Connections and each person's own in Account.
 - **Needs you** is one list of everything waiting for you (approvals with For this routine, keys asked for privately, questions with typed answers, stopped routines, jobs with problems, plans and tasks ready, lessons to review), the most urgent first, with filters by kind, answered in place on the page, in the bell and on Home.
 - Dashboards in tabs with widgets of seven kinds (numbers, goals, status, lists, tables, and line, area, bar and donut charts), ready-made widgets, and sharing with the house.
+- Floating widgets in the desktop app: any widget in a small always-on-top window that keeps its place and hides while the app is locked.
 - A Telegram Mini App: **Dashboard** in the bot's menu opens what needs you, your routines, spending and your widgets inside Telegram, signed in as you (needs a public https address, such as Tailscale Funnel).
 - **Turn into a widget** on a routine's page, and requests to see or track something end in a widget.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.

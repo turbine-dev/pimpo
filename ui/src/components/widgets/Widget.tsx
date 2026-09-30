@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, ExternalLink, GripVertical, Home, Loader2, MoreHorizontal, OctagonAlert, RefreshCw, Trash2, Users } from 'lucide-react'
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, ExternalLink, GripVertical, Home, Loader2, MoreHorizontal, OctagonAlert, PictureInPicture2, RefreshCw, Trash2, Users } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import type { WidgetSnap, WidgetView } from '../../lib/api'
 import { cn } from '../../lib/cn'
@@ -219,9 +219,9 @@ function ItemList({ items, dense }: { items: NonNullable<WidgetSnap['items']>; d
 
 // WidgetCard frames a widget: its title, when it was updated, and what can
 // be done with it.
-export function WidgetCard({ w, editing, onRemove, onRefresh, onShare, refreshing, drag, children }: {
-  w: WidgetView | { id: string; hidden: true }; editing?: boolean; refreshing?: boolean
-  onRemove?: () => void; onRefresh?: () => void; onShare?: (shared: boolean) => void
+export function WidgetCard({ w, editing, onRemove, onRefresh, onShare, onFloat, floating, refreshing, drag, children }: {
+  w: WidgetView | { id: string; hidden: true }; editing?: boolean; refreshing?: boolean; floating?: boolean
+  onRemove?: () => void; onRefresh?: () => void; onShare?: (shared: boolean) => void; onFloat?: (on: boolean) => void
   drag?: ReactNode; children?: ReactNode
 }) {
   const t = useT()
@@ -247,7 +247,7 @@ export function WidgetCard({ w, editing, onRemove, onRefresh, onShare, refreshin
         </div>
         {w.shared && <span title={t('widget.sharedHint')} className="text-ink-3"><Home size={14} /></span>}
         {link && <a href={link} target="_blank" rel="noreferrer" aria-label={t('widget.open')} className="text-ink-3 hover:text-ink"><ExternalLink size={14} /></a>}
-        {(onRefresh || onRemove || onShare) && (
+        {(onRefresh || onRemove || onShare || onFloat) && (
           <div className="relative">
             <button type="button" onClick={() => setMenu(!menu)} aria-label={t('widget.menu')} aria-expanded={menu} className="grid size-7 place-items-center rounded-lg text-ink-3 opacity-70 hover:bg-sunken hover:text-ink group-hover:opacity-100">
               {refreshing ? <Loader2 size={15} className="animate-spin" /> : <MoreHorizontal size={16} />}
@@ -255,6 +255,7 @@ export function WidgetCard({ w, editing, onRemove, onRefresh, onShare, refreshin
             {menu && (
               <div role="menu" className="absolute right-0 top-8 z-20 w-56 rounded-xl border border-line bg-raised p-1 shadow-[var(--shadow-pop)]" onMouseLeave={() => setMenu(false)}>
                 {onRefresh && <button role="menuitem" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] hover:bg-sunken" onClick={() => { setMenu(false); onRefresh() }}><RefreshCw size={14} />{t('widget.refresh')}</button>}
+                {onFloat && <button role="menuitem" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] hover:bg-sunken" onClick={() => { setMenu(false); onFloat(!floating) }}><PictureInPicture2 size={14} />{floating ? t('float.stop') : t('float.start')}</button>}
                 {onShare && <button role="menuitem" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] hover:bg-sunken" onClick={() => { setMenu(false); onShare(!w.shared) }}><Home size={14} />{w.shared ? t('widget.unshare') : t('widget.share')}</button>}
                 {onRemove && <button role="menuitem" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] text-danger hover:bg-danger-soft" onClick={() => { setMenu(false); onRemove() }}><Trash2 size={14} />{t('widget.remove')}</button>}
               </div>
