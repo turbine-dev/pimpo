@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -390,8 +391,25 @@ func notSetUp(what, scope string) string {
 	return what + " is not set up for this person (Account, Password managers)"
 }
 
-// opCmd runs the op CLI with a clean environment: only PATH, HOME and
-// the service-account token when there is one.
+// opEnv is the clean environment op runs with: PATH and HOME, and on
+// Windows the few variables any program there needs to start and find the
+// person's folders.
+func opEnv(goos string, getenv func(string) string) []string {
+	keep := []string{"PATH", "HOME"}
+	if goos == "windows" {
+		keep = append(keep, "SYSTEMROOT", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "TEMP", "TMP")
+	}
+	var env []string
+	for _, k := range keep {
+		if v := getenv(k); v != "" || k == "PATH" || k == "HOME" {
+			env = append(env, k+"="+v)
+		}
+	}
+	return env
+}
+
+// opCmd runs the op CLI with a clean environment (opEnv) and the
+// service-account token when there is one.
 func (o *outside) opCmd(ctx context.Context, token string, args ...string) ([]byte, string, error) {
 	path, err := exec.LookPath(o.op)
 	if err != nil {
@@ -400,7 +418,7 @@ func (o *outside) opCmd(ctx context.Context, token string, args ...string) ([]by
 	ctx, cancel := context.WithTimeout(ctx, opTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, path, args...)
-	cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME")}
+	cmd.Env = opEnv(runtime.GOOS, os.Getenv)
 	if token != "" {
 		cmd.Env = append(cmd.Env, "OP_SERVICE_ACCOUNT_TOKEN="+token)
 	}
