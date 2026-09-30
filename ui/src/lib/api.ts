@@ -330,6 +330,7 @@ export const api = {
   suggestions: () => request<{ id: string; title: string; why: string; request: string; made: string }[]>('GET', '/api/suggestions'),
   suggestion: (id: string, action: 'accept' | 'dismiss') => request<{ exploration?: string }>('POST', `/api/suggestions/${id}/${action}`),
   answerQuestion: (id: string, index: number) => request<{ text: string }>('POST', `/api/questions/${id}/answer`, { index }),
+  answerQuestionText: (id: string, text: string) => request<{ text: string }>('POST', `/api/questions/${id}/answer`, { text }),
   spotify: () => request<{ connected: boolean; client_id: boolean; redirect: string }>('GET', '/api/spotify'),
   spotifyStart: (clientId: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/spotify/start', { client_id: clientId }),
   spotifyOff: () => request<{ ok: boolean }>('DELETE', '/api/spotify'),

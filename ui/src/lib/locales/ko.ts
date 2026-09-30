@@ -1595,6 +1595,8 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'wh.rotate': "주소 바꾸기",
   'rs.byWebhook': "이 루틴의 웹훅이 호출되면 시작됩니다(아래 참고).",
   'inbox.asked': "{when}에 질문",
+  'inbox.answerType': "또는 답을 입력하세요",
+  'inbox.answerSend': "답하기",
   'conn.spotifyText': "재생 중인 곡 보기, 곡·플레이리스트·팟캐스트 재생, 일시정지, 볼륨 조절. 제어에는 Spotify Premium이 필요합니다.",
   'conn.spotifyRefused': "Spotify가 거부했습니다: {reason}",
   'conn.spotifyStep1': "{link}에서 앱을 만들고(이름 자유) Web API를 선택하세요.",

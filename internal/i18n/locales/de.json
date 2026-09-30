@@ -36,6 +36,8 @@
   "msg.answer.gone": "Diese Frage wurde schon beantwortet oder ist abgelaufen.",
   "msg.answer.noted": "✅ Notiert: {choice}",
   "msg.answer.paused": "Notiert: {choice}. {name} ist pausiert und handelt erst, wenn du sie fortsetzt.",
+  "msg.answer.pick": "„{question}“: Das ist keine der Antworten. Antworte mit einer davon: {options}",
+  "msg.answer.choose": "Auswählen",
   "msg.approval.always": "Erlaubt. Das wird nicht mehr gefragt.",
   "msg.approval.approve": "Erlaubt.",
   "msg.approval.batch": "Für den Rest dieses Laufs erlaubt.",

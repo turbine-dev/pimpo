@@ -36,6 +36,8 @@
   "msg.answer.gone": "That question was already answered or has expired.",
   "msg.answer.noted": "✅ Noted: {choice}",
   "msg.answer.paused": "Noted: {choice}. {name} is paused, so it will not act on it until you resume it.",
+  "msg.answer.pick": "“{question}”: that is not one of the choices. Answer with one of them: {options}",
+  "msg.answer.choose": "Choose",
   "msg.approval.always": "Allowed. This won’t be asked again.",
   "msg.approval.approve": "Allowed.",
   "msg.approval.batch": "Allowed for the rest of this run.",

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState, type FormEvent } from 'react'
 import { AlertTriangle, BellOff, Headphones, Lightbulb, MessageCircleQuestion, ShieldQuestion, Sparkles } from 'lucide-react'
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api } from '../lib/api'
@@ -23,7 +23,6 @@ export function Inbox() {
   const [limits, setLimits] = useState<Record<string, string>>({})
   const media = useQuery({ queryKey: ['media'], queryFn: api.media, refetchInterval: 60_000 })
   const questions = useQuery({ queryKey: ['questions'], queryFn: api.questions, refetchInterval: 15_000 })
-  const reply = useMutation({ mutationFn: ({ id, i }: { id: string; i: number }) => api.answerQuestion(id, i), onSettled: () => qc.invalidateQueries({ queryKey: ['questions'] }) })
   const suggestions = useQuery({ queryKey: ['suggestions'], queryFn: api.suggestions, refetchInterval: 60_000 })
   const suggest = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'accept' | 'dismiss' }) => api.suggestion(id, action),
@@ -43,18 +42,7 @@ export function Inbox() {
         </EmptyState>
       )}
       <div className="space-y-3">
-        {(questions.data ?? []).map((q) => (
-          <Card key={q.id} className="flex flex-wrap items-center gap-4 border-explore/40 p-4">
-            <div className="grid size-10 place-items-center rounded-xl bg-explore-soft text-explore"><MessageCircleQuestion size={18} /></div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-medium">{q.question}</div>
-              <div className="text-[12.5px] text-ink-3">{t('inbox.asked', { when: relative(q.asked) })}</div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {q.options.map((o, i) => <Button key={o} size="sm" variant={i === 0 ? 'primary' : 'secondary'} disabled={reply.isPending} onClick={() => reply.mutate({ id: q.id, i })}>{o}</Button>)}
-            </div>
-          </Card>
-        ))}
+        {(questions.data ?? []).map((q) => <QuestionCard key={q.id} q={q} />)}
         {(suggestions.data ?? []).map((s) => (
           <Card key={s.id} className="flex flex-wrap items-start gap-4 p-4">
             <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-sunken text-ink-2"><Lightbulb size={18} /></div>
@@ -150,4 +138,40 @@ function amountOf(args: unknown): number | undefined {
     if (['amount', 'total', 'price', 'sum'].includes(k.toLowerCase()) && typeof v === 'number') return v
   }
   return undefined
+}
+
+type Question = Awaited<ReturnType<typeof api.questions>>[number]
+
+// QuestionCard is a routine's question: its options as buttons, or an
+// answer typed in words, which the server checks against them.
+function QuestionCard({ q }: { q: Question }) {
+  const t = useT()
+  const qc = useQueryClient()
+  const [typed, setTyped] = useState('')
+  const done = () => qc.invalidateQueries({ queryKey: ['questions'] })
+  const pick = useMutation({ mutationFn: (i: number) => api.answerQuestion(q.id, i), onSettled: done })
+  const write = useMutation({ mutationFn: (text: string) => api.answerQuestionText(q.id, text), onSuccess: done })
+  const busy = pick.isPending || write.isPending
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    if (typed.trim()) write.mutate(typed.trim())
+  }
+  return (
+    <Card className="flex flex-wrap items-center gap-4 border-explore/40 p-4">
+      <div className="grid size-10 place-items-center rounded-xl bg-explore-soft text-explore"><MessageCircleQuestion size={18} /></div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[14px] font-medium">{q.question}</div>
+        <div className="text-[12.5px] text-ink-3">{t('inbox.asked', { when: relative(q.asked) })}</div>
+      </div>
+      <div role="group" aria-label={q.question} className="flex flex-wrap gap-2">
+        {q.options.map((o, i) => <Button key={o} size="sm" variant={i === 0 ? 'primary' : 'secondary'} disabled={busy} onClick={() => pick.mutate(i)}>{o}</Button>)}
+      </div>
+      <form onSubmit={submit} className="flex w-full gap-2">
+        <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={t('inbox.answerType')} aria-label={t('inbox.answerType')}
+          className="h-9 min-w-0 flex-1 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+        <Button type="submit" size="sm" disabled={busy || !typed.trim()}>{t('inbox.answerSend')}</Button>
+      </form>
+      {write.error && <p role="alert" className="w-full text-[12.5px] text-danger">{(write.error as Error).message}</p>}
+    </Card>
+  )
 }

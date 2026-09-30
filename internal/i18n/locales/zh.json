@@ -36,6 +36,8 @@
   "msg.answer.gone": "这个问题已经回答过或已过期。",
   "msg.answer.noted": "✅ 已记录：{choice}",
   "msg.answer.paused": "已记录：{choice}。{name} 已暂停，在你恢复之前不会据此行动。",
+  "msg.answer.pick": "“{question}”：这不是可选的答案。请用其中一个回答：{options}",
+  "msg.answer.choose": "选择",
   "msg.approval.always": "已允许。以后不会再问。",
   "msg.approval.approve": "已允许。",
   "msg.approval.batch": "本次运行接下来的操作都已允许。",

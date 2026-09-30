@@ -1620,6 +1620,8 @@ export const es: Record<Key, string> & Record<string, string> = {
   'wh.rotate': "Cambiar dirección",
   'rs.byWebhook': "Empieza cuando se llama al webhook de esta rutina (ver abajo).",
   'inbox.asked': "Preguntado {when}",
+  'inbox.answerType': "O escribe tu respuesta",
+  'inbox.answerSend': "Responder",
   'conn.spotifyText': "Ver qué suena, poner una canción, lista o pódcast, pausar y ajustar el volumen. Controlar requiere Spotify Premium.",
   'conn.spotifyRefused': "Spotify rechazó: {reason}",
   'conn.spotifyStep1': "En {link}, crea una app (cualquier nombre) y marca Web API.",

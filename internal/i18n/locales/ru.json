@@ -36,6 +36,8 @@
   "msg.answer.gone": "На этот вопрос уже ответили, или он истёк.",
   "msg.answer.noted": "✅ Записано: {choice}",
   "msg.answer.paused": "Записано: {choice}. {name} на паузе, поэтому ничего не сделает, пока вы её не возобновите.",
+  "msg.answer.pick": "«{question}»: такого варианта нет. Ответьте одним из них: {options}",
+  "msg.answer.choose": "Выбрать",
   "msg.approval.always": "Разрешено. Этот вопрос больше не появится.",
   "msg.approval.approve": "Разрешено.",
   "msg.approval.batch": "Разрешено до конца этого запуска.",

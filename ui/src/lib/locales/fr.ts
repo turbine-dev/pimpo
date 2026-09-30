@@ -1620,6 +1620,8 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'wh.rotate': "Nouvelle adresse",
   'rs.byWebhook': "Démarre quand le webhook de cette routine est appelé (voir plus bas).",
   'inbox.asked': "Demandé {when}",
+  'inbox.answerType': "Ou tapez votre réponse",
+  'inbox.answerSend': "Répondre",
   'conn.spotifyText': "Voir ce qui joue, lancer un titre, une playlist ou un podcast, mettre en pause et régler le volume. Le contrôle demande Spotify Premium.",
   'conn.spotifyRefused': "Spotify a refusé : {reason}",
   'conn.spotifyStep1': "Sur {link}, créez une app (n’importe quel nom) et cochez Web API.",

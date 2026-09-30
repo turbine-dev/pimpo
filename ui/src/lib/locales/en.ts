@@ -1595,6 +1595,8 @@ export const en: Record<Key, string> = {
   'wh.rotate': "New address",
   'rs.byWebhook': "Starts when this routine's webhook is called (see below).",
   'inbox.asked': "Asked {when}",
+  'inbox.answerType': "Or type your answer",
+  'inbox.answerSend': "Answer",
   'conn.spotifyText': "See what's playing, play a song, playlist or podcast, pause and set the volume. Control needs Spotify Premium.",
   'conn.spotifyRefused': "Spotify refused: {reason}",
   'conn.spotifyStep1': "In {link}, create an app (any name) and tick Web API.",
