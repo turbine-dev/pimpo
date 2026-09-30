@@ -56,7 +56,7 @@ Live tests that talk to real services or model CLIs sit behind the `live` build 
 | `desktop/` | the Tauri shell for macOS, Windows, Linux, iOS and Android |
 | `gallery/`, `protection/`, `guard/` | the routine gallery, the protection list and the Guard plugins |
 | `examples/connectors` | complete connectors to copy from |
-| `docs/` | user and developer documentation |
+| `docs/` | user and developer documentation, published on the website by `scripts/site_docs.py` (run it and open `site/docs/index.html` to preview; a new document needs a line in its `SECTIONS`, a new user-guide section a place in `GUIDE`) |
 
 ## RFCs
 
