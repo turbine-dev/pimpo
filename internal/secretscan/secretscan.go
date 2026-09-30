@@ -26,8 +26,6 @@ var keys = []*regexp.Regexp{
 	regexp.MustCompile(`\bglpat-[A-Za-z0-9_-]{20,}`),      // GitLab
 	regexp.MustCompile(`\bxox[abposr]-[A-Za-z0-9-]{10,}`), // Slack
 	regexp.MustCompile(`\bxapp-[A-Za-z0-9-]{10,}`),
-	regexp.MustCompile(`https://hooks\.slack\.com/services/[A-Za-z0-9/_-]+`),
-	regexp.MustCompile(`https://(?:ptb\.|canary\.)?discord(?:app)?\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+`),
 	regexp.MustCompile(`\b(?:AKIA|ASIA)[0-9A-Z]{16}\b`),                                    // AWS
 	regexp.MustCompile(`\bAIza[0-9A-Za-z_-]{35}`),                                          // Google API key
 	regexp.MustCompile(`\bya29\.[0-9A-Za-z_-]{20,}`),                                       // Google OAuth
@@ -45,12 +43,39 @@ var keys = []*regexp.Regexp{
 // "password: hunter22" or "api_key=abc123": only the value goes.
 var labelled = regexp.MustCompile(`(?i)\b(pass(?:word|wd)?|senha|contrase[ñn]a|mot de passe|passwort|parola d'ordine|пароль|api[ _-]?key|access[ _-]?key|secret(?:[ _-]?key)?|client[ _-]?secret|token|bearer|chave(?: da api)?)(\s*[:=]\s*|\s+)("[^"\n]{4,}"|'[^'\n]{4,}'|[^\s"',;]{6,})`)
 
+// anyURL finds links in text; webhookURL then decides, by the exact host,
+// which of them are chat webhooks whose address is itself the secret.
+var anyURL = regexp.MustCompile(`https://[A-Za-z0-9.-]+/[A-Za-z0-9/_-]+`)
+
+// webhookHosts are the hosts whose webhook links carry their own key, and
+// the path those links start with.
+var webhookHosts = map[string]string{
+	"hooks.slack.com":    "/services/",
+	"discord.com":        "/api/webhooks/",
+	"ptb.discord.com":    "/api/webhooks/",
+	"canary.discord.com": "/api/webhooks/",
+	"discordapp.com":     "/api/webhooks/",
+}
+
+func webhookURL(u string) bool {
+	rest := strings.TrimPrefix(u, "https://")
+	host, path, ok := strings.Cut(rest, "/")
+	prefix, known := webhookHosts[strings.ToLower(host)]
+	return ok && known && strings.HasPrefix("/"+path, prefix) && len("/"+path) > len(prefix)
+}
+
 // Redact takes out what looks like a secret and says whether it did.
 func Redact(text string) (string, bool) {
 	out := text
 	for _, re := range keys {
 		out = re.ReplaceAllString(out, Mark)
 	}
+	out = anyURL.ReplaceAllStringFunc(out, func(u string) string {
+		if webhookURL(u) {
+			return Mark
+		}
+		return u
+	})
 	out = labelled.ReplaceAllStringFunc(out, func(m string) string {
 		g := labelled.FindStringSubmatch(m)
 		value := strings.Trim(g[3], `"'`)

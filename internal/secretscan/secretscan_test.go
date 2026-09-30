@@ -18,6 +18,7 @@ func TestRedactsKnownFormats(t *testing.T) {
 		"123456789:AA" + strings.Repeat("h", 33),
 		"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U",
 		"https://hooks.slack.com/services/T000/B000/XXXXXXXX",
+		"https://discord.com/api/webhooks/123456/abcDEF_ghi",
 		"-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA\n-----END OPENSSH PRIVATE KEY-----",
 	} {
 		got, found := Redact("here it is: " + secret + " thanks")
@@ -52,6 +53,8 @@ func TestLeavesOrdinaryText(t *testing.T) {
 		"use the secret recipe for dinner",
 		"skip the desk-top-organizer idea",
 		"https://example.com/docs?page=2",
+		"https://hooks.slack.com.example.com/services/T000/B000",
+		"https://discord.com/channels/123/456",
 	} {
 		if got, found := Redact(s); found {
 			t.Errorf("%q → %q", s, got)
