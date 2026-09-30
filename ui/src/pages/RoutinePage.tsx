@@ -6,6 +6,7 @@ import { Code } from '../components/Code'
 import { capRisk, capabilityLabel } from '../components/RoutineCard'
 import { Button, Card, PageSkeleton, RiskBadge, RunDots } from '../components/ui'
 import { Diff } from '../components/Diff'
+import { MakeWidget } from '../components/MakeWidget'
 import { Publish } from '../components/Publish'
 import { RoutineSettings } from '../components/RoutineSettings'
 import { WebhookCard } from '../components/WebhookCard'
@@ -64,6 +65,7 @@ export function RoutinePage() {
               <RotateCcw size={15} /> {t('routine.resume')}
             </Button>
           )}
+          <MakeWidget id={s.id} shows={s.capabilities.includes('widget.show')} />
           <Publish id={s.id} name={s.name} />
         </div>
       </div>
