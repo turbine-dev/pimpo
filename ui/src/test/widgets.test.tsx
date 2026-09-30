@@ -1,12 +1,13 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { WidgetSnap, WidgetView } from '../lib/api'
 import { LocaleProvider } from '../lib/i18n'
 import { formatValue, WidgetBody, WidgetCard } from '../components/widgets/Widget'
 import { mockFetch, wrap } from './helpers'
 import { Dashboards } from '../pages/Dashboards'
 import { MakeWidget } from '../components/MakeWidget'
+import { FloatingWidget } from '../pages/FloatingWidget'
 
 const view = (snapshot: WidgetSnap, extra: Partial<WidgetView> = {}): WidgetView => ({
   id: 'w_' + snapshot.kind, source: 'routine', kind: snapshot.kind, title: snapshot.title, snapshot, updated: new Date().toISOString(), mine: true, ...extra,
@@ -73,5 +74,22 @@ describe('widgets', () => {
   it('links to the dashboards when the routine already shows a widget', () => {
     wrap(<LocaleProvider locale="pt"><MakeWidget id="dolar" shows /></LocaleProvider>)
     expect(screen.getByRole('link', { name: /Ver nos painéis/ })).toHaveAttribute('href', '/dashboards')
+  })
+
+  it('shows one widget alone in a floating window', async () => {
+    mockFetch({ '/api/widgets/w_metric': view({ kind: 'metric', title: 'Dólar', value: 5.18, unit: 'BRL' }) })
+    wrap(<LocaleProvider locale="pt"><FloatingWidget id="w_metric" /></LocaleProvider>, '/float/w_metric')
+    expect(await screen.findByText('Dólar')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Fechar' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Abrir os painéis' })).toBeInTheDocument()
+  })
+
+  it('offers floating a widget only in the desktop app', async () => {
+    const w = view({ kind: 'metric', title: 'Saldo', value: 10, unit: 'BRL' })
+    const onFloat = vi.fn()
+    wrap(<LocaleProvider locale="pt"><WidgetCard w={w} onFloat={onFloat} floating={false}><WidgetBody w={w} size="small" /></WidgetCard></LocaleProvider>)
+    await userEvent.click(screen.getByRole('button', { name: 'Opções do widget' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /Flutuar na área de trabalho/ }))
+    expect(onFloat).toHaveBeenCalledWith(true)
   })
 })

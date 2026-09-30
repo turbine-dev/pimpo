@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "floating",
+  "description": "A floating widget may only drag its own window, and only when it shows this computer's Pimpo.",
+  "windows": ["float-*"],
+  "remote": { "urls": ["http://127.0.0.1:*", "http://localhost:*"] },
+  "permissions": ["core:window:allow-start-dragging"]
+}

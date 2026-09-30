@@ -21,6 +21,7 @@ import { Chat } from './pages/Chat'
 import { Help } from './pages/Help'
 import { api, ApiError } from './lib/api'
 import { useLiveEvents } from './lib/live'
+import { FloatingWidget } from './pages/FloatingWidget'
 import { Connections } from './pages/Connections'
 import { Cost } from './pages/Cost'
 import { Receipts } from './pages/Receipts'
@@ -63,6 +64,10 @@ export default function App() {
     document.documentElement.style.background = 'transparent'
     document.body.style.overflow = 'hidden'
     return <Mascot standalone onOpen={(path) => { location.pathname !== path && window.location.assign('/open?path=' + encodeURIComponent(path)) }} />
+  }
+  if (location.pathname.startsWith('/float/')) {
+    // The desktop app's floating widget: one widget on a transparent page.
+    return <FloatingWidget id={decodeURIComponent(location.pathname.slice('/float/'.length))} />
   }
   if (state.error instanceof ApiError && state.error.status === 401) return <SignIn />
   // The account screen stays until the person finishes it, passkey step

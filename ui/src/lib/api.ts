@@ -277,6 +277,7 @@ export const api = {
   deleteDashboard: (id: string) => request<{ removed: string }>('DELETE', `/api/dashboards/${id}`),
   dashboardWidgets: (id: string) => request<Record<string, WidgetView | { id: string; hidden: true }>>('GET', `/api/dashboards/${id}/widgets`),
   widgets: () => request<WidgetView[]>('GET', '/api/widgets'),
+  widget: (id: string) => request<WidgetView>('GET', `/api/widgets/${encodeURIComponent(id)}`),
   shareWidget: (id: string, shared: boolean) => request<WidgetView>('PUT', `/api/widgets/${encodeURIComponent(id)}`, { shared }),
   deleteWidget: (id: string) => request<{ removed: string }>('DELETE', `/api/widgets/${encodeURIComponent(id)}`),
   refreshWidget: (id: string, confirm = false) => request<{ run: unknown }>('POST', `/api/widgets/${encodeURIComponent(id)}/refresh`, { confirm }),

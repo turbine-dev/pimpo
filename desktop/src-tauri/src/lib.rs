@@ -412,16 +412,228 @@ mod desktop {
                 if u.path() != "/open" {
                     return true;
                 }
-                let path = u.query_pairs().find(|(k, _)| k == "path").map(|(_, v)| v.to_string()).unwrap_or_else(|| "/".into());
-                if path.starts_with('/') {
-                    if let (Ok(target), Some(w)) = (Url::parse(&format!("{open_base}{path}")), main.get_webview_window("main")) {
-                        let _ = w.navigate(target);
-                    }
-                }
-                show(&main);
+                open_in_main(&main, &open_base, u);
                 false
             })
             .build();
+    }
+
+    // Floating widgets: any widget of the person's dashboards can float on
+    // the desktop in a small window of its own, above the other windows and
+    // on every desktop. Each keeps its place and size, the list survives a
+    // restart, and they all close while the app is locked.
+
+    /// Float is a floating widget and where it was left, in logical points.
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Float {
+        pub id: String,
+        pub x: f64,
+        pub y: f64,
+        pub w: f64,
+        pub h: f64,
+    }
+
+    const FLOAT_W: f64 = 300.0;
+    const FLOAT_H: f64 = 210.0;
+
+    /// float_id accepts a widget id as the dashboards make them: short, and
+    /// letters, digits and a few separators only.
+    pub fn float_id(id: &str) -> bool {
+        !id.is_empty() && id.len() <= 120 && id.chars().all(|c| c.is_ascii_alphanumeric() || "_-:.".contains(c))
+    }
+
+    /// float_label is the window's label for a widget. Labels allow fewer
+    /// characters than ids, so the id is written in hex.
+    pub fn float_label(id: &str) -> String {
+        format!("float-{}", id.bytes().map(|b| format!("{b:02x}")).collect::<String>())
+    }
+
+    pub fn float_of_label(label: &str) -> Option<String> {
+        let hex = label.strip_prefix("float-")?;
+        if hex.len() % 2 != 0 {
+            return None;
+        }
+        let bytes: Option<Vec<u8>> = (0..hex.len()).step_by(2).map(|i| u8::from_str_radix(&hex[i..i + 2], 16).ok()).collect();
+        String::from_utf8(bytes?).ok().filter(|id| float_id(id))
+    }
+
+    /// parse_floats reads the kept list, one widget per line, skipping
+    /// anything it does not understand.
+    pub fn parse_floats(text: &str) -> Vec<Float> {
+        text.lines()
+            .filter_map(|l| {
+                let p: Vec<&str> = l.split('\t').collect();
+                let [id, x, y, w, h] = p[..] else { return None };
+                let f = Float { id: id.to_string(), x: x.parse().ok()?, y: y.parse().ok()?, w: w.parse().ok()?, h: h.parse().ok()? };
+                (float_id(&f.id) && f.w >= 120.0 && f.h >= 90.0).then_some(f)
+            })
+            .collect()
+    }
+
+    pub fn format_floats(list: &[Float]) -> String {
+        list.iter().map(|f| format!("{}\t{:.0}\t{:.0}\t{:.0}\t{:.0}\n", f.id, f.x, f.y, f.w, f.h)).collect()
+    }
+
+    /// next_spot places a new floating widget at the top right of the
+    /// screen, below the ones already there.
+    pub fn next_spot(screen_w: f64, taken: usize) -> (f64, f64) {
+        (screen_w - FLOAT_W - 24.0, 48.0 + (taken % 4) as f64 * (FLOAT_H + 16.0))
+    }
+
+    fn floats_file(app: &AppHandle) -> Option<std::path::PathBuf> {
+        app.path().app_config_dir().ok().map(|d| d.join("floating-widgets"))
+    }
+
+    fn floats(app: &AppHandle) -> Vec<Float> {
+        floats_file(app).and_then(|f| std::fs::read_to_string(f).ok()).map(|t| parse_floats(&t)).unwrap_or_default()
+    }
+
+    fn keep_floats(app: &AppHandle, list: &[Float]) {
+        if let Some(f) = floats_file(app) {
+            f.parent().map(std::fs::create_dir_all);
+            let _ = std::fs::write(f, format_floats(list));
+        }
+        if let Some(w) = app.get_webview_window("main") {
+            sync_floats(app, &w);
+        }
+    }
+
+    /// sync_floats tells a page which widgets float, as for the cat.
+    fn sync_floats(app: &AppHandle, w: &tauri::WebviewWindow) {
+        let ids: Vec<String> = floats(app).into_iter().map(|f| f.id).collect();
+        let list = serde_json::to_string(&ids).unwrap_or_else(|_| "[]".into());
+        let _ = w.eval(format!("try {{ localStorage.setItem('pimpo.floating', {list:?}); window.dispatchEvent(new Event('pimpo:floating')) }} catch (e) {{}}"));
+    }
+
+    /// set_float starts or stops floating a widget.
+    pub fn set_float(app: &AppHandle, id: &str, on: bool) {
+        if !float_id(id) {
+            return;
+        }
+        let mut list = floats(app);
+        if on {
+            if !list.iter().any(|f| f.id == id) {
+                let screen_w = app.primary_monitor().ok().flatten().map(|m| m.size().to_logical::<f64>(m.scale_factor()).width).unwrap_or(1280.0);
+                let (x, y) = next_spot(screen_w, list.len());
+                list.push(Float { id: id.to_string(), x, y, w: FLOAT_W, h: FLOAT_H });
+                keep_floats(app, &list);
+            }
+            if !needs_unlock(app) {
+                open_float(app, list.iter().find(|f| f.id == id).unwrap());
+            }
+        } else {
+            list.retain(|f| f.id != id);
+            keep_floats(app, &list);
+            if let Some(w) = app.get_webview_window(&float_label(id)) {
+                let _ = w.close();
+            }
+        }
+    }
+
+    /// show_floats opens every floating widget, or closes them all (without
+    /// forgetting them) while the app is locked.
+    pub fn show_floats(app: &AppHandle, on: bool) {
+        for f in floats(app) {
+            match app.get_webview_window(&float_label(&f.id)) {
+                Some(w) if !on => {
+                    let _ = w.close();
+                }
+                None if on => open_float(app, &f),
+                _ => {}
+            }
+        }
+    }
+
+    /// remember_float keeps where a floating widget is after it moves or
+    /// is resized.
+    pub fn remember_float(window: &tauri::Window) {
+        let Some(id) = float_of_label(window.label()) else { return };
+        let (Ok(pos), Ok(size), Ok(scale)) = (window.outer_position(), window.inner_size(), window.scale_factor()) else { return };
+        let app = window.app_handle();
+        let mut list = floats(app);
+        let Some(f) = list.iter_mut().find(|f| f.id == id) else { return };
+        f.x = pos.x as f64 / scale;
+        f.y = pos.y as f64 / scale;
+        f.w = (size.width as f64 / scale).max(120.0);
+        f.h = (size.height as f64 / scale).max(90.0);
+        if let Some(file) = floats_file(app) {
+            let _ = std::fs::write(file, format_floats(&list));
+        }
+    }
+
+    /// open_in_main follows a /open?path= link from a small window in the
+    /// main one.
+    fn open_in_main(app: &AppHandle, base: &str, u: &Url) {
+        let path = u.query_pairs().find(|(k, _)| k == "path").map(|(_, v)| v.to_string()).unwrap_or_else(|| "/".into());
+        if path.starts_with('/') && !path.starts_with("//") {
+            if let (Ok(target), Some(w)) = (Url::parse(&format!("{base}{path}")), app.get_webview_window("main")) {
+                let _ = w.navigate(target);
+            }
+        }
+        show(app);
+    }
+
+    fn open_float(app: &AppHandle, f: &Float) {
+        let label = float_label(&f.id);
+        if app.get_webview_window(&label).is_some() || saved_remote(app).is_some() {
+            return;
+        }
+        let Some(base) = app.try_state::<Local>().and_then(|l| l.0.lock().unwrap().clone()) else { return };
+        let Ok(url) = Url::parse(&format!("{base}/float/{}", f.id)) else { return };
+        let (mut x, mut y) = (f.x, f.y);
+        // A place no monitor contains (one since unplugged) starts over.
+        if !on_screen(app, x, y, f.w, f.h) {
+            let screen_w = app.primary_monitor().ok().flatten().map(|m| m.size().to_logical::<f64>(m.scale_factor()).width).unwrap_or(1280.0);
+            (x, y) = next_spot(screen_w, 0);
+        }
+        let main = app.clone();
+        let id = f.id.clone();
+        let _ = WebviewWindowBuilder::new(app, &label, WebviewUrl::External(url))
+            .title("Pimpo")
+            .transparent(true)
+            .decorations(false)
+            .shadow(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .resizable(true)
+            .min_inner_size(160.0, 110.0)
+            .visible_on_all_workspaces(true)
+            .inner_size(f.w, f.h)
+            .position(x, y)
+            .on_navigation(move |u| {
+                // A floating widget only ever shows this computer's Pimpo.
+                if !same_origin(&base, u) {
+                    return false;
+                }
+                match u.path() {
+                    "/desktop/float" => {
+                        set_float(&main, &id, false);
+                        false
+                    }
+                    "/open" => {
+                        open_in_main(&main, &base, u);
+                        false
+                    }
+                    p => p.starts_with("/float/"),
+                }
+            })
+            .build();
+    }
+
+    /// watch_lock closes the floating widgets and the cat once the app
+    /// locks again, and they come back with the unlock.
+    pub fn watch_lock(app: &AppHandle) {
+        let app = app.clone();
+        std::thread::spawn(move || loop {
+            std::thread::sleep(Duration::from_secs(15));
+            if needs_unlock(&app) {
+                let a = app.clone();
+                let _ = app.run_on_main_thread(move || {
+                    show_floats(&a, false);
+                    mascot(&a, false);
+                });
+            }
+        });
     }
 
     fn remote_file(app: &AppHandle) -> Option<std::path::PathBuf> {
@@ -485,6 +697,7 @@ mod desktop {
         }
         std::fs::write(&file, format!("{link}\n{home}\n")).map_err(|e| e.to_string())?;
         mascot(&app, false);
+        show_floats(&app, false);
         *app.state::<Local>().0.lock().unwrap() = None;
         stop(&app);
         Ok(())
@@ -533,6 +746,14 @@ mod desktop {
                         set_mascot(&nav, on);
                         false
                     }
+                    // Floating a widget is asked for the same way.
+                    "/desktop/float" => {
+                        let on = u.query_pairs().any(|(k, v)| k == "on" && v == "1");
+                        if let Some((_, id)) = u.query_pairs().find(|(k, _)| k == "widget") {
+                            set_float(&nav, &id, on);
+                        }
+                        false
+                    }
                     // Updates are asked for the same way. The page can only
                     // ask: what gets installed is the signed update the app
                     // itself found.
@@ -559,6 +780,7 @@ mod desktop {
                 if matches!(p.event(), tauri::webview::PageLoadEvent::Finished) {
                     sync_mascot(&loaded, &w);
                     sync_update(&loaded, &w);
+                    sync_floats(&loaded, &w);
                 }
             })
             .on_new_window(move |url, _| {
@@ -603,12 +825,17 @@ mod desktop {
                     if mascot_wanted(&shown) {
                         mascot(&shown, true);
                     }
+                    show_floats(&shown, true);
                 });
             }
         });
     }
 
     fn reveal(app: &AppHandle) {
+        // Shown again, the window is no longer counting towards the relock.
+        if let Some(lock) = app.try_state::<Lock>() {
+            *lock.hidden_at.lock().unwrap() = None;
+        }
         if let Some(w) = app.get_webview_window("main") {
             let _ = w.show();
             let _ = w.unminimize();
@@ -774,10 +1001,15 @@ mod desktop {
                     }
                     *handle.state::<Local>().0.lock().unwrap() = Some(page);
                     follow_language(handle.clone());
-                    if mascot_wanted(&handle) && !needs_unlock(&handle) {
-                        // After the main window has signed in, so the cat shares its session.
+                    if !needs_unlock(&handle) {
+                        // After the main window has signed in, so the cat and the
+                        // widgets share its session.
                         std::thread::sleep(Duration::from_millis(1500));
-                        mascot(&handle, true);
+                        if mascot_wanted(&handle) {
+                            mascot(&handle, true);
+                        }
+                        let shown = handle.clone();
+                        let _ = handle.run_on_main_thread(move || show_floats(&shown, true));
                     }
                     return;
                 }
@@ -1124,6 +1356,12 @@ mod desktop {
             }
             return;
         }
+        if window.label().starts_with("float-") {
+            if let WindowEvent::Moved(_) | WindowEvent::Resized(_) = ev {
+                remember_float(window);
+            }
+            return;
+        }
         if window.label() != "main" {
             return;
         }
@@ -1139,7 +1377,7 @@ mod desktop {
 
 #[cfg(all(test, desktop))]
 mod tests {
-    use super::desktop::{check_link, language, same_origin, update_endpoint, version_endpoint, word};
+    use super::desktop::{check_link, float_id, float_label, float_of_label, format_floats, language, next_spot, parse_floats, same_origin, update_endpoint, version_endpoint, word, Float};
     use tauri::Url;
 
     #[test]
@@ -1150,6 +1388,28 @@ mod tests {
         } else {
             assert_eq!(page, "http://127.0.0.1:7788");
         }
+    }
+
+    #[test]
+    fn floating_widgets_keep_their_place_and_only_take_widget_ids() {
+        for id in ["w_1a2b", "builtin:needs", "status:dolar-hora"] {
+            assert!(float_id(id));
+            let label = float_label(id);
+            assert!(label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'), "{label}");
+            assert_eq!(float_of_label(&label).as_deref(), Some(id));
+        }
+        for bad in ["", "../x", "a b", "w?x=1", "<script>"] {
+            assert!(!float_id(bad), "{bad}");
+        }
+        assert_eq!(float_of_label("float-zz"), None);
+        assert_eq!(float_of_label("mascot"), None);
+        let list = vec![Float { id: "w_1".into(), x: 10.0, y: 20.0, w: 300.0, h: 210.0 }, Float { id: "builtin:today".into(), x: 400.0, y: 20.0, w: 320.0, h: 240.0 }];
+        assert_eq!(parse_floats(&format_floats(&list)), list);
+        assert_eq!(parse_floats("w_1\t1\t2\n../x\t1\t2\t300\t200\nw_2\t1\t2\t10\t10\n"), vec![]);
+        let (x0, y0) = next_spot(1440.0, 0);
+        let (x1, y1) = next_spot(1440.0, 1);
+        assert_eq!(x0, x1);
+        assert!(y1 > y0 && x0 > 0.0);
     }
 
     #[test]
@@ -1223,6 +1483,7 @@ pub fn run() {
             desktop::lock_at_start(app.handle());
             desktop::start(app.handle())?;
             desktop::check_periodically(app.handle());
+            desktop::watch_lock(app.handle());
             Ok(())
         });
 
