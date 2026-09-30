@@ -15,6 +15,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/llm"
 	"github.com/turbine-dev/pimpo/internal/routine"
 	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 func (ta *testApp) as(t *testing.T, token, method, path, ctype string, body []byte) (int, map[string]any) {
@@ -50,7 +51,7 @@ func js(v any) jsonText { b, _ := json.Marshal(v); return b }
 func waitRuns(t *testing.T, ta *testApp, id string, n int) {
 	t.Helper()
 	for i := 0; i < 100; i++ {
-		if runs, _ := ta.Store.Runs(context.Background(), id, 10); len(runs) >= n && runs[0].Outcome != "" {
+		if runs, _ := ta.Store.Runs(context.Background(), id, 10); len(runs) >= n && runs[0].Outcome != "" && runs[0].Outcome != store.RunRunning {
 			if runs[0].Outcome != "ok" {
 				t.Fatalf("%s: %s %s", id, runs[0].Outcome, runs[0].Error)
 			}

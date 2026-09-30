@@ -13,6 +13,6 @@ python3 prepare.py                        # train/valid/test; three question typ
 .venv/bin/python serve.py Qwen/Qwen3-0.6B adapters 11500
 ```
 
-Then pick **Modelo local** in Pimpo's settings. The results of the comparison with Jev and Claude are in [results/README.md](results/README.md).
+Then pick **Local model** in Pimpo's settings. The results of the comparison with Jev and Claude are in [results/README.md](results/README.md).
 
 Labels come from Claude, not from Jev, so the model is not trained on a vendor's outputs it may not be trained on.

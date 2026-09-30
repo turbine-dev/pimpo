@@ -35,9 +35,9 @@ Fixes for serious issues ship within 7 days of a report, on stable and on every 
 
 ## Updates
 
-**Desktop app.** It looks for a new version when it starts and every six hours, from the latest published release, or from the `channel-beta` release for people who turned on **Versões beta** in **Ajustes › Geral**. An update found shows at the top of the app and in the menu bar; installing it restarts Pimpo. Updates are signed: the app carries the project's public key (`plugins.updater.pubkey` in `desktop/src-tauri/tauri.conf.json`) and refuses anything not signed with the private one.
+**Desktop app.** It looks for a new version when it starts and every six hours, from the latest published release, or from the `channel-beta` release for people who turned on **Beta versions** in **Settings › General**. An update found shows at the top of the app and in the menu bar; installing it restarts Pimpo. Updates are signed: the app carries the project's public key (`plugins.updater.pubkey` in `desktop/src-tauri/tauri.conf.json`) and refuses anything not signed with the private one.
 
-Before installing, the app remembers the version it leaves. **Voltar para a versão anterior** then asks Pimpo to restore, on its next start, the snapshot the new version took of the data when it first started (`before-VERSION`), and installs the earlier version again.
+Before installing, the app remembers the version it leaves. **Go back to** the previous version then asks Pimpo to restore, on its next start, the snapshot the new version took of the data when it first started (`before-VERSION`), and installs the earlier version again.
 
 **Command line and servers.** `pimpo update` checks and installs the latest release for this system, verified against the release's checksums, and `pimpo update --rollback` puts the previous binary back (see [CONFIGURATION.md](CONFIGURATION.md#running-pimpo)).
 

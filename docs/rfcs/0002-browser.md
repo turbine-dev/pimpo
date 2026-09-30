@@ -1,7 +1,7 @@
 # RFC 0002: A browser the agent drives
 
 - Author: denerFernandes
-- Status: accepted (behind **Laboratório**, off by default)
+- Status: accepted (behind **Labs**, off by default)
 - Discussion: roadmap item 4.1 ([ROADMAP.md](../ROADMAP.md))
 
 ## Problem
@@ -24,7 +24,7 @@ Capabilities that drive Pimpo's own Chrome, scoped by site like `web.read` (`bro
 - **Scope**: every page a call reaches must be on a host the manifest (or the exploration's approvals) names; a link or redirect elsewhere is refused.
 - **Risk**: pressing a button can do anything, so it is irreversible and asks first by default, naming the button, the page and what was typed. Reading and following links change nothing.
 - **Explorations** read and navigate for real; typing and clicking are rehearsed, as for any change, and the compiled routine does them, with approval as the rules say.
-- **Logins**: Pimpo's browser has its own profile, not the owner's. The owner signs in to the sites they want, once, in a visible window of that profile (**Ajustes › Laboratório › Abrir o navegador do Pimpo**); routines then use those sessions. The profile stays in the data folder and travels with backups like the vault does not: it is excluded from exports.
+- **Logins**: Pimpo's browser has its own profile, not the owner's. The owner signs in to the sites they want, once, in a visible window of that profile (**Settings › Labs › Open Pimpo’s browser**); routines then use those sessions. The profile stays in the data folder and travels with backups like the vault does not: it is excluded from exports.
 - **Content**: everything on a page is data. The text returned is capped and marked as the page's; the protection list's domains and patterns apply to every call.
 - **Isolation**: one headless Chrome, one tab per run, closed after it; no downloads; pages cannot open new windows.
 

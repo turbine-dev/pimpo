@@ -2,7 +2,7 @@
 
 Domains that receive stolen data, malicious skills and dangerous action patterns, reported by people who run Pimpo and reviewed before they get in. `list.json` is signed by the maintainers. Every Pimpo downloads it daily and refuses anything unsigned, tampered with, or older than what it already has. The version shipped inside the binary works offline.
 
-When something on the list is hit, Pimpo blocks it, and the receipt says "Proteção da comunidade" with the reason and how many people reported it. The Guard plugins apply the same list to OpenClaw and Hermes.
+When something on the list is hit, Pimpo blocks it, and the receipt says "Community protection" with the reason and how many people reported it. The Guard plugins apply the same list to OpenClaw and Hermes.
 
 ## Proposing an entry
 

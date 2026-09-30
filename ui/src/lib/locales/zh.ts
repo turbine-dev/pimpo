@@ -596,6 +596,9 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'admin.passkeyTitle': "添加通行密钥",
   'admin.passkeyText': "下次用本设备的锁（Touch ID、面容 ID、Windows Hello）打开 Pimpo，而不是链接。",
   'admin.later': "以后再说",
+  'shell.role.owner': "管理员",
+  'shell.role.member': "成员",
+  'shell.role.guest': "访客",
   'memory.confirm': '确认',
   'memory.forget': '忘记：{text}',
 

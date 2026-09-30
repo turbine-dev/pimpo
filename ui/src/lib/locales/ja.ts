@@ -596,6 +596,9 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'admin.passkeyTitle': "パスキーを追加",
   'admin.passkeyText': "次回からはリンクではなく、この端末のロック（Touch ID、Face ID、Windows Hello）で Pimpo を開けます。",
   'admin.later': "あとで",
+  'shell.role.owner': "管理者",
+  'shell.role.member': "メンバー",
+  'shell.role.guest': "ゲスト",
   'memory.confirm': '確認',
   'memory.forget': '忘れる：{text}',
 

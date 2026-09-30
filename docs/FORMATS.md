@@ -1,6 +1,6 @@
 # Data formats
 
-From v1.0 these formats are frozen. A newer Pimpo reads data written by any older one, and every upgrade takes a snapshot first (`before-VERSION`, brought back by **Voltar para a versão anterior** or `pimpo restore`). A change to a format adds; it does not rename, remove or reinterpret.
+From v1.0 these formats are frozen. A newer Pimpo reads data written by any older one, and every upgrade takes a snapshot first (`before-VERSION`, brought back by **Go back to** the previous version or `pimpo restore`). A change to a format adds; it does not rename, remove or reinterpret.
 
 The promise is tested: `internal/compat` keeps, for each frozen format, data written by the version that froze it (`internal/compat/testdata/<format>/`), and every build opens it. Those files are never edited. A new format gets a new folder, written with `PIMPO_WRITE_COMPAT=1 go test ./internal/compat -run WriteFixtures`, while the old folders stay.
 

@@ -596,6 +596,9 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'admin.passkeyTitle': "패스키 추가",
   'admin.passkeyText': "다음부터는 링크 대신 이 기기의 잠금(Touch ID, Face ID, Windows Hello)으로 Pimpo를 여세요.",
   'admin.later': "나중에",
+  'shell.role.owner': "관리자",
+  'shell.role.member': "구성원",
+  'shell.role.guest': "게스트",
   'memory.confirm': '확인',
   'memory.forget': '잊기: {text}',
 

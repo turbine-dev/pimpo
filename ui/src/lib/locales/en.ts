@@ -596,6 +596,9 @@ export const en: Record<Key, string> = {
   'admin.passkeyTitle': "Add a passkey",
   'admin.passkeyText': "Next time, open Pimpo with this device's lock (Touch ID, Face ID, Windows Hello) instead of a link.",
   'admin.later': "Not now",
+  'shell.role.owner': "Administrator",
+  'shell.role.member': "Member",
+  'shell.role.guest': "Guest",
   'memory.confirm': 'Confirm',
   'memory.forget': 'Forget: {text}',
 

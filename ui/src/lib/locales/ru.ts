@@ -616,6 +616,9 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'admin.passkeyTitle': "Добавьте ключ доступа",
   'admin.passkeyText': "В следующий раз открывайте Pimpo блокировкой этого устройства (Touch ID, Face ID, Windows Hello), а не ссылкой.",
   'admin.later': "Не сейчас",
+  'shell.role.owner': "Администратор",
+  'shell.role.member': "Участник",
+  'shell.role.guest': "Гость",
   'memory.confirm': 'Подтвердить',
   'memory.forget': 'Забыть: {text}',
 

@@ -9,13 +9,13 @@ No version has been tagged yet. The first release will include everything built 
 ### Added
 
 - JSON connectors: a `connector.json` that describes HTTP requests, with no program, installable as a single file.
-- OpenAPI import (**Conexões › Por OpenAPI** and `pimpo connector openapi`): turns a REST API's description into a JSON connector.
+- OpenAPI import (**Connections › From OpenAPI** and `pimpo connector openapi`): turns a REST API's description into a JSON connector.
 - Desktop builds for macOS (Apple Silicon and Intel), Windows and Linux (x64 and arm64) on every release, and on demand.
 - Webhooks that start a routine, routines that ask the owner and wait for the answer, and reminders.
 - Google Sheets, Apple (Reminders, Notes, Calendar, Music…), Spotify, Perplexity search and a web page reader.
 - Audio: routines can send audio (for example a news podcast), with cloud voices (OpenAI, ElevenLabs) or local ones (Kokoro, Piper).
 - Local models downloaded by Pimpo itself from a pinned catalog, with progress: voices, Whisper transcription and Ollama models.
-- **Ouvir** in chat streams sentence by sentence and keeps a cache.
+- **Listen** in chat streams sentence by sentence and keeps a cache.
 - Automatic model choice and thinking level per chat, job and routine; Codex, opencode and subscription plans counted apart from money spent.
 - Setup without Claude Code: the welcome screen sets every job up from what the computer has (Claude Code, Codex, opencode, Ollama, LM Studio) or from one API key, and tests it.
 - `pimpo report`: how routines did in real use, including silent failures, late runs and time Pimpo was off.
@@ -27,7 +27,7 @@ No version has been tagged yet. The first release will include everything built 
 - The **liberal** safety level let irreversible actions through without asking (a GitHub comment, clearing a sheet, imported tools). It now asks before anything irreversible except deleting email, which moves it to the trash, and installs that chose it are upgraded.
 - Repairs are told the error of the last failed run.
 - Routines started only by a webhook no longer log a false "invalid schedule" failure.
-- An answer to a question no longer runs a paused routine; **Rodar agora** keeps a paused routine paused.
+- An answer to a question no longer runs a paused routine; **Run now** keeps a paused routine paused.
 - The time a run waits for approval no longer counts toward its 15 minutes.
 - Saving settings with only some fields keeps the others; the judge uses the configured Ollama address; the home network follows the port of `--addr`.
 - opencode runs that start together no longer fail on a locked database.

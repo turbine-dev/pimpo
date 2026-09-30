@@ -40,9 +40,9 @@ Found while writing [ROUTINES.md](ROUTINES.md) and [CONFIGURATION.md](CONFIGURAT
 - routines started only by a webhook log a false "invalid schedule" failure on every reschedule;
 - answering a question runs a paused routine, where a webhook refuses with 409;
 - approvals wait 30 minutes while a scheduled run is cancelled after 15;
-- **Rodar agora** activates a paused routine;
+- **Run now** activates a paused routine;
 - `pimpo routines import --data DIR` fails when DIR does not exist;
-- the over-budget message points to **Custo**, but the limit is set in **Ajustes › Geral**;
+- the over-budget message points to **Cost**, but the limit is set in **Settings › General**;
 - the provider validation message lists 4 providers of 13;
 - the judge ignores the configured Ollama address;
 - `PUT /api/settings` empties the fields it does not receive;
@@ -187,7 +187,7 @@ These three items give the agent the broadest new powers on this roadmap. Jev ra
 
 ### 4.3 Learning the owner · M
 
-- A model of the owner's preferences (tone, what matters, who is important, times) built from corrections, choices and ignored suggestions, kept in memory with provenance, readable and editable in **Memória**.
+- A model of the owner's preferences (tone, what matters, who is important, times) built from corrections, choices and ignored suggestions, kept in memory with provenance, readable and editable in **Memory**.
 - It shapes answers, suggestions (3.3) and the judge's prompts; it never changes rules or capabilities.
 
 **Done when** in blind comparisons the owner prefers answers with it over answers without it, and every learned preference can be traced to where it came from and removed.

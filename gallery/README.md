@@ -17,7 +17,7 @@ A routine declares what people may change in `manifest.params`: a city, a limit,
 
 ## Proposing a routine
 
-1. In Pimpo, open the routine and choose **Publicar na galeria**. You get a signed entry and your author key.
+1. In Pimpo, open the routine and choose **Publish**. You get a signed entry and your author key.
 2. Add the routine as `routines/<id>.json` and your author entry to `index.json`, or run
    `pimpo gallery build --key <your key file> --author <id> --name "Your Name" .`
 3. Open a pull request. CI runs `pimpo gallery verify index.json`, and a maintainer reads the code. Routines that send anything to other people (e-mail, WhatsApp to others) always get a human review.

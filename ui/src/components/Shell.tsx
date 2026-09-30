@@ -125,15 +125,19 @@ function UserMenu({ onSystem, theme, toggleTheme }: { onSystem: () => void; them
   const ref = useOutside(open, () => setOpen(false))
   const go = (to: string) => () => { setOpen(false); nav(to) }
   const role = useRole()
+  // Who is signed in here, as the server knows them.
+  const me: { name?: string } = useQuery({ queryKey: ['state'], queryFn: api.state }).data ?? {}
   const item = 'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-[13px] text-ink-2 hover:bg-sunken hover:text-ink'
   return (
     <div ref={ref} className="relative flex-1">
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu" aria-label={t('shell.menu')}
         className="flex w-full items-center gap-2.5 rounded-[10px] px-2 py-1.5 text-left hover:bg-sunken">
-        <Logo size={26} />
+        {me.name ? (
+          <span aria-hidden className="grid size-[26px] shrink-0 place-items-center rounded-full bg-ink text-[12px] font-semibold text-bg">{me.name.trim()[0]?.toUpperCase()}</span>
+        ) : <Logo size={26} />}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-medium">Pimpo</span>
-          <span className="block truncate text-[11.5px] text-ink-3">{t('shell.thisComputer')}</span>
+          <span className="block truncate text-[13px] font-medium">{me.name || 'Pimpo'}</span>
+          <span className="block truncate text-[11.5px] text-ink-3">{t(`shell.role.${role}`)}</span>
         </span>
         <ChevronDown size={14} className="text-ink-3" />
       </button>
@@ -190,7 +194,6 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
         <div className="mb-4 flex items-center gap-2.5 px-2 in-data-[desktop=mac]:mt-7">
           <Logo />
           <span className="flex-1 text-[15px] font-semibold tracking-tight">Pimpo</span>
-          <Link to="/" aria-label={t('chat.new')} title={t('chat.new')} className="grid size-8 place-items-center rounded-lg text-ink-2 hover:bg-sunken hover:text-ink"><Plus size={17} /></Link>
         </div>
         <nav className="flex flex-col gap-px" aria-label={t('shell.main')}>
           {primary.filter((it) => canOpen(it.to, role)).map((it) => (

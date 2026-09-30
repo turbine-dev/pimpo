@@ -93,7 +93,7 @@ A `POST` that only reads (many APIs search that way) may be declared `read` with
 
 Most REST APIs publish an OpenAPI (Swagger) description, and Pimpo can write the `connector.json` from it:
 
-- **Conexões › Por OpenAPI**: give the address of the description (`.json` or `.yaml`) or paste it. Pimpo lists the operations; choose the ones to include (at most 100) and each one's risk, fill in the keys, and install. Reads (`GET`) start as `read`; everything else starts as `irreversible`, so it asks first until you decide otherwise.
+- **Connections › From OpenAPI**: give the address of the description (`.json` or `.yaml`) or paste it. Pimpo lists the operations; choose the ones to include (at most 100) and each one's risk, fill in the keys, and install. Reads (`GET`) start as `read`; everything else starts as `irreversible`, so it asks first until you decide otherwise.
 - Or from the terminal, which writes a folder you can review and edit before installing:
 
 ```bash
@@ -105,7 +105,7 @@ pimpo connector check ./petstore
 What the import does:
 
 - OpenAPI 3.x and Swagger 2.0, JSON or YAML; local `$ref`s are followed. The service's address comes from `servers` (or `host` and `basePath`), resolved against the description's address when relative.
-- Keys come from the security schemes: an API key in a header or the query, a bearer token (also for OAuth, where you paste a token; Pimpo does not run the sign-in) or Basic (`user:password` in base64). When the description declares none but the API needs one, **Esta API pede uma chave** (or `--header Authorization`) adds a header whose whole value is a key.
+- Keys come from the security schemes: an API key in a header or the query, a bearer token (also for OAuth, where you paste a token; Pimpo does not run the sign-in) or Basic (`user:password` in base64). When the description declares none but the API needs one, **This API needs a key the description does not declare** (or `--header Authorization`) adds a header whose whole value is a key.
 - Path, query and header parameters and the JSON or form body become the capability's arguments, with their schema and descriptions; `readOnly` fields are left out of the body.
 - Operations that upload files or need cookies are listed as unsupported.
 - The operation's summary and the shape of its answer (`[{id, name, status}]`) become what the model reads; a list answer is capped at 50 items.
@@ -126,27 +126,27 @@ TIDES_KEY=... pimpo connector check ./tides
 
 No part of Pimpo needs recompiling, and it does not need a restart either. Two ways to install:
 
-- In **Conexões › Instalar conector (.json · .zip)**, send the `connector.json` itself (JSON connectors) or a zip with `connector.json` at its root (or inside one folder). Pimpo checks the manifest before anything is installed.
-- Or copy the folder yourself and choose **Recarregar a pasta de conectores**:
+- In **Connections › Install connector (.json · .zip)**, send the `connector.json` itself (JSON connectors) or a zip with `connector.json` at its root (or inside one folder). Pimpo checks the manifest before anything is installed.
+- Or copy the folder yourself and choose **Reload the connectors folder**:
 
 ```bash
 cp -r ./tides ~/.pimpo/connectors/
 ```
 
-The connector shows up in Connections with its capabilities, their risk, fields for the env vars it declares, and a **Testar** button that runs the contract. Connectors travel with **Exportar tudo**, like everything else.
+The connector shows up in Connections with its capabilities, their risk, fields for the env vars it declares, and a **Test** button that runs the contract. Connectors travel with **Export and import everything**, like everything else.
 
 ## Adding an existing MCP server
 
 Any MCP server works without writing a `connector.json`:
 
-- **Conexões › Explorar** searches the [official MCP registry](https://registry.modelcontextprotocol.io). Servers published as npm or PyPI packages run on this computer through `npx` or `uvx`, pinned to the listed version; remote servers are reached over streamable HTTP, and only over https.
-- **Conexões › Adicionar manualmente** takes a command (`npx -y @company/server@1.2.3`) or an https address, with env vars or headers.
+- **Connections › Explore** searches the [official MCP registry](https://registry.modelcontextprotocol.io). Servers published as npm or PyPI packages run on this computer through `npx` or `uvx`, pinned to the listed version; remote servers are reached over streamable HTTP, and only over https.
+- **Connections › Add by hand** takes a command (`npx -y @company/server@1.2.3`) or an https address, with env vars or headers.
 
 Pimpo connects, lists the tools and suggests a risk for each from the server's own hints (`readOnlyHint`, `destructiveHint`); a tool without hints counts as irreversible, so Pimpo asks before using it. The owner picks which tools to include and can change any risk before installing. Pimpo writes the `connector.json` itself (marked `imported`), keeps env values and headers in the vault, and from then on:
 
 - each tool is a capability named `<name>.<tool>` that goes through rules and approvals like any other;
 - tools the server adds later stay hidden, and a tool that disappears stops the connector until it is added again and reviewed;
-- **Desinstalar** removes the folder, the capabilities and the stored keys.
+- **Uninstall** removes the folder, the capabilities and the stored keys.
 
 Registry servers are third-party code that Pimpo has not verified. Local ones run with a clean environment that holds only the variables you filled in.
 
