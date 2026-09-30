@@ -71,6 +71,8 @@
   "msg.pair.linkBad": "코드가 맞지 않아요. 페어링 코드는 “연결”에서 확인하세요.",
   "msg.pair.owner": "안녕하세요, {name}님! Pimpo가 연결됐어요. 👋\n\n매주 하는 일을 부탁해 보세요. 예를 들면:\n• “매일 오전 7시에 내 일정과 중요한 이메일 보내 줘”\n\n처음에는 지켜보는 앞에서 Pimpo가 해요. 그다음부터는 알아서 해요.",
   "msg.pair.person": "안녕하세요, {name}님! 이제 집의 Pimpo와 대화할 수 있어요. 매주 하는 일을 부탁해 보세요.",
+  "msg.miniapp.button": "대시보드",
+  "msg.miniapp.open": "대시보드 열기",
   "msg.pair.whatsapp": "안녕하세요! Pimpo가 WhatsApp에도 연결됐어요. 매주 하는 일을 부탁해 보세요.",
   "msg.pair.whatsappBad": "코드가 맞지 않아요. “연결” 또는 “사람”에서 새 코드를 받으세요.",
   "msg.pair.whatsappPerson": "안녕하세요, {name}님! 이제 WhatsApp에서 집의 Pimpo와 대화할 수 있어요.",

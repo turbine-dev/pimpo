@@ -150,6 +150,17 @@ Open **Phone** on the paired phone and choose what it shares: **location** (arri
 - **Photos.** **Take a photo** sends a photo of a bill, a receipt or a document; the text is read on your computer (Tesseract) and the photo stays there, under `phone/photos/`.
 - **Routines.** Ask for them as usual: "when I get home, tell me what's on tomorrow's calendar", "when I photograph a bill, remind me two days before it's due". They watch `phone.arrivals`, `phone.photos` or `phone.shortcuts` and run as soon as the phone reports, with the same rules, approvals and receipts as any other routine.
 
+## Dashboards in Telegram
+
+When Pimpo has a public https address (**From anywhere** with Tailscale Funnel, or your own https address under **Use another address**, in **Settings › Open on your phone**), the bot adds a **Dashboard** button next to the message box of everyone who paired Telegram, and notices that wait for an answer get an **Open dashboard** button. It opens a small Pimpo inside Telegram, on the phone, the desktop app or Telegram Web:
+
+- **Needs you**: approvals (allow once or deny) and the questions routines asked, with their options.
+- **Routines**: your routines, with **Run now** and **Pause** or **Resume**.
+- **Spending**: what the house spent today against its daily limit, this month, and what your routines cost this month.
+- **Widgets**: your widgets, all of them or one dashboard at a time.
+
+It signs you in as the person who paired that Telegram account, with nothing to type, and shows only your things; guests see what guests may use. The session lasts an hour; after that, close it and open it again from the bot. Telegram opens only https pages, so without a public https address the button does not appear (and goes away if the address does). A Telegram account nobody paired gets nothing.
+
 ## A Pimpo on another computer or server
 
 **Locking the desktop app.** The desktop app opens as the administrator without asking. To keep it behind your fingerprint or face, turn on **Lock with Touch ID or Windows Hello** in the Pimpo menu in the menu bar (or the system tray on Windows). It asks once to confirm, then again when the app opens and after its window has been closed for five minutes; on a Mac without Touch ID it asks for your password. The floating Pimpo waits for the unlock too. Linux has no such check, so the item is off there. On Windows the app opens Pimpo at `localhost`, so you can also add a passkey there in **Account**; on a Mac, add one from a browser at `http://localhost:7788`.

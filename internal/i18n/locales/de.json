@@ -71,6 +71,8 @@
   "msg.pair.linkBad": "Dieser Code passt nicht. Den Kopplungscode findest du unter „Verbindungen“.",
   "msg.pair.owner": "Hallo, {name}! Pimpo ist verbunden. 👋\n\nBitte um etwas, das du jede Woche machst, zum Beispiel:\n• „Schick mir jeden Tag um 7 Uhr meinen Kalender und die wichtigen E-Mails“\n\nBeim ersten Mal erledigt Pimpo es, während du zusiehst. Danach ganz allein.",
   "msg.pair.person": "Hallo, {name}! Du kannst jetzt mit dem Pimpo des Hauses sprechen. Bitte um etwas, das du jede Woche machst.",
+  "msg.miniapp.button": "Übersicht",
+  "msg.miniapp.open": "Übersicht öffnen",
   "msg.pair.whatsapp": "Hallo! Pimpo ist jetzt auch über WhatsApp verbunden. Bitte um etwas, das du jede Woche machst.",
   "msg.pair.whatsappBad": "Dieser Code passt nicht. Hol dir einen neuen unter „Verbindungen“ oder „Personen“.",
   "msg.pair.whatsappPerson": "Hallo, {name}! Du kannst jetzt über WhatsApp mit dem Pimpo des Hauses sprechen.",

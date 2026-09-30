@@ -71,6 +71,8 @@
   "msg.pair.linkBad": "コードが一致しません。ペアリングコードは「接続」で確認できます。",
   "msg.pair.owner": "こんにちは、{name}さん！Pimpo が接続されました。👋\n\n毎週やっていることを頼んでみてください。例えば：\n• 「毎日7時に、予定と重要なメールを送って」\n\n初回は、見ている前で Pimpo が実行します。その後は自動で行います。",
   "msg.pair.person": "こんにちは、{name}さん！この家の Pimpo と話せるようになりました。毎週やっていることを頼んでみてください。",
+  "msg.miniapp.button": "ダッシュボード",
+  "msg.miniapp.open": "ダッシュボードを開く",
   "msg.pair.whatsapp": "こんにちは！Pimpo が WhatsApp にも接続されました。毎週やっていることを頼んでみてください。",
   "msg.pair.whatsappBad": "コードが一致しません。「接続」または「メンバー」で新しいコードを取得してください。",
   "msg.pair.whatsappPerson": "こんにちは、{name}さん！WhatsApp でこの家の Pimpo と話せるようになりました。",

@@ -266,3 +266,26 @@ func TestPairingCodeResistsGuessing(t *testing.T) {
 		t.Fatal("an old code still works")
 	}
 }
+
+// A notice that waits for an answer offers the Mini App when there is one,
+// and only then.
+func TestNoticesOfferTheMiniApp(t *testing.T) {
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "v.db"))
+	defer ev.Close()
+	bot := &fakeBot{}
+	url := ""
+	c := &Channel{Events: ev, Bot: func(context.Context) Bot { return bot }, MiniApp: func(context.Context) string { return url }}
+	ctx := context.Background()
+	ev.Put(ctx, chatKey, "42")
+	ask := explore.Notice{Text: "Pode?", Actions: []explore.Action{{Label: "Sim", Data: "approve:a1"}}}
+	c.Notify(ctx, ask)
+	if len(bot.button) != 1 {
+		t.Fatalf("offered a Mini App without an address: %v", bot.button)
+	}
+	url = "https://pimpo.example.ts.net/tg/app"
+	c.Notify(ctx, ask)
+	c.Notify(ctx, explore.Notice{Text: "só um aviso"})
+	if len(bot.button) != 3 || bot.button[2][0].WebApp == nil || bot.button[2][0].WebApp.URL != url || bot.button[2][0].Data != "" {
+		t.Fatalf("buttons %+v", bot.button)
+	}
+}

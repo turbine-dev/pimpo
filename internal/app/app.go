@@ -295,6 +295,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.memoryRoutes()
 	a.migrateRoutes()
 	a.pairingRoutes()
+	a.miniAppRoutes()
 	a.peopleRoutes()
 	a.whatsappRoutes()
 	a.galleryRoutes()
@@ -403,6 +404,7 @@ func (a *App) restartListener(ctx context.Context) {
 		return
 	}
 	go a.Channel.Listen(lctx)
+	go a.syncMiniApp(lctx)
 }
 
 func loadZone(name string) *time.Location {

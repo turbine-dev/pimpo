@@ -29,6 +29,7 @@ func (a *App) AttachRemote(home string, newNode func() remote.Node) {
 	}
 	a.Remote = &remote.Remote{NewNode: newNode, Handler: a.Server, OnURL: func(url string) {
 		a.Events.Put(context.Background(), "public_url", url)
+		go a.syncMiniApp(context.Background())
 	}}
 	port, served := defaultLANPort, false
 	if host, p, err := net.SplitHostPort(a.ListenAddr); err == nil {
@@ -116,6 +117,7 @@ func (a *App) switchRemote(w http.ResponseWriter, r *http.Request) {
 			a.Remote.Stop()
 			if base, _ := a.Events.Get(ctx, "public_url"); base == v.Tailscale.URL && base != "" {
 				a.Events.Put(ctx, "public_url", "")
+				go a.syncMiniApp(context.WithoutCancel(ctx))
 			}
 		}
 	case "lan":

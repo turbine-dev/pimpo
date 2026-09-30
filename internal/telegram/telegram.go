@@ -29,6 +29,8 @@ type Button struct {
 	Text string `json:"text"`
 	Data string `json:"callback_data,omitempty"`
 	URL  string `json:"url,omitempty"`
+	// WebApp opens a Mini App inside the chat; only private chats allow it.
+	WebApp *WebApp `json:"web_app,omitempty"`
 }
 
 type Message struct {

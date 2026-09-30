@@ -71,6 +71,8 @@
   "msg.pair.linkBad": "Ce code ne correspond pas. Consultez le code d’association dans Connexions.",
   "msg.pair.owner": "Bonjour, {name} ! Pimpo est connecté. 👋\n\nDemandez quelque chose que vous faites chaque semaine, par exemple :\n• « Tous les jours à 7 h, envoie-moi mon agenda et les e-mails importants »\n\nLa première fois, Pimpo le fait sous vos yeux. Ensuite, tout seul.",
   "msg.pair.person": "Bonjour, {name} ! Vous pouvez maintenant parler au Pimpo de la maison. Demandez quelque chose que vous faites chaque semaine.",
+  "msg.miniapp.button": "Tableau de bord",
+  "msg.miniapp.open": "Ouvrir le tableau de bord",
   "msg.pair.whatsapp": "Bonjour ! Pimpo est aussi connecté sur WhatsApp. Demandez quelque chose que vous faites chaque semaine.",
   "msg.pair.whatsappBad": "Ce code ne correspond pas. Obtenez-en un nouveau dans Connexions ou Personnes.",
   "msg.pair.whatsappPerson": "Bonjour, {name} ! Vous pouvez maintenant parler au Pimpo de la maison sur WhatsApp.",

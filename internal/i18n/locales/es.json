@@ -71,6 +71,8 @@
   "msg.pair.linkBad": "Ese código no coincide. Mira el código de vinculación en Conexiones.",
   "msg.pair.owner": "¡Hola, {name}! Pimpo está conectado. 👋\n\nPide algo que haces cada semana, por ejemplo:\n• “Todos los días a las 7:00, mándame la agenda y los correos importantes”\n\nLa primera vez, Pimpo lo hace mientras miras. Después, lo hace solo.",
   "msg.pair.person": "¡Hola, {name}! Ya puedes hablar con el Pimpo de la casa. Pide algo que haces cada semana.",
+  "msg.miniapp.button": "Panel",
+  "msg.miniapp.open": "Abrir panel",
   "msg.pair.whatsapp": "¡Hola! Pimpo también está conectado por WhatsApp. Pide algo que haces cada semana.",
   "msg.pair.whatsappBad": "Ese código no coincide. Pide uno nuevo en Conexiones o en Personas.",
   "msg.pair.whatsappPerson": "¡Hola, {name}! Ya puedes hablar con el Pimpo de la casa por WhatsApp.",

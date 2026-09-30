@@ -56,6 +56,11 @@ type Channel struct {
 	Transcribe func(ctx context.Context, audio []byte) (string, error)
 	// ReadPhoto finds the text in a photo; nil means photos are ignored.
 	ReadPhoto func(ctx context.Context, image []byte) (string, error)
+	// MiniApp is the https address of the house's Telegram Mini App, or ""
+	// when there is none; notices that wait for an answer offer it.
+	MiniApp func(ctx context.Context) string
+	// Paired hears that a chat was paired, to offer it the Mini App.
+	Paired func(ctx context.Context)
 
 	mu      sync.Mutex
 	code    string
@@ -129,6 +134,11 @@ func (c *Channel) Notify(ctx context.Context, n explore.Notice) error {
 	}
 	if len(row) > 0 {
 		rows = append(rows, row)
+		if c.MiniApp != nil {
+			if url := c.MiniApp(ctx); url != "" {
+				rows = append(rows, []telegram.Button{{Text: i18n.T(ctx, "msg.miniapp.open"), WebApp: &telegram.WebApp{URL: url}}})
+			}
+		}
 	}
 	_, err := bot.Send(ctx, chat, n.Text, rows...)
 	return err
@@ -285,6 +295,7 @@ func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code s
 		if err == nil {
 			c.Events.Append(ctx, EventPaired, "human:"+p.ID, map[string]any{"chat": m.Chat.ID, "person": p.ID})
 			bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.person", "name", p.Name))
+			c.paired(ctx)
 			return
 		}
 		if !errors.Is(err, people.ErrUnknown) {
@@ -298,4 +309,11 @@ func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code s
 	c.Events.Put(ctx, chatKey, strconv.FormatInt(m.Chat.ID, 10))
 	c.Events.Append(ctx, EventPaired, "human:owner", map[string]any{"chat": m.Chat.ID, "name": m.From.FirstName})
 	bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.owner", "name", m.From.FirstName))
+	c.paired(ctx)
+}
+
+func (c *Channel) paired(ctx context.Context) {
+	if c.Paired != nil {
+		c.Paired(ctx)
+	}
 }
