@@ -44,6 +44,10 @@ type Env struct {
 	// RoleOf names a person's role in the house; nil treats everyone as
 	// the owner.
 	RoleOf func(ctx context.Context, person string) string
+	// Missing is told when a connector lacks a password or key; it asks
+	// the person privately and returns the error the run sees instead,
+	// which never holds a value.
+	Missing func(ctx context.Context, source string, m *connector.MissingCredential) error
 }
 
 type Approver interface {
@@ -218,6 +222,10 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 		result, err = h.Router.Call(ctx, name, scope, args)
 	}
 	rec.Millis = time.Since(start).Milliseconds()
+	var missing *connector.MissingCredential
+	if errors.As(err, &missing) && h.Missing != nil {
+		err = h.Missing(ctx, h.Source, missing)
+	}
 	if err != nil {
 		rec.Error = err.Error()
 	}

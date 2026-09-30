@@ -44,9 +44,11 @@ export function Chat() {
   const settings = useQuery({ queryKey: ['settings'], queryFn: api.settings })
   const [readAloud, setReadAloud] = useState<string>((location.state as { readAloud?: string } | null)?.readAloud ?? '')
   const [talking, setTalking] = useState('')
+  // Set when a key pasted into the message was taken out before sending.
+  const [warning, setWarning] = useState('')
   const send = useMutation({
     mutationFn: ({ text }: { text: string; spoken: boolean; talk?: boolean }) => (id ? api.sendChat(id, text, picked ? model : '', picked ? effort : '') : api.newChat(text, who, model, effort)),
-    onSuccess: (r, v) => { if (v.talk) setTalking(r.turn); else if (v.spoken) setReadAloud(r.turn); setPicked(false); if (!id) nav(`/chat/${r.chat}`); refresh() },
+    onSuccess: (r, v) => { setWarning(r.warning ?? ''); if (v.talk) setTalking(r.turn); else if (v.spoken) setReadAloud(r.turn); setPicked(false); if (!id) nav(`/chat/${r.chat}`); refresh() },
   })
   const conversation = useConversation((text) => send.mutate({ text, spoken: true, talk: true }))
   useEffect(() => {
@@ -120,6 +122,7 @@ export function Chat() {
         )}
       </div>
       {send.error && <p className="mb-2 text-center text-[13px] text-danger">{send.error.message}</p>}
+      {warning && <p role="status" className="mb-2 whitespace-pre-line text-center text-[13px] text-change">{warning}</p>}
       {conversation.supported && <ConversationBar c={conversation} />}
       <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} model={model} onModel={(m) => { setModel(m); setPicked(true) }} effort={effort} onEffort={(e) => { setEffort(e); setPicked(true) }} />
     </div>

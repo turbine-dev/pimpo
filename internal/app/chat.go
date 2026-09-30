@@ -16,6 +16,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/host"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/policy"
+	"github.com/turbine-dev/pimpo/internal/secretscan"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
 )
@@ -200,6 +201,30 @@ func readMessage(r *http.Request) (chatMessageBody, error) {
 	return m, nil
 }
 
+// readPasted reads a message and takes out any key pasted into it; a
+// message that was only a key goes no further.
+func (a *App) readPasted(r *http.Request) (chatMessageBody, string, error) {
+	m, err := readMessage(r)
+	if err != nil {
+		return m, "", err
+	}
+	var warning string
+	m.Text, warning = a.guardPasted(r.Context(), m.Text)
+	if warning != "" && secretscan.Only(m.Text) {
+		return m, "", server.StatusError{Status: 400, Msg: warning}
+	}
+	return m, warning, nil
+}
+
+// chatReply names the new turn, with the warning about a removed key.
+func chatReply(chat, turn, warning string) map[string]string {
+	out := map[string]string{"chat": chat, "turn": turn}
+	if warning != "" {
+		out["warning"] = warning
+	}
+	return out
+}
+
 // options builds an exploration's options for a chat's assistant.
 func (a *App) chatOptions(ctx context.Context, assistant, history string) (explore.Options, error) {
 	o := explore.Options{Context: history, Quiet: true}
@@ -215,7 +240,7 @@ func (a *App) chatOptions(ctx context.Context, assistant, history string) (explo
 
 func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	m, err := readMessage(r)
+	m, warning, err := a.readPasted(r)
 	if err != nil {
 		server.WriteError(w, err)
 		return
@@ -257,7 +282,7 @@ func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 	}
 	a.noteRouted(ctx, exp, pick)
 	a.Store.AddTurn(ctx, c.ID, exp)
-	server.WriteJSON(w, 201, map[string]string{"chat": c.ID, "turn": exp})
+	server.WriteJSON(w, 201, chatReply(c.ID, exp, warning))
 }
 
 // history is the conversation so far, for the agent: the last turns,
@@ -309,7 +334,7 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	m, err := readMessage(r)
+	m, warning, err := a.readPasted(r)
 	if err != nil {
 		server.WriteError(w, err)
 		return
@@ -349,7 +374,7 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	a.noteRouted(ctx, exp, pick)
 	a.Store.AddTurn(ctx, c.ID, exp)
-	server.WriteJSON(w, 201, map[string]string{"chat": c.ID, "turn": exp})
+	server.WriteJSON(w, 201, chatReply(c.ID, exp, warning))
 }
 
 var chatDoMu sync.Mutex

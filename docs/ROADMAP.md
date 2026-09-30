@@ -292,7 +292,7 @@ Pimpo checks its database at start and before every snapshot. A damaged one is s
 
 ### 8.7 Private credential prompts · S
 
-When a routine or a connection needs a password or key, Pimpo asks for it in a form of its own that writes straight to the vault; it never passes through a chat, a channel, a model or the log.
+When a routine or a connection needs a password or key, Pimpo asks for it in a form of its own that writes straight to the vault; it never passes through a chat, a channel, a model or the log. *Done.*
 
 ### 8.8 Lasting progress · S
 

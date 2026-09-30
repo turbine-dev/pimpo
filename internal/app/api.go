@@ -15,6 +15,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/secretscan"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
 	"github.com/turbine-dev/pimpo/internal/telegram"
@@ -349,12 +350,21 @@ func (a *App) startExploration(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	id, err := a.Explore.Start(r.Context(), req.Request, actor(r.Context()))
+	text, warning := a.guardPasted(r.Context(), req.Request)
+	if warning != "" && secretscan.Only(text) {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: warning})
+		return
+	}
+	id, err := a.Explore.Start(r.Context(), text, actor(r.Context()))
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
-	server.WriteJSON(w, 202, map[string]string{"id": id})
+	out := map[string]string{"id": id}
+	if warning != "" {
+		out["warning"] = warning
+	}
+	server.WriteJSON(w, 202, out)
 }
 
 func (a *App) explorationAction(w http.ResponseWriter, r *http.Request) {
@@ -384,6 +394,19 @@ func (a *App) explorationAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a.Explore.Discard(ctx, id, actor(ctx))
+		server.WriteJSON(w, 202, map[string]string{"id": started})
+	case "retry":
+		// Asked again after what it lacked was given, such as a key.
+		e, _ := a.myExploration(ctx, id)
+		if e.State == store.ExplorationRunning || e.State == store.ExplorationImported {
+			server.WriteError(w, server.StatusError{Status: 409, Msg: "that task is not finished"})
+			return
+		}
+		started, err := a.Explore.Start(context.WithoutCancel(ctx), e.Request, actor(ctx))
+		if err != nil {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+			return
+		}
 		server.WriteJSON(w, 202, map[string]string{"id": started})
 	case "discard":
 		if err := a.Explore.Discard(ctx, id, actor(ctx)); err != nil {

@@ -172,6 +172,8 @@ export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' |
 export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
 export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
+// A key a connector needs, asked for privately; the value never comes back.
+export type CredentialRequest = { id: string; connector: string; field: string; invalid?: boolean; routine?: string; exploration?: string; asked: string; expires: string; title: string; label: string; description: string }
 export type Provider = { id: string; name: string; key_url?: string; needs_key: boolean; local?: boolean }
 export type CatalogModel = { id: string; name: string; price_in: number; price_out: number; priced: boolean; context?: number; free?: boolean }
 export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: string; ollama_up?: boolean; lmstudio: CatalogModel[]; lmstudio_url: string; lmstudio_up?: boolean; codex?: string; codex_login?: boolean; opencode?: string; qwen_code?: string; apps?: string[] }
@@ -268,8 +270,8 @@ export const api = {
   chats: () => request<Chat[]>('GET', '/api/chats'),
   searchChats: (q: string) => request<ChatHit[]>('GET', `/api/chats/search?q=${encodeURIComponent(q)}`),
   chat: (id: string) => request<{ chat: Chat; turns: ChatTurn[]; model: string; effort?: string }>('GET', `/api/chats/${id}`),
-  newChat: (text: string, assistant = '', model = '', effort = '') => request<{ chat: string; turn: string }>('POST', '/api/chats', { text, assistant, model, effort }),
-  sendChat: (id: string, text: string, model = '', effort = '') => request<{ chat: string; turn: string }>('POST', `/api/chats/${id}/messages`, { text, model, effort }),
+  newChat: (text: string, assistant = '', model = '', effort = '') => request<{ chat: string; turn: string; warning?: string }>('POST', '/api/chats', { text, assistant, model, effort }),
+  sendChat: (id: string, text: string, model = '', effort = '') => request<{ chat: string; turn: string; warning?: string }>('POST', `/api/chats/${id}/messages`, { text, model, effort }),
   chatDo: (id: string, turn: string) => request<ChatTurn>('POST', `/api/chats/${id}/turns/${turn}/do`),
   deleteChat: (id: string) => request<{ deleted: string }>('DELETE', `/api/chats/${id}`),
   assistants: () => request<Assistant[]>('GET', '/api/assistants'),
@@ -343,6 +345,11 @@ export const api = {
   suggestion: (id: string, action: 'accept' | 'dismiss') => request<{ exploration?: string }>('POST', `/api/suggestions/${id}/${action}`),
   answerQuestion: (id: string, index: number) => request<{ text: string }>('POST', `/api/questions/${id}/answer`, { index }),
   answerQuestionText: (id: string, text: string) => request<{ text: string }>('POST', `/api/questions/${id}/answer`, { text }),
+  credentials: () => request<CredentialRequest[]>('GET', '/api/credentials'),
+  credential: (id: string) => request<CredentialRequest>('GET', `/api/credentials/${id}`),
+  saveCredential: (id: string, value: string) => request<{ saved: boolean; routine?: string; exploration?: string }>('POST', `/api/credentials/${id}`, { value }),
+  dismissCredential: (id: string) => request<{ state: string }>('DELETE', `/api/credentials/${id}`),
+  retryExploration: (id: string) => request<{ id: string }>('POST', `/api/explorations/${id}/retry`),
   spotify: () => request<{ connected: boolean; client_id: boolean; redirect: string }>('GET', '/api/spotify'),
   spotifyStart: (clientId: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/spotify/start', { client_id: clientId }),
   spotifyOff: () => request<{ ok: boolean }>('DELETE', '/api/spotify'),

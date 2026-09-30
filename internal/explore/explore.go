@@ -27,6 +27,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/routine"
 	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/secretscan"
 	"github.com/turbine-dev/pimpo/internal/store"
 	"github.com/turbine-dev/pimpo/internal/trace"
 )
@@ -209,7 +210,13 @@ func lastFailure(ctx context.Context, st *store.Store, routineID string) string 
 }
 
 func (s *Service) start(ctx context.Context, request, actor, target string, o Options) (string, error) {
-	request = strings.TrimSpace(request)
+	// A key pasted into a request never reaches the model, the store or
+	// the log; whoever took the message warns the person.
+	request, _ = secretscan.Redact(strings.TrimSpace(request))
+	o.Context, _ = secretscan.Redact(o.Context)
+	if secretscan.Only(request) {
+		request = ""
+	}
 	if request == "" {
 		return "", errors.New("tell me what you want done")
 	}

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { AlertTriangle, BellOff, Headphones, Lightbulb, MessageCircleQuestion, ShieldQuestion, Sparkles } from 'lucide-react'
+import { AlertTriangle, BellOff, Headphones, KeyRound, Lightbulb, MessageCircleQuestion, ShieldQuestion, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api } from '../lib/api'
@@ -24,13 +24,14 @@ export function Inbox() {
   const media = useQuery({ queryKey: ['media'], queryFn: api.media, refetchInterval: 60_000 })
   const questions = useQuery({ queryKey: ['questions'], queryFn: api.questions, refetchInterval: 15_000 })
   const suggestions = useQuery({ queryKey: ['suggestions'], queryFn: api.suggestions, refetchInterval: 60_000 })
+  const credentials = useQuery({ queryKey: ['credentials'], queryFn: api.credentials, refetchInterval: 30_000 })
   const suggest = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'accept' | 'dismiss' }) => api.suggestion(id, action),
     onSuccess: (r) => r.exploration && nav(`/explorations/${r.exploration}`),
     onSettled: () => qc.invalidateQueries({ queryKey: ['suggestions'] }),
   })
   const broken = (routines.data ?? []).filter((r) => r.state === 'broken')
-  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0) + (media.data?.length ?? 0) + (questions.data?.length ?? 0) + (suggestions.data?.length ?? 0)
+  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0) + (media.data?.length ?? 0) + (questions.data?.length ?? 0) + (suggestions.data?.length ?? 0) + (credentials.data?.length ?? 0)
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -42,6 +43,16 @@ export function Inbox() {
         </EmptyState>
       )}
       <div className="space-y-3">
+        {(credentials.data ?? []).map((c) => (
+          <Card key={c.id} className="flex flex-wrap items-center gap-4 border-change/40 p-4">
+            <div className="grid size-10 place-items-center rounded-xl bg-change-soft text-change"><KeyRound size={18} /></div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-medium">{c.description}</div>
+              <div className="text-[12.5px] text-ink-3">{t('inbox.asked', { when: relative(c.asked) })}</div>
+            </div>
+            <Button size="sm" variant="primary" onClick={() => nav(`/credentials/${c.id}`)}>{t('cred.open')}</Button>
+          </Card>
+        ))}
         {(questions.data ?? []).map((q) => <QuestionCard key={q.id} q={q} />)}
         {(suggestions.data ?? []).map((s) => (
           <Card key={s.id} className="flex flex-wrap items-start gap-4 p-4">

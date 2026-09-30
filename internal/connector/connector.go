@@ -60,3 +60,26 @@ func Args(in any, out any) error {
 	}
 	return nil
 }
+
+// MissingCredential says a connector cannot work without a password or key
+// its person has not given, or that the service refused (Invalid). Only
+// Pimpo's code builds one, never a model; the app turns it into a private
+// request that the person answers in a form of its own.
+type MissingCredential struct {
+	// Connector is the catalog kind or the external connector's name.
+	Connector string
+	// Field is the connector's field or environment variable.
+	Field   string
+	Invalid bool
+	// Err is what went wrong, as the connector said it.
+	Err error
+}
+
+func (m *MissingCredential) Error() string {
+	if m.Err != nil {
+		return m.Err.Error()
+	}
+	return m.Connector + " needs " + m.Field
+}
+
+func (m *MissingCredential) Unwrap() error { return m.Err }
