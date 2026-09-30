@@ -113,6 +113,10 @@ For work too big for one answer ("compare these 20 suppliers on price, delivery 
 
 Every action has a receipt: what was done, with which arguments, under which rule. Reversible actions can be undone from the receipt. Deletes go to the trash, and sent emails wait 10 minutes before leaving.
 
+## Settings history
+
+**Settings › History** lists every change to rules and the safety level, the budget, connections, models, people and the other settings, newest first, with who made it and when; filter it by area. **Undo** (after a confirmation) puts the earlier values back. Undo starts from the newest change: a setting changed again since must have that newer change undone first. Passwords, keys and tokens are never kept in the history, not even encrypted: it only says one was added, replaced or removed, and to change one back you type it again. Adding or removing a person is not undone here. A member finds the history of their own mail and calendar in **Account**; nobody else sees it, the administrator included.
+
 ## Memory
 
 Pimpo remembers what you tell it. Facts it read somewhere are marked "not confirmed" and never guide it until you confirm them. Every change is versioned: **History › Go back to this** undoes any change.

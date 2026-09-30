@@ -135,6 +135,7 @@ func (a *App) putCatalog(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	done := a.track(ctx, a.catalogEntry(ctx, r.PathValue("kind")))
 	if c := a.externalConnector(r.PathValue("kind")); c != nil {
 		for _, e := range append(append([]string{}, c.Env...), c.Headers...) {
 			if v := strings.TrimSpace(req[e]); v != "" {
@@ -144,6 +145,7 @@ func (a *App) putCatalog(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		done()
 		// Restart so the process sees the new values.
 		c.Close()
 		server.WriteJSON(w, 200, map[string]string{"kind": c.Name})
@@ -179,6 +181,7 @@ func (a *App) putCatalog(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	done()
 	a.Events.Append(ctx, "connection.set", actor(ctx), map[string]string{"kind": k.ID})
 	if slices.Contains(services.LinkKinds, k.ID) {
 		a.restartLink(ctx, k.ID)
@@ -193,6 +196,7 @@ func (a *App) deleteCatalog(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "unknown connector"})
 		return
 	}
+	done := a.track(ctx, a.catalogEntry(ctx, k.ID))
 	for _, f := range k.Fields {
 		name := personal(ctx, catalogKey(k.ID, f.Name))
 		if f.Secret {
@@ -201,6 +205,7 @@ func (a *App) deleteCatalog(w http.ResponseWriter, r *http.Request) {
 			a.Events.Put(ctx, name, "")
 		}
 	}
+	done()
 	a.Events.Append(ctx, "connection.removed", actor(ctx), map[string]string{"kind": k.ID})
 	if slices.Contains(services.LinkKinds, k.ID) {
 		a.restartLink(ctx, k.ID)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/budget"
 	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
 )
 
@@ -96,6 +97,7 @@ func (a *App) modelRoutes() {
 			return
 		}
 		key := strings.TrimSpace(req.Key)
+		done := a.track(r.Context(), kvEntry("models", p, people.OwnerID, nil, "model."+p+".key"))
 		var err error
 		if key == "" {
 			err = a.Vault.Delete(r.Context(), "model."+p+".key")
@@ -106,6 +108,7 @@ func (a *App) modelRoutes() {
 			server.WriteError(w, err)
 			return
 		}
+		done()
 		a.Events.Append(r.Context(), "model.key", actor(r.Context()), map[string]any{"provider": p, "set": key != ""})
 		server.WriteJSON(w, 200, map[string]bool{"set": key != ""})
 	})

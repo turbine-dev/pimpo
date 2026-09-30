@@ -418,10 +418,12 @@ func (a *App) putBudget(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	done := a.track(r.Context(), kvEntry("budget", "", people.OwnerID, []string{"budget.daily_usd"}))
 	if err := a.Budget.SetLimit(r.Context(), req.DailyUSD, "human:owner"); err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
+	done()
 	server.WriteJSON(w, 200, map[string]float64{"daily_usd": req.DailyUSD})
 }
 
@@ -503,6 +505,8 @@ func (a *App) putConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	var err error
 	kind := r.PathValue("kind")
+	values, secrets := connectionKeys(kind)
+	done := a.track(ctx, kvEntry("connections", kind, people.OwnerID, values, secrets...))
 	switch kind {
 	case "telegram":
 		tok := strings.TrimSpace(req["token"])
@@ -556,6 +560,7 @@ func (a *App) putConnection(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	done()
 	a.Events.Append(ctx, "connection.changed", "human:owner", map[string]string{"kind": kind})
 	server.WriteJSON(w, 200, map[string]string{"kind": kind, "state": "configured"})
 }
@@ -568,6 +573,8 @@ func (a *App) deleteConnection(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "unknown connection"})
 		return
 	}
+	values, secrets := connectionKeys(kind)
+	done := a.track(ctx, kvEntry("connections", kind, people.OwnerID, values, secrets...))
 	for _, n := range names {
 		a.Vault.Delete(ctx, n)
 	}
@@ -577,6 +584,7 @@ func (a *App) deleteConnection(w http.ResponseWriter, r *http.Request) {
 	if kind == "whatsapp" {
 		a.Events.Put(ctx, "whatsapp.owner", "")
 	}
+	done()
 	a.Events.Append(ctx, "connection.removed", "human:owner", map[string]string{"kind": kind})
 	server.WriteJSON(w, 200, map[string]string{"kind": kind, "state": "removed"})
 }

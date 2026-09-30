@@ -284,7 +284,7 @@ A routine's question offers its choices as buttons in the app and on every chann
 
 ### 8.5 Settings history · S
 
-Every change to rules, budgets, connections, models and people is recorded with who made it and when, secrets hidden, and can be undone.
+Every change to rules, budgets, connections, models and people is recorded with who made it and when, secrets hidden, and can be undone. *Done.*
 
 ### 8.6 Database integrity · S
 

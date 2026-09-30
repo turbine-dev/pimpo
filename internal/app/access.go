@@ -56,6 +56,7 @@ var memberRoutes = routeSet(
 	"GET /api/destinations", "GET /api/geocode",
 	"POST /api/open",
 	"PUT /api/people/{id}/connections/{kind}",
+	"GET /api/history", "POST /api/history/{id}/undo",
 	"POST /api/dashboards", "PUT /api/dashboards/{id}", "DELETE /api/dashboards/{id}",
 	"PUT /api/widgets/{id}", "DELETE /api/widgets/{id}", "POST /api/widgets/{id}/refresh",
 )
