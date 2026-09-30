@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { canOpen, useRole } from '../lib/roles'
 import { UpdateBanner } from './Updates'
-import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, KeyRound, Users, Puzzle } from 'lucide-react'
+import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, KeyRound, Users, Puzzle, GraduationCap } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT, type TKey } from '../lib/i18n'
 import { InboxPanel } from './InboxPanel'
+import { useLessonCount } from '../pages/Lessons'
 import { SystemPanel } from './SystemPanel'
 import { Logo } from './PimpoArt'
 import { Kbd } from './ui'
@@ -20,6 +21,7 @@ export const primary: NavItem[] = [
   { to: '/routines', label: 'nav.routines', icon: <Repeat size={17} /> },
   { to: '/receipts', label: 'nav.activity', icon: <ReceiptText size={17} /> },
   { to: '/assistants', label: 'nav.assistants', icon: <Bot size={17} /> },
+  { to: '/lessons', label: 'nav.lessons', icon: <GraduationCap size={17} /> },
 ]
 
 export const secondary: NavItem[] = [
@@ -180,6 +182,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
   const [more, setMore] = useState(false)
   const [moreOpen, setMoreOpen] = useState(() => { try { return localStorage.getItem('pimpo.more') === '1' } catch { return false } })
   const [system, setSystem] = useState(false)
+  const lessons = useLessonCount(role !== 'guest')
   useEffect(() => { try { localStorage.setItem('pimpo.more', moreOpen ? '1' : '0') } catch { /* not remembered */ } }, [moreOpen])
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -200,6 +203,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
             <NavLink key={it.to} to={it.to} end={it.to === '/'} className={({ isActive }) => link(isActive)}>
               <span className="text-ink-3 group-[.active]:text-ink">{it.icon}</span>
               <span className="flex-1">{t(it.label)}</span>
+              {it.to === '/lessons' && lessons > 0 && <span className="rounded-full bg-sunken px-1.5 text-[11px] font-semibold tabular-nums text-ink-2" aria-label={t('lessons.waiting', { count: lessons })}>{lessons}</span>}
             </NavLink>
           ))}
           <button type="button" onClick={() => setMoreOpen(!moreOpen)} aria-expanded={moreOpen} className={cn(link(false), 'mt-1')}>

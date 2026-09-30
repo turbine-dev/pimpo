@@ -179,6 +179,7 @@
   "msg.suggestion.gone": "Quel suggerimento non c’è più.",
   "msg.suggestion.started": "Iniziato: lo faccio una volta mentre guardi; approvalo per farne una routine.",
   "msg.suggestion.declined": "Va bene, non lo suggerirò più.",
+  "msg.lessons.digest": "📚 {count} lezioni da rivedere: cose che Pimpo ha notato e terrebbe. Accetta, modifica o rifiuta ognuna in Pimpo › Lezioni.",
   "msg.job.budget": "il budget del lavoro è finito",
   "msg.job.done": "🧩 Lavoro finito: {request}\nCosto {cost} $. Il rapporto è in Lavori.",
   "msg.job.stopped": "⏹️ Lavoro fermato: {request}\n{why}",

@@ -179,6 +179,7 @@
   "msg.suggestion.gone": "Dieser Vorschlag ist nicht mehr da.",
   "msg.suggestion.started": "Gestartet: Ich mache es einmal, während du zusiehst; gib es frei, damit es eine Routine wird.",
   "msg.suggestion.declined": "Gut, das schlage ich nicht mehr vor.",
+  "msg.lessons.digest": "📚 {count} Lektionen zum Prüfen: Dinge, die Pimpo bemerkt hat und behalten würde. Nimm jede in Pimpo › Lektionen an, bearbeite oder lehne sie ab.",
   "msg.job.budget": "das Budget der Aufgabe ist aufgebraucht",
   "msg.job.done": "🧩 Aufgabe fertig: {request}\nKosten {cost} $. Der Bericht ist unter Aufgaben.",
   "msg.job.stopped": "⏹️ Aufgabe gestoppt: {request}\n{why}",

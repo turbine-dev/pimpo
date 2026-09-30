@@ -179,6 +179,7 @@
   "msg.suggestion.gone": "그 제안은 이제 없어요.",
   "msg.suggestion.started": "시작했어요: 보시는 동안 한 번 해 볼게요. 승인하면 루틴이 돼요.",
   "msg.suggestion.declined": "알겠어요, 다시 제안하지 않을게요.",
+  "msg.lessons.digest": "📚 검토할 레슨 {count}개: Pimpo가 알아차리고 기억하려는 것들입니다. Pimpo › 레슨에서 하나씩 수락, 수정 또는 거절하세요.",
   "msg.job.budget": "작업 예산이 다 떨어졌어요",
   "msg.job.done": "🧩 작업 완료: {request}\n비용 ${cost}. 보고서는 작업에 있어요.",
   "msg.job.stopped": "⏹️ 작업 중지: {request}\n{why}",

@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- **Lessons**: what Pimpo noticed and would keep (a learned preference, a note it took, a task asked often enough to become a routine, a repair of a failing routine, a suggestion) in one list per person, each accepted, edited or rejected there; a rejected lesson never comes back, and a weekly notice links to the list.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.
 - On Discord, Slack and Signal, replying to a notice with a number answers that notice, even after newer ones.
 - JSON connectors: a `connector.json` that describes HTTP requests, with no program, installable as a single file.

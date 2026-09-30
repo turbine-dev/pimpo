@@ -179,6 +179,7 @@
   "msg.suggestion.gone": "その提案はもうありません。",
   "msg.suggestion.started": "始めました。見ている間に一度やります。承認するとルーティンになります。",
   "msg.suggestion.declined": "わかりました。もう提案しません。",
+  "msg.lessons.digest": "📚 確認するレッスンが {count} 件あります：Pimpo が気づいて残したいこと。Pimpo › レッスン で一つずつ承認・編集・却下してください。",
   "msg.job.budget": "ジョブの予算を使い切りました",
   "msg.job.done": "🧩 ジョブ完了: {request}\n費用 ${cost}。レポートはジョブにあります。",
   "msg.job.stopped": "⏹️ ジョブ停止: {request}\n{why}",

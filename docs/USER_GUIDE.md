@@ -96,7 +96,18 @@ Search memory in plain words ("what can't I eat?"): with Jev set up, Pimpo finds
 
 ### Preferences Pimpo learns
 
-Once a week Pimpo looks at what you asked and decided yourself (the requests you made, the approvals you denied or made permanent, the suggestions you took or declined) and may note up to five preferences, such as "answers in Portuguese" or "nothing before 8". It never learns from an email, a page or anything else it read. Each one shows up in **Memory** marked *learned*, with what showed it: **Confirm** makes it a fact like any other, and removing it means it is not learned again. Turn it off in **Settings › Notifications**.
+Once a week Pimpo looks at what you asked and decided yourself (the requests you made, the approvals you denied or made permanent, the suggestions you took or declined) and may note up to five preferences, such as "answers in Portuguese" or "nothing before 8". It never learns from an email, a page or anything else it read. Each one shows up in **Memory** marked *learned*, with what showed it: **Confirm** makes it a fact like any other, and removing it means it is not learned again. Turn it off in **Settings › Notifications**. Each one is also a lesson in **Lessons**.
+
+### Lessons
+
+**Lessons** (with a count in the menu, and a line in **Needs you**) is where everything Pimpo noticed and would keep waits for you, and only for you: nobody else in the house, the administrator included, sees your lessons. There are four kinds:
+
+- **Preference**: one it learned from your own requests (above), with links to the requests it came from.
+- **Fact**: a note the agent took during a task ("your boss is Carlos"), with a link to that task. It may have read it in an email, so it counts as unconfirmed until you accept it.
+- **Routine**: a task you asked more than once that worked and is not a routine yet, or a suggestion (below). It shows the request the routine would do and links to each time you asked.
+- **Fix**: a routine failed and the agent redid it (**Redo with the agent**). It shows the error and what the new version did.
+
+**Accept** does what you would do by hand: it confirms the fact or preference, or turns the task into a routine (or keeps the repaired version) through the usual compiler, with its checks, so an older version stays in the routine's history. **Edit** lets you change the words first: the fact is kept in your words, and a routine or fix with new words is done once more for you to watch and approve. **Reject** removes the note or discards the repair, and the same lesson is never proposed again, even worded a little differently. Nothing on this page applies until you choose, and the Memory page and **Needs you** show the same things, so deciding in either place counts. Once a week, if lessons are waiting, Pimpo tells you on your channel with a link (turn it off in **Settings › Notifications › Weekly lessons digest**); you decide on the page, never by replying.
 
 ## People
 

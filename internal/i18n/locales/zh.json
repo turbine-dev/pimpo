@@ -179,6 +179,7 @@
   "msg.suggestion.gone": "这条建议已经不在了。",
   "msg.suggestion.started": "已开始：我会在你看着的时候先做一次；批准后就变成例程。",
   "msg.suggestion.declined": "好的，我不会再建议这个。",
+  "msg.lessons.digest": "📚 有 {count} 条经验待审阅：Pimpo 注意到并想保留的内容。请在 Pimpo › 经验 中逐条接受、编辑或拒绝。",
   "msg.job.budget": "任务预算已用完",
   "msg.job.done": "🧩 任务完成：{request}\n费用 ${cost}。报告在“任务”中。",
   "msg.job.stopped": "⏹️ 任务已停止：{request}\n{why}",
