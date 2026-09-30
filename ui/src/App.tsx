@@ -5,6 +5,7 @@ import { Account } from './pages/Account'
 import { Dashboards } from './pages/Dashboards'
 import { SignIn } from './pages/SignIn'
 import { CreateAdmin } from './pages/CreateAdmin'
+import { Recovery } from './pages/Recovery'
 
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
@@ -64,6 +65,7 @@ export default function App() {
     document.body.style.overflow = 'hidden'
     return <Mascot standalone onOpen={(path) => { location.pathname !== path && window.location.assign('/open?path=' + encodeURIComponent(path)) }} />
   }
+  if (state.error instanceof ApiError && state.error.recovery) return <Recovery />
   if (state.error instanceof ApiError && state.error.status === 401) return <SignIn />
   // The account screen stays until the person finishes it, passkey step
   // included, even once the server already knows the account.

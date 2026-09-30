@@ -101,6 +101,7 @@
   "msg.routine.reran": "Relancée avec succès. Routine réactivée.",
   "msg.start.failed": "Impossible de démarrer : {error}",
   "msg.upgrade": "Pimpo a été mis à jour de {from} vers {to}. Une copie de tout, tel que c’était avant, a été gardée : si quelque chose semble anormal, allez dans Réglages › Sauvegarde › Copies locales et revenez-y.",
+  "msg.dbDamaged": "La base de données de Pimpo n’a pas passé la vérification : la copie du jour n’a donc pas été faite, pour ne pas remplacer une copie saine. Fermez et rouvrez Pimpo : il met le fichier endommagé de côté et propose la copie saine la plus récente.",
   "msg.voice.failed": "🎙️ Impossible de comprendre l’audio : {error}",
   "people.you": "Vous",
   "policy.protect": "réseau de protection : {reason} (signalé par {count} personnes)",

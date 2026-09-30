@@ -101,6 +101,7 @@
   "msg.routine.reran": "다시 실행했고 성공했어요. 루틴을 다시 켰어요.",
   "msg.start.failed": "시작하지 못했어요: {error}",
   "msg.upgrade": "Pimpo가 {from}에서 {to}(으)로 업데이트됐어요. 업데이트 전 상태 그대로 전체 사본을 보관해 두었어요. 뭔가 이상하면 설정 › 백업 › 로컬 사본에서 되돌릴 수 있어요.",
+  "msg.dbDamaged": "Pimpo 데이터베이스가 검사를 통과하지 못해서, 정상 사본을 밀어내지 않도록 오늘 사본은 만들지 않았어요. Pimpo를 닫았다가 다시 여세요. 손상된 파일을 따로 옮기고 가장 최근의 정상 사본을 제안해요.",
   "msg.voice.failed": "🎙️ 오디오를 알아듣지 못했어요: {error}",
   "people.you": "나",
   "policy.protect": "커뮤니티 보호: {reason}({count}명이 신고)",

@@ -101,6 +101,7 @@
   "msg.routine.reran": "Eseguita di nuovo e ha funzionato. Routine riattivata.",
   "msg.start.failed": "Non è stato possibile iniziare: {error}",
   "msg.upgrade": "Pimpo è stato aggiornato da {from} a {to}. Una copia di tutto com’era prima è stata conservata: se qualcosa non va, vai in Impostazioni › Backup › Copie locali e torna a quella.",
+  "msg.dbDamaged": "Il database di Pimpo non ha superato il controllo, quindi la copia di oggi non è stata fatta, per non sostituirne una buona. Chiudi e riapri Pimpo: mette da parte il file danneggiato e propone la copia buona più recente.",
   "msg.voice.failed": "🎙️ Non è stato possibile capire l’audio: {error}",
   "people.you": "Tu",
   "policy.protect": "rete di protezione: {reason} (segnalato da {count} persone)",

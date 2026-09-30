@@ -214,10 +214,14 @@ export class ApiError extends Error {
   status: number
   // problem names why, for a translated message.
   problem?: string
-  constructor(status: number, message: string, problem?: string) {
+  // recovery says Pimpo set a damaged database aside and serves only the
+  // recovery page.
+  recovery: boolean
+  constructor(status: number, message: string, problem?: string, recovery = false) {
     super(message)
     this.status = status
     this.problem = problem
+    this.recovery = recovery
   }
 }
 
@@ -232,13 +236,14 @@ export type HistoryArea = 'settings' | 'models' | 'rules' | 'budget' | 'connecti
 export type HistoryField = { field: string; before?: unknown; after?: unknown; secret?: 'added' | 'replaced' | 'removed' }
 export type HistoryChange = { id: number; ts: string; actor: string; who: string; area: HistoryArea; target?: string; fields: HistoryField[]; undo_of?: number; undoable: boolean; undone: boolean; reenter: string[] }
 
-export type Snapshot = { name: string; label: string; when: string; bytes: number }
+export type Snapshot = { name: string; label: string; when: string; bytes: number; damaged?: boolean }
+export type RecoveryState = { when: string; reason: string; folder: string; snapshots: Snapshot[]; newest_good: string }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, { method, headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin' })
   const text = await res.text()
   const data = text ? JSON.parse(text) : null
-  if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText, data?.problem)
+  if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText, data?.problem, data?.recovery === true)
   return data as T
 }
 
@@ -364,6 +369,9 @@ export const api = {
   createSnapshot: () => request<Snapshot>('POST', '/api/snapshots'),
   stageRestore: (name: string) => request<{ staged: string }>('POST', '/api/snapshots/restore', { name }),
   cancelRestore: () => request<{ staged: string }>('DELETE', '/api/snapshots/restore'),
+  recovery: () => request<RecoveryState>('GET', '/api/recovery'),
+  recoverFrom: (name: string) => request<{ restored: string }>('POST', '/api/recovery/restore', { name }),
+  startFresh: () => request<{ fresh: boolean }>('POST', '/api/recovery/fresh'),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[]; state: Record<string, unknown>; used_by: string[] }>('GET', `/api/routines/${id}`),

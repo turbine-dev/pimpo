@@ -3,6 +3,7 @@
 package snapshot
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -12,9 +13,12 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite"
+
+	"github.com/turbine-dev/pimpo/internal/event"
 )
 
 type Snapshot struct {
@@ -22,6 +26,9 @@ type Snapshot struct {
 	Label string    `json:"label"`
 	When  time.Time `json:"when"`
 	Bytes int64     `json:"bytes"`
+	// Damaged is set by Checked on a copy that fails its own check; it
+	// is never offered to go back to.
+	Damaged bool `json:"damaged,omitempty"`
 }
 
 // Keep is how many snapshots stay on disk.
@@ -30,8 +37,12 @@ const Keep = 10
 func dir(home string) string { return filepath.Join(home, "snapshots") }
 
 // Create writes a consistent copy of the database (VACUUM INTO works while
-// Pimpo runs) and a copy of the memory folder.
+// Pimpo runs) and a copy of the memory folder. A database that fails its
+// check is not copied: a damaged copy would push a good one out.
 func Create(db *sql.DB, home, label string) (Snapshot, error) {
+	if err := event.Check(context.Background(), db); err != nil {
+		return Snapshot{}, err
+	}
 	when := time.Now()
 	name := when.UTC().Format("20060102-150405") + "-" + clean(label)
 	target := filepath.Join(dir(home), name)
@@ -98,6 +109,54 @@ func List(home string) ([]Snapshot, error) {
 	return out, nil
 }
 
+// Verify checks a snapshot's database. A copy never changes once made, so
+// the answer is kept until its file does.
+func Verify(home, name string) error {
+	if !validName(name) {
+		return fmt.Errorf("snapshot %s not found", name)
+	}
+	path := filepath.Join(dir(home), name, "pimpo.db")
+	st, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("snapshot %s not found", name)
+	}
+	key := fmt.Sprintf("%s|%d|%d", path, st.Size(), st.ModTime().UnixNano())
+	if v, ok := verified.Load(key); ok {
+		return v.(checked).err
+	}
+	err = event.CheckFile(path)
+	verified.Store(key, checked{err})
+	return err
+}
+
+type checked struct{ err error }
+
+var verified sync.Map
+
+// Checked lists the snapshots with each one checked, newest first.
+func Checked(home string) ([]Snapshot, error) {
+	list, err := List(home)
+	for i := range list {
+		list[i].Damaged = Verify(home, list[i].Name) != nil
+	}
+	return list, err
+}
+
+// NewestGood is the newest snapshot that passes its check.
+func NewestGood(home string) (Snapshot, bool) {
+	list, _ := List(home)
+	for _, s := range list {
+		if Verify(home, s.Name) == nil {
+			return s, true
+		}
+	}
+	return Snapshot{}, false
+}
+
+func validName(name string) bool {
+	return name != "" && !strings.ContainsAny(name, `/\`) && !strings.Contains(name, "..")
+}
+
 func prune(home string) {
 	all, _ := List(home)
 	for i, s := range all {
@@ -114,11 +173,15 @@ func prune(home string) {
 var Access = []string{"devices", "passkeys", "passkey.handles", "session_token", "people"}
 
 // Restore puts a snapshot back. Pimpo must not be running. The current
-// state is snapshotted first, so a restore can itself be undone.
+// state is snapshotted first, so a restore can itself be undone. A copy
+// that fails its check is not put back.
 func Restore(home, name string, current *sql.DB) error {
 	src := filepath.Join(dir(home), name)
-	if _, err := os.Stat(filepath.Join(src, "pimpo.db")); err != nil {
-		return fmt.Errorf("snapshot %s not found", name)
+	if err := Verify(home, name); err != nil {
+		if current != nil {
+			current.Close()
+		}
+		return err
 	}
 	if current == nil {
 		db, err := sql.Open("sqlite", filepath.Join(home, "pimpo.db"))
@@ -236,11 +299,8 @@ const stagedFile = "restore-pending"
 // Stage marks a snapshot to be restored on the next start, since the
 // database cannot be swapped while Pimpo has it open.
 func Stage(home, name string) error {
-	if name == "" || strings.ContainsAny(name, `/\`) || strings.Contains(name, "..") {
-		return fmt.Errorf("snapshot %s not found", name)
-	}
-	if _, err := info(home, name); err != nil {
-		return fmt.Errorf("snapshot %s not found", name)
+	if err := Verify(home, name); err != nil {
+		return err
 	}
 	return os.WriteFile(filepath.Join(home, stagedFile), []byte(name), 0o600)
 }

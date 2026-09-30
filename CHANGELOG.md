@@ -10,6 +10,7 @@ No version has been tagged yet. The first release will include everything built 
 
 - **For this routine** on approvals: a routine repeats exactly the approved action (same recipients, hosts, amounts up to the limit) without asking, until its code changes; each person revokes theirs in **Routines**.
 - Settings history (**Settings › History**): every change to rules, budget, connections, models, people and settings, with who and when, secrets never kept, and undo; a member sees their own accounts' history in **Account**.
+- Database integrity: Pimpo checks its database at start and before every snapshot; a damaged one is moved to a quarantine folder untouched, and a recovery page offers the newest snapshot that passes its check, a fresh start, or the damaged file as a zip.
 - Dashboards in tabs with widgets of seven kinds (numbers, goals, status, lists, tables, and line, area, bar and donut charts), ready-made widgets, and sharing with the house.
 - **Turn into a widget** on a routine's page, and requests to see or track something end in a widget.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.

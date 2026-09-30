@@ -288,7 +288,7 @@ Every change to rules, budgets, connections, models and people is recorded with 
 
 ### 8.6 Database integrity · S
 
-Pimpo checks its database at start and before every snapshot. A damaged one is set aside, the last good snapshot is offered, and nothing is written over it.
+Pimpo checks its database at start and before every snapshot. A damaged one is set aside, the last good snapshot is offered, and nothing is written over it. *Done.*
 
 ### 8.7 Private credential prompts · S
 

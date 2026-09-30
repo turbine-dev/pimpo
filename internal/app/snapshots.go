@@ -3,11 +3,13 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/explore"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/snapshot"
@@ -32,7 +34,7 @@ func (a *App) listSnapshots(w http.ResponseWriter, r *http.Request) {
 		server.WriteJSON(w, 200, map[string]any{"snapshots": []snapshot.Snapshot{}, "available": false})
 		return
 	}
-	list, err := snapshot.List(a.Home)
+	list, err := snapshot.Checked(a.Home)
 	if err != nil {
 		server.WriteError(w, err)
 		return
@@ -45,7 +47,11 @@ func (a *App) createSnapshot(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 503, Msg: "snapshots are not available here"})
 		return
 	}
-	s, err := snapshot.Create(a.Events.DB(), a.Home, "manual")
+	s, err := a.Snapshot(r.Context(), "manual")
+	if errors.Is(err, event.ErrDamaged) {
+		server.WriteError(w, server.StatusError{Status: 409, Msg: err.Error()})
+		return
+	}
 	if err != nil {
 		server.WriteError(w, err)
 		return
@@ -71,7 +77,11 @@ func (a *App) stageRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := snapshot.Stage(a.Home, req.Name); err != nil {
-		server.WriteError(w, server.StatusError{Status: 404, Msg: err.Error()})
+		status := 404
+		if errors.Is(err, event.ErrDamaged) {
+			status = 409
+		}
+		server.WriteError(w, server.StatusError{Status: status, Msg: err.Error()})
 		return
 	}
 	a.Events.Append(r.Context(), "snapshot.staged", "human:owner", map[string]string{"name": req.Name})

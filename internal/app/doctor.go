@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"slices"
 	"sort"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/turbine-dev/pimpo/internal/connector/services"
+	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/llm"
 	"github.com/turbine-dev/pimpo/internal/models"
 	"github.com/turbine-dev/pimpo/internal/server"
@@ -221,6 +223,7 @@ func (a *App) checkModel(ctx context.Context, id string) finding {
 // localFindings are the checks that need no network.
 func (a *App) localFindings(ctx context.Context) []finding {
 	var out []finding
+	out = append(out, a.databaseFinding(ctx))
 	if a.Home != "" {
 		h := sysinfo.ReadHost(a.Home)
 		if h.DiskSize > 0 && h.DiskFree < 5e9 {
@@ -265,6 +268,20 @@ func (a *App) localFindings(ctx context.Context) []finding {
 		}
 	}
 	return out
+}
+
+// databaseFinding checks the database now, as a snapshot would.
+func (a *App) databaseFinding(ctx context.Context) finding {
+	f := finding{ID: "database", Group: "system", Name: "Banco de dados", State: "ok"}
+	err := event.Check(ctx, a.Events.DB())
+	a.ReportDamage(ctx, err)
+	if err == nil && a.damage() != "" {
+		err = errors.New(a.damage())
+	}
+	if err != nil {
+		f.State, f.Detail, f.Fix = "fail", err.Error(), "doc.fix.database"
+	}
+	return f
 }
 
 func formatGB(b uint64) string { return strconv.FormatFloat(float64(b)/1e9, 'f', 1, 64) + " GB" }

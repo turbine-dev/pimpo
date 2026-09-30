@@ -185,7 +185,7 @@ func (a *App) state(w http.ResponseWriter, r *http.Request) {
 	intact, _ := a.Events.Verify(ctx)
 	server.WriteJSON(w, 200, map[string]any{
 		"budget":          map[string]float64{"spent": spent, "limit": a.Budget.Limit(ctx)},
-		"healthy":         broken == 0,
+		"healthy":         broken == 0 && a.damage() == "",
 		"broken":          broken,
 		"awaiting":        len(ready),
 		"approvals":       len(a.myApprovals(ctx)),
