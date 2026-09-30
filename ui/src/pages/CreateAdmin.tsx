@@ -5,7 +5,7 @@ import { Logo } from '../components/Shell'
 import { Button } from '../components/ui'
 import { api } from '../lib/api'
 import { useT } from '../lib/i18n'
-import { addPasskey, canUsePasskeys } from '../lib/passkey'
+import { addPasskey, canUsePasskeys, passkeyMessage } from '../lib/passkey'
 
 // CreateAdmin is the first visit: the person who installed Pimpo makes the
 // administrator's account, and a passkey to come back with, before anything
@@ -44,7 +44,7 @@ export function CreateAdmin({ onStart, onDone }: { onStart?: () => void; onDone?
             </Button>
             <Button variant="ghost" onClick={finish}>{t('admin.later')}</Button>
           </div>
-          {passkey.error && <p className="mt-3 max-w-md text-[13px] text-danger">{passkey.error.message}</p>}
+          {passkey.error && <p className="mt-3 max-w-md text-[13px] text-danger">{passkeyMessage(passkey.error, t)}</p>}
         </>
       )}
     </div>

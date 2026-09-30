@@ -615,6 +615,12 @@ export const es: Record<Key, string> & Record<string, string> = {
   'shell.role.owner': "Administrador",
   'shell.role.member': "Miembro",
   'shell.role.guest': "Invitado",
+  'passkey.address': "Las llaves de acceso funcionan donde Pimpo se abre por nombre: en localhost en este ordenador, o en una dirección https. Aquí, usa el enlace de entrada.",
+  'passkey.expired': "Tardó demasiado. Inténtalo de nuevo.",
+  'passkey.rejected': "Esta llave de acceso no fue aceptada. Inténtalo de nuevo o añade otra.",
+  'passkey.unknown': "Esta llave de acceso no abre este Pimpo.",
+  'passkey.cancelled': "Cancelado. No cambió nada.",
+  'passkey.exists': "Este dispositivo ya tiene una llave de acceso tuya aquí.",
   'memory.confirm': 'Confirmar',
   'memory.forget': 'Olvidar: {text}',
 

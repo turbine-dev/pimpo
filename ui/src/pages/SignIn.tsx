@@ -2,7 +2,7 @@ import { KeyRound, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { Logo } from '../components/Shell'
 import { useT } from '../lib/i18n'
-import { canUsePasskeys, signIn } from '../lib/passkey'
+import { canUsePasskeys, passkeyMessage, signIn } from '../lib/passkey'
 import { Button } from '../components/ui'
 
 // SignIn is what someone not signed in sees: a passkey, or the link.
@@ -17,7 +17,7 @@ export function SignIn() {
       await signIn()
       window.location.assign('/')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(passkeyMessage(e, t))
     } finally {
       setBusy(false)
     }

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { api } from '../lib/api'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
-import { addPasskey, canUsePasskeys } from '../lib/passkey'
+import { addPasskey, canUsePasskeys, passkeyMessage } from '../lib/passkey'
 import { Button, Card } from '../components/ui'
 
 // Account is each person's own: the passkeys that sign them in, and the
@@ -40,9 +40,9 @@ export function Account() {
               className="h-10 min-w-[180px] flex-1 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
             <Button type="submit" disabled={add.isPending}>{add.isPending ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />} {t('acct.add')}</Button>
           </form>
-        ) : <p className="text-[13px] text-ink-2">{t('acct.unsupported')}</p>}
-        {add.error && <p className="text-[13px] text-danger">{add.error.message}</p>}
-        <p className="text-[12.5px] text-ink-3">{t('acct.where')}</p>
+        ) : <p className="text-[13px] text-ink-2">{t('passkey.address')}</p>}
+        {add.error && <p className="text-[13px] text-danger">{passkeyMessage(add.error, t)}</p>}
+        {canUsePasskeys() && <p className="text-[12.5px] text-ink-3">{t('acct.where')}</p>}
       </Card>
       <MyDevices />
     </div>

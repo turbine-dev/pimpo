@@ -104,7 +104,7 @@ In **People**, invite family members as a member or a guest. They send the invit
 
 Everything is private to its person: routines, conversations, memory, activity, approvals, recordings, long jobs and what their phone shares. Nobody sees anyone else's, and that includes you, the owner: you run the house (people, connections, models, rules, backups) but never see what the others keep. Only costs are shared, as a total, because the budget is the house's. A fact marked **Household** in Memory is shared with everyone.
 
-**Signing in.** Besides the link, each person can add a **passkey** in **Account** (the menu under your name): afterwards Pimpo opens with Touch ID, Face ID, Windows Hello or a security key, as them. A passkey works at the address where it was made, `localhost` on the computer or an https address; on the home-network address, use the link. Sessions and devices left unused expire (30 and 180 days).
+**Signing in.** Besides the link, each person can add a **passkey** in **Account** (the menu under your name): afterwards Pimpo opens with Touch ID, Face ID, Windows Hello or a security key, as them. A passkey works at the address where it was made, `localhost` on the computer or an https address; on the home-network address, and in the desktop app's own window, use the link (Pimpo offers a passkey only where one can work). Sessions and devices left unused expire (30 and 180 days).
 
 A member manages their own routines and answers their own approvals; a guest can only ask, and a guest's changes wait for the person responsible for them. A lasting "always allow" is a rule for the whole house, so only the owner makes those. Removing a person revokes their devices at once.
 

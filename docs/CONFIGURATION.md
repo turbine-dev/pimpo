@@ -317,7 +317,7 @@ The first time it starts, Pimpo prints a link: `http://127.0.0.1:7788/auth?token
 
 ### Sign-in and sessions
 
-- **Passkeys.** In **Account** (the menu under your name), each person adds passkeys for themselves. Signing in with one opens a session of theirs, listed with the devices as `Passkey · <name>`. A passkey belongs to the address where it was made: `localhost` on this computer, or an https address (Tailscale's, or your own). Browsers do not allow passkeys on a bare IP address, so the home-network address (`http://192.168.x.x`) keeps using the device link. Pimpo stores only public keys (`passkeys` in the database).
+- **Passkeys.** In **Account** (the menu under your name), each person adds passkeys for themselves. Signing in with one opens a session of theirs, listed with the devices as `Passkey · <name>`. A passkey belongs to the address where it was made: `localhost` on this computer, or an https address (Tailscale's, or your own). Browsers do not allow passkeys on a bare IP address, so the home-network address (`http://192.168.x.x`) keeps using the device link, and the desktop app's own window (which opens Pimpo at `127.0.0.1`, in a system view without passkeys) does not offer them: add one from a browser at `http://localhost:7788`. Pimpo offers a passkey only where it can work. Pimpo stores only public keys (`passkeys` in the database).
 - **Expiry.** A paired device unused for 180 days, and a passkey session unused for 30, no longer opens Pimpo.
 - **Wrong sign-ins.** Past 20 wrong tokens or links in 10 minutes from one address, further wrong attempts wait a second and get HTTP 429. Requests without any credential do not count, and a valid token always works.
 - **Removing a person** revokes their devices, sessions and passkeys at once.

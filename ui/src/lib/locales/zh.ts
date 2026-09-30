@@ -606,6 +606,12 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'shell.role.owner': "管理员",
   'shell.role.member': "成员",
   'shell.role.guest': "访客",
+  'passkey.address': "通行密钥只在用名称打开 Pimpo 的地方可用：本机的 localhost，或 https 地址。在这里请使用登录链接。",
+  'passkey.expired': "时间太长了。请重试。",
+  'passkey.rejected': "这个通行密钥未被接受。请重试，或添加新的。",
+  'passkey.unknown': "这个通行密钥不能打开这个 Pimpo。",
+  'passkey.cancelled': "已取消。没有任何更改。",
+  'passkey.exists': "这台设备在这里已经有你的通行密钥。",
   'memory.confirm': '确认',
   'memory.forget': '忘记：{text}',
 
