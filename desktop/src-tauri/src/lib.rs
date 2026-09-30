@@ -70,7 +70,7 @@ mod desktop {
     /// zh-Hans; anything else is English.
     pub fn language(locale: &str) -> &'static str {
         let code = locale.trim().to_lowercase();
-        let code = code.split(|c| c == '-' || c == '_' || c == '.').next().unwrap_or("");
+        let code = code.split(['-', '_', '.']).next().unwrap_or("");
         LANGS.iter().find(|l| **l == code).copied().unwrap_or("en")
     }
 
