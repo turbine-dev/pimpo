@@ -2,6 +2,7 @@ import { Skills } from './pages/Skills'
 import { Phone } from './pages/Phone'
 import { Jobs } from './pages/Jobs'
 import { Account } from './pages/Account'
+import { Dashboards } from './pages/Dashboards'
 import { SignIn } from './pages/SignIn'
 import { CreateAdmin } from './pages/CreateAdmin'
 
@@ -92,6 +93,8 @@ export default function App() {
         <Route path="/phone" element={<Phone />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/dashboards" element={<Dashboards />} />
+        <Route path="/dashboards/:id" element={<Dashboards />} />
         <Route path="/jobs/:id" element={<Jobs />} />
         <Route path="/help" element={<Help />} />
         <Route path="/inbox" element={<Inbox />} />
