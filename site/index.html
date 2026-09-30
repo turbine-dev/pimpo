@@ -54,6 +54,25 @@
   ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
   footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--ink-3); font-size: 14px; }
   footer a { color: var(--ink-2); }
+  /* Features: the big section, one block per theme. */
+  .features { padding: 72px 0 40px; }
+  .features-head { text-align: center; margin-bottom: 36px; }
+  .eyebrow { display: inline-block; font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+  .features-head h2 { font-size: clamp(32px, 5.4vw, 50px); line-height: 1.08; letter-spacing: -0.03em; margin: 14px auto 10px; max-width: 22ch; text-wrap: balance; }
+  .features-head p { color: var(--ink-2); font-size: clamp(16px, 2vw, 18.5px); max-width: 40em; margin: 0 auto; }
+  .jump { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 22px; }
+  .jump a { font-size: 13.5px; text-decoration: none; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+  .jump a:hover { color: var(--ink); border-color: var(--ink-3); }
+  .theme { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 30px; margin-bottom: 16px; scroll-margin-top: 16px; }
+  .theme-title .icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: var(--ink); color: var(--bg); margin-bottom: 14px; }
+  .theme-title .icon svg { width: 24px; height: 24px; }
+  .theme-title h3 { font-size: clamp(21px, 2.6vw, 26px); letter-spacing: -0.02em; line-height: 1.2; margin: 0 0 8px; }
+  .theme-title p { margin: 0; color: var(--ink-2); font-size: 15px; }
+  .items { display: grid; gap: 12px 22px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-content: start; }
+  .item { border-top: 1px solid var(--line); padding-top: 12px; }
+  .item b { display: block; font-size: 15px; margin-bottom: 3px; }
+  .item span { color: var(--ink-2); font-size: 14px; }
+  @media (max-width: 760px) { .theme { grid-template-columns: 1fr; padding: 22px; gap: 18px; } }
   @media (max-width: 640px) { nav a:not(.gh) { display: none; } .hero { padding-top: 32px; } }
 </style>
 </head>
@@ -62,6 +81,7 @@
   <header>
     <a class="brand" href="./"><img src="favicon.svg" alt="">Pimpo</a>
     <nav>
+      <a href="#features">Features</a>
       <a href="#how">How it works</a>
       <a href="#download">Download</a>
       <a href="https://github.com/turbine-dev/pimpo/tree/main/docs">Docs</a>
@@ -87,6 +107,128 @@
       <div class="card"><h3>Cheap</h3><p>Routines cost cents, not dollars. It works with the plans you already pay for (Claude Code, Codex, opencode), any API key, or local models.</p></div>
       <div class="card"><h3>Safe by construction</h3><p>Routines reach only the capabilities they declare. Every action passes your rules and is logged, and anything that cannot be undone waits for you.</p></div>
       <div class="card"><h3>Yours</h3><p>It runs on your computer or your server and keeps your data there. Export everything to one encrypted file, whenever you want.</p></div>
+    </div>
+  </section>
+
+  <section class="features" id="features" aria-labelledby="features-title">
+    <div class="features-head">
+      <span class="eyebrow">Features</span>
+      <h2 id="features-title">Everything Pimpo does for you</h2>
+      <p>One agent that learns your tasks once and then does them on its own, safely, wherever you are.</p>
+      <nav class="jump" aria-label="Feature themes">
+        <a href="#f-learns">Learns once, then runs on its own</a><a href="#f-safe">Safe by construction</a><a href="#f-everywhere">Wherever you are</a><a href="#f-connects">Works with what you have</a><a href="#f-models">Your models, your costs</a><a href="#f-house">For the whole house</a><a href="#f-remembers">Remembers and suggests</a><a href="#f-yours">Yours, and open</a>
+      </nav>
+    </div>
+    <div class="theme" id="f-learns">
+      <div class="theme-title">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div>
+        <h3>Learns once, then runs on its own</h3>
+        <p>Ask in plain words. Pimpo does it once with a model while you watch, then turns it into tested code that runs without one.</p>
+      </div>
+      <div class="items">
+        <div class="item"><b>Explore, then compile</b><span>Every change is rehearsed first; what worked becomes readable JavaScript with tests.</span></div>
+        <div class="item"><b>Any trigger</b><span>On a schedule, on a webhook, or when something new shows up in your email or a feed.</span></div>
+        <div class="item"><b>Repairs itself</b><span>When a service changes and a routine breaks, Pimpo tells you and redoes it with the agent.</span></div>
+        <div class="item"><b>Change it without code</b><span>Times, recipients and settings are fields you edit; routines can use other routines.</span></div>
+        <div class="item"><b>A gallery of 51 routines</b><span>Signed and audited, each installed with its tests; publish yours back.</span></div>
+        <div class="item"><b>Your routines as files</b><span>Keep them in a git repository and review every change as a diff.</span></div>
+      </div>
+    </div>
+    <div class="theme" id="f-safe">
+      <div class="theme-title">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3>Safe by construction</h3>
+        <p>Rules live outside the model, so a clever email cannot talk Pimpo out of them.</p>
+      </div>
+      <div class="items">
+        <div class="item"><b>Approvals</b><span>Anything that cannot be undone waits for you, on your phone or in the app, never by voice alone.</span></div>
+        <div class="item"><b>Receipts and undo</b><span>A tamper-evident log of every action, with one tap to undo what can be undone.</span></div>
+        <div class="item"><b>Only what it declared</b><span>Each routine reaches just the capabilities in its manifest, and nothing else.</span></div>
+        <div class="item"><b>A daily spending limit</b><span>Checked before every paid model call, so it cannot be passed.</span></div>
+        <div class="item"><b>Community protection list</b><span>Known data-stealing domains, malicious skills and dangerous actions, updated daily.</span></div>
+        <div class="item"><b>Sandboxed code and browser</b><span>Code runs in an isolated container; the browser opens only the sites you allow and never types a password.</span></div>
+      </div>
+    </div>
+    <div class="theme" id="f-everywhere">
+      <div class="theme-title">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="11" rx="2"/><rect x="17" y="8" width="5" height="12" rx="1"/><path d="M6 19h6"/></svg></div>
+        <h3>Wherever you are</h3>
+        <p>One agent across your computer, your phone and the apps you already talk in.</p>
+      </div>
+      <div class="items">
+        <div class="item"><b>Desktop and web</b><span>macOS, Windows and Linux apps, or any browser, with signed updates and one-click rollback.</span></div>
+        <div class="item"><b>Your phone, as part of it</b><span>Routines that run when you arrive home, on a photo of a bill, or from a Shortcut.</span></div>
+        <div class="item"><b>The chats you use</b><span>Telegram, WhatsApp, Slack, Discord, Signal, iMessage on a Mac, and email.</span></div>
+        <div class="item"><b>Talk to it</b><span>Say “Pimpo” and have a spoken conversation; interrupt it any time. Speech is transcribed on your machine.</span></div>
+        <div class="item"><b>A server if you like</b><span>Docker image, one-line install, and your phone reaches it from anywhere through Tailscale.</span></div>
+      </div>
+    </div>
+    <div class="theme" id="f-connects">
+      <div class="theme-title">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7V2M15 7V2"/><path d="M6 7h12v4a6 6 0 0 1-12 0z"/><path d="M12 17v5"/></svg></div>
+        <h3>Works with what you have</h3>
+        <p>Your accounts and tools, and anything with an API, without waiting for an integration.</p>
+      </div>
+      <div class="items">
+        <div class="item"><b>Everyday accounts</b><span>Email, calendars, Google Sheets, Notion, Todoist, Obsidian, GitHub, Home Assistant, Spotify, Apple Reminders and Notes.</span></div>
+        <div class="item"><b>Any MCP server</b><span>Search the official registry or add one by hand; each tool gets a risk you can see.</span></div>
+        <div class="item"><b>Any REST API</b><span>Import an OpenAPI description, or write a small JSON connector, with no recompiling.</span></div>
+        <div class="item"><b>Sites without an API</b><span>Pimpo's own browser reads and fills pages on the hosts a routine is allowed.</span></div>
+        <div class="item"><b>SKILL.md skills</b><span>Install skills from OpenClaw, Hermes or agentskills.io, limited to what you grant.</span></div>
+      </div>
+    </div>
+    <div class="theme" id="f-models">
+      <div class="theme-title">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg></div>
+        <h3>Your models, your costs</h3>
+        <p>Use what you already pay for, or run everything on your own computer.</p>
+      </div>
+      <div class="items">
+        <div class="item"><b>Subscriptions you have</b><span>Claude Code, Codex and opencode, with no API bill.</span></div>
+        <div class="item"><b>Any API key</b><span>Anthropic, OpenAI, Gemini, DeepSeek, OpenRouter and more, with fallbacks when one is down.</span></div>
+        <div class="item"><b>Local models</b><span>Ollama and LM Studio, plus local voices and Whisper for speech.</span></div>
+        <div class="item"><b>Routines cost cents</b><span>Once compiled, a routine runs without a model; you see every cent on the cost page.</span></div>
+      </div>
+    </div>
+    <div class="theme" id="f-house">
+      <div class="theme-title">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/><circle cx="12" cy="14" r="2.5"/></svg></div>
+        <h3>For the whole house</h3>
+        <p>Each person has their own Pimpo inside the same one, and nobody sees anyone else's things.</p>
+      </div>
+      <div class="items">
+        <div class="item"><b>A login per person</b><span>Pair a phone for each person, or sign in with a passkey: Touch ID, Face ID or Windows Hello.</span></div>
+        <div class="item"><b>Private by default</b><span>Routines, conversations, memory and activity belong to their person, the administrator included.</span></div>
+        <div class="item"><b>Roles</b><span>The administrator runs the house, members manage their own things, guests can only ask.</span></div>
+        <div class="item"><b>Shared when you want</b><span>Mark a fact as the house's and everyone's Pimpo knows it.</span></div>
+      </div>
+    </div>
+    <div class="theme" id="f-remembers">
+      <div class="theme-title">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></div>
+        <h3>Remembers and suggests</h3>
+        <p>It gets to know you, and only from what you told it.</p>
+      </div>
+      <div class="items">
+        <div class="item"><b>Memory you control</b><span>Facts you confirmed guide it; what it read somewhere is marked unconfirmed and never becomes an instruction.</span></div>
+        <div class="item"><b>Learns your preferences</b><span>Once a week, from your own requests and choices; confirm or remove each one.</span></div>
+        <div class="item"><b>Suggests routines</b><span>From patterns in your email and calendar metadata, never their contents.</span></div>
+        <div class="item"><b>Long jobs</b><span>“Compare these 20 suppliers”: split across agents, with a plan, a budget and a final report.</span></div>
+      </div>
+    </div>
+    <div class="theme" id="f-yours">
+      <div class="theme-title">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <h3>Yours, and open</h3>
+        <p>Free and open source, and your data stays where you put it.</p>
+      </div>
+      <div class="items">
+        <div class="item"><b>Runs on your machine</b><span>Your computer or your server; no account with us and no telemetry.</span></div>
+        <div class="item"><b>Backups you can read</b><span>Export everything to one encrypted file, or back up to S3 or Google Drive, encrypted before it leaves.</span></div>
+        <div class="item"><b>Snapshots and rollback</b><span>A snapshot before every update, and one click to go back with your data as it was.</span></div>
+        <div class="item"><b>Stable formats</b><span>From v1.0, newer versions read older data; the formats are documented and tested.</span></div>
+        <div class="item"><b>Apache 2.0</b><span>Read the code, run it, change it, and share it.</span></div>
+      </div>
     </div>
   </section>
 
