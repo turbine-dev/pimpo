@@ -1862,6 +1862,8 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'needs.kind.exploration_ready': "Готово к просмотру",
   'needs.kind.suggestion': "Предложения",
   'needs.kind.system': "Система",
+  'needs.kind.credential_request': "Нужные ключи",
+  'needs.kind.lesson': "Уроки",
   'needs.jobError': "В задании «{request}» возникла проблема",
   'needs.jobPlanned': "План готов; запустите, когда захотите",
   'needs.expires': "Истекает {when}",

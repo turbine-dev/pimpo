@@ -1798,6 +1798,8 @@ export const pt = {
   'needs.kind.exploration_ready': "Prontas para revisar",
   'needs.kind.suggestion': "Sugestões",
   'needs.kind.system': "Sistema",
+  'needs.kind.credential_request': "Chaves para informar",
+  'needs.kind.lesson': "Lições",
   'needs.jobError': "O trabalho “{request}” teve um problema",
   'needs.jobPlanned': "O plano está pronto; inicie quando quiser",
   'needs.expires': "Expira {when}",

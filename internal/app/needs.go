@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/turbine-dev/pimpo/internal/approval"
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
@@ -20,10 +21,9 @@ import (
 // never sees a member's approvals or questions here, and nobody sees the
 // owner's.
 //
-// Adding a kind (credential requests, lessons to review) is one more
-// source in needSources: list the caller's own items, give them a kind,
-// an urgency and the actions the list may offer, and teach the UI's
-// Needs component that kind's buttons.
+// Adding a kind is one more source in needSources: list the caller's own
+// items, give them a kind, an urgency and the actions the list may offer,
+// and teach the UI's Needs component that kind's buttons.
 
 // Urgency ranks, highest first.
 const (
@@ -60,6 +60,11 @@ type need struct {
 	Proposal string `json:"proposal,omitempty"`
 	// Risk is an approval's risk, for its color.
 	Risk int `json:"risk,omitempty"`
+	// Amount is what an approval that may be granted for its routine
+	// moves, when it moves one: the least limit such a grant may have.
+	Amount *float64 `json:"amount,omitempty"`
+	// Count is how many a summary item stands for, such as lessons.
+	Count int `json:"count,omitempty"`
 }
 
 // needSource lists one kind of what waits for the person ctx acts for.
@@ -73,6 +78,7 @@ type needSource struct {
 func (a *App) needSources() []needSource {
 	return []needSource{
 		{"approval", people.Member, a.approvalNeeds},
+		{"credential_request", people.Member, a.credentialNeeds},
 		{"question", people.Guest, a.questionNeeds},
 		{"failed_routine", people.Member, a.failedRoutineNeeds},
 		{"job_error", people.Member, a.jobNeeds(true)},
@@ -80,7 +86,7 @@ func (a *App) needSources() []needSource {
 		{"exploration_ready", people.Guest, a.readyNeeds},
 		{"suggestion", people.Owner, a.suggestionNeeds},
 		{"system", people.Owner, a.systemNeeds},
-		// credential_request (8.7) and lesson (9.4) go here once they land.
+		{"lesson", people.Member, a.lessonNeeds},
 	}
 }
 
@@ -152,6 +158,16 @@ func (a *App) approvalNeeds(ctx context.Context) []need {
 		if people.From(ctx) != people.OwnerID {
 			n.Actions = []string{"once", "run", "deny"}
 		}
+		// "For this routine" repeats exactly this operation without asking,
+		// up to the amount it moves or a higher limit the person sets.
+		if q.Grantable {
+			n.Actions = append(n.Actions, "routine")
+			for _, v := range approval.OperationOf(q.Action.Capability, q.Action.Args).Amounts {
+				if n.Amount == nil || v > *n.Amount {
+					n.Amount = &v
+				}
+			}
+		}
 		out = append(out, n)
 	}
 	return out
@@ -165,7 +181,7 @@ func (a *App) questionNeeds(ctx context.Context) []need {
 			continue
 		}
 		n := need{ID: q.ID, Title: q.Question, Created: q.Asked, Expires: q.Expires, Urgency: urgencyAnswer,
-			Options: q.Options, Actions: []string{"answer"}}
+			Options: q.Options, Actions: []string{"answer", "type"}}
 		if q.Routine != "" {
 			n.Link = "/routines/" + q.Routine
 		}
@@ -266,4 +282,26 @@ func (a *App) systemNeeds(ctx context.Context) []need {
 		}
 	}
 	return out
+}
+
+// credentialNeeds are the keys the caller was asked for privately: a
+// routine or task waits on each, so they rank with approvals.
+func (a *App) credentialNeeds(ctx context.Context) []need {
+	out := []need{}
+	for _, c := range a.myCredentialRequests(ctx) {
+		out = append(out, need{ID: c.ID, Title: c.Description, Created: c.Asked, Urgency: urgencyDecide,
+			Link: "/credentials/" + c.ID, Actions: []string{"open"}})
+	}
+	return out
+}
+
+// lessonNeeds is one item for the caller's lessons waiting for review,
+// with how many there are; they are looked at when there is time.
+func (a *App) lessonNeeds(ctx context.Context) []need {
+	proposed := a.proposedLessons(ctx)
+	if len(proposed) == 0 {
+		return []need{}
+	}
+	return []need{{ID: "lessons", Title: proposed[0].Title, Created: proposed[0].Created, Count: len(proposed),
+		Urgency: urgencyWhenFree, Link: "/lessons", Actions: []string{"open"}}}
 }

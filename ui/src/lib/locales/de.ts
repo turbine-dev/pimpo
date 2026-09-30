@@ -1798,6 +1798,8 @@ export const de: Record<Key, string> & Record<string, string> = {
   'needs.kind.exploration_ready': "Bereit zur Prüfung",
   'needs.kind.suggestion': "Vorschläge",
   'needs.kind.system': "System",
+  'needs.kind.credential_request': "Schlüssel angeben",
+  'needs.kind.lesson': "Lektionen",
   'needs.jobError': "Der Auftrag „{request}“ hatte ein Problem",
   'needs.jobPlanned': "Der Plan ist fertig; starte ihn, wann du willst",
   'needs.expires': "Läuft ab {when}",

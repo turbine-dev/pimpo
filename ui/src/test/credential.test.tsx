@@ -32,8 +32,10 @@ describe('Private credential prompts', () => {
 
   it('lists open requests in the inbox with a link to the form', async () => {
     mockFetch({
-      '/api/explorations?state=ready': [], '/api/routines': [], '/api/approvals': [], '/api/media': [], '/api/questions': [], '/api/suggestions': [],
-      '/api/credentials': [request],
+      '/api/media': [],
+      '/api/needs': { total: 1, counts: { credential_request: 1 }, items: [
+        { kind: 'credential_request', id: 'c1', title: request.description, created: request.asked, urgency: 3, link: '/credentials/c1', actions: ['open'] },
+      ] },
     })
     wrap(<Routes><Route path="/" element={<Inbox />} /><Route path="/credentials/:id" element={<p>form page</p>} /></Routes>)
     expect(await screen.findByText('Notion precisa da sua Token da integração.')).toBeInTheDocument()

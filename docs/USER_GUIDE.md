@@ -107,7 +107,7 @@ Progress is kept, not just shown: **Home** lists what is running now, and each j
 
 ## Approvals and rules
 
-- **Needs you** is one list of everything waiting for you: approvals, questions from routines, routines stopped after a failure, jobs that ran into a problem (for a week) or whose plan waits to be started, tasks ready to review and, for the administrator, suggestions and parts of the house that stopped working.
+- **Needs you** is one list of everything waiting for you: approvals (with **For this routine** where it applies), keys Pimpo asked you for privately (each opens its own form), questions from routines (tap an option or type the answer), routines stopped after a failure, jobs that ran into a problem (for a week) or whose plan waits to be started, tasks ready to review, how many lessons wait for you and, for the administrator, suggestions and parts of the house that stopped working.
   - The most urgent comes first: an approval about to expire (it says when), then approvals, questions, what broke, and the rest; within each, the newest first.
   - Filter by kind with the tabs on top. Answer in place: allow or deny, pick an answer, run a routine again or redo it with the agent, or open a job or task.
   - The bell (in the header on the phone, at the bottom of the menu on the computer) shows how many things wait and opens the same list; Home shows the first three.

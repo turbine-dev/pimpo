@@ -1823,6 +1823,8 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'needs.kind.exploration_ready': "Prêtes à revoir",
   'needs.kind.suggestion': "Suggestions",
   'needs.kind.system': "Système",
+  'needs.kind.credential_request': "Clés à fournir",
+  'needs.kind.lesson': "Leçons",
   'needs.jobError': "La tâche « {request} » a rencontré un problème",
   'needs.jobPlanned': "Le plan est prêt ; lancez-le quand vous voulez",
   'needs.expires': "Expire {when}",

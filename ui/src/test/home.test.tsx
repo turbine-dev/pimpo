@@ -45,6 +45,18 @@ describe('Home', () => {
   })
 })
 
+describe('Home running now', () => {
+  it('shows what runs now above the day', async () => {
+    mockFetch({
+      '/api/needs': { total: 0, counts: {}, items: [] },
+      '/api/progress': [{ id: 'run:brief:3', person: 'owner', kind: 'run', routine: 'brief', run: 3, title: 'Resumo matinal', label: 'gmail.search', done: 4, total: 0, state: 'running', cost_usd: 0, started_at: now.toISOString(), updated_at: now.toISOString() }],
+    })
+    wrap(<Home />)
+    const section = await screen.findByRole('region', { name: 'Rodando agora' })
+    expect(within(section).getByText('Resumo matinal')).toBeInTheDocument()
+  })
+})
+
 describe('Inbox panel', () => {
   it('answers an approval in place and filters by kind', async () => {
     const calls = mockFetch({

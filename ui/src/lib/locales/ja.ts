@@ -1798,6 +1798,8 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'needs.kind.exploration_ready': "確認待ち",
   'needs.kind.suggestion': "提案",
   'needs.kind.system': "システム",
+  'needs.kind.credential_request': "入力が必要なキー",
+  'needs.kind.lesson': "レッスン",
   'needs.jobError': "ジョブ「{request}」で問題が発生しました",
   'needs.jobPlanned': "計画の準備ができました。好きなときに開始してください",
   'needs.expires': "期限 {when}",

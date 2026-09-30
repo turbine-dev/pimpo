@@ -1798,6 +1798,8 @@ export const en: Record<Key, string> = {
   'needs.kind.exploration_ready': "Ready to review",
   'needs.kind.suggestion': "Suggestions",
   'needs.kind.system': "System",
+  'needs.kind.credential_request': "Keys to give",
+  'needs.kind.lesson': "Lessons",
   'needs.jobError': "Job “{request}” ran into a problem",
   'needs.jobPlanned': "The plan is ready; start it when you want",
   'needs.expires': "Expires {when}",

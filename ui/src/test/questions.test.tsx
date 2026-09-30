@@ -5,7 +5,12 @@ import { wrap, type Call } from './helpers'
 
 afterEach(() => vi.unstubAllGlobals())
 
-const empty = { '/api/explorations?state=ready': [], '/api/routines': [], '/api/approvals': [], '/api/media': [], '/api/suggestions': [] }
+const empty = {
+  '/api/media': [],
+  '/api/needs': { total: 1, counts: { question: 1 }, items: [
+    { kind: 'question', id: 'q1', title: 'Treinou hoje?', options: ['Sim', 'Não'], created: new Date().toISOString(), urgency: 2, actions: ['answer', 'type'] },
+  ] },
+}
 
 // stub answers like mockFetch, but a typed answer that is none of the
 // options gets the 422 the server sends.
@@ -17,7 +22,6 @@ function stub() {
     calls.push({ url, method, body })
     let out: unknown = (empty as Record<string, unknown>)[url] ?? null
     let status = 200
-    if (url === '/api/questions') out = [{ id: 'q1', question: 'Treinou hoje?', options: ['Sim', 'Não'], asked: new Date().toISOString() }]
     if (method === 'POST' && body?.text === 'talvez') {
       status = 422
       out = { error: '“Treinou hoje?”: essa não é uma das opções. Responda com uma delas: 1 = Sim · 2 = Não' }

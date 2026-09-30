@@ -1798,6 +1798,8 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'needs.kind.exploration_ready': "待查看",
   'needs.kind.suggestion': "建议",
   'needs.kind.system': "系统",
+  'needs.kind.credential_request': "需要提供的密钥",
+  'needs.kind.lesson': "经验",
   'needs.jobError': "任务“{request}”遇到了问题",
   'needs.jobPlanned': "计划已准备好，随时可以开始",
   'needs.expires': "{when}过期",

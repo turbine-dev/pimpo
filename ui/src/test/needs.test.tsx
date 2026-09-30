@@ -11,7 +11,7 @@ const soon = new Date(now.getTime() + 4 * 60 * 1000).toISOString()
 
 const needs = {
   total: 6,
-  counts: { approval: 1, question: 1, failed_routine: 1, job_error: 1, exploration_ready: 1, lesson: 1 },
+  counts: { approval: 1, question: 1, failed_routine: 1, job_error: 1, exploration_ready: 1, reminder: 1 },
   items: [
     { kind: 'approval', id: 'a1', title: 'cobranca quer enviar um e-mail', detail: 'Sempre me pergunte', created: now.toISOString(), expires: soon, urgency: 4, actions: ['once', 'run', 'deny'], risk: 3 },
     { kind: 'question', id: 'q1', title: 'Treinou hoje?', created: now.toISOString(), urgency: 2, actions: ['answer'], options: ['Sim', 'Não'], link: '/routines/treino' },
@@ -19,7 +19,7 @@ const needs = {
     { kind: 'job_error', id: 'j1', title: 'Resumo do mês', detail: 'Extratos: no access', created: now.toISOString(), urgency: 1, actions: ['open'], link: '/jobs/j1' },
     { kind: 'exploration_ready', id: 'e1', title: 'Resumo semanal', created: now.toISOString(), urgency: 0, actions: ['open'], link: '/explorations/e1' },
     // A kind this UI does not know yet still shows, with a way to open it.
-    { kind: 'lesson', id: 'l1', title: 'Você prefere resumos curtos', urgency: 0, actions: ['open'], link: '/lessons' },
+    { kind: 'reminder', id: 'r1', title: 'Você prefere resumos curtos', urgency: 0, actions: ['open'], link: '/reminders' },
   ],
 }
 

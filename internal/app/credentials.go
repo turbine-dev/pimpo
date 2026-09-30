@@ -202,17 +202,22 @@ func (a *App) myCredentialRequest(ctx context.Context, id string) (credentialReq
 	return credentialRequest{}, false
 }
 
+// myCredentialRequests are the open requests of the person asking, the
+// newest first, in their language.
+func (a *App) myCredentialRequests(ctx context.Context) []credentialView {
+	out := []credentialView{}
+	for _, c := range a.credentialRequests(ctx) {
+		if mine(ctx, c.Person) {
+			out = append(out, a.credentialView(ctx, c))
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Asked.After(out[j].Asked) })
+	return out
+}
+
 func (a *App) credentialRoutes() {
 	a.Server.Handle("GET /api/credentials", func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		out := []credentialView{}
-		for _, c := range a.credentialRequests(ctx) {
-			if mine(ctx, c.Person) {
-				out = append(out, a.credentialView(ctx, c))
-			}
-		}
-		sort.Slice(out, func(i, j int) bool { return out[i].Asked.After(out[j].Asked) })
-		server.WriteJSON(w, 200, out)
+		server.WriteJSON(w, 200, a.myCredentialRequests(r.Context()))
 	})
 	a.Server.Handle("GET /api/credentials/{id}", func(w http.ResponseWriter, r *http.Request) {
 		c, ok := a.myCredentialRequest(r.Context(), r.PathValue("id"))

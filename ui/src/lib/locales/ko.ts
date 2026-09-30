@@ -1798,6 +1798,8 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'needs.kind.exploration_ready': "검토 대기",
   'needs.kind.suggestion': "제안",
   'needs.kind.system': "시스템",
+  'needs.kind.credential_request': "입력할 키",
+  'needs.kind.lesson': "레슨",
   'needs.jobError': "작업 “{request}”에 문제가 생겼습니다",
   'needs.jobPlanned': "계획이 준비되었습니다. 원할 때 시작하세요",
   'needs.expires': "만료 {when}",

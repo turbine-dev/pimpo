@@ -207,10 +207,11 @@ export type ModelTest = { ok: boolean; text?: string; cost_usd?: number; ms?: nu
 
 export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: string; approved?: string }; undoable: boolean; undo_until?: string; undone: boolean }
 // A Need is one thing waiting for the person signed in, from /api/needs.
-// The kinds the server may add later (credential requests, lessons) show
-// with their title and an open link until the UI learns their buttons.
-export type NeedKind = 'approval' | 'question' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system'
-export type Need = { kind: NeedKind; id: string; title: string; detail?: string; created?: string; urgency: number; expires?: string; link?: string; actions: string[]; options?: string[]; proposal?: string; risk?: number }
+// A kind the server adds later shows with its title and an open link
+// until the UI learns its buttons. amount is what a grantable approval
+// moves; count is how many a summary item (lessons) stands for.
+export type NeedKind = 'approval' | 'credential_request' | 'question' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
+export type Need = { kind: NeedKind; id: string; title: string; detail?: string; created?: string; urgency: number; expires?: string; link?: string; actions: string[]; options?: string[]; proposal?: string; risk?: number; amount?: number; count?: number }
 export type Needs = { items: Need[]; counts: Partial<Record<NeedKind, number>>; total: number }
 export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string; grantable?: boolean }
 // Grant is an "approve for this routine" answer: that routine repeats that exact operation without asking.

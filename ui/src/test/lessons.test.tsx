@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Route, Routes } from 'react-router-dom'
 import { Lessons } from '../pages/Lessons'
 import { Inbox } from '../pages/Inbox'
 import type { Lesson } from '../lib/api'
@@ -64,11 +65,14 @@ describe('Lessons', () => {
 
   it('shows in the inbox how many wait', async () => {
     mockFetch({
-      '/api/explorations?state=ready': [], '/api/routines': [], '/api/approvals': [], '/api/media': [], '/api/questions': [], '/api/suggestions': [],
-      '/api/lessons': { proposed: [pref, task], decided: [] },
+      '/api/media': [],
+      '/api/needs': { total: 1, counts: { lesson: 1 }, items: [
+        { kind: 'lesson', id: 'lessons', title: pref.title, created: pref.created, urgency: 0, count: 2, link: '/lessons', actions: ['open'] },
+      ] },
     })
-    wrap(<Inbox />, '/inbox')
+    wrap(<Routes><Route path="/inbox" element={<Inbox />} /><Route path="/lessons" element={<p>lessons page</p>} /></Routes>, '/inbox')
     expect(await screen.findByText('2 lições para revisar')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Revisar' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Revisar' }))
+    expect(await screen.findByText('lessons page')).toBeInTheDocument()
   })
 })
