@@ -162,7 +162,21 @@ mod desktop {
     /// page allowed to switch the floating cat.
     fn is_local(app: &AppHandle, u: &Url) -> bool {
         let local = app.try_state::<Local>().and_then(|l| l.0.lock().unwrap().clone());
-        local.is_some_and(|base| u.as_str().starts_with(&base))
+        local.is_some_and(|base| same_origin(&base, u))
+    }
+
+    /// same_origin reports whether a URL has exactly the scheme, host and
+    /// port of base, and no user name or password (so a link such as
+    /// http://127.0.0.1:PORT@elsewhere, or another port starting with the
+    /// same digits, does not pass).
+    pub fn same_origin(base: &str, u: &Url) -> bool {
+        let Ok(b) = Url::parse(base) else { return false };
+        u.username().is_empty()
+            && u.password().is_none()
+            && u.scheme() == b.scheme()
+            && u.host_str().is_some()
+            && u.host_str() == b.host_str()
+            && u.port_or_known_default() == b.port_or_known_default()
     }
 
     /// set_mascot keeps the choice, shows or hides the cat, and tells the
@@ -298,6 +312,10 @@ mod desktop {
             .position(x, y)
             // The cat's links open in the main window instead of its own.
             .on_navigation(move |u| {
+                // The cat's window only ever shows this computer's Pimpo.
+                if !same_origin(&open_base, u) {
+                    return false;
+                }
                 // The cat said goodbye (from its own menu, or when turned off).
                 if u.path() == "/desktop/mascot" {
                     keep_mascot(&main, false);
@@ -910,7 +928,8 @@ mod desktop {
 
 #[cfg(all(test, desktop))]
 mod tests {
-    use super::desktop::{check_link, language, update_endpoint, version_endpoint, word};
+    use super::desktop::{check_link, language, same_origin, update_endpoint, version_endpoint, word};
+    use tauri::Url;
 
     #[test]
     fn menus_follow_the_language() {
@@ -947,6 +966,20 @@ mod tests {
         assert!(check_link("http://100.200.1.2/auth?token=abc").is_err());
         assert!(check_link("https://pimpo.example.com/auth").is_err());
         assert!(check_link("not a link").is_err());
+    }
+
+    #[test]
+    fn only_this_computers_pimpo_is_local() {
+        let base = "http://127.0.0.1:4321";
+        let ok = |u: &str| same_origin(base, &Url::parse(u).unwrap());
+        assert!(ok("http://127.0.0.1:4321/desktop/mascot?on=1"));
+        assert!(ok("http://127.0.0.1:4321"));
+        assert!(!ok("http://127.0.0.1:43210/desktop/mascot"));
+        assert!(!ok("http://user:pw@127.0.0.1:4321/desktop/mascot"));
+        assert!(!ok("https://127.0.0.1:4321/desktop/mascot"));
+        assert!(!ok("http://localhost:4321/desktop/mascot"));
+        assert!(!ok("http://127.0.0.1/desktop/mascot"));
+        assert!(!same_origin("not a base", &Url::parse("http://127.0.0.1:4321").unwrap()));
     }
 }
 
