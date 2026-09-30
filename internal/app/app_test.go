@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/llm"
@@ -43,7 +44,8 @@ func newApp(t *testing.T, agent llm.Agent, model llm.Model) *testApp {
 	t.Cleanup(srv.Close)
 	a.Explore.BaseURL = srv.URL
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	// The loops must be done with the database before its folder goes.
+	t.Cleanup(func() { cancel(); a.Wait(10 * time.Second) })
 	a.Start(ctx)
 	return &testApp{a, srv}
 }

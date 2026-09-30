@@ -154,6 +154,7 @@ func defaultSettings() Settings {
 }
 
 type App struct {
+	bg        sync.WaitGroup
 	Events    *event.Store
 	Vault     *vault.Vault
 	Store     *store.Store
@@ -334,25 +335,46 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	return a, nil
 }
 
+// background runs one of Start's loops, counted so Wait can tell when
+// they have all returned.
+func (a *App) background(f func()) {
+	a.bg.Add(1)
+	go func() {
+		defer a.bg.Done()
+		f()
+	}()
+}
+
+// Wait blocks until the loops Start began have returned after its context
+// ended, or until d passes.
+func (a *App) Wait(d time.Duration) {
+	done := make(chan struct{})
+	go func() { a.bg.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(d):
+	}
+}
+
 // Start runs the scheduler and the Telegram listener until ctx ends.
 func (a *App) Start(ctx context.Context) error {
 	if err := a.Scheduler.Start(ctx); err != nil {
 		return err
 	}
-	go a.Outbox.Run(ctx, 15*time.Second)
-	go a.emailChannel(ctx, time.Minute)
-	go a.refreshProtection(ctx)
+	a.background(func() { a.Outbox.Run(ctx, 15*time.Second) })
+	a.background(func() { a.emailChannel(ctx, time.Minute) })
+	a.background(func() { a.refreshProtection(ctx) })
 	a.startRemote(ctx)
-	go a.cloudLoop(ctx, 15*time.Minute)
-	go a.organizeLoop(ctx, 30*time.Minute)
+	a.background(func() { a.cloudLoop(ctx, 15*time.Minute) })
+	a.background(func() { a.organizeLoop(ctx, 30*time.Minute) })
 	a.startLinks(ctx)
-	go a.healthLoop(ctx, time.Minute)
+	a.background(func() { a.healthLoop(ctx, time.Minute) })
 	a.announceUpgrade(ctx)
-	go a.repoLoop(ctx, 15*time.Minute)
-	go a.reminderLoop(ctx, 20*time.Second)
-	go a.aliveLoop(ctx, time.Minute)
-	go a.suggestLoop(ctx, 30*time.Minute)
-	go a.learnLoop(ctx, time.Hour)
+	a.background(func() { a.repoLoop(ctx, 15*time.Minute) })
+	a.background(func() { a.reminderLoop(ctx, 20*time.Second) })
+	a.background(func() { a.aliveLoop(ctx, time.Minute) })
+	a.background(func() { a.suggestLoop(ctx, 30*time.Minute) })
+	a.background(func() { a.learnLoop(ctx, time.Hour) })
 	a.resumeJobs(ctx)
 	go func() {
 		<-ctx.Done()
