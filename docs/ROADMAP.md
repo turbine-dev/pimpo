@@ -23,6 +23,7 @@ The order comes from scoring each item with Jev (TypeSafe) on user value, differ
 | **M4** | v0.9 | Hands | agent-driven browser · code sandbox · learning the owner |
 | **M5** | v1.0 | Everywhere | stable formats · phone as part of the agent · voice conversation · parallel agents and long tasks · more channels |
 | **M6** | v1.1 | Each person their own | a login per person · privacy between people, the owner included · passkeys and sessions |
+| **M7** | v1.2 | At a glance | dashboards · routines as widgets · floating desktop widgets · Android and iOS home-screen widgets |
 | **M8** | v1.3 | Less friction | replies answer their notice · conversation search · approvals bound to the operation · questions as cards · settings history · database integrity · private credential prompts · lasting progress |
 | **M9** | v1.4 | Where the family already is | a Telegram dashboard · push triggers · who owns a memory · lessons to review · models and spending per person · live model catalog · outside password managers · one list of what needs you |
 
@@ -242,6 +243,20 @@ Every route has an access rule, and a route without one is the owner's. Routines
 ### 6.3 Passkeys and sessions · M
 
 A passkey to sign in on a computer, sessions that expire and can be revoked one by one, and a limit on sign-in attempts.
+
+---
+
+## M7 · At a glance (v1.2)
+
+Goal: any number of dashboards per person, any routine as a widget, and widgets outside the app, each on its own: floating on the Mac, Windows and Linux desktop, and on the home and lock screens of Android and iOS. The design is [RFC 0003](rfcs/0003-dashboards.md).
+
+- **7.1 Widgets and snapshots · M.** A `widget.show` capability (Notify) with fixed kinds (metric, list, status, text, table, chart), snapshots and history, built-in widgets, the dashboards API, private to each person.
+- **7.2 Dashboards in the app · M.** Several per person, a grid to drag and resize, a phone layout, live updates, stale marks and refresh.
+- **7.3 Routines become widgets · M.** A compiler rule for "show me…", **Turn into a widget** as a new approved version, and status widgets from any routine's runs.
+- **7.4 Floating desktop widgets · M.** Each widget its own always-on-top window on macOS, Windows and Linux, hidden while the app is locked.
+- **7.5 Android widgets · L.** A read-only widget key and feed, and Glance home-screen widgets.
+- **7.6 iOS and macOS widgets · L · owner.** A WidgetKit extension with lock-screen redaction; needs the Apple Developer account.
+- **7.7 Windows Widgets board · M.** Only if people ask for it after 7.4.
 
 ---
 
