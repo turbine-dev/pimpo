@@ -150,7 +150,10 @@ func (d *Discord) Run(ctx context.Context, on func(Inbound)) error {
 				ChannelID string `json:"channel_id"`
 				GuildID   string `json:"guild_id"`
 				Content   string `json:"content"`
-				Author    struct {
+				Reference *struct {
+					MessageID string `json:"message_id"`
+				} `json:"message_reference"`
+				Author struct {
 					ID  string `json:"id"`
 					Bot bool   `json:"bot"`
 				} `json:"author"`
@@ -165,7 +168,11 @@ func (d *Discord) Run(ctx context.Context, on func(Inbound)) error {
 			}
 			d.dms[msg.Author.ID] = msg.ChannelID
 			d.mu.Unlock()
-			on(Inbound{From: msg.Author.ID, Chat: msg.ChannelID, Text: msg.Content})
+			in := Inbound{From: msg.Author.ID, Chat: msg.ChannelID, Text: msg.Content}
+			if msg.Reference != nil {
+				in.ReplyTo = msg.Reference.MessageID
+			}
+			on(in)
 		}
 	}
 }
@@ -203,16 +210,26 @@ func (d *Discord) Typing(ctx context.Context, to string) error {
 }
 
 func (d *Discord) Send(ctx context.Context, to, text string) error {
+	_, err := d.SendMessage(ctx, to, text)
+	return err
+}
+
+func (d *Discord) SendMessage(ctx context.Context, to, text string) ([]string, error) {
 	ch, err := d.dm(ctx, to)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	var ids []string
 	for _, part := range chunks(text, 1900) {
-		if err := d.rest(ctx, "POST", "/channels/"+ch+"/messages", map[string]string{"content": part}, nil); err != nil {
-			return err
+		var sent struct {
+			ID string `json:"id"`
 		}
+		if err := d.rest(ctx, "POST", "/channels/"+ch+"/messages", map[string]string{"content": part}, &sent); err != nil {
+			return ids, err
+		}
+		ids = append(ids, sent.ID)
 	}
-	return nil
+	return ids, nil
 }
 
 // chunks splits text for services that limit a message's length.
