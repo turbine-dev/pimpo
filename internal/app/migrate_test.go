@@ -42,6 +42,9 @@ func TestImportFromHermes(t *testing.T) {
 		if f.Trust != memory.Low {
 			t.Fatalf("imported fact trusted without asking: %+v", f)
 		}
+		if !f.Has("import:hermes") {
+			t.Fatalf("imported fact without its source: %+v", f.From())
+		}
 	}
 	if _, err := ta.Vault.Get(context.Background(), "telegram.token"); err == nil {
 		t.Fatal("secrets copied without asking")

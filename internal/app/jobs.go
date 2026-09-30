@@ -15,6 +15,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/explore"
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/memory"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
@@ -280,6 +281,7 @@ func (a *App) runPart(ctx context.Context, jobID, partID string) {
 			MaxCostUSD: share,
 			Timeout:    partTimeout,
 			MaxTurns:   partTurns,
+			Origin:     &memory.Origin{Kind: memory.FromJob, Ref: jobID, Label: j.Request},
 		})
 		if err != nil {
 			a.updateJob(ctx, jobID, func(j *Job) {

@@ -92,6 +92,8 @@ Every action has a receipt: what was done, with which arguments, under which rul
 
 Pimpo remembers what you tell it. Facts it read somewhere are marked "not confirmed" and never guide it until you confirm them. Every change is versioned: **History › Go back to this** undoes any change.
 
+Each fact shows where it came from: a conversation, a task, a routine or a job (a link opens it), an email and its sender, an import, something you typed, or a preference Pimpo learned. Facts saved before Pimpo kept sources say "Unknown source". **Sources** groups your facts by where they came from; **Delete everything from this source** lists the facts that go and, once you confirm, deletes them all, for example everything read in emails from one sender or noted in one conversation. A fact found in two places goes with either. It is one change in **History**, so it can be undone. You see and delete only your own facts' sources, and of the household's facts only the ones you shared.
+
 Search memory in plain words ("what can't I eat?"): with Jev set up, Pimpo finds facts by meaning, not only by the words they share, and the agent uses the same search. Every night Pimpo merges facts that say the same thing, never trading one you confirmed for one it read somewhere, and never merging facts that differ in a date, place or name. **Organize** does it now, and **History** undoes it.
 
 ### Preferences Pimpo learns

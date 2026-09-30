@@ -30,8 +30,8 @@ func TestOrganizeMergesDuplicatesOnly(t *testing.T) {
 	j := &sameJudge{}
 	ta.DemoJudge = j
 	m := ta.Memory
-	m.Add("Academia às terças", "rotina", "owner", memory.High)
-	m.Add("Vou à academia às terças", "rotina", "email", memory.Low)
+	m.AddFrom("Academia às terças", "rotina", "owner", memory.High, "", memory.Origin{Kind: memory.FromTyped})
+	m.AddFrom("Vou à academia às terças", "rotina", "email", memory.Low, "", memory.Origin{Kind: memory.FromConversation, Ref: "c1"})
 	m.Add("Reunião com a Ana dia 12", "agenda", "owner", memory.High)
 	m.Add("Reunião com a Ana dia 19", "agenda", "email", memory.Low)
 	m.Add("Minha irmã se chama Ana", "família", "owner", memory.High)
@@ -51,6 +51,11 @@ func TestOrganizeMergesDuplicatesOnly(t *testing.T) {
 	facts, _ := m.List()
 	if len(facts) != 4 {
 		t.Fatalf("%d facts", len(facts))
+	}
+	for _, f := range facts {
+		if f.Text == "Academia às terças" && (!f.Has(memory.FromTyped) || !f.Has("conversation:c1")) {
+			t.Fatalf("the kept fact lost a source: %+v", f.From())
+		}
 	}
 	_, last := ta.do(t, "GET", "/api/memory/organized", nil)
 	if len(last["merged"].([]any)) != 1 {

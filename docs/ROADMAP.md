@@ -314,7 +314,7 @@ Gmail (through Google's push notifications), Slack and GitHub start routines as 
 
 ### 9.3 Who owns a memory · S
 
-Each fact shows where it came from (a conversation, an email, a routine), and a person can delete everything derived from one source.
+Each fact shows where it came from (a conversation, an email, a routine), and a person can delete everything derived from one source. *Done.*
 
 ### 9.4 Lessons to review · M
 

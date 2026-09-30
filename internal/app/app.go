@@ -963,30 +963,34 @@ func (a *App) converse(ctx context.Context, via, text string) (string, error) {
 		return a.effortCommand(ctx, key, strings.TrimSpace(m[1])), nil
 	}
 	var ids []string
-	conv := ""
+	var chat store.Chat
 	if raw, _ := a.Events.Get(ctx, key); raw != "" {
 		id, at, _ := strings.Cut(raw, "|")
 		if sec, err := strconv.ParseInt(at, 10, 64); err == nil && time.Since(time.Unix(sec, 0)) < convQuiet {
-			if _, turns, err := a.Store.Chat(ctx, id); err == nil {
-				conv, ids = id, turns
+			if c, turns, err := a.Store.Chat(ctx, id); err == nil {
+				chat, ids = c, turns
 			}
 		}
 	}
-	history := a.history(ctx, ids)
-	convEffort, _ := a.Events.Get(ctx, key+".effort")
-	pick := a.routeModel(ctx, text, history, a.convModel(ctx, key), convEffort)
-	o := explore.Options{Context: history, Model: pick.Model, Effort: pick.Effort}
-	exp, err := a.Explore.StartWith(ctx, text, actor(ctx), o)
-	if err != nil {
-		return "", err
-	}
-	if conv == "" {
+	fresh := chat.ID == ""
+	if fresh {
 		title := channelTitle(via) + " · " + text
 		if r := []rune(title); len(r) > 60 {
 			title = string(r[:59]) + "…"
 		}
-		conv = chatID()
-		if err := a.Store.CreateChat(ctx, store.Chat{ID: conv, Title: title, Person: chatPerson(person)}); err != nil {
+		chat = store.Chat{ID: chatID(), Title: title, Person: chatPerson(person)}
+	}
+	history := a.history(ctx, ids)
+	convEffort, _ := a.Events.Get(ctx, key+".effort")
+	pick := a.routeModel(ctx, text, history, a.convModel(ctx, key), convEffort)
+	o := explore.Options{Context: history, Model: pick.Model, Effort: pick.Effort, Origin: chatOrigin(chat)}
+	exp, err := a.Explore.StartWith(ctx, text, actor(ctx), o)
+	if err != nil {
+		return "", err
+	}
+	conv := chat.ID
+	if fresh {
+		if err := a.Store.CreateChat(ctx, chat); err != nil {
 			return "", err
 		}
 	}
