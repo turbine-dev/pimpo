@@ -89,6 +89,8 @@
   "msg.pair.linkBad": "That code doesn’t match. See the pairing code in Connections.",
   "msg.pair.owner": "Hi, {name}! Pimpo is connected. 👋\n\nAsk for something you do every week, for example:\n• “Every day at 7am, send me my calendar and the important emails”\n\nThe first time, Pimpo does it while you watch. After that, on its own.",
   "msg.pair.person": "Hi, {name}! You can now talk to the house’s Pimpo. Ask for something you do every week.",
+  "msg.miniapp.button": "Dashboard",
+  "msg.miniapp.open": "Open dashboard",
   "msg.pair.whatsapp": "Hi! Pimpo is connected on WhatsApp too. Ask for something you do every week.",
   "msg.pair.whatsappBad": "That code doesn’t match. Get a new one in Connections or People.",
   "msg.pair.whatsappPerson": "Hi, {name}! You can now talk to the house’s Pimpo on WhatsApp.",

@@ -89,6 +89,8 @@
   "msg.pair.linkBad": "Esse código não confere. Veja o código de pareamento em Conexões.",
   "msg.pair.owner": "Oi, {name}! Pimpo conectado. 👋\n\nPeça algo que você faz toda semana, por exemplo:\n• “Todo dia às 7h me manda a agenda e os e-mails importantes”\n\nNa primeira vez, o Pimpo faz com você acompanhando. Depois, faz sozinho.",
   "msg.pair.person": "Oi, {name}! Agora você fala com o Pimpo da casa. Peça algo que você faz toda semana.",
+  "msg.miniapp.button": "Painel",
+  "msg.miniapp.open": "Abrir painel",
   "msg.pair.whatsapp": "Oi! O Pimpo também está conectado pelo WhatsApp. Peça algo que você faz toda semana.",
   "msg.pair.whatsappBad": "Esse código não confere. Peça um novo em Conexões ou em Pessoas.",
   "msg.pair.whatsappPerson": "Oi, {name}! Agora você fala com o Pimpo da casa pelo WhatsApp.",

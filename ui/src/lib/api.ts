@@ -273,8 +273,18 @@ export type HistoryChange = { id: number; ts: string; actor: string; who: string
 export type Snapshot = { name: string; label: string; when: string; bytes: number; damaged?: boolean }
 export type RecoveryState = { when: string; reason: string; folder: string; snapshots: Snapshot[]; newest_good: string }
 
+// bearer is the Telegram Mini App's session: kept only in memory, since
+// inside Telegram Web the page is framed by another site and the session
+// cookie is never sent there.
+let bearer = ''
+export function setBearer(token: string) {
+  bearer = token
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(path, { method, headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin' })
+  const headers: Record<string, string> = body === undefined ? {} : { 'Content-Type': 'application/json' }
+  if (bearer) headers.Authorization = `Bearer ${bearer}`
+  const res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin' })
   const text = await res.text()
   const data = text ? JSON.parse(text) : null
   if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText, data?.problem, data?.recovery === true)
@@ -283,6 +293,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 export const api = {
   state: () => request<AppState>('GET', '/api/state'),
+  miniAppSession: (initData: string) => request<{ token: string; expires: string; person: string; role: Role; name: string }>('POST', '/api/tg/session', { init_data: initData }),
   cloud: () => request<CloudState>('GET', '/api/backup/cloud'),
   saveCloud: (c: CloudConfig & { access_key?: string; secret_key?: string; passphrase?: string }) => request<CloudState>('PUT', '/api/backup/cloud', c),
   cloudOff: () => request<CloudState>('DELETE', '/api/backup/cloud'),

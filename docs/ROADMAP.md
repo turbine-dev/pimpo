@@ -306,7 +306,7 @@ Goal: Pimpo meets people in the apps they already use and learns without being t
 
 ### 9.1 A Telegram dashboard · M
 
-A Telegram Mini App with the person's approvals, routines, spending, questions and their M7 widgets, signed in as that person.
+A Telegram Mini App with the person's approvals, routines, spending, questions and their M7 widgets, signed in as that person. *Done.*
 
 ### 9.2 Push triggers · M
 

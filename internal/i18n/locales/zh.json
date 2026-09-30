@@ -89,6 +89,8 @@
   "msg.pair.linkBad": "代码不匹配。请在“连接”中查看配对码。",
   "msg.pair.owner": "你好，{name}！Pimpo 已连接。👋\n\n把你每周都要做的一件事交给它，例如：\n• “每天早上 7 点，把我的日程和重要邮件发给我”\n\n第一次，Pimpo 会在你眼前完成。之后，它会自动完成。",
   "msg.pair.person": "你好，{name}！现在你可以和家里的 Pimpo 对话了。把你每周都要做的一件事交给它吧。",
+  "msg.miniapp.button": "仪表板",
+  "msg.miniapp.open": "打开仪表板",
   "msg.pair.whatsapp": "你好！Pimpo 也在 WhatsApp 上连接好了。把你每周都要做的一件事交给它吧。",
   "msg.pair.whatsappBad": "代码不匹配。请在“连接”或“成员”中获取新代码。",
   "msg.pair.whatsappPerson": "你好，{name}！现在你可以在 WhatsApp 上和家里的 Pimpo 对话了。",
