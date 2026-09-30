@@ -134,3 +134,26 @@ func TestWebhookOnlyRoutinesAreNotScheduledOrFailed(t *testing.T) {
 		t.Fatalf("false failures: %+v", evs)
 	}
 }
+
+// A run reports its start, each step by the capability's name, and its end.
+func TestRunReportsItsProgress(t *testing.T) {
+	s, _, _ := setup(t, `async function run() { await telegram.send({text: "um"}); await telegram.send({text: "dois"}); }`)
+	var mu sync.Mutex
+	var seen []RunProgress
+	s.Progress = func(_ context.Context, p RunProgress) {
+		mu.Lock()
+		seen = append(seen, p)
+		mu.Unlock()
+	}
+	if _, err := s.RunNow(context.Background(), "brief", "manual"); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(seen) != 4 || seen[0].State != store.RunRunning || seen[0].Name != "Resumo matinal" {
+		t.Fatalf("%+v", seen)
+	}
+	if seen[2].Steps != 2 || seen[2].Step != "telegram.send" || seen[3].State != store.RunOK || seen[3].Steps != 2 {
+		t.Fatalf("%+v", seen)
+	}
+}

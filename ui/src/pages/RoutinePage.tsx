@@ -6,6 +6,7 @@ import { Code } from '../components/Code'
 import { capRisk, capabilityLabel } from '../components/RoutineCard'
 import { Button, Card, PageSkeleton, RiskBadge, RunDots } from '../components/ui'
 import { Diff } from '../components/Diff'
+import { RunningNow } from '../components/ProgressCard'
 import { Publish } from '../components/Publish'
 import { RoutineSettings } from '../components/RoutineSettings'
 import { WebhookCard } from '../components/WebhookCard'
@@ -68,6 +69,7 @@ export function RoutinePage() {
         </div>
       </div>
 
+      <RunningNow only={(p) => p.kind === 'run' && p.routine === id} title={false} className="mb-6" />
       {s.state === 'broken' && (
         <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 border-danger/40 bg-danger-soft/50 p-4">
           <div className="min-w-0">

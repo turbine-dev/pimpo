@@ -189,7 +189,9 @@ export type Rule = { id: string; text: string; when: { capabilities?: string[]; 
 export type CostView = { today: number; limit: number; month: number; projected_month: number; by_day: Record<string, number>; by_source: Record<string, number>; by_model?: Record<string, number>; by_job?: Record<string, number>; calls_by_model?: Record<string, number>; subscription?: { today: number; month: number; by_model: Record<string, number> } }
 
 export type JobPart = { id: string; title: string; instructions: string; capabilities: string[]; state: 'waiting' | 'running' | 'done' | 'failed'; exploration?: string; summary?: string; error?: string; cost_usd: number; attempts: number }
-export type LongJob = { id: string; request: string; state: 'planned' | 'running' | 'reporting' | 'done' | 'stopped' | 'failed'; budget_usd: number; spent_usd: number; parts: JobPart[]; report?: string; error?: string; created: string; updated: string }
+export type LongJob = { id: string; request: string; state: 'planned' | 'running' | 'reporting' | 'done' | 'stopped' | 'failed'; budget_usd: number; spent_usd: number; parts: JobPart[]; report?: string; error?: string; created: string; updated: string; follow?: boolean; resumed?: string }
+// Progress is where a job or a routine run is, kept by the server so a reload shows it.
+export type Progress = { id: string; person: string; kind: 'job' | 'run'; job?: string; routine?: string; run?: number; title: string; label?: string; done: number; total: number; state: 'running' | 'done' | 'failed'; phase?: 'reporting' | 'stopped' | 'interrupted'; resumed?: boolean; cost_usd: number; error?: string; started_at: string; updated_at: string; ended_at?: string }
 export type PhoneShare = 'location' | 'camera' | 'shortcuts'
 export type PhonePlace = { name: string; lat?: number; lon?: number; radius?: number }
 export type PhoneState = { places: PhonePlace[]; shares: PhoneShare[]; device?: { id: string; name: string; shares: PhoneShare[]; has_key: boolean } }
@@ -253,7 +255,9 @@ export const api = {
   jobs: () => request<LongJob[]>('GET', '/api/jobs'),
   job: (id: string) => request<LongJob>('GET', `/api/jobs/${id}`),
   createJob: (req: string, budget_usd: number) => request<LongJob>('POST', '/api/jobs', { request: req, budget_usd }),
-  startJob: (id: string) => request<LongJob>('POST', `/api/jobs/${id}/start`),
+  startJob: (id: string, follow = false) => request<LongJob>('POST', `/api/jobs/${id}/start`, { follow }),
+  followJob: (id: string, follow: boolean) => request<LongJob>('POST', `/api/jobs/${id}/follow`, { follow }),
+  progress: () => request<Progress[]>('GET', '/api/progress'),
   stopJob: (id: string) => request<LongJob>('POST', `/api/jobs/${id}/stop`),
   saveAccount: (name: string) => request<{ name: string }>('PUT', '/api/account', { name }),
   passkeys: () => request<{ id: string; name: string; address: string; created: string; last_used?: string }[]>('GET', '/api/passkeys'),

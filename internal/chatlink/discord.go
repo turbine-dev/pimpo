@@ -249,3 +249,12 @@ func chunks(text string, n int) []string {
 	}
 	return append(out, string(r))
 }
+
+// Edit changes a message Pimpo sent in the private channel.
+func (d *Discord) Edit(ctx context.Context, to, id, text string) error {
+	ch, err := d.dm(ctx, to)
+	if err != nil {
+		return err
+	}
+	return d.rest(ctx, "PATCH", "/channels/"+ch+"/messages/"+id, map[string]string{"content": chunks(text, 1900)[0]}, nil)
+}

@@ -141,20 +141,44 @@ func (s *Slack) Send(ctx context.Context, to, text string) error {
 	return err
 }
 
-func (s *Slack) SendMessage(ctx context.Context, to, text string) ([]string, error) {
+// dm is the private conversation with a person.
+func (s *Slack) dm(ctx context.Context, to string) (string, error) {
 	s.mu.Lock()
 	ch := s.dms[to]
 	s.mu.Unlock()
-	if ch == "" {
-		var open struct {
-			Channel struct {
-				ID string `json:"id"`
-			} `json:"channel"`
-		}
-		if err := s.call(ctx, "conversations.open", s.BotToken, map[string]any{"users": to}, &open); err != nil {
-			return nil, err
-		}
-		ch = open.Channel.ID
+	if ch != "" {
+		return ch, nil
+	}
+	var open struct {
+		Channel struct {
+			ID string `json:"id"`
+		} `json:"channel"`
+	}
+	if err := s.call(ctx, "conversations.open", s.BotToken, map[string]any{"users": to}, &open); err != nil {
+		return "", err
+	}
+	s.mu.Lock()
+	if s.dms == nil {
+		s.dms = map[string]string{}
+	}
+	s.dms[to] = open.Channel.ID
+	s.mu.Unlock()
+	return open.Channel.ID, nil
+}
+
+// Edit changes a message Pimpo sent, named by its ts.
+func (s *Slack) Edit(ctx context.Context, to, id, text string) error {
+	ch, err := s.dm(ctx, to)
+	if err != nil {
+		return err
+	}
+	return s.call(ctx, "chat.update", s.BotToken, map[string]any{"channel": ch, "ts": id, "text": text}, nil)
+}
+
+func (s *Slack) SendMessage(ctx context.Context, to, text string) ([]string, error) {
+	ch, err := s.dm(ctx, to)
+	if err != nil {
+		return nil, err
 	}
 	var sent struct {
 		TS string `json:"ts"`

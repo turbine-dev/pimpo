@@ -110,15 +110,7 @@ func (c *Channel) Notify(ctx context.Context, n explore.Notice) error {
 		c.Mirror(ctx, n)
 	}
 	bot := c.Bot(ctx)
-	chat, _ := c.Chat(ctx)
-	if n.To != "" && n.To != people.OwnerID {
-		chat = 0
-		if c.People != nil {
-			if p, err := c.People.Get(ctx, n.To); err == nil {
-				chat = p.Chat
-			}
-		}
-	}
+	chat := c.ChatOf(ctx, n.To)
 	if bot == nil || chat == 0 {
 		return nil
 	}
@@ -132,6 +124,20 @@ func (c *Channel) Notify(ctx context.Context, n explore.Notice) error {
 	}
 	_, err := bot.Send(ctx, chat, n.Text, rows...)
 	return err
+}
+
+// ChatOf is the Telegram chat of a person, or 0 when they have none.
+func (c *Channel) ChatOf(ctx context.Context, person string) int64 {
+	if person == "" || person == people.OwnerID {
+		chat, _ := c.Chat(ctx)
+		return chat
+	}
+	if c.People != nil {
+		if p, err := c.People.Get(ctx, person); err == nil {
+			return p.Chat
+		}
+	}
+	return 0
 }
 
 // Listen polls Telegram until ctx ends.

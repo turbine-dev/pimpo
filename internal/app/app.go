@@ -179,6 +179,12 @@ type App struct {
 	jobRunning sync.Mutex
 	jobRuns    map[string]bool
 	jobPoll    time.Duration
+	progress   progressState
+	// ProgressEvery is how often a followed job's message is edited;
+	// 0 means every 10 seconds. ProgressSinks replaces the channels it
+	// goes to; tests only.
+	ProgressEvery time.Duration
+	ProgressSinks func(ctx context.Context, person string) []progressSink
 	// ListenAddr is where the server listens (--addr); the home network uses its port.
 	ListenAddr string
 	Google     *oauth.Google
@@ -283,7 +289,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	env := host.Env{Router: router, Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide),
 		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
 		RoleOf: func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) }}
-	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone}
+	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone, Progress: a.runProgress}
 	a.Explore = &explore.Service{Guide: docs.Guide, Skills: a.exploreSkills, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 3, Installed: a.installedRoutines,
 		Helpers: func(ctx context.Context, id string) (runtime.Helper, error) { return a.Scheduler.Library(ctx, id) }},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
@@ -324,6 +330,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.learnRoutes()
 	a.phoneRoutes()
 	a.jobRoutes()
+	a.progressRoutes()
 	a.passkeyRoutes()
 	a.accountRoutes()
 	a.organizeRoutes()
@@ -375,6 +382,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.background(func() { a.aliveLoop(ctx, time.Minute) })
 	a.background(func() { a.suggestLoop(ctx, 30*time.Minute) })
 	a.background(func() { a.learnLoop(ctx, time.Hour) })
+	a.settleProgress(ctx)
 	a.resumeJobs(ctx)
 	go func() {
 		<-ctx.Done()

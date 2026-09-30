@@ -6,7 +6,7 @@ The promise is tested: `internal/compat` keeps, for each frozen format, data wri
 
 | Format | Where | Version | Rule |
 |---|---|---|---|
-| Database (event log, routines, explorations, runs, chats, vault) | `pimpo.db`, SQLite | `PRAGMA user_version` = 1 | New tables and columns only, with defaults. The event log is append-only and hash-chained (`prev`, `hash`); the way a hash is computed never changes. A Pimpo refuses a database with a newer `user_version` than it knows instead of writing to it. |
+| Database (event log, routines, explorations, runs, chats, progress, vault) | `pimpo.db`, SQLite | `PRAGMA user_version` = 1 | New tables and columns only, with defaults. The event log is append-only and hash-chained (`prev`, `hash`); the way a hash is computed never changes. A Pimpo refuses a database with a newer `user_version` than it knows instead of writing to it. |
 | Routine | `routine_versions.body`, gallery and repository files | 1 (no field) | JSON `{name, description, manifest, code, tests}`. New fields are optional and older Pimpos ignore them. Gallery signatures cover the bytes, so a routine is never rewritten to add a field. |
 | Connector | `connectors/<name>/connector.json` | 1 (no field) | JSON manifest with `capabilities` (name, risk, signature) and `contract`. Risks keep their meaning; new fields are optional. |
 | Memory | `memory/*.md` | 1 | One fact per line, with its trust (high, low, learned) and source. |
