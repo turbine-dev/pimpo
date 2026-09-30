@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { AlertTriangle, BellOff, Headphones, KeyRound, Lightbulb, MessageCircleQuestion, ShieldQuestion, Sparkles } from 'lucide-react'
+import { AlertTriangle, BellOff, GraduationCap, Headphones, KeyRound, Lightbulb, MessageCircleQuestion, ShieldQuestion, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api } from '../lib/api'
+import { useLessonCount } from './Lessons'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
 
@@ -30,8 +31,9 @@ export function Inbox() {
     onSuccess: (r) => r.exploration && nav(`/explorations/${r.exploration}`),
     onSettled: () => qc.invalidateQueries({ queryKey: ['suggestions'] }),
   })
+  const lessons = useLessonCount(true)
   const broken = (routines.data ?? []).filter((r) => r.state === 'broken')
-  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0) + (media.data?.length ?? 0) + (questions.data?.length ?? 0) + (suggestions.data?.length ?? 0) + (credentials.data?.length ?? 0)
+  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0) + (media.data?.length ?? 0) + (questions.data?.length ?? 0) + (suggestions.data?.length ?? 0) + (credentials.data?.length ?? 0) + lessons
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -54,6 +56,16 @@ export function Inbox() {
           </Card>
         ))}
         {(questions.data ?? []).map((q) => <QuestionCard key={q.id} q={q} />)}
+        {lessons > 0 && (
+          <Card className="flex flex-wrap items-center gap-4 p-4">
+            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-sunken text-ink-2"><GraduationCap size={18} /></div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-medium">{t('lessons.waiting', { count: lessons })}</div>
+              <div className="text-[12.5px] text-ink-3">{t('lessons.inboxText')}</div>
+            </div>
+            <Button size="sm" variant="primary" onClick={() => nav('/lessons')}>{t('lessons.open')}</Button>
+          </Card>
+        )}
         {(suggestions.data ?? []).map((s) => (
           <Card key={s.id} className="flex flex-wrap items-start gap-4 p-4">
             <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-sunken text-ink-2"><Lightbulb size={18} /></div>

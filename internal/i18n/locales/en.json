@@ -198,6 +198,7 @@
   "msg.suggestion.gone": "That suggestion is no longer there.",
   "msg.suggestion.started": "Started: I am doing it once while you watch; approve it to turn it into a routine.",
   "msg.suggestion.declined": "OK, I will not suggest that again.",
+  "msg.lessons.digest": "📚 {count} lessons to review: things Pimpo noticed and would keep. Accept, edit or reject each one in Pimpo › Lessons.",
   "msg.job.budget": "the job's budget ran out",
   "msg.job.done": "🧩 Job finished: {request}\nCost ${cost}. The report is in Trabalhos.",
   "msg.job.stopped": "⏹️ Job stopped: {request}\n{why}",

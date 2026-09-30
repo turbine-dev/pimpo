@@ -31,6 +31,7 @@ import { Design } from './pages/Design'
 import { ExplorationPage } from './pages/ExplorationPage'
 import { Inbox } from './pages/Inbox'
 import { Memory } from './pages/Memory'
+import { Lessons } from './pages/Lessons'
 import { RoutinePage } from './pages/RoutinePage'
 import { Routines } from './pages/Routines'
 import { Import } from './pages/Import'
@@ -106,6 +107,7 @@ export default function App() {
         <Route path="/rules" element={<Rules />} />
         <Route path="/cost" element={<Cost />} />
         <Route path="/memory" element={<Memory />} />
+        <Route path="/lessons" element={<Lessons />} />
         <Route path="/connections" element={<Connections />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/import" element={<Import />} />

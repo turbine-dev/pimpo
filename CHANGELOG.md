@@ -15,6 +15,7 @@ No version has been tagged yet. The first release will include everything built 
 - Private credential prompts: a routine or task that needs a missing or refused key sends its person a link to a one-time form that writes straight to the vault, and keys pasted into a chat or channel are removed before the model or the log sees them.
 - Lasting progress: long jobs and routine runs show their parts or steps, the current step and the cost so far on Home, the routine and the job, the same after a reload or a restart; a followed job keeps one message up to date on Telegram, Discord and Slack.
 - Memory shows where each fact came from (a conversation, a task, a routine, an email, an import, what you typed, a learned preference), with a link; **Memory › Sources** deletes everything one source gave, each person only their own.
+- **Lessons**: what Pimpo noticed and would keep (a learned preference, a note it took, a task asked often enough to become a routine, a repair of a failing routine, a suggestion) in one list per person, each accepted, edited or rejected there; a rejected lesson never comes back, and a weekly notice links to the list.
 - Dashboards in tabs with widgets of seven kinds (numbers, goals, status, lists, tables, and line, area, bar and donut charts), ready-made widgets, and sharing with the house.
 - **Turn into a widget** on a routine's page, and requests to see or track something end in a widget.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.

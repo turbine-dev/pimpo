@@ -56,7 +56,7 @@ func (a *App) dueToLearn(ctx context.Context, now time.Time) bool {
 	return err != nil || now.Sub(t) >= learnEvery
 }
 
-var learnSchema = json.RawMessage(`{"type":"object","properties":{"preferences":{"type":"array","maxItems":5,"items":{"type":"object","properties":{"text":{"type":"string"},"evidence":{"type":"string"}},"required":["text","evidence"]}}},"required":["preferences"]}`)
+var learnSchema = json.RawMessage(`{"type":"object","properties":{"preferences":{"type":"array","maxItems":5,"items":{"type":"object","properties":{"text":{"type":"string"},"evidence":{"type":"string"},"requests":{"type":"array","items":{"type":"integer"}}},"required":["text","evidence"]}}},"required":["preferences"]}`)
 
 // learn runs one round and returns what it learned.
 func (a *App) learn(ctx context.Context) []memory.Fact {
@@ -64,7 +64,7 @@ func (a *App) learn(ctx context.Context) []memory.Fact {
 	if a.Budget != nil && a.Budget.Check(ctx) != nil {
 		return nil
 	}
-	evidence := a.ownerEvidence(ctx, time.Now().Add(-learnEvery))
+	evidence, asked := a.ownerEvidence(ctx, time.Now().Add(-learnEvery))
 	if len(evidence["requests"].([]string))+len(evidence["decisions"].([]string)) < 3 {
 		return nil // too little to learn anything real
 	}
@@ -81,7 +81,7 @@ func (a *App) learn(ctx context.Context) []memory.Fact {
 		System: "You infer a person's lasting preferences about how their personal agent should work for them, from their own requests and decisions over the last week. " +
 			"Only state a preference the evidence clearly shows at least twice, or that the person stated outright (\"always in Portuguese\", \"never before 8\", \"short answers\"). " +
 			"Do not repeat already_known, and never state anything in removed_before or close to it. Nothing about other people's private matters, no guesses about health, money or relationships. " +
-			"text: one short sentence in the person's language (" + i18n.Of(ctx) + "), as an instruction to the agent; evidence: which requests or decisions show it, briefly. An empty list is a good answer.",
+			"text: one short sentence in the person's language (" + i18n.Of(ctx) + "), as an instruction to the agent; evidence: which requests or decisions show it, briefly; requests: the positions (from 0) of those requests in the list. An empty list is a good answer.",
 		Prompt: string(b),
 		Schema: learnSchema, Model: a.Settings(ctx).JudgeModel, MaxCostUSD: learnMaxCost,
 	})
@@ -93,14 +93,18 @@ func (a *App) learn(ctx context.Context) []memory.Fact {
 		return nil
 	}
 	var out struct {
-		Preferences []struct{ Text, Evidence string } `json:"preferences"`
+		Preferences []struct {
+			Text, Evidence string
+			Requests       []int
+		} `json:"preferences"`
 	}
 	json.Unmarshal(resp.Structured, &out)
 	removed := a.removedLearned(ctx)
 	var made []memory.Fact
 	for _, p := range out.Preferences {
 		text := clip(p.Text, 200)
-		if text == "" || len(made) == learnMaxPerWeek || containsFold(removed, text) {
+		// A preference the owner rejected or rewrote as a lesson is decided.
+		if text == "" || len(made) == learnMaxPerWeek || containsFold(removed, text) || a.lessonDecided(ctx, fingerprint(lessonPreference, text)) {
 			continue
 		}
 		f, err := a.Memory.AddFrom(text, learnTopic, "aprendido: "+clip(p.Evidence, 160), memory.Learned, "", memory.Origin{Kind: memory.FromLearned, Label: clip(p.Evidence, 80)})
@@ -109,6 +113,7 @@ func (a *App) learn(ctx context.Context) []memory.Fact {
 		}
 		made = append(made, f)
 		a.rememberGiven(ctx, text)
+		a.noteLessonEvidence(ctx, fingerprint(lessonPreference, f.Text), evidenceLinks(asked, p.Requests))
 		a.Events.Append(ctx, "learn.added", "system", map[string]string{"id": f.ID, "text": text, "evidence": clip(p.Evidence, 160)})
 	}
 	return made
@@ -123,11 +128,24 @@ func containsFold(list []string, s string) bool {
 	return false
 }
 
-// ownerEvidence gathers the owner's own words and choices since t.
+// evidenceLinks are the explorations of the requests a preference came
+// from, as the model pointed at them.
+func evidenceLinks(asked []string, positions []int) []lessonLink {
+	var out []lessonLink
+	for _, i := range positions {
+		if i >= 0 && i < len(asked) && asked[i] != "" && len(out) < 5 {
+			out = append(out, lessonLink{Kind: "exploration", To: "/explorations/" + asked[i]})
+		}
+	}
+	return out
+}
+
+// ownerEvidence gathers the owner's own words and choices since t, and
+// the exploration of each request, in the same order.
 // Suggestions stay out: their titles were written by a model from email
 // metadata, so even the owner's click on one would carry a sender's words.
-func (a *App) ownerEvidence(ctx context.Context, since time.Time) map[string]any {
-	requests, decisions := []string{}, []string{}
+func (a *App) ownerEvidence(ctx context.Context, since time.Time) (map[string]any, []string) {
+	requests, decisions, ids := []string{}, []string{}, []string{}
 	evs, _ := a.Events.List(ctx, event.Query{Types: []string{"exploration.started", "approval.requested", "approval.resolved"}, Newest: true, Limit: 2000})
 	asked := map[string]string{}
 	for i := len(evs) - 1; i >= 0; i-- {
@@ -136,14 +154,15 @@ func (a *App) ownerEvidence(ctx context.Context, since time.Time) map[string]any
 			continue
 		}
 		var d struct {
-			Request, ID, Answer string
-			Action              struct{ Capability string }
+			Request, ID, Answer, Exploration string
+			Action                           struct{ Capability string }
 		}
 		e.Decode(&d)
 		switch e.Type {
 		case "exploration.started":
 			if e.Actor == "human:owner" && d.Request != "" && len(requests) < 60 {
 				requests = append(requests, clip(d.Request, 300))
+				ids = append(ids, d.Exploration)
 			}
 		case "approval.requested":
 			asked[d.ID] = d.Action.Capability
@@ -153,7 +172,7 @@ func (a *App) ownerEvidence(ctx context.Context, since time.Time) map[string]any
 			}
 		}
 	}
-	return map[string]any{"requests": requests, "decisions": decisions}
+	return map[string]any{"requests": requests, "decisions": decisions}, ids
 }
 
 // rememberGiven keeps what was learned, so a preference the owner later

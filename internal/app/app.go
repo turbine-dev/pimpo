@@ -96,6 +96,8 @@ type Settings struct {
 	SuggestOff bool `json:"suggest_off,omitempty"`
 	// LearnOff stops learning preferences from the owner's own requests.
 	LearnOff bool `json:"learn_off,omitempty"`
+	// LessonDigestOff stops the weekly notice of lessons waiting.
+	LessonDigestOff bool `json:"lesson_digest_off,omitempty"`
 	// LMStudioURL and CustomURL are where LM Studio and an OpenAI-compatible
 	// server of the owner's answer (without /v1 for LM Studio).
 	LMStudioURL string `json:"lmstudio_url,omitempty"`
@@ -344,6 +346,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.skillRoutes()
 	a.browserRoutes()
 	a.learnRoutes()
+	a.lessonRoutes()
 	a.phoneRoutes()
 	a.jobRoutes()
 	a.progressRoutes()
@@ -402,6 +405,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.background(func() { a.learnLoop(ctx, time.Hour) })
 	a.settleProgress(ctx)
 	a.background(func() { a.pushLoop(ctx, time.Hour) })
+	a.background(func() { a.lessonDigestLoop(ctx, time.Hour) })
 	a.resumeJobs(ctx)
 	go func() {
 		<-ctx.Done()

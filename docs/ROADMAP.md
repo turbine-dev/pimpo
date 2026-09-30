@@ -318,7 +318,7 @@ Each fact shows where it came from (a conversation, an email, a routine), and a 
 
 ### 9.4 Lessons to review · M
 
-When Pimpo notices something worth keeping (a preference, a routine it could compile, a fix that worked), it proposes it as a lesson; the person accepts, edits or rejects each one in one place. Nothing becomes a rule or a routine without that.
+When Pimpo notices something worth keeping (a preference, a routine it could compile, a fix that worked), it proposes it as a lesson; the person accepts, edits or rejects each one in one place. Nothing becomes a rule or a routine without that. *Done.*
 
 ### 9.5 Models and spending per person · S
 

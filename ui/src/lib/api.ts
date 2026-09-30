@@ -180,7 +180,7 @@ export type PushStatus = {
 export type GmailPushSetup = { topic: string; account: string; audience?: string; endpoint: string; ready: boolean }
 export type GitHubHook = { on: boolean; urls?: { local?: string; public?: string }; secret?: string }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
-export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
+export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; lesson_digest_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
 export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
 // A key a connector needs, asked for privately; the value never comes back.
@@ -191,6 +191,13 @@ export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: 
 export type Reminder = { id: string; at: string; text: string }
 export type LocalItem = { id: string; kind: 'engine' | 'voice' | 'transcriber'; name: string; about?: string; languages?: string[]; size: number; installed: boolean; quality?: number }
 export type LocalJob = { id: string; item: string; name: string; state: 'downloading' | 'verifying' | 'unpacking' | 'done' | 'failed' | 'cancelled'; done: number; total: number; detail?: string; error?: string; started: string }
+// A lesson is something Pimpo noticed and proposes to keep; nothing of it
+// applies until the person accepts it.
+export type Lesson = {
+  id: string; kind: 'preference' | 'routine' | 'fix' | 'fact'; from: 'learned' | 'note' | 'repeated' | 'suggestion' | 'repair'
+  title: string; detail?: string; evidence: { kind: 'exploration' | 'routine' | 'memory' | 'suggestion'; to: string }[]
+  change: string; ref: string; routine?: string; state: 'proposed' | 'accepted' | 'edited' | 'rejected'; edited?: string; result?: string; created: string; decided?: string
+}
 export type LocalView = { engine?: LocalItem; voices: LocalItem[]; transcribers?: LocalItem[]; jobs: LocalJob[]; free: number; memory: number; suggestions: { model: string; about: string; size: number; min_ram: number }[]; ollama: { url: string; up?: boolean; models?: CatalogModel[] } }
 export type QuickChoice = { kind: 'claude_code' | 'codex' | 'opencode' | 'ollama' | 'lmstudio' | 'provider'; provider?: string; key?: string; model?: string }
 export type OpencodeModel = { id: string; provider: string; name: string; subscription: boolean }
@@ -366,6 +373,8 @@ export const api = {
   questions: () => request<{ id: string; routine?: string; question: string; options: string[]; asked: string }[]>('GET', '/api/questions'),
   suggestions: () => request<{ id: string; title: string; why: string; request: string; made: string }[]>('GET', '/api/suggestions'),
   suggestion: (id: string, action: 'accept' | 'dismiss') => request<{ exploration?: string }>('POST', `/api/suggestions/${id}/${action}`),
+  lessons: () => request<{ proposed: Lesson[]; decided: Lesson[] }>('GET', '/api/lessons'),
+  lesson: (id: string, action: 'accept' | 'edit' | 'reject', text?: string) => request<Lesson>('POST', `/api/lessons/${id}/${action}`, text === undefined ? undefined : { text }),
   answerQuestion: (id: string, index: number) => request<{ text: string }>('POST', `/api/questions/${id}/answer`, { index }),
   answerQuestionText: (id: string, text: string) => request<{ text: string }>('POST', `/api/questions/${id}/answer`, { text }),
   credentials: () => request<CredentialRequest[]>('GET', '/api/credentials'),
