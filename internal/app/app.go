@@ -334,6 +334,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.jobRoutes()
 	a.passkeyRoutes()
 	a.accountRoutes()
+	a.widgetRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()
@@ -570,6 +571,7 @@ func (a *App) router() *connector.Router {
 		browserCap{a},
 		phoneCap{a},
 		slackCap{a},
+		widgetCap{a},
 		audioCap{a},
 		askCap{a},
 		a.spotify(),

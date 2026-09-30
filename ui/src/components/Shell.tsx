@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { canOpen, useRole } from '../lib/roles'
 import { UpdateBanner } from './Updates'
-import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, KeyRound, Users, Puzzle } from 'lucide-react'
+import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, KeyRound, LayoutDashboard, Users, Puzzle } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
@@ -17,6 +17,7 @@ export type NavItem = { to: string; label: TKey; icon: ReactNode; badge?: number
 // What people open every day comes first; the rest waits under "More".
 export const primary: NavItem[] = [
   { to: '/', label: 'nav.home', icon: <House size={17} /> },
+  { to: '/dashboards', label: 'nav.dashboards', icon: <LayoutDashboard size={17} /> },
   { to: '/routines', label: 'nav.routines', icon: <Repeat size={17} /> },
   { to: '/receipts', label: 'nav.activity', icon: <ReceiptText size={17} /> },
   { to: '/assistants', label: 'nav.assistants', icon: <Bot size={17} /> },
