@@ -573,6 +573,9 @@ export const de: Record<Key, string> & Record<string, string> = {
   'job.state.done': "Fertig",
   'job.state.stopped': "Gestoppt",
   'job.state.failed': "Fehlgeschlagen",
+  'pair.me': "Ich",
+  'pair.whose': "Wem das Gerät gehört",
+  'pair.forPerson': "Dieser Link meldet sich als {name} an: Öffne ihn nur auf dem Handy dieser Person. Sie sieht nur ihre eigenen Dinge, und du siehst ihre nicht.",
   'memory.confirm': 'Bestätigen',
   'memory.forget': 'Vergessen: {text}',
 

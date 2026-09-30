@@ -7,12 +7,14 @@ import { api } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT } from '../lib/i18n'
 import { nav as pages } from './Shell'
+import { canOpen, useRole } from '../lib/roles'
 
 type Item = { id: string; label: string; hint: string; icon: React.ReactNode; run: () => void }
 
 // Palette is ⌘K: jump to any page or routine, or start a task.
 export function Palette({ open, onOpenChange, onNewTask }: { open: boolean; onOpenChange: (o: boolean) => void; onNewTask: () => void }) {
   const t = useT()
+  const role = useRole()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
@@ -24,7 +26,7 @@ export function Palette({ open, onOpenChange, onNewTask }: { open: boolean; onOp
     }
     const all: Item[] = [
       { id: 'new', label: t('common.newTask'), hint: t('palette.action'), icon: <Plus size={15} />, run: () => { onOpenChange(false); onNewTask() } },
-      ...pages.map((p) => ({ id: p.to, label: t(p.label), hint: t('palette.page'), icon: p.icon, run: go(p.to) })),
+      ...pages.filter((p) => canOpen(p.to, role)).map((p) => ({ id: p.to, label: t(p.label), hint: t('palette.page'), icon: p.icon, run: go(p.to) })),
       ...(routines.data ?? []).map((r) => ({ id: r.id, label: r.name, hint: t('palette.routine'), icon: <Repeat size={15} />, run: go(`/routines/${r.id}`) })),
     ]
     const needle = q.trim().toLowerCase()

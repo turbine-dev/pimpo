@@ -593,6 +593,9 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'job.state.done': "Готово",
   'job.state.stopped': "Остановлено",
   'job.state.failed': "Ошибка",
+  'pair.me': "Я",
+  'pair.whose': "Чьё устройство",
+  'pair.forPerson': "Эта ссылка входит как {name}: откройте её только на телефоне этого человека. Он увидит только своё, а вы не увидите его.",
   'memory.confirm': 'Подтвердить',
   'memory.forget': 'Забыть: {text}',
 

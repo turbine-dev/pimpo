@@ -323,7 +323,7 @@ func (a *App) mediaRoutes() {
 				Audio string `json:"audio"`
 				To    string `json:"to"`
 			}
-			if e.Decode(&n) != nil || n.Audio == "" || (n.To != "" && n.To != me) {
+			if e.Decode(&n) != nil || n.Audio == "" || people.Norm(n.To) != me {
 				continue
 			}
 			if _, err := os.Stat(filepath.Join(a.mediaDir(), n.Audio+".m4a")); err != nil {
@@ -338,7 +338,7 @@ func (a *App) mediaRoutes() {
 	})
 	a.Server.Handle("GET /api/media/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		if !mediaID.MatchString(id) {
+		if !mediaID.MatchString(id) || !a.recordingIsMine(r.Context(), id) {
 			server.WriteError(w, server.StatusError{Status: 404, Msg: "no such recording"})
 			return
 		}
@@ -352,6 +352,19 @@ func (a *App) mediaRoutes() {
 		w.Header().Set("Content-Type", "audio/mp4")
 		http.ServeContent(w, r, id+".m4a", st.ModTime(), f)
 	})
+}
+
+// recordingIsMine: a recording is heard only by whom it was sent to.
+func (a *App) recordingIsMine(ctx context.Context, id string) bool {
+	evs, _ := a.Events.List(ctx, event.Query{Types: []string{owner.EventNotice}, Search: `"audio":"` + id + `"`, Limit: 1})
+	if len(evs) == 0 {
+		return false
+	}
+	var n struct {
+		To string `json:"to"`
+	}
+	evs[0].Decode(&n)
+	return mine(ctx, n.To)
 }
 
 // Readings for the chat are kept, so listening again, or to a sentence

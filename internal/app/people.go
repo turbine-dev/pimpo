@@ -89,6 +89,7 @@ func (a *App) removePerson(w http.ResponseWriter, r *http.Request) {
 	for _, name := range []string{"mail.password", "calendar.feeds"} {
 		a.Vault.Delete(ctx, personal(pctx, name))
 	}
+	a.forgetDevicesOf(ctx, id)
 	a.Events.Append(ctx, "person.removed", "human:owner", map[string]any{"id": id})
 	server.WriteJSON(w, 200, map[string]string{"removed": id})
 }
@@ -97,6 +98,12 @@ func (a *App) removePerson(w http.ResponseWriter, r *http.Request) {
 // use these and never the owner's.
 func (a *App) personConnection(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	// A person sets up their own accounts; the owner may set them up for
+	// someone without a login of their own, but never reads them back.
+	if me := people.From(ctx); me != people.OwnerID && me != r.PathValue("id") {
+		server.WriteError(w, server.StatusError{Status: 404, Msg: "no such person"})
+		return
+	}
 	p, err := a.People.Get(ctx, r.PathValue("id"))
 	if err != nil || p.ID == people.OwnerID {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "no such person; set up your own accounts in Connections"})

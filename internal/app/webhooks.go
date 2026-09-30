@@ -77,7 +77,7 @@ func (a *App) webhookURLs(r *http.Request, id, token string) map[string]string {
 func (a *App) webhookRoutes() {
 	a.Server.Handle("GET /api/routines/{id}/webhook", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		if _, err := a.Store.Routine(r.Context(), id); err != nil {
+		if _, err := a.myRoutine(r.Context(), id); err != nil {
 			server.WriteError(w, server.StatusError{Status: 404, Msg: "no such routine"})
 			return
 		}
@@ -86,7 +86,7 @@ func (a *App) webhookRoutes() {
 	// on, off or rotate: a new address replaces the old one at once.
 	a.Server.Handle("POST /api/routines/{id}/webhook/{action}", func(w http.ResponseWriter, r *http.Request) {
 		ctx, id := r.Context(), r.PathValue("id")
-		if _, err := a.Store.Routine(ctx, id); err != nil {
+		if _, err := a.myRoutine(ctx, id); err != nil {
 			server.WriteError(w, server.StatusError{Status: 404, Msg: "no such routine"})
 			return
 		}
@@ -122,6 +122,7 @@ func (a *App) webhook(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 405, Msg: "use POST or GET"})
 		return
 	}
+	// The webhook's token is its credential; the routine may be anyone's.
 	rt, err := a.Store.Routine(ctx, id)
 	if err != nil {
 		http.NotFound(w, r)

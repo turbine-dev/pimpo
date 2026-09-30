@@ -28,6 +28,10 @@ export function PhonePairing() {
   const [manual, setManual] = useState('')
   const [showManual, setShowManual] = useState(false)
   const [name, setName] = useState('')
+  // Whose device: it signs in as that person and sees only their things.
+  const people = useQuery({ queryKey: ['people'], queryFn: api.people })
+  const [whose, setWhose] = useState('')
+  const nameOf = (id: string) => (id === 'owner' || !id ? t('pair.me') : people.data?.find((p) => p.id === id)?.name ?? id)
   const [qr, setQr] = useState('')
   useEffect(() => {
     const b = pairing.data?.base ?? ''
@@ -38,7 +42,7 @@ export function PhonePairing() {
   const base = tsURL ?? (showManual ? manual.trim() : '')
   const reachable = !!base || !!r?.lan.on
   const pair = useMutation({
-    mutationFn: () => api.setPairing(base, name.trim() || t('phone.defaultName')),
+    mutationFn: () => api.setPairing(base, name.trim() || t('phone.defaultName'), whose),
     onSuccess: async (d) => {
       qc.invalidateQueries({ queryKey: ['pairing'] })
       setName('')
@@ -79,6 +83,12 @@ export function PhonePairing() {
 
       <form className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4" onSubmit={(e) => { e.preventDefault(); pair.mutate() }}>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('phone.name')} aria-label={t('phone.name')} className={cn(field, 'min-w-[180px] flex-1')} />
+        {(people.data ?? []).length > 0 && (
+          <select value={whose} onChange={(e) => setWhose(e.target.value)} aria-label={t('pair.whose')} className={field}>
+            <option value="">{t('pair.me')}</option>
+            {people.data!.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        )}
         <Button type="submit" disabled={!reachable || pair.isPending}>{t('phone.generate')}</Button>
       </form>
       {!reachable && <p className="mt-2 text-[12.5px] text-ink-3">{t('phone.needAccess')}</p>}
@@ -89,6 +99,7 @@ export function PhonePairing() {
           <img src={qr} alt={t('phone.qr')} className="size-44" />
           <div className="text-[13px] text-[#4a4d55]">
             <p className="mb-2">{t('phone.scan')}</p>
+            {whose && <p className="mb-2">{t('pair.forPerson', { name: nameOf(whose) })}</p>}
             <p className="mb-3 font-medium text-[#b8243c]">{t('phone.warning')}</p>
             <Button size="sm" onClick={() => setQr('')}>{t('phone.done')}</Button>
           </div>
@@ -99,7 +110,7 @@ export function PhonePairing() {
           {devices.map((d) => (
             <li key={d.id} className="flex items-center gap-3 px-3 py-2.5 text-[13px]">
               <Smartphone size={14} className="text-ink-3" />
-              <span className="flex-1">{d.name}</span>
+              <span className="flex-1">{d.name} <span className="text-[12px] text-ink-3">· {nameOf(d.person)}</span></span>
               <span className="text-[12px] text-ink-3">{d.last_seen ? t('phone.seen', { when: relative(d.last_seen) }) : t('phone.unused')}</span>
               <Button size="sm" variant="ghost" aria-label={t('phone.revoke', { name: d.name })} onClick={() => revoke.mutate(d.id)}><Trash2 size={14} /></Button>
             </li>

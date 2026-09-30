@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/host"
 	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/policy"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/undo"
@@ -83,7 +85,7 @@ func (a *App) safetyRoutes() {
 	s := a.Server
 	s.Handle("GET /api/receipts", a.receipts)
 	s.Handle("POST /api/actions/{id}/undo", a.undoAction)
-	s.Handle("GET /api/approvals", func(w http.ResponseWriter, r *http.Request) { server.WriteJSON(w, 200, a.Approvals.Open()) })
+	s.Handle("GET /api/approvals", func(w http.ResponseWriter, r *http.Request) { server.WriteJSON(w, 200, a.myApprovals(r.Context())) })
 	s.Handle("POST /api/approvals/{id}/{answer}", a.answerApproval)
 	s.Handle("GET /api/rules", func(w http.ResponseWriter, r *http.Request) { server.WriteJSON(w, 200, a.Rules.Rules(r.Context())) })
 	s.Handle("PUT /api/rules", a.putRules)
@@ -127,6 +129,9 @@ func (a *App) receipts(w http.ResponseWriter, r *http.Request) {
 	for _, e := range evs {
 		var rec host.ActionRecord
 		e.Decode(&rec)
+		if !mine(ctx, rec.Person) {
+			continue
+		}
 		var result map[string]any
 		json.Unmarshal(rec.Result, &result)
 		ok, until := undo.Plan(rec, result)
@@ -138,13 +143,34 @@ func (a *App) receipts(w http.ResponseWriter, r *http.Request) {
 	server.WriteJSON(w, 200, out)
 }
 
+// myApprovals are the requests this person answers.
+func (a *App) myApprovals(ctx context.Context) []approval.Request {
+	out := []approval.Request{}
+	for _, q := range a.Approvals.Open() {
+		if mine(ctx, q.Responsible) {
+			out = append(out, q)
+		}
+	}
+	return out
+}
+
+func recordIsMine(ctx context.Context, e event.Event) bool {
+	var rec host.ActionRecord
+	e.Decode(&rec)
+	return mine(ctx, rec.Person)
+}
+
 func (a *App) undoAction(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "bad id"})
 		return
 	}
-	if err := a.Undo.Undo(r.Context(), id, "human:owner"); err != nil {
+	if ev, err := a.Events.ByID(r.Context(), id); err != nil || ev.Type != host.ActionEvent || !recordIsMine(r.Context(), ev) {
+		server.WriteError(w, server.StatusError{Status: 404, Msg: "no such action"})
+		return
+	}
+	if err := a.Undo.Undo(r.Context(), id, actor(r.Context())); err != nil {
 		server.WriteError(w, server.StatusError{Status: 409, Msg: err.Error()})
 		return
 	}
@@ -157,7 +183,17 @@ func (a *App) answerApproval(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "answer must be once, run, always or deny"})
 		return
 	}
-	if !a.Approvals.Resolve(r.Context(), r.PathValue("id"), ans, "human:owner") {
+	ctx := r.Context()
+	if !slices.ContainsFunc(a.myApprovals(ctx), func(q approval.Request) bool { return q.ID == r.PathValue("id") }) {
+		server.WriteError(w, server.StatusError{Status: 404, Msg: "no such request"})
+		return
+	}
+	// "Always" becomes a rule for the whole house, which is the owner's.
+	if ans == approval.Always && people.From(ctx) != people.OwnerID {
+		server.WriteError(w, server.StatusError{Status: 403, Msg: "a lasting permission is a rule for the whole house; ask the owner, or answer once"})
+		return
+	}
+	if !a.Approvals.Resolve(ctx, r.PathValue("id"), ans, actor(ctx)) {
 		server.WriteError(w, server.StatusError{Status: 410, Msg: "this request is no longer waiting"})
 		return
 	}
@@ -305,6 +341,9 @@ func (a *App) testRule(w http.ResponseWriter, r *http.Request) {
 		}
 		var rec host.ActionRecord
 		e.Decode(&rec)
+		if !mine(ctx, rec.Person) {
+			continue
+		}
 		act := policy.Action{Capability: rec.Capability, Scope: rec.Scope, Args: rec.Args, Risk: capability.Catalog[rec.Capability].Risk, Source: rec.Source}
 		if test.Matches(rule, act) {
 			hits = append(hits, map[string]any{"event": e.ID, "ts": e.Time, "source": rec.Source, "capability": rec.Capability, "was": rec.Verdict, "would_be": rule.Then})
@@ -322,6 +361,14 @@ func (a *App) cost(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().In(zone)
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, zone)
 	evs, _ := a.Events.List(ctx, event.Query{Types: []string{"cost.recorded"}})
+	// The budget is the house's, so totals are shared; which routines of
+	// other people spent it is not.
+	mineIDs := map[string]bool{}
+	if list, err := a.myRoutines(ctx); err == nil {
+		for _, rt := range list {
+			mineIDs["routine:"+rt.ID] = true
+		}
+	}
 	byDay := map[string]float64{}
 	bySource := map[string]float64{}
 	month := 0.0
@@ -340,6 +387,9 @@ func (a *App) cost(w http.ResponseWriter, r *http.Request) {
 		key := c.Source
 		if strings.HasPrefix(c.Ref, "routine:") {
 			key = strings.SplitN(c.Ref, "#", 2)[0]
+			if !mineIDs[key] {
+				key = "others"
+			}
 		}
 		bySource[key] += c.USD
 	}
@@ -394,7 +444,7 @@ func (a *App) setup(w http.ResponseWriter, r *http.Request) {
 	done, _ := a.Events.Get(ctx, "setup.done")
 	preset, _ := a.Events.Get(ctx, "setup.preset")
 	demo, _ := a.Events.Get(ctx, "demo")
-	routines, _ := a.Store.Routines(ctx)
+	routines, _ := a.myRoutines(ctx)
 	server.WriteJSON(w, 200, map[string]any{
 		"done":     done == "true" || len(routines) > 0,
 		"demo":     demo == "true",

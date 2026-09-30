@@ -168,14 +168,19 @@ func (d *Directory) Role(ctx context.Context, id string) Role {
 	return p.Role
 }
 
-// Responsible returns who approves for this person: their responsible,
-// else the owner. The owner answers for themselves.
+// Responsible returns who approves for this person: the responsible the
+// owner gave them (a parent for a child), else a member answers for
+// themselves and a guest's requests go to the owner. The owner answers
+// for themselves.
 func (d *Directory) Responsible(ctx context.Context, id string) Person {
 	p, err := d.Get(ctx, id)
 	if err == nil && p.Responsible != "" && p.Responsible != p.ID {
 		if r, err := d.Get(ctx, p.Responsible); err == nil && r.Role != Guest {
 			return r
 		}
+	}
+	if err == nil && p.Role == Member {
+		return p
 	}
 	owner, _ := d.Get(ctx, OwnerID)
 	return owner

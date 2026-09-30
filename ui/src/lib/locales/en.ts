@@ -573,6 +573,9 @@ export const en: Record<Key, string> = {
   'job.state.done': "Done",
   'job.state.stopped': "Stopped",
   'job.state.failed': "Failed",
+  'pair.me': "Me",
+  'pair.whose': "Whose device",
+  'pair.forPerson': "This link signs in as {name}: open it only on their phone. They will see only their own things, and you will not see theirs.",
   'memory.confirm': 'Confirm',
   'memory.forget': 'Forget: {text}',
 

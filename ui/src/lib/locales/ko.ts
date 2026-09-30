@@ -573,6 +573,9 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'job.state.done': "완료",
   'job.state.stopped': "중지됨",
   'job.state.failed': "실패",
+  'pair.me': "나",
+  'pair.whose': "누구의 기기인지",
+  'pair.forPerson': "이 링크는 {name}(으)로 로그인해요. 그 사람의 휴대폰에서만 여세요. 그 사람은 자기 것만 보고, 당신은 그 사람의 것을 볼 수 없어요.",
   'memory.confirm': '확인',
   'memory.forget': '잊기: {text}',
 

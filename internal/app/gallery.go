@@ -11,6 +11,7 @@ import (
 
 	starter "github.com/turbine-dev/pimpo/gallery"
 	"github.com/turbine-dev/pimpo/internal/gallery"
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
 	"github.com/turbine-dev/pimpo/internal/vault"
@@ -70,7 +71,7 @@ func (a *App) listGallery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	installed := map[string]bool{}
-	if list, err := a.Store.Routines(ctx); err == nil {
+	if list, err := a.myRoutines(ctx); err == nil {
 		for _, rt := range list {
 			installed[gallery.Hash(rt.Body)] = true
 		}
@@ -98,17 +99,25 @@ func (a *App) installFromGallery(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 422, Msg: "not installed: " + strings.Join(rep.Problems, "; ")})
 		return
 	}
+	// Someone else's copy is theirs: this person gets their own.
 	id := e.ID
-	if existing, err := a.Store.Routine(ctx, id); err == nil && gallery.Hash(existing.Body) != e.Hash {
+	if existing, err := a.Store.Routine(ctx, id); err == nil && !mine(ctx, existing.Person) {
+		id += "-" + people.From(ctx)
+	}
+	if existing, err := a.Store.Routine(ctx, id); err == nil && (!mine(ctx, existing.Person) || gallery.Hash(existing.Body) != e.Hash) {
 		id += "-" + e.Hash[:6]
 	}
-	rt, err := a.Store.SaveRoutine(ctx, id, e.Routine, "installed from the gallery: "+e.Author+" "+e.Hash[:12], "human:owner")
+	rt, err := a.Store.SaveRoutine(ctx, id, e.Routine, "installed from the gallery: "+e.Author+" "+e.Hash[:12], actor(ctx))
 	if err != nil {
 		server.WriteError(w, err)
 		return
 	}
+	if p := people.From(ctx); p != people.OwnerID {
+		a.Store.SetRoutinePerson(ctx, id, p)
+		rt.Person = p
+	}
 	a.Events.Put(ctx, "gallery.origin."+rt.ID, e.ID)
-	a.Events.Append(ctx, "gallery.installed", "human:owner", map[string]string{"routine": rt.ID, "author": e.Author, "hash": e.Hash})
+	a.Events.Append(ctx, "gallery.installed", actor(ctx), map[string]string{"routine": rt.ID, "author": e.Author, "hash": e.Hash})
 	a.Scheduler.Changed(ctx, rt.ID)
 	server.WriteJSON(w, 200, a.summary(ctx, rt))
 }
@@ -127,7 +136,7 @@ func (a *App) publishRoutine(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "choose an author name"})
 		return
 	}
-	rt, err := a.Store.Routine(ctx, r.PathValue("id"))
+	rt, err := a.myRoutine(ctx, r.PathValue("id"))
 	if err != nil {
 		server.WriteError(w, notFound(err))
 		return
@@ -226,7 +235,7 @@ func (a *App) pendingUpdate(ctx context.Context, rt store.Routine) *galleryUpdat
 // new version still has.
 func (a *App) updateFromGallery(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	rt, err := a.Store.Routine(ctx, r.PathValue("id"))
+	rt, err := a.myRoutine(ctx, r.PathValue("id"))
 	if err != nil {
 		server.WriteError(w, notFound(err))
 		return

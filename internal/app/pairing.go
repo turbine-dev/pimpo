@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
 )
 
@@ -28,6 +29,9 @@ type Device struct {
 	Hash     string    `json:"hash"`
 	Created  time.Time `json:"created"`
 	LastSeen time.Time `json:"last_seen,omitzero"`
+	// Person is who the device belongs to; empty is the owner (devices
+	// paired before people had their own logins). It acts only for them.
+	Person string `json:"person,omitempty"`
 	// Shares are what this phone gives Pimpo (location, camera,
 	// shortcuts), chosen on the phone itself.
 	Shares []string `json:"shares,omitempty"`
@@ -37,6 +41,10 @@ type Device struct {
 }
 
 const devicesKey = "devices"
+
+// deviceIdle is how long a paired device may go unused before it has to
+// be paired again.
+const deviceIdle = 180 * 24 * time.Hour
 
 var devicesMu sync.Mutex
 
@@ -54,8 +62,9 @@ func (a *App) saveDevices(ctx context.Context, list []Device) error {
 	return a.Events.Put(ctx, devicesKey, string(b))
 }
 
-// deviceValid is the server's check for device tokens.
-func (a *App) deviceValid(token string) bool {
+// deviceValid is the server's check for device tokens: whose device it is.
+// A device of someone no longer in the house opens nothing.
+func (a *App) deviceValid(token string) (string, bool) {
 	ctx := context.Background()
 	h := hashToken(token)
 	devicesMu.Lock()
@@ -63,14 +72,29 @@ func (a *App) deviceValid(token string) bool {
 	list := a.devices(ctx)
 	for i, d := range list {
 		if subtle.ConstantTimeCompare([]byte(d.Hash), []byte(h)) == 1 {
+			// A device unused for months is signed out: a phone left in a
+			// drawer should not open Pimpo forever.
+			last := d.LastSeen
+			if last.IsZero() {
+				last = d.Created
+			}
+			if time.Since(last) > deviceIdle {
+				return "", false
+			}
+			person := people.Norm(d.Person)
+			if person != people.OwnerID && a.People != nil {
+				if _, err := a.People.Get(ctx, person); err != nil {
+					return "", false
+				}
+			}
 			if time.Since(d.LastSeen) > time.Hour {
 				list[i].LastSeen = time.Now()
 				a.saveDevices(ctx, list)
 			}
-			return true
+			return person, true
 		}
 	}
-	return false
+	return "", false
 }
 
 func (a *App) pairingRoutes() {
@@ -83,15 +107,19 @@ func (a *App) pairingRoutes() {
 type deviceView struct {
 	ID       string    `json:"id"`
 	Name     string    `json:"name"`
+	Person   string    `json:"person"`
 	Created  time.Time `json:"created"`
 	LastSeen time.Time `json:"last_seen,omitzero"`
 }
 
 func (a *App) getPairing(w http.ResponseWriter, r *http.Request) {
+	if !ownerOnly(w, r) {
+		return
+	}
 	base, _ := a.Events.Get(r.Context(), "public_url")
 	views := []deviceView{}
 	for _, d := range a.devices(r.Context()) {
-		views = append(views, deviceView{d.ID, d.Name, d.Created, d.LastSeen})
+		views = append(views, deviceView{d.ID, d.Name, people.Norm(d.Person), d.Created, d.LastSeen})
 	}
 	server.WriteJSON(w, 200, map[string]any{"base": base, "devices": views})
 }
@@ -99,14 +127,26 @@ func (a *App) getPairing(w http.ResponseWriter, r *http.Request) {
 // setPairing saves the public address and, when a device name is given,
 // pairs a new device: the answer carries its link once and never again.
 func (a *App) setPairing(w http.ResponseWriter, r *http.Request) {
+	if !ownerOnly(w, r) {
+		return
+	}
 	ctx := r.Context()
 	var req struct {
 		Base   string `json:"base"`
 		Device string `json:"device"`
+		// Person is whose device this is; empty is the owner's.
+		Person string `json:"person"`
 	}
 	if err := server.Decode(r, &req); err != nil {
 		server.WriteError(w, err)
 		return
+	}
+	person := people.Norm(req.Person)
+	if person != people.OwnerID {
+		if _, err := a.People.Get(ctx, person); err != nil {
+			server.WriteError(w, server.StatusError{Status: 404, Msg: "no such person"})
+			return
+		}
 	}
 	base := strings.TrimSpace(req.Base)
 	if base != "" {
@@ -136,14 +176,14 @@ func (a *App) setPairing(w http.ResponseWriter, r *http.Request) {
 		token := hex.EncodeToString(b)
 		id := hex.EncodeToString(b[:4])
 		devicesMu.Lock()
-		list := append(a.devices(ctx), Device{ID: id, Name: name, Hash: hashToken(token), Created: time.Now()})
+		list := append(a.devices(ctx), Device{ID: id, Name: name, Hash: hashToken(token), Created: time.Now(), Person: personField(person)})
 		err := a.saveDevices(ctx, list)
 		devicesMu.Unlock()
 		if err != nil {
 			server.WriteError(w, err)
 			return
 		}
-		a.Events.Append(ctx, "device.paired", "human:owner", map[string]string{"id": id, "name": name})
+		a.Events.Append(ctx, "device.paired", "human:owner", map[string]string{"id": id, "name": name, "person": person})
 		out["id"], out["link"] = id, primary+"/auth?token="+url.QueryEscape(token)
 		// With both, the phone tries the home address first and falls back
 		// to the public link; the token works on either.
@@ -155,7 +195,18 @@ func (a *App) setPairing(w http.ResponseWriter, r *http.Request) {
 	server.WriteJSON(w, 200, out)
 }
 
+// personField keeps the owner's devices as before: no person.
+func personField(p string) string {
+	if p == people.OwnerID {
+		return ""
+	}
+	return p
+}
+
 func (a *App) revokeDevice(w http.ResponseWriter, r *http.Request) {
+	if !ownerOnly(w, r) {
+		return
+	}
 	ctx := r.Context()
 	id := r.PathValue("id")
 	devicesMu.Lock()
@@ -179,6 +230,20 @@ func (a *App) revokeDevice(w http.ResponseWriter, r *http.Request) {
 	}
 	a.Events.Append(ctx, "device.revoked", "human:owner", map[string]string{"id": id})
 	server.WriteJSON(w, 200, map[string]string{"revoked": id})
+}
+
+// forgetDevicesOf revokes every device of someone who left the house.
+func (a *App) forgetDevicesOf(ctx context.Context, person string) {
+	devicesMu.Lock()
+	defer devicesMu.Unlock()
+	list := a.devices(ctx)
+	kept := list[:0]
+	for _, d := range list {
+		if people.Norm(d.Person) != people.Norm(person) {
+			kept = append(kept, d)
+		}
+	}
+	a.saveDevices(ctx, kept)
 }
 
 func private(host string) bool {

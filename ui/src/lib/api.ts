@@ -166,7 +166,7 @@ export type ActionRecord = {
   ms: number
 }
 
-export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean }
+export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean; person?: string; role?: 'owner' | 'member' | 'guest' }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
 export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
 export type ModelOption = { id: string; price_in: number; price_out: number }
@@ -354,7 +354,7 @@ export const api = {
   setupDone: () => request<void>('POST', '/api/setup/done'),
   preset: (preset: 'conservative' | 'balanced' | 'liberal') => request<Rule[]>('PUT', '/api/rules/preset', { preset }),
   memory: () => request<{ facts: Fact[]; history: MemoryVersion[] }>('GET', '/api/memory'),
-  addFact: (text: string, topic: string, person?: string) => request<Fact>('POST', '/api/memory', { text, topic, person: person || undefined }),
+  addFact: (text: string, topic: string, shared?: boolean) => request<Fact>('POST', '/api/memory', { text, topic, shared: !!shared }),
   removeFact: (id: string) => request<void>('DELETE', `/api/memory/${id}`),
   confirmFact: (id: string) => request<void>('POST', `/api/memory/${id}/confirm`),
   restoreMemory: (hash: string) => request<void>('POST', `/api/memory-versions/${hash}/restore`),
@@ -364,8 +364,8 @@ export const api = {
   migratePreview: (from: MigrationSource, home: string) => request<MigrationPlan>('POST', '/api/migrate/preview', { from, home }),
   migrateApply: (from: MigrationSource, home: string, o: ImportOptions) => request<Imported>('POST', '/api/migrate/apply', { from, home, ...o }),
   exploreImported: (id: string) => request<{ id: string }>('POST', `/api/explorations/${id}/explore`),
-  pairing: () => request<{ base: string; devices: { id: string; name: string; created: string; last_seen?: string }[] }>('GET', '/api/pairing'),
-  setPairing: (base: string, device?: string) => request<{ base: string; link?: string; id?: string }>('POST', '/api/pairing', { base, device }),
+  pairing: () => request<{ base: string; devices: { id: string; name: string; person: string; created: string; last_seen?: string }[] }>('GET', '/api/pairing'),
+  setPairing: (base: string, device?: string, person?: string) => request<{ base: string; link?: string; id?: string }>('POST', '/api/pairing', { base, device, person: person || undefined }),
   remote: () => request<RemoteState>('GET', '/api/remote'),
   switchRemote: (kind: 'tailscale' | 'lan', on: boolean) => request<RemoteState>('POST', `/api/remote/${kind}/${on ? 'on' : 'off'}`),
   revokeDevice: (id: string) => request<void>('DELETE', `/api/devices/${id}`),

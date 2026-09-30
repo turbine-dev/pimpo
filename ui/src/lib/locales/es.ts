@@ -582,6 +582,9 @@ export const es: Record<Key, string> & Record<string, string> = {
   'job.state.done': "Listo",
   'job.state.stopped': "Detenido",
   'job.state.failed': "Falló",
+  'pair.me': "Yo",
+  'pair.whose': "De quién es el dispositivo",
+  'pair.forPerson': "Este enlace entra como {name}: ábrelo solo en su móvil. Verá solo sus cosas, y tú no verás las suyas.",
   'memory.confirm': 'Confirmar',
   'memory.forget': 'Olvidar: {text}',
 

@@ -573,6 +573,9 @@ export const pt = {
   'job.state.done': "Pronto",
   'job.state.stopped': "Parado",
   'job.state.failed': "Falhou",
+  'pair.me': "Eu",
+  'pair.whose': "De quem é o aparelho",
+  'pair.forPerson': "Este link entra como {name}: abra só no celular dessa pessoa. Ela verá só as coisas dela, e você não verá as dela.",
   'memory.confirm': 'Confirmar',
   'memory.forget': 'Esquecer: {text}',
 

@@ -573,6 +573,9 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'job.state.done': "完成",
   'job.state.stopped': "已停止",
   'job.state.failed': "失败",
+  'pair.me': "我",
+  'pair.whose': "设备属于谁",
+  'pair.forPerson': "此链接以 {name} 的身份登录：只在对方的手机上打开。对方只能看到自己的内容，你也看不到对方的。",
   'memory.confirm': '确认',
   'memory.forget': '忘记：{text}',
 
