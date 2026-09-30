@@ -7,7 +7,7 @@ import { api, type Place, type RoutineParam, type RoutineSummary, type Watch } f
 import { cn } from '../lib/cn'
 import { cronText, when } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
-import { EffortSelect, label, useModelOptions } from './ModelSetup'
+import { EffortSelect, label, RetiredHint, useModelOptions } from './ModelSetup'
 import { PushChoice } from './PushChoice'
 import { Button, Card } from './ui'
 
@@ -105,6 +105,7 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
               <EffortSelect value={effort} onChange={setEffort} fallback={models.settings?.efforts?.judge} className="w-[150px] shrink-0" />
             </span>
             <span className="mt-1 block text-[12px] text-ink-3">{t('rs.modelText')}</span>
+            <RetiredHint model={model} className="mt-1" />
           </label>
         )}
         {params.length === 0 && !s.thinks && (

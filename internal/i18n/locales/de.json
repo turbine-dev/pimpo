@@ -77,6 +77,7 @@
   "msg.link.unknownNotice": "Diese Meldung habe ich hier nicht mehr. Antworte in der App oder auf eine neuere.",
   "msg.link.noSuchChoice": "Diese Meldung hat keine Auswahl mit dieser Nummer.",
   "msg.model.back": "✅ {model} antwortet wieder und ist wieder im Einsatz.",
+  "msg.model.retired": "⚠️ {model} wird von seinem Anbieter nicht mehr angeboten. Wähle ein anderes Modell unter Einstellungen › Modelle.",
   "msg.model.current": "🧠 Modell dieses Gesprächs: {model}. Optionen: {options}. Ändern mit /modell <Name> oder /modell auto, damit Pimpo wählt.",
   "msg.model.fallback": "⚠️ {model} hat nicht geantwortet ({why}). Vorerst übernimmt {backup}; du erfährst, wenn es zurück ist.",
   "msg.model.set": "✅ Ab jetzt nutzt dieses Gespräch {model}.",

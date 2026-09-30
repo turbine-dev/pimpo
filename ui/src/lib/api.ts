@@ -182,13 +182,13 @@ export type PushStatus = {
 export type GmailPushSetup = { topic: string; account: string; audience?: string; endpoint: string; ready: boolean }
 export type GitHubHook = { on: boolean; urls?: { local?: string; public?: string }; secret?: string }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
-export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; lesson_digest_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
+export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; lesson_digest_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string; compact_off?: boolean; compact_at?: number }
 export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
 // A key a connector needs, asked for privately; the value never comes back.
 export type CredentialRequest = { id: string; connector: string; field: string; invalid?: boolean; routine?: string; exploration?: string; asked: string; expires: string; title: string; label: string; description: string }
 export type Provider = { id: string; name: string; key_url?: string; needs_key: boolean; local?: boolean }
-export type CatalogModel = { id: string; name: string; price_in: number; price_out: number; priced: boolean; context?: number; free?: boolean }
+export type CatalogModel = { id: string; name: string; price_in: number; price_out: number; priced: boolean; context?: number; free?: boolean; new?: boolean; retired?: boolean; mine?: boolean }
 export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: string; ollama_up?: boolean; lmstudio: CatalogModel[]; lmstudio_url: string; lmstudio_up?: boolean; codex?: string; codex_login?: boolean; opencode?: string; qwen_code?: string; apps?: string[] }
 export type Reminder = { id: string; at: string; text: string }
 export type LocalItem = { id: string; kind: 'engine' | 'voice' | 'transcriber'; name: string; about?: string; languages?: string[]; size: number; installed: boolean; quality?: number }
@@ -392,7 +392,8 @@ export const api = {
   cancelReminder: (id: string) => request<{ ok: boolean }>('DELETE', `/api/reminders/${id}`),
   quickSetup: (c: QuickChoice) => request<{ explore: string; judge: string; text?: string; cost_usd: number; ms?: number }>('POST', '/api/setup/model', c),
   opencodeModels: () => request<OpencodeModel[]>('GET', '/api/models/opencode'),
-  modelCatalog: (provider: string) => request<CatalogModel[]>('GET', `/api/models/catalog/${provider}`),
+  modelCatalog: (provider: string, fresh = false) => request<CatalogModel[]>('GET', `/api/models/catalog/${provider}${fresh ? '?fresh=1' : ''}`),
+  retiredModels: () => request<{ retired: string[] }>('GET', '/api/models/retired'),
   tryModel: async (id: string, price_in: number, price_out: number): Promise<ModelTest> => {
     const res = await fetch('/api/models/test', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, price_in, price_out }) })
     return res.json()

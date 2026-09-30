@@ -1,9 +1,9 @@
 import * as Menu from '@radix-ui/react-dropdown-menu'
-import { Brain, Check, ChevronDown, Sparkles } from 'lucide-react'
+import { AlertTriangle, Brain, Check, ChevronDown, Sparkles } from 'lucide-react'
 import { EFFORTS, type Routed } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT, type TKey } from '../lib/i18n'
-import { label, useModelOptions } from './ModelSetup'
+import { label, RetiredHint, useModelOptions, useRetired } from './ModelSetup'
 
 const levelKey = (e: string) => `effort.${e}` as TKey
 
@@ -17,6 +17,7 @@ export function ModelPicker({ value, effort = 'auto', onChange, onEffort, classN
   const t = useT()
   const { options: mine, auto } = useModelOptions()
   const options = allowed?.length ? mine.filter((m) => allowed.includes(m)) : mine
+  const retired = useRetired()
   const current = !value || value === 'auto' ? 'auto' : value
   const level = !effort || effort === 'auto' ? 'auto' : effort
   const all = options.includes(current) || current === 'auto' ? options : [current, ...options]
@@ -28,6 +29,7 @@ export function ModelPicker({ value, effort = 'auto', onChange, onEffort, classN
       <Menu.Trigger aria-label={t('mp.label')}
         className={cn('inline-flex h-7 max-w-[260px] items-center gap-1 rounded-full px-2.5 text-[12px] text-ink-2 transition hover:bg-sunken hover:text-ink data-[state=open]:bg-sunken', className)}>
         {bothAuto && <Sparkles size={12} className="shrink-0" />}
+        {retired.has(current) && <AlertTriangle size={12} className="shrink-0 text-danger" aria-label={t('ms.retired')} />}
         <span className="truncate">
           {current === 'auto' ? t('mp.auto') : label(current)}
           {level !== 'auto' && <span className="text-ink-3"> · {t(levelKey(level))}</span>}
@@ -38,6 +40,7 @@ export function ModelPicker({ value, effort = 'auto', onChange, onEffort, classN
         <Menu.Content side="top" align="start" sideOffset={6}
           className="z-50 max-h-[70vh] w-72 overflow-y-auto rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-pop)]">
           <Menu.Label className={heading}>{t('mp.model')}</Menu.Label>
+          <RetiredHint model={current} className="px-2.5 pb-1" />
           <Menu.RadioGroup value={current} onValueChange={onChange}>
             <Menu.RadioItem value="auto" className={item}>
               <Sparkles size={14} className="mt-0.5 shrink-0" />
@@ -54,6 +57,7 @@ export function ModelPicker({ value, effort = 'auto', onChange, onEffort, classN
             {all.map((o) => (
               <Menu.RadioItem key={o} value={o} className={item}>
                 <span className="min-w-0 flex-1 truncate">{label(o)}</span>
+                {retired.has(o) && <span className="rounded-full bg-danger-soft px-1.5 text-[10.5px] font-medium text-danger">{t('ms.retired')}</span>}
                 <Menu.ItemIndicator><Check size={14} /></Menu.ItemIndicator>
               </Menu.RadioItem>
             ))}

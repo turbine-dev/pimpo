@@ -312,7 +312,9 @@ In **System status** (the Pimpo menu, or ⌘⇧D), **Check everything** tests ev
 - **Channels:** on Telegram, WhatsApp and the others, send `/model` to see the model in use, `/model opus` (or any model of your list) to fix one, and `/model auto` to go back to the automatic choice. `/think` does the same for the thinking level: `/think high`, `/think auto`.
 - **Routines** run without a model, except for their yes-or-no questions and short texts. A routine that has them shows **Model for judgments and texts** in its settings; leave it on the default (the model for judgments) or pick another for that routine alone, and its thinking level beside it.
 
-Rules and approvals do not change with the model: every tool call still goes through Pimpo. With Anthropic, the instructions, tool list and conversation so far are kept in the provider's prompt cache between turns, so a long task pays about a tenth for what it already sent; the cost shown includes the cache's own prices.
+Rules and approvals do not change with the model: every tool call still goes through Pimpo. With Anthropic, the instructions, tool list and conversation so far are kept in the provider's prompt cache between turns, so a long task pays about a tenth for what it already sent; the cost shown includes the cache's own prices. When a conversation or job with an Anthropic model grows very long, Anthropic summarizes its older parts on its servers so it can go on (**Settings › Models › Summarize long conversations**, on by default, with the size where it starts); the summary is counted in the cost.
+
+The providers' lists are live: each provider's models come from the provider itself, kept for a day, and **Look again** asks at once. A model a provider has just started offering is marked **New** (**New · price unknown** until you type its price). One of your models the provider no longer offers is marked **Retired**, and the jobs, chats and routines that use it suggest choosing another.
 
 ## Downloading models
 

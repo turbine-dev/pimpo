@@ -326,7 +326,7 @@ The owner chooses which models each person and each assistant may use, and a dai
 
 ### 9.6 A live model catalog · S
 
-The list of models comes from the providers themselves, with prices, and long conversations with Anthropic use its server-side context compaction.
+The list of models comes from the providers themselves, with prices, and long conversations with Anthropic use its server-side context compaction. *Done.*
 
 ### 9.7 Outside password managers · M
 

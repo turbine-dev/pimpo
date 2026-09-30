@@ -280,6 +280,17 @@ Paste a key in **Settings › Models › Providers** and choose among the provid
 
 All but Anthropic use OpenAI's chat completions API. Prices come from OpenRouter's public catalog of list prices. A model the catalog does not know needs its price typed in: without a price the model does not run, because the daily limit counts every call. A call also stops if it would cost more than it is allowed.
 
+The list of models comes from each provider's own `GET /models` (Anthropic's in pages; OpenRouter's includes prices), asked with the key in the vault. It is kept for a day (a minute for Ollama and LM Studio), asked again with `If-None-Match` / `If-Modified-Since` so an unchanged list costs a 304, and **Look again** in the provider's list (or `GET /api/models/catalog/{provider}?fresh=1`) asks at once. Once a day Pimpo also looks at the providers you have models from. Your own models keep the price you set. A model a provider starts listing after the first look is marked **New** for two weeks (**New · price unknown** when no catalog price is found; it still needs your price before it runs). One of your models a provider stops listing is marked **Retired**; jobs, chats and routines that use it suggest switching, and you are told once if a job uses it. `GET /api/models/retired` lists them. Only a list the provider actually returned retires a model; a provider that cannot be reached changes nothing.
+
+### Anthropic compaction
+
+| Setting | Default | Where | What it does |
+|---|---|---|---|
+| `compact_off` | `false` | **Settings › Models › Summarize long conversations** | Stops Anthropic's server-side compaction. |
+| `compact_at` | `0` (150000) | **Starts at (tokens)** | Input size where Anthropic summarizes the older turns; 50000 to 1000000. |
+
+With an Anthropic API model, once a conversation or job has grown to half of `compact_at`, requests carry the `compact-2026-01-12` beta and `context_management` with a `compact_20260112` edit triggered at `compact_at` input tokens. Anthropic then replaces the older turns with a summary block, which Pimpo sends back as it came. The summary's own tokens (`usage.iterations` of type `compaction`, which the top-level usage leaves out) are counted at the model's prices. A model that refuses the beta answers without it.
+
 ### Subscription or money
 
 Some backends are paid by a subscription you already have. Pimpo asks each CLI how it is signed in, at most every ten minutes:
