@@ -267,9 +267,10 @@ func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	if !a.usableModel(ctx, m.Model) {
+	ctx = a.assistantCtx(ctx, m.Assistant)
+	if err := a.modelRefusal(ctx, m.Model); err != nil {
 		a.Store.DeleteChat(ctx, c.ID)
-		server.WriteError(w, server.StatusError{Status: 400, Msg: m.Model + " is not among your models"})
+		server.WriteError(w, err)
 		return
 	}
 	if !usableEffort(m.Effort) {
@@ -359,12 +360,17 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	ctx = a.assistantCtx(ctx, c.Assistant)
 	if m.Model != "" {
-		if !a.usableModel(ctx, m.Model) {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: m.Model + " is not among your models"})
+		if err := a.modelRefusal(ctx, m.Model); err != nil {
+			server.WriteError(w, err)
 			return
 		}
 		a.setChatModel(ctx, c.ID, m.Model)
+	} else if err := a.modelRefusal(ctx, a.chatModel(ctx, c.ID)); err != nil {
+		// The model this conversation was fixed to is no longer allowed.
+		server.WriteError(w, err)
+		return
 	}
 	if m.Effort != "" {
 		if !usableEffort(m.Effort) {

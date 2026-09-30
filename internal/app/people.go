@@ -25,6 +25,24 @@ type personView struct {
 	people.Person
 	Mail     bool `json:"mail"`
 	Calendar bool `json:"calendar"`
+	// DailyLimit is the person's own limit in effect (a guest's default
+	// included), and LimitReached whether today's spending reached it. The
+	// owner sees only that, never how much each person spent: costs are
+	// shared as a total.
+	DailyLimit   float64 `json:"daily_limit"`
+	LimitReached bool    `json:"limit_reached"`
+}
+
+func (a *App) viewPerson(ctx context.Context, p people.Person) personView {
+	pctx := people.With(ctx, p.ID)
+	addr, _ := a.Events.Get(pctx, personal(pctx, "mail.addr"))
+	_, cal := a.Vault.Get(pctx, personal(pctx, "calendar.feeds"))
+	v := personView{Person: p, Mail: addr != "", Calendar: cal == nil, DailyLimit: a.Budget.LimitFor(ctx, p.ID)}
+	if v.DailyLimit > 0 {
+		spent, _ := a.Budget.TodayFor(ctx, p.ID)
+		v.LimitReached = spent >= v.DailyLimit
+	}
+	return v
 }
 
 func (a *App) listPeople(w http.ResponseWriter, r *http.Request) {
@@ -38,10 +56,7 @@ func (a *App) listPeople(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]personView, 0, len(list))
 	for _, p := range list {
-		pctx := people.With(ctx, p.ID)
-		addr, _ := a.Events.Get(pctx, personal(pctx, "mail.addr"))
-		_, cal := a.Vault.Get(pctx, personal(pctx, "calendar.feeds"))
-		out = append(out, personView{Person: p, Mail: addr != "", Calendar: cal == nil})
+		out = append(out, a.viewPerson(ctx, p))
 	}
 	server.WriteJSON(w, 200, out)
 }

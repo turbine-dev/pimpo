@@ -24,7 +24,8 @@ type routed struct {
 	Model string `json:"model"`
 	// Tier is simple, normal or hard when the request was weighed.
 	Tier string `json:"tier,omitempty"`
-	// By is jev, rules, fixed or default: how the model was chosen.
+	// By is jev, rules, fixed or default: how the model was chosen; allowed
+	// when it was the cheapest the person and assistant may use instead.
 	By string `json:"by"`
 	// Effort is the level of thinking, "" for the model's own default.
 	Effort string `json:"effort,omitempty"`
@@ -70,6 +71,11 @@ func (a *App) routeModel(ctx context.Context, request, conversation, fixed, effo
 				r.Tier = tier
 			}
 		}
+	}
+	// Whatever was chosen stays inside what the person and the assistant
+	// may use; outside it, the cheapest model they may.
+	if m, ok := a.fitModel(ctx, r.Model); ok && m != r.Model {
+		r.Model, r.By = m, "allowed"
 	}
 	switch {
 	case fixedEffort:
@@ -177,8 +183,12 @@ func (a *App) autoModels(ctx context.Context) (light, strong string) {
 	return light, strong
 }
 
-// roomToSpend keeps the strong model for days with budget left.
+// roomToSpend keeps the strong model for days with budget left, the
+// house's and the person's own.
 func (a *App) roomToSpend(ctx context.Context) bool {
+	if !a.roomFor(ctx) {
+		return false
+	}
 	limit := a.Budget.Limit(ctx)
 	if limit <= 0 {
 		return true

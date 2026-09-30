@@ -9,6 +9,7 @@ No version has been tagged yet. The first release will include everything built 
 ### Added
 
 - Push triggers: routines that watch Gmail (through Google Pub/Sub) or Slack hear of new items as they happen, and a GitHub webhook with a signed secret starts a routine; polling stays as the fallback.
+- Models and spending per person: the owner chooses which models each person and each assistant may use and a daily limit per person inside the house's (guests start at $0.25 a day); each person sees their own in **Account**.
 - **For this routine** on approvals: a routine repeats exactly the approved action (same recipients, hosts, amounts up to the limit) without asking, until its code changes; each person revokes theirs in **Routines**.
 - Settings history (**Settings › History**): every change to rules, budget, connections, models, people and settings, with who and when, secrets never kept, and undo; a member sees their own accounts' history in **Account**.
 - Database integrity: Pimpo checks its database at start and before every snapshot; a damaged one is moved to a quarantine folder untouched, and a recovery page offers the newest snapshot that passes its check, a fresh start, or the damaged file as a zip.

@@ -24,6 +24,9 @@ type Assistant struct {
 	Emoji        string   `json:"emoji"`
 	Instructions string   `json:"instructions"`
 	Capabilities []string `json:"capabilities"`
+	// Models are the models this assistant may answer with, inside what
+	// the person asking may use; empty is all of them.
+	Models []string `json:"models,omitempty"`
 }
 
 const assistantsKey = "assistants"
@@ -45,6 +48,15 @@ func (a *App) assistant(ctx context.Context, id string) (Assistant, bool) {
 		}
 	}
 	return Assistant{}, false
+}
+
+// assistantCtx marks ctx as answered by an assistant, so its calls keep
+// to the assistant's models.
+func (a *App) assistantCtx(ctx context.Context, id string) context.Context {
+	if as, ok := a.assistant(ctx, id); ok {
+		return withAssistant(ctx, as.Models)
+	}
+	return ctx
 }
 
 func (as Assistant) role() *explore.Assistant {
@@ -117,6 +129,12 @@ func (a *App) putAssistant(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(caps)
 	as.Capabilities = caps
+	models, err := a.houseChoice(ctx, as.Models)
+	if err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	as.Models = models
 	assistantsMu.Lock()
 	list := a.assistants(ctx)
 	replaced := false
@@ -129,13 +147,13 @@ func (a *App) putAssistant(w http.ResponseWriter, r *http.Request) {
 		list = append(list, as)
 	}
 	b, _ := json.Marshal(list)
-	err := a.Events.Put(ctx, assistantsKey, string(b))
+	err = a.Events.Put(ctx, assistantsKey, string(b))
 	assistantsMu.Unlock()
 	if err != nil {
 		server.WriteError(w, err)
 		return
 	}
-	a.Events.Append(ctx, "assistant.saved", actor(ctx), map[string]any{"id": as.ID, "capabilities": as.Capabilities})
+	a.Events.Append(ctx, "assistant.saved", actor(ctx), map[string]any{"id": as.ID, "capabilities": as.Capabilities, "models": as.Models})
 	server.WriteJSON(w, 200, as)
 }
 

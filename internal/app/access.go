@@ -36,6 +36,7 @@ var guestRoutes = routeSet(
 	"GET /api/memory/sources", "POST /api/memory/sources/forget",
 	"GET /api/passkeys", "POST /api/passkeys/begin", "POST /api/passkeys/finish", "DELETE /api/passkeys/{id}",
 	"GET /api/me/devices", "DELETE /api/me/devices/{id}",
+	"GET /api/me/limits",
 	"GET /api/dashboards", "GET /api/dashboards/{id}/widgets", "GET /api/widgets", "GET /api/widgets/{id}",
 )
 
@@ -99,6 +100,7 @@ var ownerOnlyRoutes = routeSet(
 	"PUT /api/assistants/{id}", "DELETE /api/assistants/{id}",
 	"POST /api/browser/login",
 	"PUT /api/account",
+	"PUT /api/people/{id}/limits",
 )
 
 func routeSet(patterns ...string) map[string]bool {

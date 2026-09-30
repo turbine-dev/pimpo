@@ -48,6 +48,29 @@ type Person struct {
 	Invite      string    `json:"invite,omitempty"`
 	InviteUntil time.Time `json:"invite_until,omitzero"`
 	Created     time.Time `json:"created"`
+	// Models are the models the owner lets this person use; empty is all
+	// of the house's.
+	Models []string `json:"models,omitempty"`
+	// DailyUSD is the person's own daily spending limit, inside the
+	// house's; 0 is none of their own (for a guest, GuestDailyUSD).
+	DailyUSD float64 `json:"daily_usd,omitempty"`
+}
+
+// GuestDailyUSD is what a guest may spend a day until the owner sets
+// their own limit: a guest only asks, so a little is enough.
+const GuestDailyUSD = 0.25
+
+// DailyLimit is the person's own daily limit in dollars, 0 for none.
+func (p Person) DailyLimit() float64 {
+	switch {
+	case p.Role == Owner:
+		return 0
+	case p.DailyUSD > 0:
+		return p.DailyUSD
+	case p.Role == Guest:
+		return GuestDailyUSD
+	}
+	return 0
 }
 
 const key = "people"
@@ -369,6 +392,28 @@ func (d *Directory) Update(ctx context.Context, id string, role Role, responsibl
 			}
 		}
 		return list[i], d.save(ctx, list)
+	}
+	return Person{}, ErrUnknown
+}
+
+// SetLimits sets which models a person may use (empty for all of the
+// house's) and their own daily limit (0 for none). The owner's are the
+// house's, set in the settings.
+func (d *Directory) SetLimits(ctx context.Context, id string, models []string, dailyUSD float64) (Person, error) {
+	if dailyUSD < 0 {
+		return Person{}, errors.New("a limit cannot be negative")
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	list, err := d.load(ctx)
+	if err != nil {
+		return Person{}, err
+	}
+	for i, p := range list {
+		if p.ID == id {
+			list[i].Models, list[i].DailyUSD = models, dailyUSD
+			return list[i], d.save(ctx, list)
+		}
 	}
 	return Person{}, ErrUnknown
 }

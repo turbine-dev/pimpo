@@ -109,6 +109,32 @@ func TestJudgmentsCostAndRespectTheBudget(t *testing.T) {
 	}
 }
 
+// A routine's judgments count against its person's own limit.
+func TestJudgmentsAreThePersons(t *testing.T) {
+	e := env(t, &fakeMail{})
+	e.Budget.PersonLimit = func(_ context.Context, p string) float64 {
+		if p == "ana" {
+			return 0.01
+		}
+		return 0
+	}
+	h := &Host{Env: e, Source: "routine:brief#3", Person: "ana"}
+	ctx := context.Background()
+	if _, err := h.Judge(ctx, "important", "?", nil); err != nil {
+		t.Fatal(err)
+	}
+	if spent, _ := e.Budget.TodayFor(ctx, "ana"); spent < 0.009 {
+		t.Fatalf("Ana's spending %v", spent)
+	}
+	if _, err := h.Judge(ctx, "important", "?", nil); !errors.Is(err, budget.ErrPersonOverBudget) {
+		t.Fatalf("past Ana's limit: %v", err)
+	}
+	owner := &Host{Env: e, Source: "routine:mine#1"}
+	if _, err := owner.Judge(ctx, "important", "?", nil); err != nil {
+		t.Fatalf("the owner's routine: %v", err)
+	}
+}
+
 func TestUnconnectedCapabilityExplainsItself(t *testing.T) {
 	h := &Host{Env: env(t, &fakeMail{}), Source: "routine:x#1"}
 	_, err := h.Call(context.Background(), "telegram.send", "", map[string]any{"text": "hi"})

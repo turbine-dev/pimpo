@@ -370,8 +370,8 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 	if req.Model == Auto {
 		req.Model = ""
 	}
-	if !a.usableModel(ctx, req.Model) {
-		server.WriteError(w, server.StatusError{Status: 400, Msg: req.Model + " is not among your models"})
+	if err := a.modelRefusal(ctx, req.Model); err != nil {
+		server.WriteError(w, err)
 		return
 	}
 	if req.Effort == Auto {

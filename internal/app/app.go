@@ -263,6 +263,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Budget = &budget.Budget{Events: events, Zone: zone}
 	a.Channel = &owner.Channel{Events: events, Bot: a.bot, Handler: handler{a}}
 	a.People = &people.Directory{Events: events, OwnerChat: a.Channel.Chat, OwnerWhatsApp: a.ownerWhatsApp}
+	a.Budget.PersonLimit = a.personLimit
 	a.Channel.People = a.People
 	a.Channel.Mirror = func(ctx context.Context, n explore.Notice) {
 		a.mirrorWhatsApp(ctx, n)
@@ -318,6 +319,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.migrateRoutes()
 	a.pairingRoutes()
 	a.peopleRoutes()
+	a.limitRoutes()
 	a.whatsappRoutes()
 	a.galleryRoutes()
 	a.catalogRoutes()
@@ -720,12 +722,20 @@ func (a *App) generate(ctx context.Context, r llm.Request) (llm.Response, error)
 	if r.Model == "" {
 		r.Model = a.Settings(ctx).CompileModel
 	}
+	var ok bool
+	if r.Model, ok = a.fitModel(ctx, r.Model); !ok {
+		return llm.Response{}, a.errNoModel(ctx)
+	}
 	return a.LLM.Generate(ctx, r)
 }
 
 func (a *App) runAgent(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
 	if r.Model == "" {
 		r.Model = a.Settings(ctx).ExploreModel
+	}
+	var ok bool
+	if r.Model, ok = a.fitModel(ctx, r.Model); !ok {
+		return llm.Response{}, a.errNoModel(ctx)
 	}
 	return a.Agent.Run(ctx, r)
 }
@@ -826,7 +836,12 @@ func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, erro
 // when a job falls back and once when its model answers again. The
 // owner's own spending limit and a cancelled task are never retried.
 func (a *App) withFallback(ctx context.Context, job, primary string, call func(model string) (llm.Response, error)) (llm.Response, error) {
-	chain := append([]string{primary}, a.Settings(ctx).fallbacks(job)...)
+	// Only what the person and the assistant may use is tried.
+	chain := a.allowedChain(ctx, append([]string{primary}, a.Settings(ctx).fallbacks(job)...))
+	if len(chain) == 0 {
+		return llm.Response{}, a.errNoModel(ctx)
+	}
+	primary = chain[0]
 	var firstErr error
 	for i, model := range chain {
 		if i > 0 && slices.Contains(chain[:i], model) {
@@ -1124,16 +1139,11 @@ func (a *App) convModel(ctx context.Context, key string) string {
 // choices; with a name (or "auto"), it fixes that model on this channel.
 func (a *App) modelCommand(ctx context.Context, key, arg string) string {
 	arg = strings.ToLower(arg)
-	s := a.Settings(ctx)
 	options := []string{Auto}
-	if claudeInstalled() {
-		options = append(options, "sonnet", "opus", "haiku")
-	}
-	if llm.CodexBinary() != "" {
-		options = append(options, "codex")
-	}
-	for _, m := range s.Models {
-		options = append(options, m.ID)
+	for _, m := range a.houseModels(ctx) {
+		if a.modelAllowed(ctx, m) {
+			options = append(options, m)
+		}
 	}
 	if arg == "" {
 		current := a.convModel(ctx, key)
