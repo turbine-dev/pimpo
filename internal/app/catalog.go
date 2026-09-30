@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/turbine-dev/pimpo/internal/connector"
 	"github.com/turbine-dev/pimpo/internal/connector/external"
 	"github.com/turbine-dev/pimpo/internal/connector/services"
 	"github.com/turbine-dev/pimpo/internal/server"
@@ -29,7 +30,12 @@ func (a *App) catalogConfig(kind string) services.Config {
 	return func(ctx context.Context, field string) (string, error) {
 		name := personal(ctx, catalogKey(kind, field))
 		if secret[field] {
-			return a.Vault.Get(ctx, name)
+			v, err := a.Vault.Get(ctx, name)
+			if errors.Is(err, vault.ErrNotFound) || err == nil && strings.TrimSpace(v) == "" {
+				// Which key is missing, so the person can be asked for it.
+				return "", &connector.MissingCredential{Connector: kind, Field: field, Err: vault.ErrNotFound}
+			}
+			return v, err
 		}
 		return a.Events.Get(ctx, name)
 	}

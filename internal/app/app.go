@@ -50,6 +50,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/protect"
 	"github.com/turbine-dev/pimpo/internal/remote"
 	"github.com/turbine-dev/pimpo/internal/scheduler"
+	"github.com/turbine-dev/pimpo/internal/secretscan"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/speech"
 	"github.com/turbine-dev/pimpo/internal/store"
@@ -282,7 +283,8 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	}}
 	env := host.Env{Router: router, Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide),
 		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
-		RoleOf: func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) }}
+		RoleOf:  func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) },
+		Missing: a.missingCredential}
 	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone}
 	a.Explore = &explore.Service{Guide: docs.Guide, Skills: a.exploreSkills, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 3, Installed: a.installedRoutines,
 		Helpers: func(ctx context.Context, id string) (runtime.Helper, error) { return a.Scheduler.Library(ctx, id) }},
@@ -328,6 +330,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.accountRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
+	a.credentialRoutes()
 	a.assistantRoutes()
 	a.voiceRoutes()
 	a.modelRoutes()
@@ -619,7 +622,13 @@ func (m mailConn) Call(ctx context.Context, c, s string, args any) (any, error) 
 	}
 	smtp, _ := m.a.Events.Get(ctx, personal(ctx, "mail.smtp"))
 	pw := personal(ctx, "mail.password")
-	acct := mail.Account{Addr: addr, Username: user, SMTP: smtp, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) { return m.a.secret(ctx, pw) }}
+	acct := mail.Account{Addr: addr, Username: user, SMTP: smtp, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) {
+		v, err := m.a.Vault.Get(ctx, pw)
+		if errors.Is(err, vault.ErrNotFound) {
+			return "", &connector.MissingCredential{Connector: "mail", Field: "password", Err: errors.New("email is not set up; open Connections")}
+		}
+		return v, err
+	}}
 	if auth, _ := m.a.Events.Get(ctx, personal(ctx, "mail.auth")); auth == "oauth" && m.a.Google != nil && people.From(ctx) == people.OwnerID {
 		acct.Token = m.a.Google.Token
 	}
@@ -929,6 +938,20 @@ type handler struct{ a *App }
 func actor(ctx context.Context) string { return "human:" + people.From(ctx) }
 
 func (h handler) Request(ctx context.Context, text string) (string, error) {
+	// A pasted key goes no further than here: not to the model, the
+	// conversation or the log. The person is told, and nothing is kept.
+	text, warning := h.a.guardPasted(ctx, text)
+	if warning == "" {
+		return h.request(ctx, text)
+	}
+	if secretscan.Only(text) {
+		return warning, nil
+	}
+	reply, err := h.request(ctx, text)
+	return warning + "\n\n" + reply, err
+}
+
+func (h handler) request(ctx context.Context, text string) (string, error) {
 	via := owner.ChannelOf(ctx)
 	if via == "" {
 		if _, err := h.a.Explore.Start(ctx, text, actor(ctx)); err != nil {

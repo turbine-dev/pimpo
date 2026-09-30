@@ -4,6 +4,7 @@ import { Jobs } from './pages/Jobs'
 import { Account } from './pages/Account'
 import { SignIn } from './pages/SignIn'
 import { CreateAdmin } from './pages/CreateAdmin'
+import { Credential } from './pages/Credential'
 
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
@@ -95,6 +96,7 @@ export default function App() {
         <Route path="/jobs/:id" element={<Jobs />} />
         <Route path="/help" element={<Help />} />
         <Route path="/inbox" element={<Inbox />} />
+        <Route path="/credentials/:id" element={<Credential />} />
         <Route path="/receipts" element={<Receipts />} />
         <Route path="/rules" element={<Rules />} />
         <Route path="/cost" element={<Cost />} />

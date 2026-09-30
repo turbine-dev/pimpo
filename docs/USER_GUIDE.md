@@ -160,6 +160,12 @@ On a Mac, **Connections › Apple Reminders, Notes and Calendar** lets tasks and
 
 A routine can ask you something and act on your answer: "every night ask me if I worked out and count the week's workouts", "ask before archiving". The question arrives with its options as buttons on Telegram, numbered on the other channels, and in **Needs you**; your answer runs the routine again, which records it or does what you chose. A new question replaces the same one still unanswered, and a question expires after 24 hours.
 
+## Keys Pimpo asks for
+
+When a routine or a task needs a password or key you have not given (a GitHub token, a Notion integration token, your email's app password), or the service stops accepting the one you gave, Pimpo asks for it privately. You get a notice, "GitHub needs your token", with a link to a form in the app; the request also waits in **Needs you**. The form writes the key straight to Pimpo's vault, under your name: a member's keys are theirs and the administrator never sees or answers their requests. After saving, **Run the routine again** or **Try the task again** picks up where it stopped. The link works once and expires after a week.
+
+Never send a key in a chat or a channel message. If you do, Pimpo takes it out before the message goes anywhere (the model, the conversation, the activity log) and does not keep it; it tells you so and points you to the form. It recognizes common formats (API keys of the big providers, GitHub, Slack and Telegram tokens, private keys) and values written after "password:" or "token=". It removes only what looks like a key, so the rest of your message still goes through.
+
 ## Reminders
 
 Ask in any chat, in the app or on a channel: "in 30 minutes remind me to check the deploy", "remind me tomorrow at 9 to call Ana". Pimpo sets a reminder that goes out once, where your notices go, and is gone; nothing is turned into a routine. Pending reminders are listed at the top of **Routines**, where each can be cancelled. One that falls due while Pimpo is closed goes out when it opens, saying it is late. What repeats ("every Monday…") is a routine instead.
