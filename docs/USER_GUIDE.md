@@ -11,10 +11,11 @@ Pimpo was called Zodim, and Vigia before that. An existing install moves over on
 ## First steps
 
 1. **Install.** Use the desktop app from the [releases page](https://github.com/turbine-dev/pimpo/releases) (macOS, Windows, Linux), or run `curl -fsSL https://raw.githubusercontent.com/turbine-dev/pimpo/main/scripts/install.sh | sh` and then `pimpo serve`. Open the link it prints.
-2. **Choose the model that thinks for Pimpo.** The welcome screen shows what this computer already has (Claude Code, Codex, opencode, a local model in Ollama or LM Studio) or takes one API key (Anthropic, OpenAI, Gemini, DeepSeek, OpenRouter and others). Pimpo picks the models for each job and tests them. A model is only needed to learn a task the first time; the routines it makes run without one.
-3. **Pick your safety level.** The welcome screen offers conservative, balanced (recommended) and liberal.
-4. **Connect what you need** in Conexões: Telegram or WhatsApp to talk from your phone, then email and calendar. "Entrar com Google" connects both at once with your own Google client.
-5. **Ask for something you do every week.** Use "Nova tarefa", or send a message on Telegram.
+2. **Create the administrator's account.** The first visit asks for your name: whoever installed Pimpo administers it (adds the people of the house, connections and rules) and, like everyone, sees only their own things. Then add a passkey to open Pimpo with Touch ID, Face ID or Windows Hello next time; you can skip it and add one later in **Conta**. Installs from before this ask once too.
+3. **Choose the model that thinks for Pimpo.** The welcome screen shows what this computer already has (Claude Code, Codex, opencode, a local model in Ollama or LM Studio) or takes one API key (Anthropic, OpenAI, Gemini, DeepSeek, OpenRouter and others). Pimpo picks the models for each job and tests them. A model is only needed to learn a task the first time; the routines it makes run without one.
+4. **Pick your safety level.** The welcome screen offers conservative, balanced (recommended) and liberal.
+5. **Connect what you need** in Conexões: Telegram or WhatsApp to talk from your phone, then email and calendar. "Entrar com Google" connects both at once with your own Google client.
+6. **Ask for something you do every week.** Use "Nova tarefa", or send a message on Telegram.
 
 Want to see it first? Run `pimpo serve --demo`: a sample mailbox and calendar, no accounts, no costs.
 

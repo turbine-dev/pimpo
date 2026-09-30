@@ -589,6 +589,13 @@ export const de: Record<Key, string> & Record<string, string> = {
   'signin.title': "Bei Pimpo anmelden",
   'signin.text': "Nutze einen auf diesem Gerät gespeicherten Passkey oder öffne den Anmeldelink, den dir der Besitzer gegeben hat.",
   'signin.passkey': "Mit Passkey anmelden",
+  'admin.title': "Administratorkonto erstellen",
+  'admin.text': "Du hast Pimpo installiert, also verwaltest du es: Du fügst die Personen im Haus, Verbindungen und Regeln hinzu. Du siehst die Dinge der anderen nicht, und sie sehen deine nicht.",
+  'admin.name': "Dein Name",
+  'admin.create': "Konto erstellen",
+  'admin.passkeyTitle': "Passkey hinzufügen",
+  'admin.passkeyText': "Öffne Pimpo beim nächsten Mal mit der Sperre dieses Geräts (Touch ID, Face ID, Windows Hello) statt mit einem Link.",
+  'admin.later': "Nicht jetzt",
   'memory.confirm': 'Bestätigen',
   'memory.forget': 'Vergessen: {text}',
 

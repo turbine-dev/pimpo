@@ -99,7 +99,7 @@ O resumo matinal só **lê** dados e **envia para você**. Não tem ação irrev
 | Compilador de rotinas | 2,97 | 2,63 | 1,73 | 2,98 | Completo; é a prova |
 | Agendador | 2,94 | 1,31 | 1,05 | 2,99 | Horário fixo (cron) |
 | Resumo matinal | 2,76 | 1,35 | 1,53 | 2,99 | Agenda + e-mails importantes |
-| Modo exploração | 2,19 | 1,19 | 1,62 | 2,88 | Só com capacidades de leitura e envio para o dono |
+| Modo exploração | 2,19 | 1,19 | 1,62 | 2,88 | Só com capacidades de leitura e envio para o administrador |
 | Canal Telegram | 2,76 | 1,17 | 1,30 | 2,79 | Conversa e avisos |
 | Capacidades por rotina | 2,94 | 2,33 | 1,19 | 2,69 | Manifesto checado no runtime |
 | **Limite de gasto** | 2,95 | 2,88 | 1,01 | 2,58 | Limite diário simples, checado antes de cada chamada (**maior prioridade geral: 2,13**) |
@@ -450,7 +450,7 @@ F12 Longevidade: SDK, idiomas, auditoria, LTS ──────▶ v2.x
 ### F1 · A rotina compilada → v0.1 (experimental)
 - **Objetivo:** uma rotina real rodando todo dia, de verdade, no celular do Dener.
 - **Produto:**
-  - modo exploração com capacidades de leitura e envio para o dono;
+  - modo exploração com capacidades de leitura e envio para o administrador;
   - compilador integrado ao produto;
   - agendador (horário fixo);
   - um passo de julgamento ("e-mail importante?");
@@ -530,7 +530,7 @@ F12 Longevidade: SDK, idiomas, auditoria, LTS ──────▶ v2.x
 - **Objetivo:** o agente não pode ser envenenado pelo que lê, e serve a uma casa inteira.
 - **Produto:**
   - origem em toda memória, com a de baixa confiança isolada das instruções;
-  - vários usuários com papéis (dono, membro, convidado), credenciais e memória por pessoa;
+  - vários usuários com papéis (administrador, membro, convidado), credenciais e memória por pessoa;
   - regras por pessoa ("as crianças não podem comprar nada");
   - WhatsApp como segundo canal.
 - **UI:** a memória mostra a origem e a confiança de cada fato; tela Pessoas; aprovação encaminhada para quem é responsável.
@@ -635,13 +635,13 @@ Cada conector declara capacidades com nível de risco: 🟢 leitura, 🟡 escrit
 |---|---|---|
 | F1 | Google Agenda | 🟢 ler eventos |
 | F1 | Gmail (IMAP) | 🟢 ler mensagens |
-| F1 | Telegram | 🟡 enviar ao dono |
+| F1 | Telegram | 🟡 enviar ao administrador |
 | F1 | HTTP (lista de domínios) | 🟢 GET em domínios declarados |
 | F2 | Gmail | 🟡 arquivar, marcar, rascunho · 🔴 enviar, apagar (tornados reversíveis: envio adiado, lixeira) |
 | F4 | Google Agenda | 🟡 criar evento (reversível) |
 | F4 | Arquivos locais | 🟢 ler pastas declaradas · 🟡 escrever com snapshot |
 | F5 | Gmail (OAuth), Outlook e IMAP genérico | leitura e escrita como acima |
-| F6 | WhatsApp | 🟡 enviar ao dono · 🔴 enviar a terceiros (sempre aprovado) |
+| F6 | WhatsApp | 🟡 enviar ao administrador · 🔴 enviar a terceiros (sempre aprovado) |
 | F8 | Notion, Obsidian | 🟢 ler · 🟡 escrever com histórico |
 | F8 | Todoist, Google Tasks, Apple Lembretes | 🟢 ler · 🟡 criar e concluir |
 | F8 | Home Assistant | 🟢 ler estados · 🟡 ações reversíveis · 🔴 ações físicas críticas (fechaduras, alarme) sempre aprovadas |

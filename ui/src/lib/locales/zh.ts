@@ -589,6 +589,13 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'signin.title': "登录 Pimpo",
   'signin.text': "使用保存在本设备上的通行密钥，或打开主人给你的登录链接。",
   'signin.passkey': "用通行密钥登录",
+  'admin.title': "创建管理员账户",
+  'admin.text': "你安装了 Pimpo，所以由你来管理：添加家里的人、连接和规则。你看不到别人的内容，别人也看不到你的。",
+  'admin.name': "你的名字",
+  'admin.create': "创建账户",
+  'admin.passkeyTitle': "添加通行密钥",
+  'admin.passkeyText': "下次用本设备的锁（Touch ID、面容 ID、Windows Hello）打开 Pimpo，而不是链接。",
+  'admin.later': "以后再说",
   'memory.confirm': '确认',
   'memory.forget': '忘记：{text}',
 

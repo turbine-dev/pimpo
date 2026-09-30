@@ -3,6 +3,7 @@ import { Phone } from './pages/Phone'
 import { Jobs } from './pages/Jobs'
 import { Account } from './pages/Account'
 import { SignIn } from './pages/SignIn'
+import { CreateAdmin } from './pages/CreateAdmin'
 
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
@@ -62,6 +63,7 @@ export default function App() {
     return <Mascot standalone onOpen={(path) => { location.pathname !== path && window.location.assign('/open?path=' + encodeURIComponent(path)) }} />
   }
   if (state.error instanceof ApiError && state.error.status === 401) return <SignIn />
+  if (state.data?.role === 'owner' && state.data.admin_account === false && location.pathname !== '/mascot') return <CreateAdmin />
   if (location.pathname === '/welcome') {
     return (
       <div className="min-h-full px-4">

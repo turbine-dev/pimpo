@@ -166,7 +166,7 @@ export type ActionRecord = {
   ms: number
 }
 
-export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean; person?: string; role?: 'owner' | 'member' | 'guest' }
+export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean; person?: string; role?: 'owner' | 'member' | 'guest'; name?: string; admin_account?: boolean }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
 export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
 export type ModelOption = { id: string; price_in: number; price_out: number }
@@ -251,6 +251,7 @@ export const api = {
   createJob: (req: string, budget_usd: number) => request<LongJob>('POST', '/api/jobs', { request: req, budget_usd }),
   startJob: (id: string) => request<LongJob>('POST', `/api/jobs/${id}/start`),
   stopJob: (id: string) => request<LongJob>('POST', `/api/jobs/${id}/stop`),
+  saveAccount: (name: string) => request<{ name: string }>('PUT', '/api/account', { name }),
   passkeys: () => request<{ id: string; name: string; address: string; created: string; last_used?: string }[]>('GET', '/api/passkeys'),
   deletePasskey: (id: string) => request<{ removed: string }>('DELETE', `/api/passkeys/${encodeURIComponent(id)}`),
   phone: () => request<PhoneState>('GET', '/api/phone'),

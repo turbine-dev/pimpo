@@ -589,6 +589,13 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'signin.title': "Pimpo にサインイン",
   'signin.text': "この端末に保存したパスキーを使うか、オーナーからもらったサインインリンクを開いてください。",
   'signin.passkey': "パスキーでサインイン",
+  'admin.title': "管理者アカウントを作成",
+  'admin.text': "Pimpo をインストールしたあなたが管理者です。家のメンバー、接続、ルールを追加します。他の人のものは見えず、他の人もあなたのものを見られません。",
+  'admin.name': "あなたの名前",
+  'admin.create': "アカウントを作成",
+  'admin.passkeyTitle': "パスキーを追加",
+  'admin.passkeyText': "次回からはリンクではなく、この端末のロック（Touch ID、Face ID、Windows Hello）で Pimpo を開けます。",
+  'admin.later': "あとで",
   'memory.confirm': '確認',
   'memory.forget': '忘れる：{text}',
 

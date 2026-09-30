@@ -609,6 +609,13 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'signin.title': "Вход в Pimpo",
   'signin.text': "Используйте ключ доступа, сохранённый на этом устройстве, или откройте ссылку для входа от владельца.",
   'signin.passkey': "Войти с ключом доступа",
+  'admin.title': "Создайте учётную запись администратора",
+  'admin.text': "Вы установили Pimpo, значит, вы его администрируете: добавляете людей в доме, подключения и правила. Вы не увидите чужого, а другие не увидят вашего.",
+  'admin.name': "Ваше имя",
+  'admin.create': "Создать учётную запись",
+  'admin.passkeyTitle': "Добавьте ключ доступа",
+  'admin.passkeyText': "В следующий раз открывайте Pimpo блокировкой этого устройства (Touch ID, Face ID, Windows Hello), а не ссылкой.",
+  'admin.later': "Не сейчас",
   'memory.confirm': 'Подтвердить',
   'memory.forget': 'Забыть: {text}',
 

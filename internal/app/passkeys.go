@@ -107,6 +107,9 @@ func (u passkeyUser) WebAuthnCredentials() []webauthn.Credential { return u.cred
 
 func (a *App) passkeyUser(ctx context.Context, person, rpID string) passkeyUser {
 	name := "Pimpo"
+	if acc, ok := a.admin(ctx); ok && person == people.OwnerID {
+		name = acc.Name
+	}
 	if person != people.OwnerID {
 		if p, err := a.People.Get(ctx, person); err == nil {
 			name = p.Name

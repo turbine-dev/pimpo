@@ -589,6 +589,13 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'signin.title': "Pimpo에 로그인",
   'signin.text': "이 기기에 저장한 패스키를 쓰거나, 소유자가 준 로그인 링크를 여세요.",
   'signin.passkey': "패스키로 로그인",
+  'admin.title': "관리자 계정 만들기",
+  'admin.text': "Pimpo를 설치했으니 당신이 관리자예요. 집 사람들, 연결, 규칙을 추가해요. 다른 사람의 것은 볼 수 없고, 그들도 당신 것을 볼 수 없어요.",
+  'admin.name': "이름",
+  'admin.create': "계정 만들기",
+  'admin.passkeyTitle': "패스키 추가",
+  'admin.passkeyText': "다음부터는 링크 대신 이 기기의 잠금(Touch ID, Face ID, Windows Hello)으로 Pimpo를 여세요.",
+  'admin.later': "나중에",
   'memory.confirm': '확인',
   'memory.forget': '잊기: {text}',
 

@@ -61,7 +61,7 @@
   "msg.model.fallback": "⚠️ {model} não respondeu ({why}). Usando {backup} por enquanto; aviso quando ele voltar.",
   "msg.model.set": "✅ A partir de agora, esta conversa usa {model}.",
   "msg.model.unknown": "Não conheço o modelo “{model}”. Opções: {options}.",
-  "msg.ownerOnly": "Só o dono da casa pode fazer isso.",
+  "msg.ownerOnly": "Só o administrador pode fazer isso.",
   "msg.pair.already": "O Pimpo já está conectado aqui. Peça algo que você faz toda semana.",
   "msg.pair.badCode": "Esse código não confere. Abra Conexões no Pimpo e use o código mostrado lá.",
   "msg.pair.link": "Oi! O Pimpo também está conectado por aqui. Peça algo que você faz toda semana.",

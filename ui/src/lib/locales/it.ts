@@ -598,6 +598,13 @@ export const it: Record<Key, string> & Record<string, string> = {
   'signin.title': "Entra in Pimpo",
   'signin.text': "Usa una passkey salvata su questo dispositivo, o apri il link di accesso che ti ha dato il proprietario.",
   'signin.passkey': "Entra con passkey",
+  'admin.title': "Crea l’account amministratore",
+  'admin.text': "Hai installato Pimpo, quindi lo amministri tu: aggiungi le persone di casa, le connessioni e le regole. Non vedrai le cose degli altri, e loro non vedranno le tue.",
+  'admin.name': "Il tuo nome",
+  'admin.create': "Crea account",
+  'admin.passkeyTitle': "Aggiungi una passkey",
+  'admin.passkeyText': "La prossima volta, apri Pimpo con il blocco di questo dispositivo (Touch ID, Face ID, Windows Hello) invece di un link.",
+  'admin.later': "Non ora",
   'memory.confirm': 'Conferma',
   'memory.forget': 'Dimentica: {text}',
 
