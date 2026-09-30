@@ -188,7 +188,7 @@ func (s *Server) auth(pattern string, h http.HandlerFunc) http.Handler {
 // SetSession signs the browser in with a session token, as the login link
 // does.
 func SetSession(w http.ResponseWriter, token string) {
-	http.SetCookie(w, &http.Cookie{Name: cookie, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
+	http.SetCookie(w, &http.Cookie{Name: cookie, Value: token, Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
 }
 
 // TokenOf is the credential a request carries: a bearer token, or the
