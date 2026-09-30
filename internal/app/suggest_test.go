@@ -9,6 +9,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/routine"
 )
 
 func TestSuggestionsFromMetadataOnly(t *testing.T) {
@@ -87,5 +88,24 @@ func TestSuggestionsAreDueOncADayAndBackOff(t *testing.T) {
 	ta.SaveSettings(ctx, s, "test")
 	if ta.dueForSuggestions(ctx, time.Date(2026, 10, 5, 10, 0, 0, 0, time.UTC)) {
 		t.Fatal("due while turned off")
+	}
+}
+
+// A suggestion round looks only at the owner's own routines and failures.
+func TestSuggestionsSeeOnlyTheOwnersRoutines(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ctx := context.Background()
+	for _, id := range []string{"mine", "anas"} {
+		ta.Store.SaveRoutine(ctx, id, routine.Routine{Name: strings.ToUpper(id) + "-ROUTINE", Code: "x"}, "t", "owner")
+		run, _ := ta.Store.StartRun(ctx, id, 1)
+		ta.Store.FinishRun(ctx, run, "failed", strings.ToUpper(id)+"-FAILED", 0, 0)
+	}
+	ta.Store.SetRoutinePerson(ctx, "anas", "ana")
+	b, _ := json.Marshal(ta.suggestFacts(ctx))
+	if !strings.Contains(string(b), "MINE-ROUTINE") || !strings.Contains(string(b), "MINE-FAILED") {
+		t.Fatalf("the owner's routines are missing: %s", b)
+	}
+	if strings.Contains(string(b), "ANAS-") {
+		t.Fatalf("a suggestion round saw ana's routines: %s", b)
 	}
 }

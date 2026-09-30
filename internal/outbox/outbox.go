@@ -8,9 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/people"
 )
 
 const (
@@ -34,7 +36,10 @@ type Outbox struct {
 }
 
 type Item struct {
-	ID     int64     `json:"id"`
+	ID int64 `json:"id"`
+	// Person is who the email is sent for, from their own account; empty
+	// is the owner.
+	Person string    `json:"person,omitempty"`
 	Args   any       `json:"args"`
 	SendAt time.Time `json:"send_at"`
 	State  string    `json:"state"`
@@ -49,7 +54,27 @@ const schema = `CREATE TABLE IF NOT EXISTS outbox (
   error   TEXT
 )`
 
-func (o *Outbox) Init() error { _, err := o.DB.Exec(schema); return err }
+// addPerson records who each email is sent for; emails queued before it
+// existed were the owner's.
+const addPerson = `ALTER TABLE outbox ADD COLUMN person TEXT NOT NULL DEFAULT ''`
+
+func (o *Outbox) Init() error {
+	if _, err := o.DB.Exec(schema); err != nil {
+		return err
+	}
+	if _, err := o.DB.Exec(addPerson); err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return err
+	}
+	return nil
+}
+
+// person is who ctx acts for, stored empty for the owner.
+func person(ctx context.Context) string {
+	if p := people.From(ctx); p != people.OwnerID {
+		return p
+	}
+	return ""
+}
 
 func (o *Outbox) now() time.Time {
 	if o.Now != nil {
@@ -71,12 +96,18 @@ func (o *Outbox) Call(ctx context.Context, _, _ string, args any) (any, error) {
 		return nil, err
 	}
 	at := o.now().Add(delay).UTC()
-	res, err := o.DB.ExecContext(ctx, `INSERT INTO outbox (args, send_at, state) VALUES (?, ?, ?)`, string(b), at.Format(time.RFC3339Nano), Queued)
+	res, err := o.DB.ExecContext(ctx, `INSERT INTO outbox (args, send_at, state, person) VALUES (?, ?, ?, ?)`, string(b), at.Format(time.RFC3339Nano), Queued, person(ctx))
 	if err != nil {
 		return nil, err
 	}
 	id, _ := res.LastInsertId()
 	return map[string]any{"ok": true, "queued": true, "outbox_id": id, "send_at": at.Format(time.RFC3339)}, nil
+}
+
+// CancelFor stops every email still queued for a person.
+func (o *Outbox) CancelFor(ctx context.Context, who string) error {
+	_, err := o.DB.ExecContext(ctx, `UPDATE outbox SET state = ? WHERE person = ? AND state = ?`, Cancelled, who, Queued)
+	return err
 }
 
 // Cancel stops a queued email.
@@ -95,7 +126,7 @@ func (o *Outbox) Get(ctx context.Context, id int64) (Item, error) {
 	var it Item
 	var args, at string
 	var errText sql.NullString
-	err := o.DB.QueryRowContext(ctx, `SELECT id, args, send_at, state, error FROM outbox WHERE id = ?`, id).Scan(&it.ID, &args, &at, &it.State, &errText)
+	err := o.DB.QueryRowContext(ctx, `SELECT id, args, send_at, state, error, person FROM outbox WHERE id = ?`, id).Scan(&it.ID, &args, &at, &it.State, &errText, &it.Person)
 	if err != nil {
 		return it, err
 	}
@@ -129,14 +160,16 @@ func (o *Outbox) Flush(ctx context.Context) (int, error) {
 			continue
 		}
 		it, _ := o.Get(ctx, id)
-		_, err = o.Send(ctx, it.Args)
+		// It leaves from the account of whoever queued it, never the
+		// owner's for someone else.
+		_, err = o.Send(people.With(ctx, people.Norm(it.Person)), it.Args)
 		if err != nil {
 			o.DB.ExecContext(ctx, `UPDATE outbox SET state = ?, error = ? WHERE id = ?`, Failed, err.Error(), id)
-			o.Events.Append(ctx, "outbox.failed", "system", map[string]any{"outbox_id": id, "error": err.Error()})
+			o.Events.Append(ctx, "outbox.failed", "system", map[string]any{"outbox_id": id, "error": err.Error(), "person": people.Norm(it.Person)})
 			continue
 		}
 		o.DB.ExecContext(ctx, `UPDATE outbox SET state = ? WHERE id = ?`, Sent, id)
-		o.Events.Append(ctx, "outbox.sent", "system", map[string]any{"outbox_id": id, "args": it.Args})
+		o.Events.Append(ctx, "outbox.sent", "system", map[string]any{"outbox_id": id, "args": it.Args, "person": people.Norm(it.Person)})
 		sent++
 	}
 	return sent, nil

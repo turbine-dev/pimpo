@@ -244,17 +244,21 @@ func (a *App) suggestFacts(ctx context.Context) map[string]any {
 		}
 		facts["upcoming_events"] = meta
 	}
-	routines, _ := a.Store.Routines(ctx)
+	// Only the owner's own routines: suggestions are the owner's, and
+	// nobody else's routines are theirs to see.
+	routines, _ := a.myRoutines(ctx)
 	var have []string
+	own := map[string]bool{}
 	for _, r := range routines {
 		have = append(have, r.Body.Name+": "+clip(r.Body.Description, 120))
+		own[r.ID] = true
 	}
 	sort.Strings(have)
 	facts["existing_routines"] = have
-	if failed, err := a.Store.RecentRuns(ctx, store.RunFailed, 0, 20); err == nil {
+	if failed, err := a.Store.RecentRuns(ctx, store.RunFailed, 0, 100); err == nil {
 		var names []string
 		for _, f := range failed {
-			if time.Since(f.StartedAt) < 7*24*time.Hour {
+			if own[f.Routine] && len(names) < 20 && time.Since(f.StartedAt) < 7*24*time.Hour {
 				names = append(names, f.Name+": "+clip(f.Error, 120))
 			}
 		}

@@ -594,7 +594,7 @@ func (a *App) usageReport(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		zone = time.Local
 	}
-	rep, err := usage.Build(r.Context(), a.Events, a.Store, time.Now(), days, zone)
+	rep, err := usage.BuildFor(r.Context(), a.Events, a.Store, time.Now(), days, zone, people.From(r.Context()))
 	if err != nil {
 		server.WriteError(w, err)
 		return

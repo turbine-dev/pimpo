@@ -124,9 +124,11 @@ func containsFold(list []string, s string) bool {
 }
 
 // ownerEvidence gathers the owner's own words and choices since t.
+// Suggestions stay out: their titles were written by a model from email
+// metadata, so even the owner's click on one would carry a sender's words.
 func (a *App) ownerEvidence(ctx context.Context, since time.Time) map[string]any {
 	requests, decisions := []string{}, []string{}
-	evs, _ := a.Events.List(ctx, event.Query{Types: []string{"exploration.started", "approval.requested", "approval.resolved", "suggestion.dismissed", "suggestion.accepted"}, Newest: true, Limit: 2000})
+	evs, _ := a.Events.List(ctx, event.Query{Types: []string{"exploration.started", "approval.requested", "approval.resolved"}, Newest: true, Limit: 2000})
 	asked := map[string]string{}
 	for i := len(evs) - 1; i >= 0; i-- {
 		e := evs[i]
@@ -134,8 +136,8 @@ func (a *App) ownerEvidence(ctx context.Context, since time.Time) map[string]any
 			continue
 		}
 		var d struct {
-			Request, ID, Answer, Title string
-			Action                     struct{ Capability string }
+			Request, ID, Answer string
+			Action              struct{ Capability string }
 		}
 		e.Decode(&d)
 		switch e.Type {
@@ -149,10 +151,6 @@ func (a *App) ownerEvidence(ctx context.Context, since time.Time) map[string]any
 			if e.Actor == "human:owner" && (d.Answer == "deny" || d.Answer == "always") {
 				decisions = append(decisions, d.Answer+" "+asked[d.ID])
 			}
-		case "suggestion.dismissed":
-			decisions = append(decisions, "declined the suggestion: "+d.Title)
-		case "suggestion.accepted":
-			decisions = append(decisions, "accepted the suggestion: "+d.Title)
 		}
 	}
 	return map[string]any{"requests": requests, "decisions": decisions}

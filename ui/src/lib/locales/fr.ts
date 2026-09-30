@@ -643,7 +643,7 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'people.approves': 'Approuvé par {who}',
   'people.mail': 'E-mail',
   'people.calendar': 'Agenda',
-  'people.confirmRemove': 'Supprimer {name} et ses comptes ?',
+  'people.confirmRemove': 'Supprimer {name} ? Ses comptes, sa mémoire, ses conversations, ses routines et ses tâches sont effacés définitivement.',
   'people.no': 'Non',
   'people.remove': 'Supprimer {name}',
   'people.accountsNote': 'Seules les tâches de {name} utilisent ceci. Vos comptes ne sont jamais utilisés par quelqu’un d’autre.',

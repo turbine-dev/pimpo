@@ -654,7 +654,7 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'people.approves': 'Одобряет: {who}',
   'people.mail': 'Почта',
   'people.calendar': 'Календарь',
-  'people.confirmRemove': 'Удалить {name} вместе с аккаунтами?',
+  'people.confirmRemove': 'Удалить {name}? Аккаунты, память, чаты, сценарии и задания будут удалены навсегда.',
   'people.no': 'Нет',
   'people.remove': 'Удалить {name}',
   'people.accountsNote': 'Это используют только задачи {name}. Ваши аккаунты никогда не используются другими людьми.',

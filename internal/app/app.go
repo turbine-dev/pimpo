@@ -1154,22 +1154,33 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 	return "", fmt.Errorf("unknown action %q", action)
 }
 
-// allowed keeps members to their own explorations and to the approvals
-// they answer for; routines and everything else stay with the owner.
+// allowed keeps everyone, the owner included, to their own explorations
+// and to the approvals they answer for; routines and everything else stay
+// with the owner.
 func (h handler) allowed(ctx context.Context, action, id string) error {
 	person := people.From(ctx)
-	if person == people.OwnerID {
-		return nil
-	}
 	switch action {
 	case "approve", "always", "deny", "batch":
 		if h.a.Approvals.MayAnswer(id, person) {
 			return nil
 		}
+		return errors.New(i18n.T(ctx, "msg.approval.gone"))
 	case "compile", "discard":
-		if e, err := h.a.Store.Exploration(ctx, id); err == nil && e.Person == person {
+		if e, err := h.a.Store.Exploration(ctx, id); err == nil && mine(ctx, e.Person) {
 			return nil
 		}
+		if person == people.OwnerID {
+			return store.ErrNotFound
+		}
+	case "run", "repair":
+		if _, err := h.a.myRoutine(ctx, id); err != nil && person == people.OwnerID {
+			return err
+		}
+	}
+	if person == people.OwnerID {
+		return nil
+	}
+	switch action {
 	case "answer":
 		// answer checks that the question is theirs.
 		return nil

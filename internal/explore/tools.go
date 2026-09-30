@@ -141,7 +141,11 @@ func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string) []mcp.
 				}
 				var out []map[string]any
 				for _, f := range facts {
-					out = append(out, map[string]any{"fact": f.Text, "topic": f.Topic, "confirmed_by_owner": f.Trust == memory.High})
+					item := map[string]any{"fact": f.Text, "topic": f.Topic, "confirmed_by_owner": memory.OwnersWord(f)}
+					if by := memory.SharedBy(f); by != "" {
+						item["shared_by"] = by
+					}
+					out = append(out, item)
 				}
 				if out == nil {
 					out = []map[string]any{}

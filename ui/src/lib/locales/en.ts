@@ -634,7 +634,7 @@ export const en: Record<Key, string> = {
   'people.approves': 'Approved by {who}',
   'people.mail': 'Email',
   'people.calendar': 'Calendar',
-  'people.confirmRemove': 'Remove {name} and their accounts?',
+  'people.confirmRemove': 'Remove {name}? Their accounts, memory, chats, routines and jobs are deleted for good.',
   'people.no': 'No',
   'people.remove': 'Remove {name}',
   'people.accountsNote': 'Only {name}’s tasks use this. Your accounts are never used by anyone else.',

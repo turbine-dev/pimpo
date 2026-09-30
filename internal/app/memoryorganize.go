@@ -45,16 +45,35 @@ const sameFactThreshold = 0.6
 
 var organizeMu sync.Mutex
 
-func (a *App) organizeMemory(ctx context.Context) (organized, error) {
+// organizedKeyFor keeps each person's last result apart: what was merged
+// quotes their facts.
+func organizedKeyFor(person string) string {
+	if person = people.Norm(person); person != people.OwnerID {
+		return organizedKey + "." + person
+	}
+	return organizedKey
+}
+
+// organizeMemory tidies one person's facts: their own and, for the owner,
+// the house's. Nobody's facts are compared with anyone else's.
+func (a *App) organizeMemory(ctx context.Context, person string) (organized, error) {
 	organizeMu.Lock()
 	defer organizeMu.Unlock()
+	person = people.Norm(person)
+	ctx = people.With(ctx, person)
 	res := organized{At: time.Now(), Merged: []merge{}}
 	if a.Memory == nil {
 		return res, errors.New("memory is not available")
 	}
-	facts, err := a.Memory.List()
+	all, err := a.Memory.List()
 	if err != nil {
 		return res, err
+	}
+	var facts []memory.Fact
+	for _, f := range all {
+		if memory.Mine(f, person) {
+			facts = append(facts, f)
+		}
 	}
 	pairs := memory.Similar(facts, 40)
 	res.Checked = len(pairs)
@@ -78,14 +97,26 @@ func (a *App) organizeMemory(ctx context.Context) (organized, error) {
 		res.Merged = append(res.Merged, merge{Kept: keep.Text, Dropped: lose.Text})
 	}
 	if len(drop) > 0 {
-		if err := a.Memory.Drop(drop, fmt.Sprintf("organize: merged %d duplicate facts", len(drop))); err != nil {
+		msg := fmt.Sprintf("organize: merged %d duplicate facts", len(drop))
+		if person != people.OwnerID {
+			msg += " (" + memory.ForPrefix + person + ")"
+		}
+		if err := a.Memory.Drop(drop, msg); err != nil {
 			return res, err
 		}
 	}
 	b, _ := json.Marshal(res)
-	a.Events.Put(ctx, organizedKey, string(b))
-	a.Events.Append(ctx, "memory.organized", "system", map[string]any{"checked": res.Checked, "merged": len(res.Merged)})
+	a.Events.Put(ctx, organizedKeyFor(person), string(b))
+	a.Events.Append(ctx, "memory.organized", "system", map[string]any{"checked": res.Checked, "merged": len(res.Merged), "person": person})
 	return res, nil
+}
+
+// organizeEveryone tidies each person's memory on its own.
+func (a *App) organizeEveryone(ctx context.Context) {
+	list, _ := a.People.List(ctx)
+	for _, p := range list {
+		a.organizeMemory(ctx, p.ID)
+	}
 }
 
 // organizeLoop tidies memory once a night, after 3 in the owner's zone.
@@ -104,14 +135,14 @@ func (a *App) organizeLoop(ctx context.Context, every time.Duration) {
 			json.Unmarshal([]byte(raw), &last)
 		}
 		if a.lab(ctx, "memory_organize") && now.Hour() >= 3 && last.At.In(now.Location()).Format("2006-01-02") != now.Format("2006-01-02") {
-			a.organizeMemory(ctx)
+			a.organizeEveryone(ctx)
 		}
 	}
 }
 
 func (a *App) organizeRoutes() {
 	a.Server.Handle("POST /api/memory/organize", func(w http.ResponseWriter, r *http.Request) {
-		res, err := a.organizeMemory(r.Context())
+		res, err := a.organizeMemory(r.Context(), people.From(r.Context()))
 		if err != nil {
 			server.WriteError(w, err)
 			return
@@ -120,7 +151,7 @@ func (a *App) organizeRoutes() {
 	})
 	a.Server.Handle("GET /api/memory/organized", func(w http.ResponseWriter, r *http.Request) {
 		last := organized{Merged: []merge{}}
-		if raw, _ := a.Events.Get(r.Context(), organizedKey); raw != "" {
+		if raw, _ := a.Events.Get(r.Context(), organizedKeyFor(people.From(r.Context()))); raw != "" {
 			json.Unmarshal([]byte(raw), &last)
 		}
 		if last.Merged == nil {
