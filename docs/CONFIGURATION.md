@@ -21,7 +21,8 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 
 | Command | Flags | What it does |
 |---|---|---|
-| `pimpo serve` | `--addr` (default `127.0.0.1:7788`), `--data DIR`, `--demo` | Runs the server, the web app and the channels. Prints the login link. |
+| `pimpo serve` | `--addr` (default `127.0.0.1:7788`), `--data DIR`, `--demo` | Runs the server, the web app and the channels. Prints the login link the first time. |
+| `pimpo token` | `rotate`, `--data DIR` | Prints the owner's login link; `rotate` replaces it, signing out every browser that used the old one (a running Pimpo follows within seconds, unless `PIMPO_TOKEN` fixes the token). |
 | `pimpo update` | `--check`, `--beta`, `--version vX.Y.Z`, `--rollback` | Replaces this binary with the latest release after checking it against the release's checksums, keeping the old one as `pimpo.previous`; `--rollback` puts it back. Restart Pimpo afterwards: its first start keeps a snapshot of the data (`before-VERSION`). The desktop app updates itself instead. |
 | `pimpo version` | | Prints the version. |
 | `pimpo export FILE.pimpo` | `--data DIR` | Writes everything to one file, secrets sealed with a passphrase. Refuses to overwrite an existing file. |
@@ -300,7 +301,7 @@ For a server (Docker or systemd) and reaching it safely from elsewhere, see [SEL
 
 ### Logging in
 
-At start, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`. Opening it sets an http-only, same-site session cookie for a year. The token is created once and kept in the database, so the link stays valid across restarts; `PIMPO_TOKEN` replaces it. Every API call needs the cookie or `Authorization: Bearer <token>`, with the session token or a device token. The web app's files, `/api/health` and routes that check their own credential (the WhatsApp webhook, routine webhooks at `/hook/…`, the Google and Spotify sign-in callbacks, the per-exploration MCP endpoint) are the only ones reachable without it.
+The first time it starts, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`; `pimpo token` prints it again and `pimpo token rotate` replaces it. Opening it sets an http-only, same-site session cookie for a year. The token is created once and kept in the database, so the link stays valid across restarts until rotated; `PIMPO_TOKEN` replaces it. A link the owner makes for someone else is an invite: it works once, within 15 minutes, and opens a session with a token of its own; the person sees the device in **Account** and in their activity, and can sign it out there. Requests that change something with the browser's cookie must come from Pimpo's own page (the `Origin`, or `Sec-Fetch-Site`, must match the address), and JSON bodies must say `Content-Type: application/json`; clients that send `Authorization: Bearer` are exempt. Every answer carries a `Content-Security-Policy` that allows only Pimpo's own scripts and forbids framing. Every API call needs the cookie or `Authorization: Bearer <token>`, with the session token or a device token. The web app's files, `/api/health` and routes that check their own credential (the WhatsApp webhook, routine webhooks at `/hook/…`, the Google and Spotify sign-in callbacks, the per-exploration MCP endpoint) are the only ones reachable without it.
 
 ### Phones and other devices
 
@@ -318,7 +319,7 @@ At start, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`. Opening i
 - **Expiry.** A paired device unused for 180 days, and a passkey session unused for 30, no longer opens Pimpo.
 - **Wrong sign-ins.** Past 20 wrong tokens or links in 10 minutes from one address, further wrong attempts wait a second and get HTTP 429. Requests without any credential do not count, and a valid token always works.
 - **Removing a person** revokes their devices, sessions and passkeys at once.
-- **The administrator's account.** The first visit with the login link asks for the administrator's name (`admin.account` in the database) and offers a passkey. The login link printed at start stays the administrator's way in (the desktop app opens Pimpo with it); keep it private.
+- **The administrator's account.** The first visit with the login link asks for the administrator's name (`admin.account` in the database) and offers a passkey. The login link printed at the first start (and by `pimpo token`) stays the administrator's way in (the desktop app opens Pimpo with it); keep it private.
 
 ## Local models
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -71,9 +70,11 @@ func newHouse(t *testing.T) *house {
 	h := &house{testApp: ta, owner: map[string]string{}, anas: map[string]string{}, ownerMark: "OWNERSECRET", anaMark: "ANASECRET"}
 	_, out := ta.do(t, "POST", "/api/people", map[string]string{"name": "Ana", "role": "member"})
 	h.anaID = out["id"].(string)
-	_, out = ta.do(t, "POST", "/api/pairing", map[string]string{"base": "https://pimpo.example.com", "device": "Celular da Ana", "person": h.anaID})
-	u, _ := url.Parse(out["link"].(string))
-	h.ana = u.Query().Get("token")
+	// Ana opens her invite on her phone; the session it gives is hers.
+	link, _ := ta.invite(t, h.anaID, "Celular da Ana")
+	if _, h.ana = ta.open(t, link); h.ana == "" {
+		t.Fatal("Ana's invite did not sign her in")
+	}
 
 	for who, token := range map[string]string{"owner": "tok", "ana": h.ana} {
 		mark, ids := h.ownerMark, h.owner

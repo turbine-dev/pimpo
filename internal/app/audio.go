@@ -294,10 +294,11 @@ func (a *App) mediaRoutes() {
 			server.WriteError(w, server.StatusError{Status: 400, Msg: "nothing to read"})
 			return
 		}
-		key := speechKey(v, lang, text)
+		// Each person's readings are kept apart, so how fast one comes back
+		// says nothing of what someone else heard.
+		key := speechKey(v, lang, people.Norm(people.From(r.Context()))+"\x00"+text)
 		if audio, ok := a.cachedSpeech(key); ok {
 			w.Header().Set("Content-Type", "audio/mp4")
-			w.Header().Set("X-Pimpo-Cache", "hit")
 			w.Write(audio)
 			return
 		}

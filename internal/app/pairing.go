@@ -41,6 +41,13 @@ type Device struct {
 	// KeyHash is the phone's key for automations (iOS Shortcuts, Tasker):
 	// it can only report phone events, never open the app.
 	KeyHash string `json:"key_hash,omitempty"`
+	// Passkey is the passkey that opened this session; removing the
+	// passkey signs it out.
+	Passkey string `json:"passkey,omitempty"`
+	// Invite marks a link made for someone else that nobody opened yet:
+	// it opens nothing by itself, works once and only until Expires.
+	Invite  bool      `json:"invite,omitempty"`
+	Expires time.Time `json:"expires,omitzero"`
 }
 
 const devicesKey = "devices"
@@ -49,9 +56,37 @@ const devicesKey = "devices"
 // be paired again.
 const deviceIdle = 180 * 24 * time.Hour
 
+// inviteTTL is how long a link for someone else waits to be opened.
+const inviteTTL = 15 * time.Minute
+
 var devicesMu sync.Mutex
 
 func hashToken(t string) string { s := sha256.Sum256([]byte(t)); return hex.EncodeToString(s[:]) }
+
+// newToken is a fresh secret and a separate id to name it by, so the id
+// shown in lists and events gives nothing of the secret away.
+func newToken() (token, id string) {
+	b := make([]byte, 28)
+	rand.Read(b)
+	return hex.EncodeToString(b[:24]), hex.EncodeToString(b[24:])
+}
+
+// expired says whether a device no longer opens anything: an invite past
+// its time, or a device unused for too long.
+func (d Device) expired(now time.Time) bool {
+	if d.Invite {
+		return now.After(d.Expires)
+	}
+	last := d.LastSeen
+	if last.IsZero() {
+		last = d.Created
+	}
+	idle := deviceIdle
+	if d.Session {
+		idle = passkeyIdle
+	}
+	return now.Sub(last) > idle
+}
 
 func (a *App) devices(ctx context.Context) []Device {
 	raw, _ := a.Events.Get(ctx, devicesKey)
@@ -76,24 +111,12 @@ func (a *App) deviceValid(token string) (string, bool) {
 	for i, d := range list {
 		if subtle.ConstantTimeCompare([]byte(d.Hash), []byte(h)) == 1 {
 			// A device unused for months is signed out: a phone left in a
-			// drawer should not open Pimpo forever.
-			last := d.LastSeen
-			if last.IsZero() {
-				last = d.Created
-			}
-			idle := deviceIdle
-			if d.Session {
-				idle = passkeyIdle
-			}
-			if time.Since(last) > idle {
+			// drawer should not open Pimpo forever. An invite only opens
+			// a session of its own, at /auth.
+			if d.Invite || d.expired(time.Now()) || !a.inHouse(ctx, d.Person) {
 				return "", false
 			}
 			person := people.Norm(d.Person)
-			if person != people.OwnerID && a.People != nil {
-				if _, err := a.People.Get(ctx, person); err != nil {
-					return "", false
-				}
-			}
 			if time.Since(d.LastSeen) > time.Hour {
 				list[i].LastSeen = time.Now()
 				a.saveDevices(ctx, list)
@@ -104,11 +127,70 @@ func (a *App) deviceValid(token string) (string, bool) {
 	return "", false
 }
 
+// inHouse says whether a device's person still lives here.
+func (a *App) inHouse(ctx context.Context, person string) bool {
+	person = people.Norm(person)
+	if person == people.OwnerID || a.People == nil {
+		return true
+	}
+	_, err := a.People.Get(ctx, person)
+	return err == nil
+}
+
+// redeem spends an invite: the link opens one session, with a token of
+// its own, and is no use afterwards. The person sees the new device in
+// their activity, so they notice one they did not add.
+func (a *App) redeem(invite string) (string, bool) {
+	ctx := context.Background()
+	h := hashToken(invite)
+	devicesMu.Lock()
+	list := a.devices(ctx)
+	now := time.Now()
+	var found *Device
+	kept := list[:0]
+	for _, d := range list {
+		if d.Invite && d.expired(now) {
+			continue
+		}
+		kept = append(kept, d)
+		if d.Invite && subtle.ConstantTimeCompare([]byte(d.Hash), []byte(h)) == 1 {
+			found = &kept[len(kept)-1]
+		}
+	}
+	if found == nil || !a.inHouse(ctx, found.Person) {
+		if len(kept) != len(list) {
+			a.saveDevices(ctx, kept)
+		}
+		devicesMu.Unlock()
+		return "", false
+	}
+	token, _ := newToken()
+	found.Hash, found.Invite, found.Expires, found.Created, found.LastSeen = hashToken(token), false, time.Time{}, now, now
+	d := *found
+	err := a.saveDevices(ctx, kept)
+	devicesMu.Unlock()
+	if err != nil {
+		return "", false
+	}
+	a.Events.Append(ctx, "device.added", "device:"+d.ID, map[string]string{"id": d.ID, "name": d.Name, "person": people.Norm(d.Person)})
+	return token, true
+}
+
 func (a *App) pairingRoutes() {
 	a.Server.Device = a.deviceValid
+	a.Server.Exchange = a.redeem
+	a.Server.TrustedOrigin = a.trustedOrigin
 	a.Server.Handle("GET /api/pairing", a.getPairing)
 	a.Server.Handle("POST /api/pairing", a.setPairing)
 	a.Server.Handle("DELETE /api/devices/{id}", a.revokeDevice)
+	a.myDevicesRoutes()
+}
+
+// trustedOrigin is the public address the owner gave, which a proxy in
+// front may not pass on as the Host.
+func (a *App) trustedOrigin(origin string) bool {
+	base, _ := a.Events.Get(context.Background(), "public_url")
+	return base != "" && strings.EqualFold(strings.TrimSuffix(base, "/"), origin)
 }
 
 type deviceView struct {
@@ -117,6 +199,8 @@ type deviceView struct {
 	Person   string    `json:"person"`
 	Created  time.Time `json:"created"`
 	LastSeen time.Time `json:"last_seen,omitzero"`
+	// Pending is an invite nobody opened yet.
+	Pending bool `json:"pending,omitempty"`
 }
 
 func (a *App) getPairing(w http.ResponseWriter, r *http.Request) {
@@ -125,14 +209,20 @@ func (a *App) getPairing(w http.ResponseWriter, r *http.Request) {
 	}
 	base, _ := a.Events.Get(r.Context(), "public_url")
 	views := []deviceView{}
+	now := time.Now()
 	for _, d := range a.devices(r.Context()) {
-		views = append(views, deviceView{d.ID, d.Name, people.Norm(d.Person), d.Created, d.LastSeen})
+		if d.Invite && d.expired(now) {
+			continue
+		}
+		views = append(views, deviceView{d.ID, d.Name, people.Norm(d.Person), d.Created, d.LastSeen, d.Invite})
 	}
 	server.WriteJSON(w, 200, map[string]any{"base": base, "devices": views})
 }
 
 // setPairing saves the public address and, when a device name is given,
 // pairs a new device: the answer carries its link once and never again.
+// A link for someone else is an invite: it works once, within minutes,
+// and opens a session the owner never holds.
 func (a *App) setPairing(w http.ResponseWriter, r *http.Request) {
 	if !ownerOnly(w, r) {
 		return
@@ -178,12 +268,14 @@ func (a *App) setPairing(w http.ResponseWriter, r *http.Request) {
 		primary = home
 	}
 	if name := strings.TrimSpace(req.Device); name != "" && primary != "" {
-		b := make([]byte, 24)
-		rand.Read(b)
-		token := hex.EncodeToString(b)
-		id := hex.EncodeToString(b[:4])
+		token, id := newToken()
+		d := Device{ID: id, Name: name, Hash: hashToken(token), Created: time.Now(), Person: personField(person)}
+		invite := person != people.OwnerID
+		if invite {
+			d.Invite, d.Expires = true, d.Created.Add(inviteTTL)
+		}
 		devicesMu.Lock()
-		list := append(a.devices(ctx), Device{ID: id, Name: name, Hash: hashToken(token), Created: time.Now(), Person: personField(person)})
+		list := append(a.devices(ctx), d)
 		err := a.saveDevices(ctx, list)
 		devicesMu.Unlock()
 		if err != nil {
@@ -193,8 +285,11 @@ func (a *App) setPairing(w http.ResponseWriter, r *http.Request) {
 		a.Events.Append(ctx, "device.paired", "human:owner", map[string]string{"id": id, "name": name, "person": person})
 		out["id"], out["link"] = id, primary+"/auth?token="+url.QueryEscape(token)
 		// With both, the phone tries the home address first and falls back
-		// to the public link; the token works on either.
-		if home != "" && home != primary {
+		// to the public link; the token works on either. An invite works
+		// once, at one address, so it carries only one.
+		if invite {
+			out["expires"] = d.Expires.UTC().Format(time.RFC3339)
+		} else if home != "" && home != primary {
 			out["home"] = home + "/auth?token=" + url.QueryEscape(token)
 			out["link"] += "#home=" + url.QueryEscape(home)
 		}
@@ -214,20 +309,31 @@ func (a *App) revokeDevice(w http.ResponseWriter, r *http.Request) {
 	if !ownerOnly(w, r) {
 		return
 	}
+	a.dropDevice(w, r, func(Device) bool { return true })
+}
+
+// dropDevice revokes the device in the path when may allows it; any other
+// device does not exist for the caller.
+func (a *App) dropDevice(w http.ResponseWriter, r *http.Request, may func(Device) bool) {
 	ctx := r.Context()
 	id := r.PathValue("id")
 	devicesMu.Lock()
 	list := a.devices(ctx)
 	kept := list[:0]
+	var gone *Device
 	for _, d := range list {
-		if d.ID != id {
-			kept = append(kept, d)
+		if d.ID == id && may(d) {
+			gone = &d
+			continue
 		}
+		kept = append(kept, d)
 	}
-	found := len(kept) != len(list)
-	err := a.saveDevices(ctx, kept)
+	var err error
+	if gone != nil {
+		err = a.saveDevices(ctx, kept)
+	}
 	devicesMu.Unlock()
-	if !found {
+	if gone == nil {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "no such device"})
 		return
 	}
@@ -235,8 +341,40 @@ func (a *App) revokeDevice(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	a.Events.Append(ctx, "device.revoked", "human:owner", map[string]string{"id": id})
+	a.Events.Append(ctx, "device.revoked", actor(ctx), map[string]string{"id": id, "person": people.Norm(gone.Person)})
 	server.WriteJSON(w, 200, map[string]string{"revoked": id})
+}
+
+type myDevice struct {
+	ID       string    `json:"id"`
+	Name     string    `json:"name"`
+	Created  time.Time `json:"created"`
+	LastSeen time.Time `json:"last_seen,omitzero"`
+	Session  bool      `json:"session,omitempty"`
+	Pending  bool      `json:"pending,omitempty"`
+	Current  bool      `json:"current,omitempty"`
+}
+
+// myDevices are the devices and passkey sessions of the person asking,
+// and nobody else's: each person sees what opens their account and can
+// sign any of it out.
+func (a *App) myDevicesRoutes() {
+	a.Server.Handle("GET /api/me/devices", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		current := hashToken(server.TokenOf(r))
+		now := time.Now()
+		out := []myDevice{}
+		for _, d := range a.devices(ctx) {
+			if !mine(ctx, d.Person) || d.expired(now) {
+				continue
+			}
+			out = append(out, myDevice{d.ID, d.Name, d.Created, d.LastSeen, d.Session, d.Invite, d.Hash == current})
+		}
+		server.WriteJSON(w, 200, out)
+	})
+	a.Server.Handle("DELETE /api/me/devices/{id}", func(w http.ResponseWriter, r *http.Request) {
+		a.dropDevice(w, r, func(d Device) bool { return mine(r.Context(), d.Person) })
+	})
 }
 
 // forgetDevicesOf revokes every device of someone who left the house.

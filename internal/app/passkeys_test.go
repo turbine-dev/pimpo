@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/fxamacker/cbor/v2"
 )
@@ -164,5 +165,99 @@ func TestPasskeySignsInAsItsPerson(t *testing.T) {
 	code, out, _ = h.browser(t, "", "POST", "/auth/passkey/begin", origin, nil)
 	if code, _, _ := h.browser(t, "", "POST", "/auth/passkey/finish?key="+out["key"].(string), origin, auth.get(t, out["options"].(map[string]any))); code == 200 {
 		t.Fatal("a removed person's passkey still signs in")
+	}
+}
+
+// passkeySession adds a passkey for Ana and signs in with it.
+func passkeySession(t *testing.T, h *house, origin string) (*authenticator, string, string) {
+	t.Helper()
+	auth := newAuthenticator(t, origin)
+	_, out, _ := h.browser(t, h.ana, "POST", "/api/passkeys/begin", origin, []byte(`{"name":"Mac da Ana"}`))
+	code, added, _ := h.browser(t, h.ana, "POST", "/api/passkeys/finish?key="+out["key"].(string), origin, auth.create(t, out["options"].(map[string]any)))
+	if code != 200 {
+		t.Fatalf("finish %d %v", code, added)
+	}
+	return auth, added["id"].(string), signInWith(t, h, auth, origin)
+}
+
+func signInWith(t *testing.T, h *house, auth *authenticator, origin string) string {
+	t.Helper()
+	_, out, _ := h.browser(t, "", "POST", "/auth/passkey/begin", origin, nil)
+	_, _, resp := h.browser(t, "", "POST", "/auth/passkey/finish?key="+out["key"].(string), origin, auth.get(t, out["options"].(map[string]any)))
+	for _, c := range resp.Cookies() {
+		if c.Name == "pimpo_session" {
+			return c.Value
+		}
+	}
+	return ""
+}
+
+// Removing a passkey signs out the sessions it opened.
+func TestRemovingAPasskeySignsOutItsSessions(t *testing.T) {
+	h := newHouse(t)
+	u, _ := url.Parse(h.srv.URL)
+	_, id, session := passkeySession(t, h, "http://localhost:"+u.Port())
+	if code, _ := h.raw(t, session, "GET", "/api/memory", nil); code != 200 {
+		t.Fatalf("the passkey session does not work: %d", code)
+	}
+	if code, _ := h.raw(t, h.ana, "DELETE", "/api/passkeys/"+id, nil); code != 200 {
+		t.Fatalf("remove %d", code)
+	}
+	if code, _ := h.raw(t, session, "GET", "/api/memory", nil); code != 401 {
+		t.Fatalf("a removed passkey's session still works: %d", code)
+	}
+	if code, _ := h.raw(t, h.ana, "GET", "/api/memory", nil); code != 200 {
+		t.Fatal("removing the passkey signed out Ana's phone too")
+	}
+}
+
+// A passkey whose signature count goes backwards has been copied: it does
+// not sign in, and Ana sees why.
+func TestACopiedPasskeyDoesNotSignIn(t *testing.T) {
+	h := newHouse(t)
+	u, _ := url.Parse(h.srv.URL)
+	origin := "http://localhost:" + u.Port()
+	auth, _, _ := passkeySession(t, h, origin)
+	auth.count = 0 // the copy starts behind the original
+	if session := signInWith(t, h, auth, origin); session != "" {
+		t.Fatal("a copied passkey signed in")
+	}
+	if _, body := h.raw(t, h.ana, "GET", "/api/events?types=passkey.cloned", nil); !strings.Contains(body, "passkey.cloned") {
+		t.Fatalf("Ana was not told: %.200s", body)
+	}
+}
+
+// Starting sign-ins is limited, by address and in all.
+func TestPasskeySignInsAreLimited(t *testing.T) {
+	h := newHouse(t)
+	u, _ := url.Parse(h.srv.URL)
+	origin := "http://localhost:" + u.Port()
+	last := 0
+	for i := 0; i < 25; i++ {
+		last, _, _ = h.browser(t, "", "POST", "/auth/passkey/begin", origin, nil)
+	}
+	if last != 429 {
+		t.Fatalf("after many sign-ins started: %d", last)
+	}
+	ceremonies.Lock()
+	for len(ceremonies.m) < maxCeremonies {
+		ceremonies.m[strings.Repeat("x", len(ceremonies.m)+1)] = ceremony{expires: time.Now().Add(time.Minute)}
+	}
+	ceremonies.Unlock()
+	t.Cleanup(func() {
+		ceremonies.Lock()
+		ceremonies.m = map[string]ceremony{}
+		ceremonies.Unlock()
+	})
+	if _, err := putCeremony(ceremony{}); err == nil {
+		t.Fatal("more ceremonies than the cap")
+	}
+	ceremonies.Lock()
+	for k := range ceremonies.m {
+		ceremonies.m[k] = ceremony{expires: time.Now().Add(-time.Second)}
+	}
+	ceremonies.Unlock()
+	if _, err := putCeremony(ceremony{}); err != nil {
+		t.Fatal("expired ceremonies were not pruned")
 	}
 }

@@ -209,6 +209,8 @@ export type RepoView = { path: string; git: boolean; remote: boolean; head?: str
 
 export type Finding = { id: string; group: string; name: string; state: 'ok' | 'warn' | 'fail'; detail?: string; fix?: string; link?: string }
 
+export type MyDevice = { id: string; name: string; created: string; last_seen?: string; session?: boolean; pending?: boolean; current?: boolean }
+
 export type Snapshot = { name: string; label: string; when: string; bytes: number }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -254,6 +256,8 @@ export const api = {
   saveAccount: (name: string) => request<{ name: string }>('PUT', '/api/account', { name }),
   passkeys: () => request<{ id: string; name: string; address: string; created: string; last_used?: string }[]>('GET', '/api/passkeys'),
   deletePasskey: (id: string) => request<{ removed: string }>('DELETE', `/api/passkeys/${encodeURIComponent(id)}`),
+  myDevices: () => request<MyDevice[]>('GET', '/api/me/devices'),
+  signOutDevice: (id: string) => request<{ revoked: string }>('DELETE', `/api/me/devices/${encodeURIComponent(id)}`),
   phone: () => request<PhoneState>('GET', '/api/phone'),
   phoneShares: (shares: PhoneShare[]) => request<{ shares: PhoneShare[] }>('POST', '/api/phone/shares', { shares }),
   phoneKey: () => request<{ key: string }>('POST', '/api/phone/key'),
@@ -367,8 +371,8 @@ export const api = {
   migratePreview: (from: MigrationSource, home: string) => request<MigrationPlan>('POST', '/api/migrate/preview', { from, home }),
   migrateApply: (from: MigrationSource, home: string, o: ImportOptions) => request<Imported>('POST', '/api/migrate/apply', { from, home, ...o }),
   exploreImported: (id: string) => request<{ id: string }>('POST', `/api/explorations/${id}/explore`),
-  pairing: () => request<{ base: string; devices: { id: string; name: string; person: string; created: string; last_seen?: string }[] }>('GET', '/api/pairing'),
-  setPairing: (base: string, device?: string, person?: string) => request<{ base: string; link?: string; id?: string }>('POST', '/api/pairing', { base, device, person: person || undefined }),
+  pairing: () => request<{ base: string; devices: { id: string; name: string; person: string; created: string; last_seen?: string; pending?: boolean }[] }>('GET', '/api/pairing'),
+  setPairing: (base: string, device?: string, person?: string) => request<{ base: string; link?: string; id?: string; expires?: string }>('POST', '/api/pairing', { base, device, person: person || undefined }),
   remote: () => request<RemoteState>('GET', '/api/remote'),
   switchRemote: (kind: 'tailscale' | 'lan', on: boolean) => request<RemoteState>('POST', `/api/remote/${kind}/${on ? 'on' : 'off'}`),
   revokeDevice: (id: string) => request<void>('DELETE', `/api/devices/${id}`),

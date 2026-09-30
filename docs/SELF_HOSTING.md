@@ -12,14 +12,14 @@ The image is `ghcr.io/turbine-dev/pimpo`, for amd64 and arm64. `latest` is the l
 docker run -d --name pimpo --restart unless-stopped \
   -p 127.0.0.1:7788:7788 -v pimpo:/data -e TZ=Europe/Lisbon \
   ghcr.io/turbine-dev/pimpo:latest
-docker logs pimpo | grep auth
+docker exec pimpo pimpo token
 ```
 
-The last command prints the login link. Or, with the [`compose.yaml`](../compose.yaml) in the repository:
+The last command prints the login link. Pimpo prints it in its log only the first time it starts; `pimpo token` prints it whenever you need it, and `pimpo token rotate` replaces it (the old link and every browser signed in with it stop working). Or, with the [`compose.yaml`](../compose.yaml) in the repository:
 
 ```bash
 docker compose up -d
-docker compose logs pimpo | grep auth
+docker compose exec pimpo pimpo token
 ```
 
 - **Data**: everything lives in the `/data` volume (the database, keys, memory, connectors, local models). Back it up like any volume, or use **Settings › Automatic cloud backup**.
@@ -32,7 +32,7 @@ docker compose logs pimpo | grep auth
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/turbine-dev/pimpo/main/scripts/install.sh | sh -s -- --service
-journalctl --user -u pimpo | grep auth
+pimpo token
 ```
 
 `--service` installs a user service that starts at boot. Update with `pimpo update` and restart the service (`systemctl --user restart pimpo`); `pimpo update --rollback` puts the previous binary back.
