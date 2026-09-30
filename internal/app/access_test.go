@@ -291,9 +291,8 @@ func TestSharedFactsAreTheirAuthors(t *testing.T) {
 	h := newHouse(t)
 	ctx := context.Background()
 	bia, _ := h.People.Add(ctx, "Bia", people.Guest, h.anaID)
-	_, out := h.do(t, "POST", "/api/pairing", map[string]string{"base": "https://pimpo.example.com", "device": "Bia", "person": bia.ID})
-	u, _ := url.Parse(out["link"].(string))
-	biaTok := u.Query().Get("token")
+	link, _ := h.invite(t, bia.ID, "Bia")
+	_, biaTok := h.open(t, link)
 	if code, _ := h.raw(t, biaTok, "POST", "/api/memory", js(map[string]any{"text": "the door code is 1234", "shared": true})); code != 403 {
 		t.Fatalf("a guest shared a fact with the house: %d", code)
 	}
