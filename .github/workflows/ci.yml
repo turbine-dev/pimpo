@@ -14,6 +14,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: No references the repository must not carry
         run: "! git grep -n -i -E 'be[e]vo|bs[o]lus' -- ."
+      - name: The website's documentation builds, with no broken links
+        run: python3 scripts/site_docs.py "$RUNNER_TEMP/site-docs"
   go:
     strategy:
       fail-fast: false

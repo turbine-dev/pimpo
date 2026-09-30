@@ -1,5 +1,7 @@
 # Pimpo documentation
 
+These pages are also on the website, split into sections: [pimpo.online/docs](https://pimpo.online/docs/).
+
 ## Using Pimpo
 
 - [User guide](USER_GUIDE.md): getting started and everything you can do, screen by screen.
