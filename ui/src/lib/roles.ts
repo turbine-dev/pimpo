@@ -6,7 +6,7 @@ export type Role = 'owner' | 'member' | 'guest'
 // What each person sees in the menus. The server decides what they may
 // do; this only hides what would answer "only the owner".
 const ownerOnly = ['/skills', '/connections', '/people', '/rules', '/settings']
-const forGuests = ['/', '/chat', '/memory', '/inbox', '/help']
+const forGuests = ['/', '/chat', '/memory', '/inbox', '/help', '/account']
 
 export function canOpen(path: string, role: Role): boolean {
   if (role === 'owner') return true

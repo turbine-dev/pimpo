@@ -1,7 +1,7 @@
 # RFC 0001: A sandbox for running code
 
 - Author: denerFernandes
-- Status: accepted (behind **Laboratório**, off by default)
+- Status: accepted (behind **Labs**, off by default)
 - Discussion: roadmap item 4.2 ([ROADMAP.md](../ROADMAP.md))
 
 ## Problem
@@ -24,7 +24,7 @@ The container runs with **no network**, a **read-only** root filesystem (only it
 
 The backend is Docker (or anything with Docker's command line, such as Podman's). The images are pulled the first time they are needed. Without Docker the capability says so and does nothing.
 
-It is a Labs feature, off by default: **Ajustes › Laboratório › Rodar código isolado**.
+It is a Labs feature, off by default: **Settings › Labs › Run code in isolation**.
 
 Because nothing inside the container reaches anything outside it, `code.run` is a `read` capability: it may run during explorations (which rehearse changes) and inside routines like any read, and its results are recorded in tests like any other capability's.
 

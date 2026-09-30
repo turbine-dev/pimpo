@@ -2,6 +2,8 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
 async function login(page: Page) {
+  // The administrator's account exists from the first visit on.
+  await page.request.put('/api/account', { data: { name: 'Dener' }, headers: { Authorization: 'Bearer e2e-token' } })
   await page.goto('/auth?token=e2e-token')
 }
 

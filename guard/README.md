@@ -24,7 +24,7 @@ For example, in Pimpo's Rules you can write "never let other agents delete anyth
 
 ## Token
 
-In Pimpo, go to **Ajustes › Abrir no celular** and pair a device named "Guard" with address `http://127.0.0.1:7788`. Use the token from the link (the part after `token=`). You can revoke it there at any time.
+In Pimpo, go to **Settings › Open on your phone** and pair a device named "Guard" with address `http://127.0.0.1:7788`. Use the token from the link (the part after `token=`). You can revoke it there at any time.
 
 ## OpenClaw
 

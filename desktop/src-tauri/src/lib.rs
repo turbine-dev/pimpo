@@ -34,6 +34,122 @@ mod desktop {
     /// Token signs the desktop app's own calls to this computer's Pimpo.
     pub struct Token(pub Mutex<Option<String>>);
 
+    /// Lang is the language of the app's own menus: the system's at first,
+    /// then the one chosen in Pimpo's settings.
+    pub struct Lang(pub Mutex<&'static str>);
+
+    /// TrayItems are the menu's items, to put them in another language.
+    pub struct TrayItems(Vec<(&'static str, MenuItemKind)>);
+
+    enum MenuItemKind {
+        Plain(MenuItem<tauri::Wry>),
+        Check(CheckMenuItem<tauri::Wry>),
+    }
+
+    const LANGS: [&str; 10] = ["pt", "en", "es", "fr", "de", "it", "ja", "zh", "ko", "ru"];
+
+    /// WORDS are the menu's and the app's own messages, in LANGS order.
+    const WORDS: &[(&str, [&str; 10])] = &[
+        ("open", ["Abrir o Pimpo", "Open Pimpo", "Abrir Pimpo", "Ouvrir Pimpo", "Pimpo öffnen", "Apri Pimpo", "Pimpo を開く", "打开 Pimpo", "Pimpo 열기", "Открыть Pimpo"]),
+        ("remote", ["Conectar a outro Pimpo…", "Connect to another Pimpo…", "Conectar a otro Pimpo…", "Se connecter à un autre Pimpo…", "Mit einem anderen Pimpo verbinden…", "Collegati a un altro Pimpo…", "別の Pimpo に接続…", "连接到另一个 Pimpo…", "다른 Pimpo에 연결…", "Подключиться к другому Pimpo…"]),
+        ("local", ["Usar o Pimpo deste computador", "Use this computer's Pimpo", "Usar el Pimpo de esta computadora", "Utiliser le Pimpo de cet ordinateur", "Pimpo auf diesem Computer verwenden", "Usa il Pimpo di questo computer", "このパソコンの Pimpo を使う", "使用这台电脑上的 Pimpo", "이 컴퓨터의 Pimpo 사용", "Использовать Pimpo на этом компьютере"]),
+        ("login", ["Abrir ao iniciar o computador", "Open at login", "Abrir al iniciar sesión", "Ouvrir à l’ouverture de session", "Beim Anmelden öffnen", "Apri all’accesso", "ログイン時に開く", "登录时打开", "로그인 시 열기", "Открывать при входе"]),
+        ("mascot", ["Pimpo na área de trabalho", "Pimpo on the desktop", "Pimpo en el escritorio", "Pimpo sur le bureau", "Pimpo auf dem Schreibtisch", "Pimpo sulla scrivania", "デスクトップの Pimpo", "桌面上的 Pimpo", "데스크톱의 Pimpo", "Pimpo на рабочем столе"]),
+        ("update", ["Procurar atualizações", "Check for updates", "Buscar actualizaciones", "Rechercher des mises à jour", "Nach Updates suchen", "Cerca aggiornamenti", "アップデートを確認", "检查更新", "업데이트 확인", "Проверить обновления"]),
+        ("install", ["Instalar a versão {} e reiniciar", "Install version {} and restart", "Instalar la versión {} y reiniciar", "Installer la version {} et redémarrer", "Version {} installieren und neu starten", "Installa la versione {} e riavvia", "バージョン {} をインストールして再起動", "安装版本 {} 并重启", "버전 {} 설치 후 다시 시작", "Установить версию {} и перезапустить"]),
+        ("quit", ["Sair do Pimpo", "Quit Pimpo", "Salir de Pimpo", "Quitter Pimpo", "Pimpo beenden", "Esci da Pimpo", "Pimpo を終了", "退出 Pimpo", "Pimpo 종료", "Выйти из Pimpo"]),
+        ("notLink", ["Isso não parece um link.", "That doesn’t look like a link.", "Eso no parece un enlace.", "Cela ne ressemble pas à un lien.", "Das sieht nicht nach einem Link aus.", "Non sembra un link.", "リンクではないようです。", "这看起来不像链接。", "링크가 아닌 것 같아요.", "Это не похоже на ссылку."]),
+        ("https", ["Use https: o token não pode viajar em aberto.", "Use https: the token can’t travel in the clear.", "Usa https: el token no puede viajar sin cifrar.", "Utilisez https : le token ne peut pas circuler en clair.", "Nutze https: Das Token darf nicht unverschlüsselt übertragen werden.", "Usa https: il token non può viaggiare in chiaro.", "https を使ってください。token を暗号化なしで送ることはできません。", "请使用 https：token 不能明文传输。", "https를 사용하세요. token은 암호화 없이 보낼 수 없어요.", "Используйте https: token нельзя передавать в открытом виде."]),
+        ("noToken", ["Falta o token no link.", "The link is missing its token.", "Al enlace le falta el token.", "Il manque le token dans le lien.", "Im Link fehlt das Token.", "Nel link manca il token.", "リンクに token がありません。", "链接里缺少 token。", "링크에 token이 없어요.", "В ссылке нет token."]),
+        ("badHome", ["Endereço de casa inválido.", "That home address is not valid.", "La dirección de casa no es válida.", "L’adresse de la maison n’est pas valide.", "Die Heimadresse ist ungültig.", "L’indirizzo di casa non è valido.", "自宅のアドレスが正しくありません。", "家庭地址无效。", "집 주소가 올바르지 않아요.", "Домашний адрес неверен."]),
+        ("homeLocal", ["O endereço de casa precisa ser da rede local.", "The home address must be on the home network.", "La dirección de casa debe ser de la red local.", "L’adresse de la maison doit être sur le réseau local.", "Die Heimadresse muss im Heimnetz liegen.", "L’indirizzo di casa deve essere sulla rete locale.", "自宅のアドレスはホームネットワーク内である必要があります。", "家庭地址必须在家庭网络中。", "집 주소는 홈 네트워크에 있어야 해요.", "Домашний адрес должен быть в домашней сети."]),
+        ("noConfig", ["Sem pasta de configuração.", "There is no settings folder.", "No hay carpeta de configuración.", "Il n’y a pas de dossier de réglages.", "Es gibt keinen Einstellungsordner.", "Non c’è una cartella delle impostazioni.", "設定フォルダーがありません。", "没有设置文件夹。", "설정 폴더가 없어요.", "Нет папки настроек."]),
+    ];
+
+    /// language picks one of LANGS from a locale such as pt_BR.UTF-8 or
+    /// zh-Hans; anything else is English.
+    pub fn language(locale: &str) -> &'static str {
+        let code = locale.trim().to_lowercase();
+        let code = code.split(['-', '_', '.']).next().unwrap_or("");
+        LANGS.iter().find(|l| **l == code).copied().unwrap_or("en")
+    }
+
+    /// word is a message in a language.
+    pub fn word(lang: &str, key: &str) -> &'static str {
+        let i = LANGS.iter().position(|l| *l == lang).unwrap_or(1);
+        WORDS.iter().find(|(k, _)| *k == key).map(|(_, w)| w[i]).unwrap_or("")
+    }
+
+    fn tr(app: &AppHandle, key: &str) -> &'static str {
+        let lang = app.try_state::<Lang>().map(|l| *l.0.lock().unwrap()).unwrap_or_else(|| language(&system_locale()));
+        word(lang, key)
+    }
+
+    /// system_locale is the language the computer is set to.
+    fn system_locale() -> String {
+        for v in ["LC_ALL", "LC_MESSAGES", "LANG"] {
+            if let Ok(s) = std::env::var(v) {
+                if !s.is_empty() && s != "C" && s != "POSIX" {
+                    return s;
+                }
+            }
+        }
+        #[cfg(target_os = "macos")]
+        if let Ok(o) = std::process::Command::new("defaults").args(["read", "-g", "AppleLocale"]).output() {
+            let s = String::from_utf8_lossy(&o.stdout).trim().to_string();
+            if !s.is_empty() {
+                return s;
+            }
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            if let Ok(o) = std::process::Command::new("powershell").args(["-NoProfile", "-Command", "(Get-Culture).Name"]).creation_flags(0x0800_0000).output() {
+                let s = String::from_utf8_lossy(&o.stdout).trim().to_string();
+                if !s.is_empty() {
+                    return s;
+                }
+            }
+        }
+        "en".into()
+    }
+
+    /// set_language puts the menus in a language, when it changed.
+    fn set_language(app: &AppHandle, lang: &'static str) {
+        {
+            let state = app.state::<Lang>();
+            let mut cur = state.0.lock().unwrap();
+            if *cur == lang {
+                return;
+            }
+            *cur = lang;
+        }
+        if let Some(items) = app.try_state::<TrayItems>() {
+            for (key, item) in &items.0 {
+                let _ = match item {
+                    MenuItemKind::Plain(i) => i.set_text(word(lang, key)),
+                    MenuItemKind::Check(i) => i.set_text(word(lang, key)),
+                };
+            }
+        }
+        broadcast_update(app);
+    }
+
+    /// follow_language keeps the menus in the language chosen in Pimpo's
+    /// settings, checking once a minute.
+    fn follow_language(app: AppHandle) {
+        std::thread::spawn(move || loop {
+            if let Some(body) = local_api(&app, "GET", "/api/settings", None) {
+                if let Ok(v) = serde_json::from_str::<serde_json::Value>(&body) {
+                    if let Some(l) = v.get("locale").and_then(|l| l.as_str()) {
+                        set_language(&app, language(l));
+                    }
+                }
+            }
+            std::thread::sleep(Duration::from_secs(60));
+        });
+    }
+
     fn mascot_file(app: &AppHandle) -> Option<std::path::PathBuf> {
         app.path().app_config_dir().ok().map(|d| d.join("mascot-on"))
     }
@@ -230,15 +346,15 @@ mod desktop {
     /// check_link accepts a pairing link: https, or http only inside the
     /// home network or Tailscale, and with its token.
     pub fn check_link(link: &str) -> Result<Url, String> {
-        let url = Url::parse(link).map_err(|_| "Isso não parece um link.".to_string())?;
+        let url = Url::parse(link).map_err(|_| word(language(&system_locale()), "notLink").to_string())?;
         let host = url.host_str().unwrap_or("");
         match url.scheme() {
             "https" => {}
             "http" if private_host(host) => {}
-            _ => return Err("Use https: o token não pode viajar em aberto.".into()),
+            _ => return Err(word(language(&system_locale()), "https").into()),
         }
         if !url.query_pairs().any(|(k, v)| k == "token" && !v.is_empty()) {
-            return Err("Falta o token no link.".into());
+            return Err(word(language(&system_locale()), "noToken").into());
         }
         Ok(url)
     }
@@ -253,12 +369,12 @@ mod desktop {
     pub fn use_remote(app: AppHandle, link: String, home: String) -> Result<(), String> {
         check_link(&link)?;
         if !home.is_empty() {
-            let h = Url::parse(&home).map_err(|_| "Endereço de casa inválido.".to_string())?;
+            let h = Url::parse(&home).map_err(|_| tr(&app, "badHome").to_string())?;
             if h.scheme() != "http" || !private_host(h.host_str().unwrap_or("")) {
-                return Err("O endereço de casa precisa ser da rede local.".into());
+                return Err(tr(&app, "homeLocal").into());
             }
         }
-        let file = remote_file(&app).ok_or("Sem pasta de configuração.")?;
+        let file = remote_file(&app).ok_or(tr(&app, "noConfig"))?;
         if let Some(dir) = file.parent() {
             std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
         }
@@ -351,6 +467,7 @@ mod desktop {
         app.manage(Local(Mutex::new(None)));
         app.manage(Server(Mutex::new(None)));
         app.manage(Token(Mutex::new(None)));
+        app.manage(Lang(Mutex::new(language(&system_locale()))));
         app.manage(Updates::default());
         Ok(())
     }
@@ -447,6 +564,7 @@ mod desktop {
                         let _ = w.navigate(url);
                     }
                     *handle.state::<Local>().0.lock().unwrap() = Some(format!("http://{addr}"));
+                    follow_language(handle.clone());
                     if mascot_wanted(&handle) {
                         // After the main window has signed in, so the cat shares its session.
                         std::thread::sleep(Duration::from_millis(1500));
@@ -470,16 +588,24 @@ mod desktop {
     }
 
     pub fn tray(app: &AppHandle) -> tauri::Result<()> {
-        let open = MenuItem::with_id(app, "open", "Abrir o Pimpo", true, None::<&str>)?;
-        let remote = MenuItem::with_id(app, "remote", "Conectar a outro Pimpo…", true, None::<&str>)?;
-        let local = MenuItem::with_id(app, "local", "Usar o Pimpo deste computador", true, None::<&str>)?;
+        let open = MenuItem::with_id(app, "open", tr(app, "open"), true, None::<&str>)?;
+        let remote = MenuItem::with_id(app, "remote", tr(app, "remote"), true, None::<&str>)?;
+        let local = MenuItem::with_id(app, "local", tr(app, "local"), true, None::<&str>)?;
         let at_login = app.autolaunch().is_enabled().unwrap_or(false);
-        let login = CheckMenuItem::with_id(app, "login", "Abrir ao iniciar o computador", true, at_login, None::<&str>)?;
-        let cat = CheckMenuItem::with_id(app, "mascot", "Pimpo na área de trabalho", true, mascot_wanted(app), None::<&str>)?;
+        let login = CheckMenuItem::with_id(app, "login", tr(app, "login"), true, at_login, None::<&str>)?;
+        let cat = CheckMenuItem::with_id(app, "mascot", tr(app, "mascot"), true, mascot_wanted(app), None::<&str>)?;
         app.manage(MascotItem(cat.clone()));
-        let update = MenuItem::with_id(app, "update", "Procurar atualizações", true, None::<&str>)?;
+        let update = MenuItem::with_id(app, "update", tr(app, "update"), true, None::<&str>)?;
         app.manage(UpdateItem(update.clone()));
-        let quit = MenuItem::with_id(app, "quit", "Sair do Pimpo", true, Some("CmdOrCtrl+Q"))?;
+        let quit = MenuItem::with_id(app, "quit", tr(app, "quit"), true, Some("CmdOrCtrl+Q"))?;
+        app.manage(TrayItems(vec![
+            ("open", MenuItemKind::Plain(open.clone())),
+            ("remote", MenuItemKind::Plain(remote.clone())),
+            ("local", MenuItemKind::Plain(local.clone())),
+            ("login", MenuItemKind::Check(login.clone())),
+            ("mascot", MenuItemKind::Check(cat.clone())),
+            ("quit", MenuItemKind::Plain(quit.clone())),
+        ]));
         let menu = Menu::with_items(app, &[&open, &cat, &login, &PredefinedMenuItem::separator(app)?, &remote, &local, &PredefinedMenuItem::separator(app)?, &update, &quit])?;
         TrayIconBuilder::with_id("pimpo")
             .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
@@ -607,8 +733,8 @@ mod desktop {
         }
         if let Some(item) = app.try_state::<UpdateItem>() {
             let text = match app.state::<Updates>().found.lock().unwrap().as_ref() {
-                Some(f) => format!("Instalar a versão {} e reiniciar", f.version),
-                None => "Procurar atualizações".to_string(),
+                Some(f) => tr(app, "install").replace("{}", &f.version.to_string()),
+                None => tr(app, "update").to_string(),
             };
             let _ = item.0.set_text(text);
         }
@@ -784,7 +910,26 @@ mod desktop {
 
 #[cfg(all(test, desktop))]
 mod tests {
-    use super::desktop::{check_link, update_endpoint, version_endpoint};
+    use super::desktop::{check_link, language, update_endpoint, version_endpoint, word};
+
+    #[test]
+    fn menus_follow_the_language() {
+        assert_eq!(language("pt_BR.UTF-8"), "pt");
+        assert_eq!(language("pt-BR"), "pt");
+        assert_eq!(language("zh-Hans"), "zh");
+        assert_eq!(language("en_US"), "en");
+        assert_eq!(language("xx"), "en");
+        assert_eq!(language(""), "en");
+        assert_eq!(word("pt", "quit"), "Sair do Pimpo");
+        assert_eq!(word("en", "quit"), "Quit Pimpo");
+        assert_eq!(word("xx", "quit"), "Quit Pimpo");
+        for lang in ["pt", "en", "es", "fr", "de", "it", "ja", "zh", "ko", "ru"] {
+            for key in ["open", "remote", "local", "login", "mascot", "update", "install", "quit", "notLink", "https", "noToken", "badHome", "homeLocal", "noConfig"] {
+                assert!(!word(lang, key).is_empty(), "{lang} {key}");
+            }
+            assert!(word(lang, "install").contains("{}"), "{lang} install needs the version");
+        }
+    }
 
     #[test]
     fn updates_come_from_the_project_releases() {

@@ -6,6 +6,19 @@ for (const theme of ['dark', 'light']) {
   test(`main pages meet WCAG AA (${theme})`, async ({ page }) => {
     await page.goto('/auth?token=e2e-token')
     await page.evaluate((t) => localStorage.setItem('pimpo.theme', t), theme)
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    // The first visit asks for the administrator's account; check that
+    // screen too, then make it.
+    const create = page.getByRole('heading', { name: 'Crie a conta de administrador' })
+    if (await create.isVisible()) {
+      const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+      expect(results.violations.map((v) => `account: ${v.id}`)).toEqual([])
+      await page.getByLabel('Seu nome').fill('Dener')
+      await page.getByRole('button', { name: 'Criar conta' }).click()
+      const later = page.getByRole('button', { name: 'Agora não' })
+      if (await later.isVisible()) await later.click()
+    }
     for (const path of ['/', '/routines', '/inbox', '/receipts', '/rules', '/cost', '/connections', '/settings', '/settings#modelos', '/settings#backup', '/settings#notificacoes', '/chat', '/assistants', '/help', '/welcome', '/memory', '/people', '/gallery', '/import']) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')

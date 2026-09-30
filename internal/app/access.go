@@ -3,10 +3,13 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
 )
 
@@ -30,6 +33,7 @@ var guestRoutes = routeSet(
 	"GET /api/media", "GET /api/media/{id}",
 	"GET /api/assistants",
 	"GET /api/memory", "POST /api/memory", "DELETE /api/memory/{id}", "POST /api/memory/{id}/confirm", "GET /api/memory/search",
+	"GET /api/passkeys", "POST /api/passkeys/begin", "POST /api/passkeys/finish", "DELETE /api/passkeys/{id}",
 )
 
 // memberRoutes add to a guest's what a member manages for themselves.
@@ -82,6 +86,7 @@ var ownerOnlyRoutes = routeSet(
 	"POST /api/oauth/google/start",
 	"PUT /api/assistants/{id}", "DELETE /api/assistants/{id}",
 	"POST /api/browser/login",
+	"PUT /api/account",
 )
 
 func routeSet(patterns ...string) map[string]bool {
@@ -190,4 +195,72 @@ func (a *App) roleOf(ctx context.Context) people.Role {
 		return a.People.Role(ctx, p)
 	}
 	return people.Owner
+}
+
+// The administrator's account: made on the first visit, with their name,
+// before anything else. Their passkeys carry it.
+const adminKey = "admin.account"
+
+type adminAccount struct {
+	Name    string    `json:"name"`
+	Created time.Time `json:"created"`
+}
+
+func (a *App) admin(ctx context.Context) (adminAccount, bool) {
+	raw, _ := a.Events.Get(ctx, adminKey)
+	var acc adminAccount
+	return acc, json.Unmarshal([]byte(raw), &acc) == nil && acc.Name != ""
+}
+
+func (a *App) accountRoutes() {
+	a.Server.Handle("PUT /api/account", func(w http.ResponseWriter, r *http.Request) {
+		if !ownerOnly(w, r) {
+			return
+		}
+		var req struct {
+			Name string `json:"name"`
+		}
+		if err := server.Decode(r, &req); err != nil {
+			server.WriteError(w, err)
+			return
+		}
+		name := clip(strings.Join(strings.Fields(req.Name), " "), 60)
+		if name == "" {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: "say your name"})
+			return
+		}
+		acc, existed := a.admin(r.Context())
+		acc.Name = name
+		if !existed {
+			acc.Created = time.Now().UTC()
+		}
+		b, _ := json.Marshal(acc)
+		a.Events.Put(r.Context(), adminKey, string(b))
+		kind := "admin.renamed"
+		if !existed {
+			kind = "admin.created"
+		}
+		a.Events.Append(r.Context(), kind, "human:owner", map[string]string{"person": people.OwnerID})
+		server.WriteJSON(w, 200, acc)
+	})
+}
+
+// nameOf is how the person asking is called.
+func (a *App) nameOf(ctx context.Context) string {
+	p := people.From(ctx)
+	if p == people.OwnerID {
+		acc, _ := a.admin(ctx)
+		return acc.Name
+	}
+	if q, err := a.People.Get(ctx, p); err == nil {
+		return q.Name
+	}
+	return ""
+}
+
+// hasAdmin says whether the administrator's account exists; the interface
+// asks for it on the first visit.
+func (a *App) hasAdmin(ctx context.Context) bool {
+	_, ok := a.admin(ctx)
+	return ok
 }

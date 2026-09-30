@@ -13,7 +13,7 @@ Every way to extend Pimpo works with the binary you already have: no recompiling
 
 ## Authentication
 
-Every API call carries a device token: `Authorization: Bearer <token>`. Create one in **Ajustes › Abrir no celular** by giving the device a name (for example "Matrix bridge"). It can be revoked there at any time.
+Every API call carries a device token: `Authorization: Bearer <token>`. Create one in **Settings › Open on your phone** by giving the device a name (for example "Matrix bridge"). It can be revoked there at any time. A token acts for the person it was made for, and only for them: a member's token reaches only the routes open to members and sees only that member's routines, memory and activity (HTTP 403 for anything else); the owner's token administers the house but sees nobody else's things. Tokens unused for 180 days stop working, and repeated wrong tokens from one address get HTTP 429.
 
 ## Channel API
 
@@ -22,19 +22,19 @@ A bridge for Matrix, Signal, SMS or a smart speaker.
 **Out.** Set the bridge's address with `PUT /api/channel/webhook {"url": "https://bridge.example/pimpo"}`. The answer carries a `secret`. From then on, every notice (results, approvals, alerts) is POSTed to the bridge:
 
 ```json
-{"to": "owner", "text": "🟠 Posso fazer isto?\n…", "actions": [{"label": "Permitir", "data": "approve:ab12"}, {"label": "Negar", "data": "deny:ab12"}], "sent": "2026-09-24T10:00:00Z"}
+{"to": "owner", "text": "🟠 Allow this?\n…", "actions": [{"label": "Allow", "data": "approve:ab12"}, {"label": "Deny", "data": "deny:ab12"}], "sent": "2026-09-24T10:00:00Z"}
 ```
 
 Check `X-Pimpo-Signature: sha256=<hex>`, which is the HMAC-SHA256 of the body with the secret. `to` is the person the notice is for (`owner`, or a person id from People).
 
 **In.**
 
-- `POST /api/channel/message {"text": "resuma meus e-mails", "person": "owner"}`: a request, answered with `{"reply": "…"}`.
+- `POST /api/channel/message {"text": "summarize my emails", "person": "owner"}`: a request, answered with `{"reply": "…"}`.
 - `POST /api/channel/button {"data": "approve:ab12", "person": "owner"}`: a button tap. People can only answer what they are allowed to answer, as on Telegram.
 
 ## Judge API
 
-Point **Ajustes › Modelo local** at any server answering:
+Point **Settings › Local model** at any server answering:
 
 ```
 POST /judge   {"question": "Is this email a bill?", "item": {…}}   →   {"p": 0.93}

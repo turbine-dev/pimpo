@@ -246,4 +246,38 @@ func TestWrongSignInsAreLimited(t *testing.T) {
 	if code, _ := ta.raw(t, "tok", "GET", "/api/state", nil); code != 200 {
 		t.Fatalf("the owner was locked out: %d", code)
 	}
+	// Asking without any credential, as the app does before sign-in, is
+	// not a wrong sign-in.
+	fresh := newApp(t, weatherAgent, &llm.Fake{})
+	for i := 0; i < 40; i++ {
+		req, _ := http.NewRequest("GET", fresh.srv.URL+"/api/state", nil)
+		resp, _ := http.DefaultClient.Do(req)
+		resp.Body.Close()
+		if resp.StatusCode != 401 {
+			t.Fatalf("a request without a credential got %d", resp.StatusCode)
+		}
+	}
+}
+
+// The first visit makes the administrator's account; nobody else can.
+func TestTheFirstVisitMakesTheAdministratorsAccount(t *testing.T) {
+	h := newHouse(t)
+	if _, out := h.do(t, "GET", "/api/state", nil); out["admin_account"] != false || out["role"] != "owner" {
+		t.Fatalf("state before: %v", out)
+	}
+	if code, _ := h.raw(t, h.ana, "PUT", "/api/account", js(map[string]string{"name": "Ana"})); code != 403 {
+		t.Fatalf("a member made the administrator's account: %d", code)
+	}
+	if code, _ := h.do(t, "PUT", "/api/account", map[string]string{"name": "  "}); code != 400 {
+		t.Fatal("an account without a name")
+	}
+	if code, _ := h.do(t, "PUT", "/api/account", map[string]string{"name": "Dener"}); code != 200 {
+		t.Fatal(code)
+	}
+	if _, out := h.do(t, "GET", "/api/state", nil); out["admin_account"] != true || out["name"] != "Dener" {
+		t.Fatalf("state after: %v", out)
+	}
+	if _, body := h.raw(t, h.ana, "GET", "/api/state", nil); !strings.Contains(body, `"name":"Ana"`) || !strings.Contains(body, `"role":"member"`) {
+		t.Fatalf("Ana's state: %s", body)
+	}
 }

@@ -190,6 +190,8 @@ func (a *App) state(w http.ResponseWriter, r *http.Request) {
 		"approvals":       len(a.myApprovals(ctx)),
 		"person":          people.From(ctx),
 		"role":            a.roleOf(ctx),
+		"name":            a.nameOf(ctx),
+		"admin_account":   a.hasAdmin(ctx),
 		"telegram_paired": chat != 0,
 		"log_intact":      intact == 0,
 		"claude":          claudeInstalled(),

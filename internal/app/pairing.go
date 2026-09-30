@@ -35,6 +35,9 @@ type Device struct {
 	// Shares are what this phone gives Pimpo (location, camera,
 	// shortcuts), chosen on the phone itself.
 	Shares []string `json:"shares,omitempty"`
+	// Session marks a sign-in with a passkey rather than a paired device;
+	// it expires sooner when unused.
+	Session bool `json:"session,omitempty"`
 	// KeyHash is the phone's key for automations (iOS Shortcuts, Tasker):
 	// it can only report phone events, never open the app.
 	KeyHash string `json:"key_hash,omitempty"`
@@ -78,7 +81,11 @@ func (a *App) deviceValid(token string) (string, bool) {
 			if last.IsZero() {
 				last = d.Created
 			}
-			if time.Since(last) > deviceIdle {
+			idle := deviceIdle
+			if d.Session {
+				idle = passkeyIdle
+			}
+			if time.Since(last) > idle {
 				return "", false
 			}
 			person := people.Norm(d.Person)
@@ -244,6 +251,16 @@ func (a *App) forgetDevicesOf(ctx context.Context, person string) {
 		}
 	}
 	a.saveDevices(ctx, kept)
+	passkeysMu.Lock()
+	keys := a.passkeys(ctx)
+	left := keys[:0]
+	for _, k := range keys {
+		if people.Norm(k.Person) != people.Norm(person) {
+			left = append(left, k)
+		}
+	}
+	a.savePasskeys(ctx, left)
+	passkeysMu.Unlock()
 }
 
 func private(host string) bool {
