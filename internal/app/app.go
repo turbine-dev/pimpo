@@ -299,6 +299,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.whatsappRoutes()
 	a.galleryRoutes()
 	a.catalogRoutes()
+	a.historyRoutes()
 	a.backupRoutes()
 	a.guardRoutes()
 	a.channelRoutes()
@@ -419,7 +420,20 @@ func (a *App) Settings(ctx context.Context) Settings {
 	return s
 }
 
+// SaveSettings checks and keeps the settings, and records in the history
+// what changed, the models apart from the rest.
 func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error {
+	general := a.track(ctx, histEntry{Area: "settings", Store: histSettings, Person: people.OwnerID})
+	models := a.track(ctx, histEntry{Area: "models", Store: histSettings, Person: people.OwnerID})
+	if err := a.saveSettings(ctx, s, actor); err != nil {
+		return err
+	}
+	general()
+	models()
+	return nil
+}
+
+func (a *App) saveSettings(ctx context.Context, s Settings, actor string) error {
 	if _, err := time.LoadLocation(s.Zone); err != nil {
 		return server.StatusError{Status: 400, Msg: "unknown time zone " + s.Zone}
 	}

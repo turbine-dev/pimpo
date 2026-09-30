@@ -54,6 +54,7 @@ var memberRoutes = routeSet(
 	"GET /api/destinations", "GET /api/geocode",
 	"POST /api/open",
 	"PUT /api/people/{id}/connections/{kind}",
+	"GET /api/history", "POST /api/history/{id}/undo",
 )
 
 // ownerOnlyRoutes are the owner's and say so; listing them keeps the

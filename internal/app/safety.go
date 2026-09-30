@@ -34,18 +34,19 @@ func (a approver) Ask(ctx context.Context, act policy.Action, reason string) (bo
 // remember turns "always" into a lasting permission: a known host for web
 // reads, a specific rule for everything else.
 func (a *App) remember(ctx context.Context, act policy.Action) {
-	if (act.Capability == "http.getJSON" || act.Capability == "web.read") && act.Scope != "" {
-		a.Rules.AllowHost(ctx, act.Scope, true, "human:owner")
-		return
-	}
-	rule := policy.AllowAlways(act)
-	rules := a.Rules.Rules(ctx)
-	for _, r := range rules {
-		if r.ID == rule.ID {
-			return
+	a.changeRules(ctx, func() error {
+		if (act.Capability == "http.getJSON" || act.Capability == "web.read") && act.Scope != "" {
+			return a.Rules.AllowHost(ctx, act.Scope, true, "human:owner")
 		}
-	}
-	a.Rules.SaveRules(ctx, append(rules, rule), "human:owner")
+		rule := policy.AllowAlways(act)
+		rules := a.Rules.Rules(ctx)
+		for _, r := range rules {
+			if r.ID == rule.ID {
+				return nil
+			}
+		}
+		return a.Rules.SaveRules(ctx, append(rules, rule), "human:owner")
+	})
 }
 
 // describeAction is the sentence shown in approval requests.
@@ -227,11 +228,15 @@ func (a *App) putPreset(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rules := append(preset, keep...)
-	if err := a.Rules.SaveRules(r.Context(), rules, "human:owner"); err != nil {
+	if err := a.changeRules(r.Context(), func() error {
+		if err := a.Rules.SaveRules(r.Context(), rules, "human:owner"); err != nil {
+			return err
+		}
+		return a.Events.Put(r.Context(), "setup.preset", req.Preset)
+	}); err != nil {
 		server.WriteError(w, err)
 		return
 	}
-	a.Events.Put(r.Context(), "setup.preset", req.Preset)
 	server.WriteJSON(w, 200, rules)
 }
 
@@ -241,7 +246,7 @@ func (a *App) putRules(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	if err := a.Rules.SaveRules(r.Context(), rules, "human:owner"); err != nil {
+	if err := a.changeRules(r.Context(), func() error { return a.Rules.SaveRules(r.Context(), rules, "human:owner") }); err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}

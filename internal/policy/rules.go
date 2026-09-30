@@ -318,6 +318,22 @@ func (e *Engine) AllowHost(ctx context.Context, host string, allowed bool, actor
 	return err
 }
 
+// ForgetHost drops the owner's answer about a web host, so the next read
+// asks again; undoing a remembered answer uses it.
+func (e *Engine) ForgetHost(ctx context.Context, host, actor string) error {
+	hosts := e.hosts(ctx)
+	delete(hosts, strings.ToLower(host))
+	b, _ := json.Marshal(hosts)
+	if err := e.Events.Put(ctx, hostsKey, string(b)); err != nil {
+		return err
+	}
+	_, err := e.Events.Append(ctx, "policy.host", actor, map[string]any{"host": host, "forgotten": true})
+	return err
+}
+
+// Hosts are the owner's answers about web hosts, by host.
+func (e *Engine) Hosts(ctx context.Context) map[string]bool { return e.hosts(ctx) }
+
 func (e *Engine) hosts(ctx context.Context) map[string]bool {
 	raw, _ := e.Events.Get(ctx, hostsKey)
 	m := map[string]bool{}

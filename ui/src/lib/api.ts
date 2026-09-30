@@ -199,9 +199,12 @@ export type MemoryVersion = { hash: string; message: string; when: string }
 
 export class ApiError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  // problem names why, for a translated message.
+  problem?: string
+  constructor(status: number, message: string, problem?: string) {
     super(message)
     this.status = status
+    this.problem = problem
   }
 }
 
@@ -212,13 +215,17 @@ export type Finding = { id: string; group: string; name: string; state: 'ok' | '
 
 export type MyDevice = { id: string; name: string; created: string; last_seen?: string; session?: boolean; pending?: boolean; current?: boolean }
 
+export type HistoryArea = 'settings' | 'models' | 'rules' | 'budget' | 'connections' | 'people'
+export type HistoryField = { field: string; before?: unknown; after?: unknown; secret?: 'added' | 'replaced' | 'removed' }
+export type HistoryChange = { id: number; ts: string; actor: string; who: string; area: HistoryArea; target?: string; fields: HistoryField[]; undo_of?: number; undoable: boolean; undone: boolean; reenter: string[] }
+
 export type Snapshot = { name: string; label: string; when: string; bytes: number }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, { method, headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin' })
   const text = await res.text()
   const data = text ? JSON.parse(text) : null
-  if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText)
+  if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText, data?.problem)
   return data as T
 }
 
@@ -352,6 +359,8 @@ export const api = {
   },
   receipts: (q?: string) => request<Receipt[]>('GET', `/api/receipts${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   undo: (id: number) => request<void>('POST', `/api/actions/${id}/undo`),
+  history: (area = '') => request<HistoryChange[]>('GET', `/api/history?area=${area}`),
+  undoChange: (id: number) => request<{ state: string; reenter: string[] }>('POST', `/api/history/${id}/undo`),
   approvals: () => request<Approval[]>('GET', '/api/approvals'),
   answer: (id: string, answer: 'once' | 'run' | 'always' | 'deny') => request<void>('POST', `/api/approvals/${id}/${answer}`),
   rules: () => request<Rule[]>('GET', '/api/rules'),
