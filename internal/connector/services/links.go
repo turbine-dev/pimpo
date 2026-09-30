@@ -63,7 +63,7 @@ func init() {
 	register(Kind{
 		ID: "slackchat", Title: "Slack", Description: "Converse com o Pimpo por mensagem direta no Slack.",
 		Help: "Em api.slack.com/apps, crie um app, ligue o Socket Mode (gera o token xapp- com connections:write), assine o evento message.im, dê ao bot im:history, im:write e chat:write e instale no workspace. " +
-			"Depois mande para o app, na mensagem direta: pimpo e o código de pareamento de Conexões.",
+			"Depois mande para o app, na mensagem direta: pimpo e o código de pareamento de Conexões. Para rotinas que reagem ao Slack, assine também message.channels e app_mention, dê ao bot channels:history e app_mentions:read e adicione o app aos canais.",
 		Fields: []Field{{Name: "bot_token", Label: "Bot token (xoxb-)", Secret: true}, {Name: "app_token", Label: "App token (xapp-)", Secret: true}},
 		Probe:  checkLink("slackchat"),
 	})

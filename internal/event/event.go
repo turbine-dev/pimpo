@@ -208,6 +208,25 @@ func (s *Store) Verify(ctx context.Context) (int64, error) {
 	return 0, nil
 }
 
+// Publish hands a passing event to the live subscribers without keeping
+// it in the log: progress that changes every few seconds, whose lasting
+// copy is kept elsewhere. It has no id and no place in the chain.
+func (s *Store) Publish(typ, actor string, data any) {
+	raw, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+	e := Event{Time: s.now().UTC().Truncate(time.Microsecond), Type: typ, Actor: actor, Data: raw}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for ch := range s.subs {
+		select {
+		case ch <- e:
+		default:
+		}
+	}
+}
+
 // Subscribe delivers new events until the context ends. Slow readers miss
 // events rather than block writers; they can catch up with List.
 func (s *Store) Subscribe(ctx context.Context) <-chan Event {

@@ -50,11 +50,11 @@ export type ChatHit = { chat: string; title: string; turn: string; snippet: stri
 export type ChatAction = { capability: string; text: string; risk: CapRisk; args: unknown }
 export type Effort = 'low' | 'medium' | 'high' | 'max'
 export const EFFORTS: Effort[] = ['low', 'medium', 'high', 'max']
-export type Routed = { model: string; tier?: 'simple' | 'normal' | 'hard'; by: 'jev' | 'rules' | 'fixed' | 'default'; effort?: Effort; effort_by?: 'fixed' | 'auto' | 'default' }
+export type Routed = { model: string; tier?: 'simple' | 'normal' | 'hard'; by: 'jev' | 'rules' | 'fixed' | 'default' | 'allowed'; effort?: Effort; effort_by?: 'fixed' | 'auto' | 'default' }
 export type ChatTurn = { model?: Routed; id: string; request: string; state: 'running' | 'ready' | 'compiling' | 'done' | 'failed' | 'discarded'; summary?: string; error?: string; cost_usd: number; routine?: string; created_at: string
   actions: ChatAction[]; done?: { state: 'running' | 'done' | 'failed'; at: string; results: { capability: string; ok: boolean; error?: string }[] } }
 
-export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[] }
+export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[]; models?: string[] }
 export type InstalledSkill = { id: string; name: string; description: string; source: string; capabilities: string[]; scripts: string[]; unsupported: string[]; installed: string }
 export type SkillPreview = { token: string; exists: boolean; skill: { id: string; name: string; description: string; body: string; files: string[]; scripts: string[]; suggested: string[]; unsupported: string[]; secrets: string[] } }
 export type CapabilitySpec = { name: string; risk: CapRisk; signature: string; returns: string }
@@ -94,7 +94,9 @@ export type Run = { id: number; version: number; started_at: string; ended_at?: 
 export type Version = { version: number; routine: Routine; reason: string; approved_by: string; created_at: string }
 
 export type Role = 'owner' | 'member' | 'guest'
-export type Person = { id: string; name: string; role: Role; chat?: number; responsible?: string; invite?: string; created: string; mail: boolean; calendar: boolean }
+export type Person = { id: string; name: string; role: Role; chat?: number; responsible?: string; invite?: string; created: string; mail: boolean; calendar: boolean; models?: string[]; daily_usd?: number; daily_limit?: number; limit_reached?: boolean }
+// MyLimits is what the person asking may use and has spent today.
+export type MyLimits = { models: string[]; all_models: boolean; daily_usd: number; house_usd: number; spent_today: number; reached: boolean }
 
 export type GalleryItem = {
   id: string
@@ -168,22 +170,49 @@ export type ActionRecord = {
 }
 
 export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean; person?: string; role?: 'owner' | 'member' | 'guest'; name?: string; admin_account?: boolean }
+// PushStatus is how a watching routine hears of new things: by push
+// (Gmail through Google Pub/Sub, Slack over its socket) or by polling.
+export type PushStatus = {
+  kind: '' | 'gmail' | 'slack'
+  on: boolean
+  live: boolean
+  gmail?: { configured: boolean; signed_in: boolean; until?: string; error?: string }
+  slack?: { connected: boolean; owner_only: boolean }
+}
+export type GmailPushSetup = { topic: string; account: string; audience?: string; endpoint: string; ready: boolean }
+export type GitHubHook = { on: boolean; urls?: { local?: string; public?: string }; secret?: string }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
-export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
+export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; lesson_digest_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string; compact_off?: boolean; compact_at?: number }
 export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
+// A key a connector needs, asked for privately; the value never comes back.
+export type CredentialRequest = { id: string; connector: string; field: string; invalid?: boolean; routine?: string; exploration?: string; asked: string; expires: string; title: string; label: string; description: string }
 export type Provider = { id: string; name: string; key_url?: string; needs_key: boolean; local?: boolean }
-export type CatalogModel = { id: string; name: string; price_in: number; price_out: number; priced: boolean; context?: number; free?: boolean }
+export type CatalogModel = { id: string; name: string; price_in: number; price_out: number; priced: boolean; context?: number; free?: boolean; new?: boolean; retired?: boolean; mine?: boolean }
 export type Found = { claude_code?: string; ollama: CatalogModel[]; ollama_url: string; ollama_up?: boolean; lmstudio: CatalogModel[]; lmstudio_url: string; lmstudio_up?: boolean; codex?: string; codex_login?: boolean; opencode?: string; qwen_code?: string; apps?: string[] }
 export type Reminder = { id: string; at: string; text: string }
 export type LocalItem = { id: string; kind: 'engine' | 'voice' | 'transcriber'; name: string; about?: string; languages?: string[]; size: number; installed: boolean; quality?: number }
 export type LocalJob = { id: string; item: string; name: string; state: 'downloading' | 'verifying' | 'unpacking' | 'done' | 'failed' | 'cancelled'; done: number; total: number; detail?: string; error?: string; started: string }
+// A lesson is something Pimpo noticed and proposes to keep; nothing of it
+// applies until the person accepts it.
+export type Lesson = {
+  id: string; kind: 'preference' | 'routine' | 'fix' | 'fact'; from: 'learned' | 'note' | 'repeated' | 'suggestion' | 'repair'
+  title: string; detail?: string; evidence: { kind: 'exploration' | 'routine' | 'memory' | 'suggestion'; to: string }[]
+  change: string; ref: string; routine?: string; state: 'proposed' | 'accepted' | 'edited' | 'rejected'; edited?: string; result?: string; created: string; decided?: string
+}
 export type LocalView = { engine?: LocalItem; voices: LocalItem[]; transcribers?: LocalItem[]; jobs: LocalJob[]; free: number; memory: number; suggestions: { model: string; about: string; size: number; min_ram: number }[]; ollama: { url: string; up?: boolean; models?: CatalogModel[] } }
 export type QuickChoice = { kind: 'claude_code' | 'codex' | 'opencode' | 'ollama' | 'lmstudio' | 'provider'; provider?: string; key?: string; model?: string }
 export type OpencodeModel = { id: string; provider: string; name: string; subscription: boolean }
 export type ModelTest = { ok: boolean; text?: string; cost_usd?: number; ms?: number; error?: string; problem?: string }
 
 export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: string; approved?: string }; undoable: boolean; undo_until?: string; undone: boolean }
+// A Need is one thing waiting for the person signed in, from /api/needs.
+// A kind the server adds later shows with its title and an open link
+// until the UI learns its buttons. amount is what a grantable approval
+// moves; count is how many a summary item (lessons) stands for.
+export type NeedKind = 'approval' | 'credential_request' | 'question' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
+export type Need = { kind: NeedKind; id: string; title: string; detail?: string; created?: string; urgency: number; expires?: string; link?: string; actions: string[]; options?: string[]; proposal?: string; risk?: number; amount?: number; count?: number }
+export type Needs = { items: Need[]; counts: Partial<Record<NeedKind, number>>; total: number }
 export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string; grantable?: boolean }
 // Grant is an "approve for this routine" answer: that routine repeats that exact operation without asking.
 export type Grant = { id: string; routine: string; routine_name: string; version: number; capability: string; scope?: string; match: Record<string, string>; limits?: Record<string, number>; created: string }
@@ -191,7 +220,9 @@ export type Rule = { id: string; text: string; when: { capabilities?: string[]; 
 export type CostView = { today: number; limit: number; month: number; projected_month: number; by_day: Record<string, number>; by_source: Record<string, number>; by_model?: Record<string, number>; by_job?: Record<string, number>; calls_by_model?: Record<string, number>; subscription?: { today: number; month: number; by_model: Record<string, number> } }
 
 export type JobPart = { id: string; title: string; instructions: string; capabilities: string[]; state: 'waiting' | 'running' | 'done' | 'failed'; exploration?: string; summary?: string; error?: string; cost_usd: number; attempts: number }
-export type LongJob = { id: string; request: string; state: 'planned' | 'running' | 'reporting' | 'done' | 'stopped' | 'failed'; budget_usd: number; spent_usd: number; parts: JobPart[]; report?: string; error?: string; created: string; updated: string }
+export type LongJob = { id: string; request: string; state: 'planned' | 'running' | 'reporting' | 'done' | 'stopped' | 'failed'; budget_usd: number; spent_usd: number; parts: JobPart[]; report?: string; error?: string; created: string; updated: string; follow?: boolean; resumed?: string }
+// Progress is where a job or a routine run is, kept by the server so a reload shows it.
+export type Progress = { id: string; person: string; kind: 'job' | 'run'; job?: string; routine?: string; run?: number; title: string; label?: string; done: number; total: number; state: 'running' | 'done' | 'failed'; phase?: 'reporting' | 'stopped' | 'interrupted'; resumed?: boolean; cost_usd: number; error?: string; started_at: string; updated_at: string; ended_at?: string }
 export type WidgetKind = 'metric' | 'progress' | 'list' | 'status' | 'text' | 'table' | 'chart'
 export type WidgetSnap = {
   kind: WidgetKind; title: string; subtitle?: string; value?: number; goal?: number; unit?: string; trend?: number
@@ -207,14 +238,23 @@ export type PhoneShare = 'location' | 'camera' | 'shortcuts'
 export type PhonePlace = { name: string; lat?: number; lon?: number; radius?: number }
 export type PhoneState = { places: PhonePlace[]; shares: PhoneShare[]; device?: { id: string; name: string; shares: PhoneShare[]; has_key: boolean } }
 
-export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low' | 'learned'; person?: string; created: string }
+export type FactOrigin = { kind: 'conversation' | 'exploration' | 'routine' | 'job' | 'email' | 'import' | 'typed' | 'learned' | 'unknown'; ref?: string; turn?: string; sender?: string; label?: string }
+export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low' | 'learned'; person?: string; created: string; origins?: FactOrigin[] }
+export type MemorySource = { key: string; origin: FactOrigin; facts: Fact[]; topics: string[] }
 export type MemoryVersion = { hash: string; message: string; when: string }
 
 export class ApiError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  // problem names why, for a translated message.
+  problem?: string
+  // recovery says Pimpo set a damaged database aside and serves only the
+  // recovery page.
+  recovery: boolean
+  constructor(status: number, message: string, problem?: string, recovery = false) {
     super(message)
     this.status = status
+    this.problem = problem
+    this.recovery = recovery
   }
 }
 
@@ -225,18 +265,42 @@ export type Finding = { id: string; group: string; name: string; state: 'ok' | '
 
 export type MyDevice = { id: string; name: string; created: string; last_seen?: string; session?: boolean; pending?: boolean; current?: boolean }
 
-export type Snapshot = { name: string; label: string; when: string; bytes: number }
+export type PasswordManagers = {
+  house: boolean
+  op_installed: boolean
+  onepassword: { mode: '' | 'service' | 'desktop' | 'connect'; connect_url?: string }
+  hashicorp: { auth: '' | 'token' | 'approle'; addr?: string; namespace?: string; auth_mount?: string }
+}
+export type PasswordManagerInput = { mode?: string; token?: string; connect_url?: string; connect_token?: string; addr?: string; auth?: string; role_id?: string; secret_id?: string; namespace?: string; auth_mount?: string }
+
+export type HistoryArea = 'settings' | 'models' | 'rules' | 'budget' | 'connections' | 'people'
+export type HistoryField = { field: string; before?: unknown; after?: unknown; secret?: 'added' | 'replaced' | 'removed' }
+export type HistoryChange = { id: number; ts: string; actor: string; who: string; area: HistoryArea; target?: string; fields: HistoryField[]; undo_of?: number; undoable: boolean; undone: boolean; reenter: string[] }
+
+export type Snapshot = { name: string; label: string; when: string; bytes: number; damaged?: boolean }
+export type RecoveryState = { when: string; reason: string; folder: string; snapshots: Snapshot[]; newest_good: string }
+
+// bearer is the Telegram Mini App's session: kept only in memory, since
+// inside Telegram Web the page is framed by another site and the session
+// cookie is never sent there.
+let bearer = ''
+export function setBearer(token: string) {
+  bearer = token
+}
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(path, { method, headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin' })
+  const headers: Record<string, string> = body === undefined ? {} : { 'Content-Type': 'application/json' }
+  if (bearer) headers.Authorization = `Bearer ${bearer}`
+  const res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin' })
   const text = await res.text()
   const data = text ? JSON.parse(text) : null
-  if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText)
+  if (!res.ok) throw new ApiError(res.status, data?.error ?? res.statusText, data?.problem, data?.recovery === true)
   return data as T
 }
 
 export const api = {
   state: () => request<AppState>('GET', '/api/state'),
+  miniAppSession: (initData: string) => request<{ token: string; expires: string; person: string; role: Role; name: string }>('POST', '/api/tg/session', { init_data: initData }),
   cloud: () => request<CloudState>('GET', '/api/backup/cloud'),
   saveCloud: (c: CloudConfig & { access_key?: string; secret_key?: string; passphrase?: string }) => request<CloudState>('PUT', '/api/backup/cloud', c),
   cloudOff: () => request<CloudState>('DELETE', '/api/backup/cloud'),
@@ -256,8 +320,8 @@ export const api = {
   chats: () => request<Chat[]>('GET', '/api/chats'),
   searchChats: (q: string) => request<ChatHit[]>('GET', `/api/chats/search?q=${encodeURIComponent(q)}`),
   chat: (id: string) => request<{ chat: Chat; turns: ChatTurn[]; model: string; effort?: string }>('GET', `/api/chats/${id}`),
-  newChat: (text: string, assistant = '', model = '', effort = '') => request<{ chat: string; turn: string }>('POST', '/api/chats', { text, assistant, model, effort }),
-  sendChat: (id: string, text: string, model = '', effort = '') => request<{ chat: string; turn: string }>('POST', `/api/chats/${id}/messages`, { text, model, effort }),
+  newChat: (text: string, assistant = '', model = '', effort = '') => request<{ chat: string; turn: string; warning?: string }>('POST', '/api/chats', { text, assistant, model, effort }),
+  sendChat: (id: string, text: string, model = '', effort = '') => request<{ chat: string; turn: string; warning?: string }>('POST', `/api/chats/${id}/messages`, { text, model, effort }),
   chatDo: (id: string, turn: string) => request<ChatTurn>('POST', `/api/chats/${id}/turns/${turn}/do`),
   deleteChat: (id: string) => request<{ deleted: string }>('DELETE', `/api/chats/${id}`),
   assistants: () => request<Assistant[]>('GET', '/api/assistants'),
@@ -266,12 +330,15 @@ export const api = {
   jobs: () => request<LongJob[]>('GET', '/api/jobs'),
   job: (id: string) => request<LongJob>('GET', `/api/jobs/${id}`),
   createJob: (req: string, budget_usd: number) => request<LongJob>('POST', '/api/jobs', { request: req, budget_usd }),
-  startJob: (id: string) => request<LongJob>('POST', `/api/jobs/${id}/start`),
+  startJob: (id: string, follow = false) => request<LongJob>('POST', `/api/jobs/${id}/start`, { follow }),
+  followJob: (id: string, follow: boolean) => request<LongJob>('POST', `/api/jobs/${id}/follow`, { follow }),
+  progress: () => request<Progress[]>('GET', '/api/progress'),
   stopJob: (id: string) => request<LongJob>('POST', `/api/jobs/${id}/stop`),
   saveAccount: (name: string) => request<{ name: string }>('PUT', '/api/account', { name }),
   passkeys: () => request<{ id: string; name: string; address: string; created: string; last_used?: string }[]>('GET', '/api/passkeys'),
   deletePasskey: (id: string) => request<{ removed: string }>('DELETE', `/api/passkeys/${encodeURIComponent(id)}`),
   myDevices: () => request<MyDevice[]>('GET', '/api/me/devices'),
+  myLimits: () => request<MyLimits>('GET', '/api/me/limits'),
   signOutDevice: (id: string) => request<{ revoked: string }>('DELETE', `/api/me/devices/${encodeURIComponent(id)}`),
   dashboards: () => request<Dashboard[]>('GET', '/api/dashboards'),
   createDashboard: (name: string, emoji: string) => request<Dashboard>('POST', '/api/dashboards', { name, emoji }),
@@ -326,10 +393,25 @@ export const api = {
   media: () => request<{ id: string; title: string; at: string }[]>('GET', '/api/media'),
   webhook: (id: string) => request<{ urls?: { local?: string; lan?: string; public?: string } }>('GET', `/api/routines/${id}/webhook`),
   setWebhook: (id: string, action: 'on' | 'off' | 'rotate') => request<{ urls?: { local?: string; lan?: string; public?: string } }>('POST', `/api/routines/${id}/webhook/${action}`),
+  routinePush: (id: string) => request<PushStatus>('GET', `/api/routines/${id}/push`),
+  setRoutinePush: (id: string, on: boolean) => request<PushStatus>('POST', `/api/routines/${id}/push/${on ? 'on' : 'off'}`),
+  gmailPush: () => request<GmailPushSetup>('GET', '/api/push/gmail'),
+  setGmailPush: (c: { topic: string; account: string; audience?: string }) => request<GmailPushSetup>('PUT', '/api/push/gmail', c),
+  githubHook: (id: string) => request<GitHubHook>('GET', `/api/routines/${id}/github`),
+  setGitHubHook: (id: string, action: 'on' | 'off' | 'rotate') => request<GitHubHook>('POST', `/api/routines/${id}/github/${action}`),
+  needs: () => request<Needs>('GET', '/api/needs'),
   questions: () => request<{ id: string; routine?: string; question: string; options: string[]; asked: string }[]>('GET', '/api/questions'),
   suggestions: () => request<{ id: string; title: string; why: string; request: string; made: string }[]>('GET', '/api/suggestions'),
   suggestion: (id: string, action: 'accept' | 'dismiss') => request<{ exploration?: string }>('POST', `/api/suggestions/${id}/${action}`),
+  lessons: () => request<{ proposed: Lesson[]; decided: Lesson[] }>('GET', '/api/lessons'),
+  lesson: (id: string, action: 'accept' | 'edit' | 'reject', text?: string) => request<Lesson>('POST', `/api/lessons/${id}/${action}`, text === undefined ? undefined : { text }),
   answerQuestion: (id: string, index: number) => request<{ text: string }>('POST', `/api/questions/${id}/answer`, { index }),
+  answerQuestionText: (id: string, text: string) => request<{ text: string }>('POST', `/api/questions/${id}/answer`, { text }),
+  credentials: () => request<CredentialRequest[]>('GET', '/api/credentials'),
+  credential: (id: string) => request<CredentialRequest>('GET', `/api/credentials/${id}`),
+  saveCredential: (id: string, value: string) => request<{ saved: boolean; routine?: string; exploration?: string }>('POST', `/api/credentials/${id}`, { value }),
+  dismissCredential: (id: string) => request<{ state: string }>('DELETE', `/api/credentials/${id}`),
+  retryExploration: (id: string) => request<{ id: string }>('POST', `/api/explorations/${id}/retry`),
   spotify: () => request<{ connected: boolean; client_id: boolean; redirect: string }>('GET', '/api/spotify'),
   spotifyStart: (clientId: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/spotify/start', { client_id: clientId }),
   spotifyOff: () => request<{ ok: boolean }>('DELETE', '/api/spotify'),
@@ -337,7 +419,8 @@ export const api = {
   cancelReminder: (id: string) => request<{ ok: boolean }>('DELETE', `/api/reminders/${id}`),
   quickSetup: (c: QuickChoice) => request<{ explore: string; judge: string; text?: string; cost_usd: number; ms?: number }>('POST', '/api/setup/model', c),
   opencodeModels: () => request<OpencodeModel[]>('GET', '/api/models/opencode'),
-  modelCatalog: (provider: string) => request<CatalogModel[]>('GET', `/api/models/catalog/${provider}`),
+  modelCatalog: (provider: string, fresh = false) => request<CatalogModel[]>('GET', `/api/models/catalog/${provider}${fresh ? '?fresh=1' : ''}`),
+  retiredModels: () => request<{ retired: string[] }>('GET', '/api/models/retired'),
   tryModel: async (id: string, price_in: number, price_out: number): Promise<ModelTest> => {
     const res = await fetch('/api/models/test', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, price_in, price_out }) })
     return res.json()
@@ -356,6 +439,9 @@ export const api = {
   createSnapshot: () => request<Snapshot>('POST', '/api/snapshots'),
   stageRestore: (name: string) => request<{ staged: string }>('POST', '/api/snapshots/restore', { name }),
   cancelRestore: () => request<{ staged: string }>('DELETE', '/api/snapshots/restore'),
+  recovery: () => request<RecoveryState>('GET', '/api/recovery'),
+  recoverFrom: (name: string) => request<{ restored: string }>('POST', '/api/recovery/restore', { name }),
+  startFresh: () => request<{ fresh: boolean }>('POST', '/api/recovery/fresh'),
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[]; state: Record<string, unknown>; used_by: string[] }>('GET', `/api/routines/${id}`),
@@ -375,6 +461,8 @@ export const api = {
   },
   receipts: (q?: string) => request<Receipt[]>('GET', `/api/receipts${q ? `?q=${encodeURIComponent(q)}` : ''}`),
   undo: (id: number) => request<void>('POST', `/api/actions/${id}/undo`),
+  history: (area = '') => request<HistoryChange[]>('GET', `/api/history?area=${area}`),
+  undoChange: (id: number) => request<{ state: string; reenter: string[] }>('POST', `/api/history/${id}/undo`),
   approvals: () => request<Approval[]>('GET', '/api/approvals'),
   answer: (id: string, answer: 'once' | 'run' | 'routine' | 'always' | 'deny', limit?: number) => request<void>('POST', `/api/approvals/${id}/${answer}`, limit === undefined ? undefined : { limit }),
   grants: () => request<Grant[]>('GET', '/api/grants'),
@@ -392,6 +480,8 @@ export const api = {
   removeFact: (id: string) => request<void>('DELETE', `/api/memory/${id}`),
   confirmFact: (id: string) => request<void>('POST', `/api/memory/${id}/confirm`),
   restoreMemory: (hash: string) => request<void>('POST', `/api/memory-versions/${hash}/restore`),
+  memorySources: () => request<{ sources: MemorySource[] }>('GET', '/api/memory/sources'),
+  forgetSource: (key: string) => request<{ removed: Fact[] }>('POST', '/api/memory/sources/forget', { key }),
   settings: () => request<Settings>('GET', '/api/settings'),
   saveSettings: (s: Settings) => request<Settings>('PUT', '/api/settings', s),
   setBudget: (daily_usd: number) => request<void>('PUT', '/api/budget', { daily_usd }),
@@ -407,6 +497,7 @@ export const api = {
   addPerson: (name: string, role: Role, responsible: string) => request<Person>('POST', '/api/people', { name, role, responsible }),
   updatePerson: (id: string, role: Role, responsible: string) => request<Person>('PUT', `/api/people/${id}`, { role, responsible }),
   removePerson: (id: string) => request<void>('DELETE', `/api/people/${id}`),
+  setPersonLimits: (id: string, models: string[], daily_usd: number) => request<Person>('PUT', `/api/people/${id}/limits`, { models, daily_usd }),
   personConnection: (id: string, kind: 'mail' | 'calendar', body: Record<string, string>) => request<void>('PUT', `/api/people/${id}/connections/${kind}`, body),
   gallery: (fresh = false) => request<GalleryItem[]>('GET', `/api/gallery${fresh ? '?fresh=1' : ''}`),
   installFromGallery: (id: string, confirm = false) => request<RoutineSummary>('POST', `/api/gallery/${id}/install`, confirm ? { confirm } : undefined),
@@ -426,6 +517,11 @@ export const api = {
   removeBot: (id: string) => request<void>('DELETE', `/api/telegram/bots/${id}`),
   connections: () => request<Connection[]>('GET', '/api/connections'),
   googleStart: (client_id: string, client_secret: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/google/start', { client_id, client_secret }),
+  passwordManagers: () => request<PasswordManagers>('GET', '/api/password-managers'),
+  putPasswordManager: (kind: 'onepassword' | 'hashicorp', body: PasswordManagerInput) => request<PasswordManagers>('PUT', `/api/password-managers/${kind}`, body),
+  deletePasswordManager: (kind: 'onepassword' | 'hashicorp') => request<PasswordManagers>('DELETE', `/api/password-managers/${kind}`),
+  testPasswordManager: (kind: 'onepassword' | 'hashicorp') => request<{ ok: boolean }>('POST', `/api/password-managers/${kind}/test`),
+  checkReference: (reference: string) => request<{ found: boolean }>('POST', '/api/secrets/check', { reference }),
   connect: (kind: string, body: Record<string, string>) => request<void>('PUT', `/api/connections/${kind}`, body),
   disconnect: (kind: string) => request<void>('DELETE', `/api/connections/${kind}`),
 }

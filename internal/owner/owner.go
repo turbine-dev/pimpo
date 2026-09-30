@@ -39,6 +39,13 @@ type Handler interface {
 	Button(ctx context.Context, action, id string) (string, error)
 }
 
+// ReplyHandler also takes a typed reply to a notice with buttons, such as
+// a question answered in words; the choices are that notice's buttons.
+// handled is false when the reply is an ordinary message.
+type ReplyHandler interface {
+	Reply(ctx context.Context, choices []explore.Action, text string) (reply string, handled bool)
+}
+
 type Channel struct {
 	Events *event.Store
 	// Bot returns the current bot, or nil when Telegram is not set up.
@@ -56,6 +63,11 @@ type Channel struct {
 	Transcribe func(ctx context.Context, audio []byte) (string, error)
 	// ReadPhoto finds the text in a photo; nil means photos are ignored.
 	ReadPhoto func(ctx context.Context, image []byte) (string, error)
+	// MiniApp is the https address of the house's Telegram Mini App, or ""
+	// when there is none; notices that wait for an answer offer it.
+	MiniApp func(ctx context.Context) string
+	// Paired hears that a chat was paired, to offer it the Mini App.
+	Paired func(ctx context.Context)
 
 	mu      sync.Mutex
 	code    string
@@ -110,36 +122,76 @@ func (c *Channel) Notify(ctx context.Context, n explore.Notice) error {
 		c.Mirror(ctx, n)
 	}
 	bot := c.Bot(ctx)
-	chat, _ := c.Chat(ctx)
-	if n.To != "" && n.To != people.OwnerID {
-		chat = 0
-		if c.People != nil {
-			if p, err := c.People.Get(ctx, n.To); err == nil {
-				chat = p.Chat
-			}
-		}
-	}
+	chat := c.ChatOf(ctx, n.To)
 	if bot == nil || chat == 0 {
 		return nil
 	}
-	// One row fits four buttons; more go three to a row, so labels stay readable.
-	per := len(n.Actions)
-	if per > 4 {
-		per = 3
-	}
-	var rows [][]telegram.Button
-	var row []telegram.Button
-	for _, a := range n.Actions {
-		if len(row) == per {
-			rows, row = append(rows, row), nil
+	rows := keyboard(n.Actions)
+	if len(rows) > 0 && c.MiniApp != nil {
+		if url := c.MiniApp(ctx); url != "" {
+			rows = append(rows, []telegram.Button{{Text: i18n.T(ctx, "msg.miniapp.open"), WebApp: &telegram.WebApp{URL: url}}})
 		}
-		row = append(row, telegram.Button{Text: a.Label, Data: a.Data})
-	}
-	if len(row) > 0 {
-		rows = append(rows, row)
 	}
 	_, err := bot.Send(ctx, chat, n.Text, rows...)
 	return err
+}
+
+// keyboard puts a notice's choices on one row; a question's many options
+// go three to a row, so their labels stay readable.
+func keyboard(actions []explore.Action) [][]telegram.Button {
+	// One row fits four buttons; more go three to a row, and so do more
+	// than three answers to a question, so labels stay readable.
+	per := len(actions)
+	if per > 4 || (per > 3 && allAnswers(actions)) {
+		per = 3
+	}
+	var rows [][]telegram.Button
+	for i, a := range actions {
+		if i%per == 0 {
+			rows = append(rows, nil)
+		}
+		rows[len(rows)-1] = append(rows[len(rows)-1], telegram.Button{Text: a.Label, Data: a.Data})
+	}
+	return rows
+}
+
+func allAnswers(actions []explore.Action) bool {
+	for _, a := range actions {
+		if !strings.HasPrefix(a.Data, "answer:") {
+			return false
+		}
+	}
+	return true
+}
+
+// replied are the buttons of the message m replies to, if any.
+func replied(m *telegram.Message) []explore.Action {
+	if m.ReplyTo == nil || m.ReplyTo.Markup == nil {
+		return nil
+	}
+	var out []explore.Action
+	for _, row := range m.ReplyTo.Markup.Keyboard {
+		for _, b := range row {
+			if b.Data != "" {
+				out = append(out, explore.Action{Label: b.Text, Data: b.Data})
+			}
+		}
+	}
+	return out
+}
+
+// ChatOf is the Telegram chat of a person, or 0 when they have none.
+func (c *Channel) ChatOf(ctx context.Context, person string) int64 {
+	if person == "" || person == people.OwnerID {
+		chat, _ := c.Chat(ctx)
+		return chat
+	}
+	if c.People != nil {
+		if p, err := c.People.Get(ctx, person); err == nil {
+			return p.Chat
+		}
+	}
+	return 0
 }
 
 // Listen polls Telegram until ctx ends.
@@ -210,6 +262,14 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 		}
 		if text == "" {
 			return
+		}
+		if rh, ok := c.Handler.(ReplyHandler); ok {
+			if choices := replied(m); len(choices) > 0 {
+				if reply, handled := rh.Reply(Via(people.With(ctx, person), "telegram"), choices, text); handled {
+					bot.Send(ctx, m.Chat.ID, reply)
+					return
+				}
+			}
 		}
 		rctx := Via(people.With(ctx, person), "telegram")
 		if t, ok := bot.(interface {
@@ -293,6 +353,7 @@ func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code s
 		if err == nil {
 			c.Events.Append(ctx, EventPaired, "human:"+p.ID, map[string]any{"chat": m.Chat.ID, "person": p.ID})
 			bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.person", "name", p.Name))
+			c.paired(ctx)
 			return
 		}
 		if !errors.Is(err, people.ErrUnknown) {
@@ -306,4 +367,11 @@ func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code s
 	c.Events.Put(ctx, chatKey, strconv.FormatInt(m.Chat.ID, 10))
 	c.Events.Append(ctx, EventPaired, "human:owner", map[string]any{"chat": m.Chat.ID, "name": m.From.FirstName})
 	bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.owner", "name", m.From.FirstName))
+	c.paired(ctx)
+}
+
+func (c *Channel) paired(ctx context.Context) {
+	if c.Paired != nil {
+		c.Paired(ctx)
+	}
 }

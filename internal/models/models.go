@@ -6,6 +6,8 @@ package models
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -70,6 +72,12 @@ type Model struct {
 	Priced   bool    `json:"priced"`
 	Context  int     `json:"context,omitempty"`
 	Free     bool    `json:"free,omitempty"`
+	// New marks a model the provider started offering recently; Retired
+	// one of the owner's models the provider no longer lists; Mine one
+	// the owner added, whose price is the owner's own.
+	New     bool `json:"new,omitempty"`
+	Retired bool `json:"retired,omitempty"`
+	Mine    bool `json:"mine,omitempty"`
 }
 
 // Client reaches providers; HTTP and the OpenRouter address can be
@@ -81,6 +89,20 @@ type Client struct {
 	mu      sync.Mutex
 	priced  []orModel
 	fetched time.Time
+	// seen keeps each answer with its ETag and Last-Modified, so asking
+	// again costs the provider a 304; lists keeps discovered lists a day.
+	seen  map[string]conditional
+	lists map[string]listed
+}
+
+type conditional struct {
+	etag, modified string
+	body           []byte
+}
+
+type listed struct {
+	models []Model
+	at     time.Time
 }
 
 func (c *Client) http() *http.Client {
@@ -133,6 +155,20 @@ func (c *Client) get(ctx context.Context, url string, header map[string]string, 
 	for k, v := range header {
 		req.Header.Set(k, v)
 	}
+	// The cache is keyed by a hash of the headers too, so one key's
+	// answer never serves another; the key itself is kept nowhere.
+	ck := cacheKey(url, header)
+	c.mu.Lock()
+	prev, had := c.seen[ck]
+	c.mu.Unlock()
+	if had {
+		if prev.etag != "" {
+			req.Header.Set("If-None-Match", prev.etag)
+		}
+		if prev.modified != "" {
+			req.Header.Set("If-Modified-Since", prev.modified)
+		}
+	}
 	resp, err := c.http().Do(req)
 	if err != nil {
 		return err
@@ -142,10 +178,34 @@ func (c *Client) get(ctx context.Context, url string, header map[string]string, 
 	if resp.StatusCode == 401 || resp.StatusCode == 403 {
 		return ErrKey
 	}
+	if resp.StatusCode == http.StatusNotModified && had {
+		return json.Unmarshal(prev.body, out)
+	}
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("%s answered %d", url, resp.StatusCode)
 	}
+	if etag, mod := resp.Header.Get("ETag"), resp.Header.Get("Last-Modified"); etag != "" || mod != "" {
+		c.mu.Lock()
+		if c.seen == nil {
+			c.seen = map[string]conditional{}
+		}
+		c.seen[ck] = conditional{etag, mod, body}
+		c.mu.Unlock()
+	}
 	return json.Unmarshal(body, out)
+}
+
+func cacheKey(url string, header map[string]string) string {
+	keys := make([]string, 0, len(header))
+	for k := range header {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	h := sha256.New()
+	for _, k := range keys {
+		fmt.Fprintf(h, "%s=%s\n", k, header[k])
+	}
+	return url + "#" + hex.EncodeToString(h.Sum(nil))
 }
 
 // ErrKey means the provider refused the key.
@@ -192,19 +252,36 @@ func (c *Client) List(ctx context.Context, e Endpoint) ([]Model, error) {
 		base = llm.Bases[e.Provider]
 	}
 	var ids []string
+	names := map[string]string{}
 	switch e.Provider {
 	case "anthropic":
-		var r struct {
-			Data []struct {
-				ID          string `json:"id"`
-				DisplayName string `json:"display_name"`
-			} `json:"data"`
-		}
-		if err := c.get(ctx, base+"/models?limit=100", map[string]string{"x-api-key": e.Key, "anthropic-version": "2023-06-01"}, &r); err != nil {
-			return nil, err
-		}
-		for _, m := range r.Data {
-			ids = append(ids, m.ID)
+		// The list comes in pages; after_id asks for the next one.
+		for after, page := "", 0; page < 10; page++ {
+			var r struct {
+				Data []struct {
+					ID          string `json:"id"`
+					DisplayName string `json:"display_name"`
+				} `json:"data"`
+				HasMore bool   `json:"has_more"`
+				LastID  string `json:"last_id"`
+			}
+			url := base + "/models?limit=1000"
+			if after != "" {
+				url += "&after_id=" + after
+			}
+			if err := c.get(ctx, url, map[string]string{"x-api-key": e.Key, "anthropic-version": "2023-06-01"}, &r); err != nil {
+				return nil, err
+			}
+			for _, m := range r.Data {
+				ids = append(ids, m.ID)
+				if m.DisplayName != "" {
+					names[m.ID] = m.DisplayName
+				}
+			}
+			if !r.HasMore || r.LastID == "" {
+				break
+			}
+			after = r.LastID
 		}
 	case "openrouter":
 		all, err := c.catalog(ctx)
@@ -253,6 +330,9 @@ func (c *Client) List(ctx context.Context, e Endpoint) ([]Model, error) {
 			m.Free, m.Priced = true, true
 		} else if or, ok := priced[norm(id)]; ok {
 			m = fromOR(id, or)
+		}
+		if n := names[id]; n != "" {
+			m.Name = n
 		}
 		out = append(out, m)
 	}

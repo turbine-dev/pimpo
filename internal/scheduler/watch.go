@@ -15,6 +15,9 @@ const (
 	EventWatchFound  = "routine.watch.found"
 	EventWatchFailed = "routine.watch.failed"
 	seenLimit        = 2000
+	// pushedEvery is how often a routine whose events are pushed is still
+	// checked, in case a push was lost.
+	pushedEvery = time.Hour
 )
 
 func seenKey(id string) string { return "watch.seen." + id }
@@ -44,11 +47,15 @@ func (s *Scheduler) pollDue(ctx context.Context) {
 		if w == nil || r.State != store.RoutineActive {
 			continue
 		}
+		every := w.Interval()
+		if s.Pushed != nil && s.Pushed(ctx, r) {
+			every = max(every, pushedEvery)
+		}
 		s.mu.Lock()
 		if s.polled == nil {
 			s.polled = map[string]time.Time{}
 		}
-		due := now.Sub(s.polled[r.ID]) >= w.Interval()
+		due := now.Sub(s.polled[r.ID]) >= every
 		if due {
 			s.polled[r.ID] = now
 		}

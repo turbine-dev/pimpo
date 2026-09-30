@@ -5,12 +5,14 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/turbine-dev/pimpo/internal/capability"
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/host"
 	"github.com/turbine-dev/pimpo/internal/routine"
 	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 // inbox serves test.inbox: the mail it has now, and the queries it got.
@@ -90,5 +92,42 @@ func TestWatchValidation(t *testing.T) {
 	}
 	if got := (runtime.Watch{Every: "1m"}).Interval().Minutes(); got != 5 {
 		t.Errorf("interval floor %v", got)
+	}
+}
+
+// A pushed routine is checked only hourly, and falls back to its own
+// interval as soon as the push lapses.
+func TestPushedWatchPollsAsASafetyNet(t *testing.T) {
+	capability.Register(capability.Spec{Name: "test.inbox", Risk: capability.Read})
+	defer capability.Unregister("test.inbox")
+	s, _, _ := setup(t, "")
+	ctx := context.Background()
+	box := &inbox{}
+	s.Env.Router.Add(box)
+	s.Store.SaveRoutine(ctx, "caixa", routine.Routine{Name: "Caixa", Code: `async function run() {}`, Manifest: runtime.Manifest{
+		Capabilities: []string{"test.inbox"},
+		Watch:        &runtime.Watch{Capability: "test.inbox", Args: map[string]any{"query": "x"}, Key: "id", Every: "10m"},
+	}}, "test", "owner")
+	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
+	s.Now = func() time.Time { return now }
+	live := true
+	s.Pushed = func(context.Context, store.Routine) bool { return live }
+	polls := func() int { box.mu.Lock(); defer box.mu.Unlock(); return len(box.queries) }
+	s.pollDue(ctx)
+	now = now.Add(20 * time.Minute)
+	s.pollDue(ctx)
+	if polls() != 1 {
+		t.Fatalf("a pushed routine was polled %d times in 20 minutes", polls())
+	}
+	now = now.Add(time.Hour)
+	s.pollDue(ctx)
+	if polls() != 2 {
+		t.Fatal("the hourly safety net did not check")
+	}
+	live = false
+	now = now.Add(11 * time.Minute)
+	s.pollDue(ctx)
+	if polls() != 3 {
+		t.Fatal("a lapsed push did not fall back to polling")
 	}
 }

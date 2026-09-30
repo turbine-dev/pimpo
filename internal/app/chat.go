@@ -14,8 +14,10 @@ import (
 	"github.com/turbine-dev/pimpo/internal/capability"
 	"github.com/turbine-dev/pimpo/internal/explore"
 	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/memory"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/policy"
+	"github.com/turbine-dev/pimpo/internal/secretscan"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
 )
@@ -200,6 +202,36 @@ func readMessage(r *http.Request) (chatMessageBody, error) {
 	return m, nil
 }
 
+// readPasted reads a message and takes out any key pasted into it; a
+// message that was only a key goes no further.
+func (a *App) readPasted(r *http.Request) (chatMessageBody, string, error) {
+	m, err := readMessage(r)
+	if err != nil {
+		return m, "", err
+	}
+	var warning string
+	m.Text, warning = a.guardPasted(r.Context(), m.Text)
+	if warning != "" && secretscan.Only(m.Text) {
+		return m, "", server.StatusError{Status: 400, Msg: warning}
+	}
+	return m, warning, nil
+}
+
+// chatReply names the new turn, with the warning about a removed key.
+func chatReply(chat, turn, warning string) map[string]string {
+	out := map[string]string{"chat": chat, "turn": turn}
+	if warning != "" {
+		out["warning"] = warning
+	}
+	return out
+}
+
+// chatOrigin is where facts noted in a conversation come from: the
+// conversation, each turn its own part.
+func chatOrigin(c store.Chat) *memory.Origin {
+	return &memory.Origin{Kind: memory.FromConversation, Ref: c.ID, Label: c.Title}
+}
+
 // options builds an exploration's options for a chat's assistant.
 func (a *App) chatOptions(ctx context.Context, assistant, history string) (explore.Options, error) {
 	o := explore.Options{Context: history, Quiet: true}
@@ -215,7 +247,7 @@ func (a *App) chatOptions(ctx context.Context, assistant, history string) (explo
 
 func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	m, err := readMessage(r)
+	m, warning, err := a.readPasted(r)
 	if err != nil {
 		server.WriteError(w, err)
 		return
@@ -235,9 +267,10 @@ func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	if !a.usableModel(ctx, m.Model) {
+	ctx = a.assistantCtx(ctx, m.Assistant)
+	if err := a.modelRefusal(ctx, m.Model); err != nil {
 		a.Store.DeleteChat(ctx, c.ID)
-		server.WriteError(w, server.StatusError{Status: 400, Msg: m.Model + " is not among your models"})
+		server.WriteError(w, err)
 		return
 	}
 	if !usableEffort(m.Effort) {
@@ -247,6 +280,7 @@ func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 	}
 	a.setChatModel(ctx, c.ID, m.Model)
 	a.setChatEffort(ctx, c.ID, m.Effort)
+	o.Origin = chatOrigin(c)
 	pick := a.routeModel(ctx, text, "", m.Model, m.Effort)
 	o.Model, o.Effort = pick.Model, pick.Effort
 	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), text, actor(ctx), o)
@@ -257,7 +291,7 @@ func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 	}
 	a.noteRouted(ctx, exp, pick)
 	a.Store.AddTurn(ctx, c.ID, exp)
-	server.WriteJSON(w, 201, map[string]string{"chat": c.ID, "turn": exp})
+	server.WriteJSON(w, 201, chatReply(c.ID, exp, warning))
 }
 
 // history is the conversation so far, for the agent: the last turns,
@@ -309,7 +343,7 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	m, err := readMessage(r)
+	m, warning, err := a.readPasted(r)
 	if err != nil {
 		server.WriteError(w, err)
 		return
@@ -326,12 +360,17 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	ctx = a.assistantCtx(ctx, c.Assistant)
 	if m.Model != "" {
-		if !a.usableModel(ctx, m.Model) {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: m.Model + " is not among your models"})
+		if err := a.modelRefusal(ctx, m.Model); err != nil {
+			server.WriteError(w, err)
 			return
 		}
 		a.setChatModel(ctx, c.ID, m.Model)
+	} else if err := a.modelRefusal(ctx, a.chatModel(ctx, c.ID)); err != nil {
+		// The model this conversation was fixed to is no longer allowed.
+		server.WriteError(w, err)
+		return
 	}
 	if m.Effort != "" {
 		if !usableEffort(m.Effort) {
@@ -342,6 +381,7 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	pick := a.routeModel(ctx, m.Text, history, a.chatModel(ctx, c.ID), a.chatEffort(ctx, c.ID))
 	o.Model, o.Effort = pick.Model, pick.Effort
+	o.Origin = chatOrigin(c)
 	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), m.Text, actor(ctx), o)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
@@ -349,7 +389,7 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	a.noteRouted(ctx, exp, pick)
 	a.Store.AddTurn(ctx, c.ID, exp)
-	server.WriteJSON(w, 201, map[string]string{"chat": c.ID, "turn": exp})
+	server.WriteJSON(w, 201, chatReply(c.ID, exp, warning))
 }
 
 var chatDoMu sync.Mutex

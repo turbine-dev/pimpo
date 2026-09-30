@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/turbine-dev/pimpo/internal/connector"
 	"github.com/turbine-dev/pimpo/internal/connector/external"
 	"github.com/turbine-dev/pimpo/internal/connector/services"
 	"github.com/turbine-dev/pimpo/internal/server"
@@ -29,7 +30,12 @@ func (a *App) catalogConfig(kind string) services.Config {
 	return func(ctx context.Context, field string) (string, error) {
 		name := personal(ctx, catalogKey(kind, field))
 		if secret[field] {
-			return a.Vault.Get(ctx, name)
+			v, err := a.Vault.Get(ctx, name)
+			if errors.Is(err, vault.ErrNotFound) || err == nil && strings.TrimSpace(v) == "" {
+				// Which key is missing, so the person can be asked for it.
+				return "", &connector.MissingCredential{Connector: kind, Field: field, Err: vault.ErrNotFound}
+			}
+			return v, err
 		}
 		return a.Events.Get(ctx, name)
 	}
@@ -135,6 +141,7 @@ func (a *App) putCatalog(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	done := a.track(ctx, a.catalogEntry(ctx, r.PathValue("kind")))
 	if c := a.externalConnector(r.PathValue("kind")); c != nil {
 		for _, e := range append(append([]string{}, c.Env...), c.Headers...) {
 			if v := strings.TrimSpace(req[e]); v != "" {
@@ -144,6 +151,7 @@ func (a *App) putCatalog(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		done()
 		// Restart so the process sees the new values.
 		c.Close()
 		server.WriteJSON(w, 200, map[string]string{"kind": c.Name})
@@ -179,6 +187,7 @@ func (a *App) putCatalog(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	done()
 	a.Events.Append(ctx, "connection.set", actor(ctx), map[string]string{"kind": k.ID})
 	if slices.Contains(services.LinkKinds, k.ID) {
 		a.restartLink(ctx, k.ID)
@@ -193,6 +202,7 @@ func (a *App) deleteCatalog(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "unknown connector"})
 		return
 	}
+	done := a.track(ctx, a.catalogEntry(ctx, k.ID))
 	for _, f := range k.Fields {
 		name := personal(ctx, catalogKey(k.ID, f.Name))
 		if f.Secret {
@@ -201,6 +211,7 @@ func (a *App) deleteCatalog(w http.ResponseWriter, r *http.Request) {
 			a.Events.Put(ctx, name, "")
 		}
 	}
+	done()
 	a.Events.Append(ctx, "connection.removed", actor(ctx), map[string]string{"kind": k.ID})
 	if slices.Contains(services.LinkKinds, k.ID) {
 		a.restartLink(ctx, k.ID)

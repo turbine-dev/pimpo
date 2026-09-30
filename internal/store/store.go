@@ -119,6 +119,9 @@ func Open(db *sql.DB) (*Store, error) {
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("migrate store: %w", err)
 	}
+	if _, err := db.Exec(progressSchema); err != nil {
+		return nil, fmt.Errorf("migrate store: %w", err)
+	}
 	for _, stmt := range additions {
 		if _, err := db.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return nil, fmt.Errorf("migrate store: %w", err)
@@ -167,6 +170,9 @@ type Settings struct {
 	Model string `json:"model,omitempty"`
 	// Effort is how hard that model thinks; "" uses the default.
 	Effort string `json:"effort,omitempty"`
+	// Push has the watch hear of new items as they happen (Gmail, Slack)
+	// instead of checking every few minutes.
+	Push bool `json:"push,omitempty"`
 }
 
 // Watch is what the routine waits for, with the owner's interval, or nil.

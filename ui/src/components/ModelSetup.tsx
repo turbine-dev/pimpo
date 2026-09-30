@@ -1,12 +1,13 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AudioLines, Brain, Check, ChevronRight, Cpu, ExternalLink, HardDrive, Loader2, Plus, Search, Sparkles, Trash2, X } from 'lucide-react'
+import { AlertTriangle, AudioLines, Brain, Check, ChevronRight, Cpu, ExternalLink, HardDrive, Layers, Loader2, Plus, RefreshCw, Search, Sparkles, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { api, EFFORTS, type CatalogModel, type Effort, type Job, type ModelOption, type ModelTest, type Provider, type Settings } from '../lib/api'
 import { cn } from '../lib/cn'
 import { usd } from '../lib/format'
 import { fill, useT, type TKey } from '../lib/i18n'
 import { LocalModels, Sample } from './LocalModels'
+import { SecretInput } from './SecretInput'
 import { Button, Card, Switch } from './ui'
 
 const field = 'h-9 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -39,12 +40,46 @@ const price = (t: ReturnType<typeof useT>, m: { price_in: number; price_out: num
 
 // useModelOptions lists the models the owner can choose from: Claude Code
 // when installed, Codex when signed in, and their own tested models.
+// For someone the owner limited, only the models they may use are listed.
 export function useModelOptions() {
   const s = useQuery({ queryKey: ['settings'], queryFn: api.settings })
   const info = useQuery({ queryKey: ['models'], queryFn: api.models })
   const found = useQuery({ queryKey: ['models', 'detect'], queryFn: api.detectModels, staleTime: 60_000 })
-  const options = [...(found.data?.claude_code || info.data?.claude_code ? claudeCode : []), ...(found.data?.codex_login ? ['codex'] : []), ...(s.data?.models ?? []).map((m) => m.id)]
-  return { options, auto: info.data?.auto, settings: s.data }
+  const mine = useQuery({ queryKey: ['my-limits'], queryFn: api.myLimits })
+  const house = [...(found.data?.claude_code || info.data?.claude_code ? claudeCode : []), ...(found.data?.codex_login ? ['codex'] : []), ...(s.data?.models ?? []).map((m) => m.id)]
+  const limits = mine.data
+  // A member cannot read the house's settings; their own list says what they have.
+  const options = !limits ? house : limits.all_models ? (house.length ? house : limits.models) : limits.models
+  return { options, house, auto: info.data?.auto, settings: s.data }
+}
+
+// useRetired is the set of the house's models their providers stopped
+// offering.
+export function useRetired() {
+  const q = useQuery({ queryKey: ['models', 'retired'], queryFn: api.retiredModels, staleTime: 60_000 })
+  return new Set(q.data?.retired ?? [])
+}
+
+// RetiredHint suggests switching when the chosen model is gone from its
+// provider; it shows nothing otherwise.
+export function RetiredHint({ model, className }: { model?: string; className?: string }) {
+  const t = useT()
+  const retired = useRetired()
+  if (!model || !retired.has(model)) return null
+  return (
+    <span role="status" className={cn('flex items-start gap-1.5 text-[12px] text-danger', className)}>
+      <AlertTriangle size={13} className="mt-0.5 shrink-0" /> {t('ms.retiredHint', { model: label(model) })}
+    </span>
+  )
+}
+
+// Marks says whether a catalog model is new or retired, and when new
+// without a price, that the owner must give one.
+function Marks({ m }: { m: CatalogModel }) {
+  const t = useT()
+  if (m.retired) return <span className="rounded-full bg-danger-soft px-1.5 text-[10.5px] font-medium text-danger">{t('ms.retired')}</span>
+  if (m.new) return <span className="rounded-full bg-explore-soft px-1.5 text-[10.5px] font-medium text-explore">{t(m.priced || m.free ? 'ms.new' : 'ms.newUnpriced')}</span>
+  return null
 }
 
 // useSettings saves each change at once, on top of the latest saved settings.
@@ -98,6 +133,7 @@ export function ModelSetup() {
                     <EffortSelect value={s.efforts?.[job] ?? ''} className="w-[124px] shrink-0"
                       onChange={(e) => save.mutate((x) => { const ef = { ...x.efforts }; if (e) ef[job] = e as Effort; else delete ef[job]; return { ...x, efforts: ef } })} />
                   </div>
+                  <RetiredHint model={s[key]} />
                   <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
                     <span className="text-ink-3">{t('ms.fallbacks')}</span>
                     {fallbacks.length === 0 && <span className="text-ink-3">{t('ms.noFallback')}</span>}
@@ -125,6 +161,8 @@ export function ModelSetup() {
       </Card>
 
       <AutoChoice s={s} options={options} save={save.mutate} />
+
+      <CompactChoice s={s} save={save.mutate} />
 
       <Card className="p-5">
         <div className="mb-1 flex items-center gap-2 text-[15px] font-medium"><HardDrive size={16} /> {t('ms.here')}</div>
@@ -263,6 +301,34 @@ function AutoChoice({ s, options, save }: { s: Settings; options: string[]; save
   )
 }
 
+// CompactChoice is Anthropic's server-side summary of long conversations:
+// once a chat or job reaches the size set, the older turns are summarized
+// by Anthropic so the conversation keeps going; the summary is counted in
+// the cost.
+function CompactChoice({ s, save }: { s: Settings; save: (c: (s: Settings) => Settings) => void }) {
+  const t = useT()
+  const on = !s.compact_off
+  const [at, setAt] = useState(String(s.compact_at || 150000))
+  return (
+    <Card className="p-5">
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center gap-2 text-[15px] font-medium"><Layers size={16} /> {t('ms.compact')}</div>
+          <p className="text-[13px] text-ink-3">{t('ms.compactText')}</p>
+        </div>
+        <Switch on={on} label={t('ms.compact')} onChange={() => save((x) => ({ ...x, compact_off: on }))} className="mt-0.5" />
+      </div>
+      {on && (
+        <form className="mt-3 flex flex-wrap items-center gap-2 text-[13px]" onSubmit={(e) => { e.preventDefault(); const n = Math.round(Number(at)); if (n >= 50000) save((x) => ({ ...x, compact_at: n === 150000 ? 0 : n })) }}>
+          <label htmlFor="ms-compact-at" className="text-ink-2">{t('ms.compactAt')}</label>
+          <input id="ms-compact-at" type="number" min={50000} max={1000000} step={10000} className={cn(field, 'w-32')} value={at} onChange={(e) => setAt(e.target.value)} />
+          <Button size="sm" type="submit" disabled={Number(at) < 50000 || Number(at) > 1000000}>{t('common.save')}</Button>
+        </form>
+      )}
+    </Card>
+  )
+}
+
 // VoiceChoice picks the default voices: for routines' audio (like the
 // podcast) and for listening to answers in the chat.
 function VoiceChoice({ s, save }: { s: Settings; save: (c: (s: Settings) => Settings) => void }) {
@@ -325,7 +391,7 @@ function VoiceChoice({ s, save }: { s: Settings; save: (c: (s: Settings) => Sett
       {openai && v.data && !v.data.openai_key && <p className="mt-3 text-[12.5px] text-danger">{t('vc.needOpenAI')}</p>}
       {eleven && (
         <form className="mt-3 flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); setEleven.mutate(key.trim()) }}>
-          <input type="password" autoComplete="off" className={cn(field, 'min-w-[240px] flex-1')} value={key} onChange={(e) => setKey(e.target.value)}
+          <SecretInput autoComplete="off" className={cn(field, 'w-full')} box="min-w-[240px] flex-1" value={key} onValue={setKey}
             placeholder={v.data?.elevenlabs_key ? t('models.keySaved') : t('vc.elevenKey')} aria-label={t('vc.elevenKey')} />
           <Button type="submit" size="sm" disabled={!key.trim() || setEleven.isPending}>{setEleven.isPending ? <Loader2 size={13} className="animate-spin" /> : t('ms.connectSee')}</Button>
           <a className="text-[12.5px] underline" href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noreferrer">{t('ms.getKey')}</a>
@@ -359,6 +425,7 @@ function LocalAddresses({ s, save }: { s: Settings; save: (c: (s: Settings) => S
 function Mine({ s, save }: { s: Settings; save: (c: (s: Settings) => Settings) => void }) {
   const t = useT()
   const mine = s.models ?? []
+  const retired = useRetired()
   const test = useMutation({ mutationFn: (m: ModelOption) => api.tryModel(m.id, m.price_in, m.price_out) })
   const remove = (id: string) => save((x) => {
     const back = (v: string, d: string) => (v === id ? d : v)
@@ -372,12 +439,14 @@ function Mine({ s, save }: { s: Settings; save: (c: (s: Settings) => Settings) =
         {mine.map((m) => (
           <li key={m.id} className="flex flex-wrap items-center gap-3 px-3 py-2 text-[13px]">
             <code className="min-w-0 flex-1 truncate font-mono text-[12.5px]">{m.id}</code>
+            {retired.has(m.id) && <span className="rounded-full bg-danger-soft px-1.5 text-[10.5px] font-medium text-danger" title={t('ms.retiredText')}>{t('ms.retired')}</span>}
             <span className="text-[12px] tabular-nums text-ink-3">{m.id.startsWith('opencode:') ? t('ms.ocPrice') : price(t, m)}</span>
             <Button size="sm" variant="ghost" onClick={() => test.mutate(m)} disabled={test.isPending}>{test.isPending && test.variables?.id === m.id ? <Loader2 size={13} className="animate-spin" /> : t('common.test')}</Button>
             <Button size="sm" variant="ghost" aria-label={t('models.remove', { id: m.id })} onClick={() => remove(m.id)}><Trash2 size={13} /></Button>
           </li>
         ))}
       </ul>
+      {mine.some((m) => retired.has(m.id)) && <p className="mt-2 text-[12.5px] text-ink-3">{t('ms.retiredText')}</p>}
       {test.data && <TestResult r={test.data} />}
     </Card>
   )
@@ -468,6 +537,11 @@ function Picker({ provider, local, onClose, save, s }: { provider: Provider; loc
   const [prices, setPrices] = useState<Record<string, { in: string; out: string }>>({})
   const [tried, setTried] = useState<Record<string, ModelTest>>({})
   const catalog = useQuery({ queryKey: ['models', 'catalog', provider.id], queryFn: () => api.modelCatalog(provider.id), enabled: !local && hasKey, retry: false })
+  // lookAgain asks the provider for its list now instead of the day's copy.
+  const lookAgain = useMutation({
+    mutationFn: () => api.modelCatalog(provider.id, true),
+    onSuccess: (list) => { qc.setQueryData(['models', 'catalog', provider.id], list); qc.invalidateQueries({ queryKey: ['models', 'retired'] }) },
+  })
   const connect = useMutation({
     mutationFn: async () => {
       if (custom) save((x) => ({ ...x, custom_url: url.trim() }))
@@ -518,7 +592,7 @@ function Picker({ provider, local, onClose, save, s }: { provider: Provider; loc
             <form className="space-y-2 border-b border-line p-5" onSubmit={(e) => { e.preventDefault(); connect.mutate() }}>
               {custom && <input className={cn(field, 'w-full')} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://meu-servidor.exemplo/v1" aria-label={t('ms.customUrl')} />}
               <div className="flex flex-wrap items-center gap-2">
-                <input type="password" autoComplete="off" className={cn(field, 'min-w-[220px] flex-1')} value={key} onChange={(e) => setKey(e.target.value)}
+                <SecretInput autoComplete="off" className={cn(field, 'w-full')} box="min-w-[220px] flex-1" value={key} onValue={setKey}
                   placeholder={info.data?.keys[provider.id] ? t('models.keySaved') : custom ? t('ms.keyOptional') : t('models.keyNew')} aria-label={t('models.keyOf', { provider: provider.name })} />
                 <Button type="submit" size="sm" variant={hasKey ? 'secondary' : 'primary'} disabled={(!key.trim() && !(custom && url.trim() !== (s.custom_url ?? ''))) || connect.isPending}>
                   {connect.isPending ? <Loader2 size={14} className="animate-spin" /> : hasKey ? t('ms.changeKey') : t('ms.connectSee')}
@@ -536,10 +610,18 @@ function Picker({ provider, local, onClose, save, s }: { provider: Provider; loc
               <p className="text-[13px] text-danger">{catalog.error.message}</p>
             ) : (
               <>
-                <label className="relative mb-3 block">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
-                  <input className={cn(field, 'w-full pl-8')} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('ms.search')} aria-label={t('ms.search')} />
-                </label>
+                <div className="mb-3 flex items-center gap-2">
+                  <label className="relative block min-w-0 flex-1">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+                    <input className={cn(field, 'w-full pl-8')} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('ms.search')} aria-label={t('ms.search')} />
+                  </label>
+                  {!local && (
+                    <Button size="sm" variant="ghost" onClick={() => lookAgain.mutate()} disabled={lookAgain.isPending} title={t('ms.lookAgainText')}>
+                      <RefreshCw size={13} className={cn(lookAgain.isPending && 'animate-spin')} /> {t('ms.lookAgain')}
+                    </Button>
+                  )}
+                </div>
+                {lookAgain.error && <p className="mb-2 text-[12.5px] text-danger">{lookAgain.error.message}</p>}
                 <ul className="divide-y divide-line rounded-xl border border-line">
                   {list.slice(0, 200).map((m) => {
                     const p = priceOf(m)
@@ -549,7 +631,7 @@ function Picker({ provider, local, onClose, save, s }: { provider: Provider; loc
                       <li key={m.id} className="px-3 py-2.5 text-[13px]">
                         <div className="flex flex-wrap items-center gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="truncate font-medium">{m.name}</div>
+                            <div className="flex items-center gap-1.5"><span className="truncate font-medium">{m.name}</span><Marks m={m} /></div>
                             {m.name !== m.id && <code className="block truncate text-[11.5px] text-ink-3">{m.id}</code>}
                           </div>
                           {m.priced || m.free || provider.local ? (
@@ -562,7 +644,7 @@ function Picker({ provider, local, onClose, save, s }: { provider: Provider; loc
                                 value={prices[m.id]?.out ?? ''} onChange={(e) => setPrices({ ...prices, [m.id]: { in: prices[m.id]?.in ?? '', out: e.target.value } })} />
                             </span>
                           )}
-                          {added && !r ? <span className="flex items-center gap-1 text-[12px] text-read"><Check size={13} /> {t('ms.added')}</span> : (
+                          {m.retired ? null : added && !r ? <span className="flex items-center gap-1 text-[12px] text-read"><Check size={13} /> {t('ms.added')}</span> : (
                             <Button size="sm" disabled={!p || tryIt.isPending} onClick={() => tryIt.mutate(m)} title={!p ? t('ms.needPrice') : undefined}>
                               {tryIt.isPending && tryIt.variables?.id === m.id ? <Loader2 size={13} className="animate-spin" /> : <><Plus size={13} /> {t('ms.testUse')}</>}
                             </Button>

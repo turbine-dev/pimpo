@@ -257,6 +257,29 @@ func TestSecurityHeaders(t *testing.T) {
 			t.Errorf("%s: framing allowed", path)
 		}
 	}
+	// Only the Mini App page may be framed, only by Telegram Web, and only
+	// it may load Telegram's script.
+	resp, err := http.Get(ts.URL + MiniAppPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	csp := resp.Header.Get("Content-Security-Policy")
+	for _, want := range []string{"frame-ancestors https://web.telegram.org", "script-src 'self' https://telegram.org;", "object-src 'none'", "default-src 'self'"} {
+		if !strings.Contains(csp, want) {
+			t.Errorf("mini app: policy %q lacks %q", csp, want)
+		}
+	}
+	if !strings.HasSuffix(csp, "frame-ancestors https://web.telegram.org") || resp.Header.Get("X-Frame-Options") != "" {
+		t.Errorf("mini app cannot be framed by Telegram Web: %q %q", csp, resp.Header.Get("X-Frame-Options"))
+	}
+	for _, path := range []string{"/tg/app/other", "/tg", "/api/health", "/tg/app.js"} {
+		resp, _ := http.Get(ts.URL + path)
+		resp.Body.Close()
+		if c := resp.Header.Get("Content-Security-Policy"); strings.Contains(c, "telegram") || resp.Header.Get("X-Frame-Options") != "DENY" {
+			t.Errorf("%s: Telegram's exceptions leaked: %q", path, c)
+		}
+	}
 	if p := policy(`evil.example; script-src *`); strings.Contains(p, "evil") {
 		t.Fatalf("a strange Host got into the policy: %s", p)
 	}
@@ -305,5 +328,25 @@ func TestSetToken(t *testing.T) {
 	s.SetToken("new")
 	if get("tok") != 401 || get("new") != 200 {
 		t.Fatal("the rotated token did not replace the old one")
+	}
+}
+
+// A narrowed token opens only the routes it was given, even the owner's.
+func TestNarrowedTokens(t *testing.T) {
+	s, ts := newTest(t)
+	s.Handle("GET /api/one", func(w http.ResponseWriter, r *http.Request) { WriteJSON(w, 200, "ok") })
+	s.Handle("GET /api/two", func(w http.ResponseWriter, r *http.Request) { WriteJSON(w, 200, "ok") })
+	s.Narrow = func(token, pattern string) bool { return pattern == "GET /api/one" }
+	for path, want := range map[string]int{"/api/one": 200, "/api/two": 403} {
+		req, _ := http.NewRequest("GET", ts.URL+path, nil)
+		req.Header.Set("Authorization", "Bearer tok")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != want {
+			t.Errorf("%s: %d, want %d", path, resp.StatusCode, want)
+		}
 	}
 }

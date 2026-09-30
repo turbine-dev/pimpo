@@ -111,6 +111,19 @@ func serve(args []string) error {
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		return err
 	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if os.Getenv("PIMPO_EXIT_WITH_PARENT") != "" {
+		go exitWithParent(ctx, stop)
+	}
+	if err := checkDatabase(home); err != nil {
+		return err
+	}
+	if rec, ok := snapshot.Recovering(home); ok {
+		if err := recoveryMode(ctx, home, *addr, rec); err != nil || ctx.Err() != nil {
+			return err
+		}
+	}
 	if pendingImport(home) {
 		keep, err := applyImport(home, vault.OSKey(home))
 		if err != nil {
@@ -129,21 +142,15 @@ func serve(args []string) error {
 		return err
 	}
 	defer store.Close()
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	if os.Getenv("PIMPO_DESKTOP_NOTIFY") != "" {
 		desktop.KnownPath()
 		go desktop.ShellPath()
-	}
-	if os.Getenv("PIMPO_EXIT_WITH_PARENT") != "" {
-		go exitWithParent(ctx, stop)
 	}
 	if err := guardVersion(ctx, store, home); err != nil {
 		return err
 	}
 	os.WriteFile(filepath.Join(home, "pimpo.pid"), []byte(strconv.Itoa(os.Getpid())), 0o600)
 	defer os.Remove(filepath.Join(home, "pimpo.pid"))
-	go dailySnapshots(ctx, store, home)
 
 	token, created, err := sessionToken(ctx, store)
 	if err != nil {
@@ -180,6 +187,7 @@ func serve(args []string) error {
 	if err := a.Start(ctx); err != nil {
 		return err
 	}
+	go dailySnapshots(ctx, a)
 	srv := a.Server
 	store.Put(ctx, listenKey, ln.Addr().String())
 	if os.Getenv("PIMPO_TOKEN") == "" {
@@ -251,13 +259,15 @@ func applyRestore(home, name string) error {
 	return snapshot.Restore(home, name, store.DB())
 }
 
-func dailySnapshots(ctx context.Context, s *event.Store, home string) {
+// dailySnapshots copies the data aside every day; a database that fails
+// its check is reported instead of copied.
+func dailySnapshots(ctx context.Context, a *app.App) {
 	t := time.NewTicker(24 * time.Hour)
 	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
-			snapshot.Create(s.DB(), home, "daily")
+			a.Snapshot(ctx, "daily")
 		case <-ctx.Done():
 			return
 		}
@@ -285,9 +295,10 @@ func snapshots(cmd string, args []string) error {
 		return err
 	}
 	home := dataDir(*dir)
+	rec, recovering := snapshot.Recovering(home)
 	switch cmd {
 	case "snapshots":
-		list, err := snapshot.List(home)
+		list, err := snapshot.Checked(home)
 		if err != nil {
 			return err
 		}
@@ -295,10 +306,17 @@ func snapshots(cmd string, args []string) error {
 			fmt.Println("No snapshots yet.")
 		}
 		for _, s := range list {
-			fmt.Printf("%s  %s  %.1f MB\n", s.Name, s.When.Local().Format("02/01/2006 15:04"), float64(s.Bytes)/1e6)
+			damaged := ""
+			if s.Damaged {
+				damaged = "  (damaged, cannot be restored)"
+			}
+			fmt.Printf("%s  %s  %.1f MB%s\n", s.Name, s.When.Local().Format("02/01/2006 15:04"), float64(s.Bytes)/1e6, damaged)
 		}
 		return nil
 	case "snapshot":
+		if recovering {
+			return errRecovering
+		}
 		store, err := event.Open(filepath.Join(home, "pimpo.db"))
 		if err != nil {
 			return err
@@ -316,6 +334,13 @@ func snapshots(cmd string, args []string) error {
 		}
 		if running(home) {
 			return errors.New("stop Pimpo before restoring")
+		}
+		if recovering {
+			if err := rec.RecoverFrom(home, fs.Arg(0)); err != nil {
+				return err
+			}
+			fmt.Println("Restored", fs.Arg(0), "- the damaged database stays in", filepath.Dir(rec.Quarantined(home)))
+			return nil
 		}
 		store, err := event.Open(filepath.Join(home, "pimpo.db"))
 		if err != nil {

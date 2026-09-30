@@ -39,6 +39,12 @@ type Link interface {
 	Check(ctx context.Context) error
 }
 
+// Editor is a link that can change a message it sent, by the id
+// Replier.SendMessage gave: a progress message kept up to date in place.
+type Editor interface {
+	Edit(ctx context.Context, to, id, text string) error
+}
+
 // Typer is a link that can show "typing…" to a person for a few seconds.
 type Typer interface {
 	Typing(ctx context.Context, to string) error

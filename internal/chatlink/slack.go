@@ -23,9 +23,23 @@ type Slack struct {
 	BotToken string
 	AppToken string
 	API      string
+	// OnEvent, when set, hears messages in the channels the app is in
+	// and mentions of it, for routines that watch Slack.
+	OnEvent func(Event)
 
 	mu  sync.Mutex
 	dms map[string]string
+}
+
+// Event is a message in a Slack channel the app is in, or a mention of
+// the app. Its text is someone else's words: data for routines.
+type Event struct {
+	Channel  string
+	User     string
+	Text     string
+	TS       string
+	ThreadTS string
+	Mention  bool
 }
 
 func (s *Slack) Name() string { return "slack" }
@@ -105,6 +119,7 @@ func (s *Slack) Run(ctx context.Context, on func(Inbound)) error {
 					ThreadTS    string `json:"thread_ts"`
 					BotID       string `json:"bot_id"`
 					Subtype     string `json:"subtype"`
+					TS          string `json:"ts"`
 				} `json:"event"`
 			} `json:"payload"`
 		}
@@ -121,7 +136,16 @@ func (s *Slack) Run(ctx context.Context, on func(Inbound)) error {
 			return errors.New("Slack asked to reconnect")
 		case "events_api":
 			e := env.Payload.Event
-			if e.Type != "message" || e.ChannelType != "im" || e.BotID != "" || e.Subtype != "" || strings.TrimSpace(e.Text) == "" {
+			if e.BotID != "" || e.Subtype != "" || strings.TrimSpace(e.Text) == "" {
+				continue
+			}
+			if e.Type == "app_mention" || (e.Type == "message" && (e.ChannelType == "channel" || e.ChannelType == "group")) {
+				if s.OnEvent != nil {
+					s.OnEvent(Event{Channel: e.Channel, User: e.User, Text: e.Text, TS: e.TS, ThreadTS: e.ThreadTS, Mention: e.Type == "app_mention"})
+				}
+				continue
+			}
+			if e.Type != "message" || e.ChannelType != "im" {
 				continue
 			}
 			s.mu.Lock()
@@ -141,20 +165,44 @@ func (s *Slack) Send(ctx context.Context, to, text string) error {
 	return err
 }
 
-func (s *Slack) SendMessage(ctx context.Context, to, text string) ([]string, error) {
+// dm is the private conversation with a person.
+func (s *Slack) dm(ctx context.Context, to string) (string, error) {
 	s.mu.Lock()
 	ch := s.dms[to]
 	s.mu.Unlock()
-	if ch == "" {
-		var open struct {
-			Channel struct {
-				ID string `json:"id"`
-			} `json:"channel"`
-		}
-		if err := s.call(ctx, "conversations.open", s.BotToken, map[string]any{"users": to}, &open); err != nil {
-			return nil, err
-		}
-		ch = open.Channel.ID
+	if ch != "" {
+		return ch, nil
+	}
+	var open struct {
+		Channel struct {
+			ID string `json:"id"`
+		} `json:"channel"`
+	}
+	if err := s.call(ctx, "conversations.open", s.BotToken, map[string]any{"users": to}, &open); err != nil {
+		return "", err
+	}
+	s.mu.Lock()
+	if s.dms == nil {
+		s.dms = map[string]string{}
+	}
+	s.dms[to] = open.Channel.ID
+	s.mu.Unlock()
+	return open.Channel.ID, nil
+}
+
+// Edit changes a message Pimpo sent, named by its ts.
+func (s *Slack) Edit(ctx context.Context, to, id, text string) error {
+	ch, err := s.dm(ctx, to)
+	if err != nil {
+		return err
+	}
+	return s.call(ctx, "chat.update", s.BotToken, map[string]any{"channel": ch, "ts": id, "text": text}, nil)
+}
+
+func (s *Slack) SendMessage(ctx context.Context, to, text string) ([]string, error) {
+	ch, err := s.dm(ctx, to)
+	if err != nil {
+		return nil, err
 	}
 	var sent struct {
 		TS string `json:"ts"`

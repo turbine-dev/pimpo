@@ -5,7 +5,8 @@ import { Link, useParams } from 'react-router-dom'
 import { api, type LongJob, type JobPart } from '../lib/api'
 import { useT } from '../lib/i18n'
 import { capabilityLabel } from '../components/RoutineCard'
-import { Button, Card } from '../components/ui'
+import { ProgressCard, useProgress } from '../components/ProgressCard'
+import { Button, Card, Switch } from '../components/ui'
 import { cn } from '../lib/cn'
 
 const busy = (j?: LongJob) => j?.state === 'running' || j?.state === 'reporting'
@@ -61,8 +62,11 @@ function JobDetail({ id }: { id: string }) {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['job', id], queryFn: () => api.job(id), refetchInterval: (q) => (busy(q.state.data) ? 2000 : false) })
   const done = () => { qc.invalidateQueries({ queryKey: ['job', id] }); qc.invalidateQueries({ queryKey: ['jobs'] }) }
-  const start = useMutation({ mutationFn: () => api.startJob(id), onSuccess: done })
+  const [follow, setFollow] = useState(false)
+  const start = useMutation({ mutationFn: () => api.startJob(id, follow), onSuccess: done })
   const stop = useMutation({ mutationFn: () => api.stopJob(id), onSuccess: done })
+  const followJob = useMutation({ mutationFn: (on: boolean) => api.followJob(id, on), onSuccess: done })
+  const progress = useProgress().data?.find((p) => p.id === `job:${id}`)
   const j = q.data
   if (!j) return <div className="mx-auto max-w-3xl"><Loader2 className="animate-spin" /></div>
   const pct = Math.min(100, Math.round((j.spent_usd / j.budget_usd) * 100))
@@ -80,6 +84,16 @@ function JobDetail({ id }: { id: string }) {
         {(j.state === 'planned' || j.state === 'running') && <Button size="sm" variant="ghost" onClick={() => stop.mutate()} disabled={stop.isPending}><Square size={13} /> {t('job.stop')}</Button>}
       </div>
       {j.state === 'planned' && <p className="text-[13px] text-ink-2">{t('job.review')}</p>}
+      {progress && <ProgressCard p={progress} link={false} />}
+      {(j.state === 'planned' || busy(j)) && (
+        <div className="flex items-start gap-3">
+          <Switch on={j.state === 'planned' ? follow : !!j.follow} onChange={(on) => (j.state === 'planned' ? setFollow(on) : followJob.mutate(on))} label={t('progress.follow')} disabled={followJob.isPending} />
+          <div className="text-[13px]">
+            <div>{t('progress.follow')}</div>
+            <div className="text-[12px] text-ink-3">{t('progress.followHint')}</div>
+          </div>
+        </div>
+      )}
       {j.error && <p className="text-[13px] text-danger">{j.error}</p>}
       <div className="space-y-2">
         {j.parts.map((p) => <Part key={p.id} p={p} />)}

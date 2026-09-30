@@ -280,23 +280,23 @@ Search earlier conversations by words or an exact phrase, each person only in th
 
 ### 8.4 Questions as cards · M
 
-A routine's question offers its choices as buttons in the app and on every channel with buttons, and a typed answer is checked against them.
+A routine's question offers its choices as buttons in the app and on every channel with buttons, and a typed answer is checked against them. *Done.*
 
 ### 8.5 Settings history · S
 
-Every change to rules, budgets, connections, models and people is recorded with who made it and when, secrets hidden, and can be undone.
+Every change to rules, budgets, connections, models and people is recorded with who made it and when, secrets hidden, and can be undone. *Done.*
 
 ### 8.6 Database integrity · S
 
-Pimpo checks its database at start and before every snapshot. A damaged one is set aside, the last good snapshot is offered, and nothing is written over it.
+Pimpo checks its database at start and before every snapshot. A damaged one is set aside, the last good snapshot is offered, and nothing is written over it. *Done.*
 
 ### 8.7 Private credential prompts · S
 
-When a routine or a connection needs a password or key, Pimpo asks for it in a form of its own that writes straight to the vault; it never passes through a chat, a channel, a model or the log.
+When a routine or a connection needs a password or key, Pimpo asks for it in a form of its own that writes straight to the vault; it never passes through a chat, a channel, a model or the log. *Done.*
 
 ### 8.8 Lasting progress · S
 
-Long jobs and routine runs show progress that survives a reload and follows the person to the phone and the channels.
+Long jobs and routine runs show progress that survives a reload and follows the person to the phone and the channels. *Done.*
 
 ---
 
@@ -306,35 +306,35 @@ Goal: Pimpo meets people in the apps they already use and learns without being t
 
 ### 9.1 A Telegram dashboard · M
 
-A Telegram Mini App with the person's approvals, routines, spending, questions and their M7 widgets, signed in as that person.
+A Telegram Mini App with the person's approvals, routines, spending, questions and their M7 widgets, signed in as that person. *Done.*
 
 ### 9.2 Push triggers · M
 
-Gmail (through Google's push notifications), Slack and GitHub start routines as events happen, instead of Pimpo checking every few minutes. The events reach routines as data, like everything read from outside.
+Gmail (through Google's push notifications), Slack and GitHub start routines as events happen, instead of Pimpo checking every few minutes. The events reach routines as data, like everything read from outside. *Done.*
 
 ### 9.3 Who owns a memory · S
 
-Each fact shows where it came from (a conversation, an email, a routine), and a person can delete everything derived from one source.
+Each fact shows where it came from (a conversation, an email, a routine), and a person can delete everything derived from one source. *Done.*
 
 ### 9.4 Lessons to review · M
 
-When Pimpo notices something worth keeping (a preference, a routine it could compile, a fix that worked), it proposes it as a lesson; the person accepts, edits or rejects each one in one place. Nothing becomes a rule or a routine without that.
+When Pimpo notices something worth keeping (a preference, a routine it could compile, a fix that worked), it proposes it as a lesson; the person accepts, edits or rejects each one in one place. Nothing becomes a rule or a routine without that. *Done.*
 
 ### 9.5 Models and spending per person · S
 
-The owner chooses which models each person and each assistant may use, and a daily limit per person inside the house's.
+The owner chooses which models each person and each assistant may use, and a daily limit per person inside the house's. *Done.*
 
 ### 9.6 A live model catalog · S
 
-The list of models comes from the providers themselves, with prices, and long conversations with Anthropic use its server-side context compaction.
+The list of models comes from the providers themselves, with prices, and long conversations with Anthropic use its server-side context compaction. *Done.*
 
 ### 9.7 Outside password managers · M
 
-Secrets can live in 1Password or HashiCorp Vault; Pimpo keeps only a reference and reads the value when a connector needs it.
+Secrets can live in 1Password or HashiCorp Vault; Pimpo keeps only a reference and reads the value when a connector needs it. *Done.*
 
 ### 9.8 One list of what needs you · S
 
-Approvals, questions and failed routines in one list, newest and most urgent first, on the app and the phone.
+Approvals, questions and failed routines in one list, newest and most urgent first, on the app and the phone. *Done.*
 
 ### To study before planning
 

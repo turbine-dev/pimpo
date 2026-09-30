@@ -10,6 +10,7 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 - [Settings](#settings)
 - [Models](#models)
 - [Channels](#channels)
+- [Push triggers](#push-triggers)
 - [Network and access](#network-and-access)
 - [Local models](#local-models)
 - [Backups and moving](#backups-and-moving)
@@ -130,6 +131,8 @@ Pimpo was called Zodim, and Vigia before that. When `~/.pimpo` does not exist ye
 | `tailscale/` | The state of the built-in Tailscale node, when **From anywhere** is on. |
 | `snapshots/` | Local snapshots: a copy of `pimpo.db` and `memory/` each. The last 10 are kept. |
 | `restore-pending` | A snapshot chosen in the web app, applied at the next start. |
+| `quarantine/` | Databases that failed their check at start, each in a folder named for the time, with its journal and the reason. Pimpo never deletes them. |
+| `recovery.json` | Present while Pimpo is in recovery: the quarantine folder, the reason and the recovery link's token. |
 | `import-pending/` | A backup imported from the web app, applied at the next start. Its secrets wait there only until then. |
 | `before-import-<date>/` | What was here before an import. Delete it when you no longer need it. |
 | `pimpo.pid` | The running server's process id. `import`, `restore` and `migrate --apply` use it to refuse while Pimpo runs. |
@@ -158,6 +161,16 @@ Settings are stored in the database and changed in **Settings** in the app. Almo
 | Daily limit, in US dollars | `1` | **Settings › General › Daily spending limit**, and the welcome screen | Checked before every paid model call and every paid voice. A call that could pass it is refused. `0` means no limit. |
 
 The limit is stored apart from the other settings and changed with `PUT /api/budget {"daily_usd": 5}`. The day follows `zone`. Calls paid by a subscription (below) do not count. After 80% of the limit, the automatic choice stops using the strong model and the high thinking level.
+
+### Models and spending per person
+
+| Setting | Default | Where | What it does |
+|---|---|---|---|
+| A person's models | all of the house's | **People › Models and spending** | The models the person may use. Every call for them (chat, routine, job, judgment, written text) uses only a model that the house, the person and the assistant answering all allow; the automatic choice falls back to the cheapest of them, and a model chosen by hand outside them is refused. |
+| A person's daily limit, in US dollars | none; `0.25` for a guest | **People › Models and spending** | Checked before every paid call made for that person, together with the house's limit. It must be at most the house's. `0` (empty) means none of their own; for a guest it means the guest default. |
+| An assistant's models | all of them | **Assistants › Models it may use** | Narrows further what a conversation with that assistant may use. |
+
+They are stored with the person (`people` in the key-value table) and the assistant (`assistants`), and changed with `PUT /api/people/{id}/limits {"models": ["haiku"], "daily_usd": 0.5}` (owner only) and the assistant's `models`. `GET /api/me/limits` gives each person their own: models, limit and today's spending. Every `cost.recorded` event names the person it was for; costs from before people existed are the owner's. The owner's limits are the house's.
 
 ### Models per job
 
@@ -219,6 +232,7 @@ The OpenAI voice uses your OpenAI provider key and is billed per character, chec
 |---|---|---|---|
 | `suggest_off` | `false` | **Settings › Notifications › Suggestions** | Stops the daily suggestions. When on, once a day after 9:00 (only on Mondays after three rounds nobody took up) the judgment model sees metadata only (senders and subjects of the last 21 days' email, titles of the next 14 days' events, the routines and those that failed) and may offer up to two routines, within the daily limit and at most $0.02 a round. |
 | `learn_off` | `false` | **Settings › Notifications › Learn my preferences** | Stops learning. When on, once a week the judgment model sees only the owner's own requests and decisions of the last seven days (approvals denied or made permanent, suggestions taken or declined), never what the agent read, and may add up to five preferences to memory as learned, at most $0.03 a round. A preference the owner removes is not learned again. `POST /api/learn` runs a round at once. |
+| `lesson_digest_off` | `false` | **Settings › Notifications › Weekly lessons digest** | Stops the weekly notice of lessons waiting. When on, after 10:00 and at most once every seven days, each person with lessons waiting gets a notice with how many and, when Tailscale or the home network is on, a link to **Lessons**. It has no buttons and no numbers to answer: lessons are decided only on the page. It is a *task* notice, so muting tasks silences it too. |
 | `labs_on` | none | **Settings › Labs › New powers** | Features that give the agent more reach and start off: `code_sandbox` (**Run code in isolation**: the `code.run` capability, which needs Docker; see [RFC 0001](rfcs/0001-code-sandbox.md)) and `browser` (**Use a browser**). |
 | `mute` | none | **Settings › Notifications** | Kinds of notices kept off Telegram, WhatsApp and system notifications: `task` (**Task results**), `failure` (**Routines that failed**), `backup` (**Backup problems**). They stay in **Needs you**. Approval requests cannot be silenced. |
 | `email_channel` | `false` | **Settings › Notifications › Ask by email** | Checks your mailbox every minute for messages you sent to yourself with `Pimpo:` in the subject, and treats each as a request. Only your own address counts. |
@@ -266,6 +280,17 @@ Paste a key in **Settings › Models › Providers** and choose among the provid
 
 All but Anthropic use OpenAI's chat completions API. Prices come from OpenRouter's public catalog of list prices. A model the catalog does not know needs its price typed in: without a price the model does not run, because the daily limit counts every call. A call also stops if it would cost more than it is allowed.
 
+The list of models comes from each provider's own `GET /models` (Anthropic's in pages; OpenRouter's includes prices), asked with the key in the vault. It is kept for a day (a minute for Ollama and LM Studio), asked again with `If-None-Match` / `If-Modified-Since` so an unchanged list costs a 304, and **Look again** in the provider's list (or `GET /api/models/catalog/{provider}?fresh=1`) asks at once. Once a day Pimpo also looks at the providers you have models from. Your own models keep the price you set. A model a provider starts listing after the first look is marked **New** for two weeks (**New · price unknown** when no catalog price is found; it still needs your price before it runs). One of your models a provider stops listing is marked **Retired**; jobs, chats and routines that use it suggest switching, and you are told once if a job uses it. `GET /api/models/retired` lists them. Only a list the provider actually returned retires a model; a provider that cannot be reached changes nothing.
+
+### Anthropic compaction
+
+| Setting | Default | Where | What it does |
+|---|---|---|---|
+| `compact_off` | `false` | **Settings › Models › Summarize long conversations** | Stops Anthropic's server-side compaction. |
+| `compact_at` | `0` (150000) | **Starts at (tokens)** | Input size where Anthropic summarizes the older turns; 50000 to 1000000. |
+
+With an Anthropic API model, once a conversation or job has grown to half of `compact_at`, requests carry the `compact-2026-01-12` beta and `context_management` with a `compact_20260112` edit triggered at `compact_at` input tokens. Anthropic then replaces the older turns with a summary block, which Pimpo sends back as it came. The summary's own tokens (`usage.iterations` of type `compaction`, which the top-level usage leaves out) are counted at the model's prices. A model that refuses the beta answers without it.
+
 ### Subscription or money
 
 Some backends are paid by a subscription you already have. Pimpo asks each CLI how it is signed in, at most every ten minutes:
@@ -293,6 +318,32 @@ Channels are set up in **Connections**; each card says what to create and what t
 
 Only the paired owner is answered on Slack, Discord and Signal; strangers get nothing. A channel that keeps failing for three minutes is reported on the others.
 
+## Push triggers
+
+A routine that watches Gmail or Slack can hear of new items as they happen instead of checking every few minutes (its trigger settings: **Hear of it as it happens**). A GitHub repository can start a routine through its own webhook. While a push is live the routine is still checked once an hour, in case a push was lost; when push is not set up, or a Gmail watch lapses, it goes back to checking at its own interval.
+
+### Gmail (Google Pub/Sub)
+
+Gmail push works for a mailbox signed in with Google in **Connections** (today, the administrator's; mailboxes connected with an IMAP password keep polling). Each person's watch is for their own mailbox and wakes only their routines. The administrator sets up Google Cloud once, in the same project as the OAuth client used to sign in:
+
+1. Enable the **Gmail API** and the **Cloud Pub/Sub API** in the project.
+2. Create a topic: `gcloud pubsub topics create pimpo-gmail`.
+3. Let Gmail publish to it: `gcloud pubsub topics add-iam-policy-binding pimpo-gmail --member=serviceAccount:gmail-api-push@system.gserviceaccount.com --role=roles/pubsub.publisher`.
+4. Create a service account for the push to sign as: `gcloud iam service-accounts create pimpo-push`.
+5. Give Pimpo a public https address: Tailscale with Funnel in **Settings › Phone**. The push address is that address followed by `/push/gmail` (shown in the routine's settings).
+6. Create the push subscription with authentication: `gcloud pubsub subscriptions create pimpo-gmail-push --topic=pimpo-gmail --push-endpoint=https://YOUR-NAME.ts.net/push/gmail --push-auth-service-account=pimpo-push@PROJECT.iam.gserviceaccount.com`. Leave the audience at its default (the push address).
+7. In Pimpo, on a routine that watches Gmail, turn on **Hear of it as it happens** and enter the topic (`projects/PROJECT/topics/pimpo-gmail`) and the service account (`pimpo-push@PROJECT.iam.gserviceaccount.com`).
+
+The setup is kept as `push.gmail` (topic, account and an optional audience, if the subscription uses a custom one) and changed with `PUT /api/push/gmail`, the administrator's only. Pimpo starts a watch for each person who has a routine with push on, renews it every day (Gmail's last 7 days) and stops it when no routine wants it. Every push must carry a Google-signed ID token for that audience and service account; the push only names a mailbox, and Pimpo asks Gmail itself (with that person's token) what reached the inbox.
+
+### Slack
+
+The Slack link is the administrator's (see [Channels](#channels)). For routines that react to Slack, also subscribe the app to `message.channels` (and `message.groups` for private channels) and `app_mention`, give the bot `channels:history` (`groups:history`) and `app_mentions:read`, and add the app to the channels. Messages arrive over the Socket Mode connection already open; they are kept (14 days) only while a routine watches `slack.messages`, and only the administrator's routines read them.
+
+### GitHub
+
+On the routine's page, turn on **Start from GitHub**: Pimpo shows the address (`/github-hook/<routine>` on the public address) and a secret, once. In the repository's **Settings › Webhooks**, add the address with content type `application/json` and the secret, and choose the events. **New secret** replaces it at once. Deliveries must be signed with the secret (`X-Hub-Signature-256`), carry at most 1 MB, and each delivery id starts the routine once.
+
 ## Network and access
 
 For a server (Docker or systemd) and reaching it safely from elsewhere, see [SELF_HOSTING.md](SELF_HOSTING.md).
@@ -303,7 +354,7 @@ For a server (Docker or systemd) and reaching it safely from elsewhere, see [SEL
 
 ### Logging in
 
-The first time it starts, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`; `pimpo token` prints it again and `pimpo token rotate` replaces it. Opening it sets an http-only, same-site session cookie for a year. The token is created once and kept in the database, so the link stays valid across restarts until rotated; `PIMPO_TOKEN` replaces it. A link the owner makes for someone else is an invite: it works once, within 15 minutes, and opens a session with a token of its own; the person sees the device in **Account** and in their activity, and can sign it out there. Requests that change something with the browser's cookie must come from Pimpo's own page (the `Origin`, or `Sec-Fetch-Site`, must match the address), and JSON bodies must say `Content-Type: application/json`; clients that send `Authorization: Bearer` are exempt. Every answer carries a `Content-Security-Policy` that allows only Pimpo's own scripts and forbids framing. Every API call needs the cookie or `Authorization: Bearer <token>`, with the session token or a device token. The web app's files, `/api/health` and routes that check their own credential (the WhatsApp webhook, routine webhooks at `/hook/…`, the Google and Spotify sign-in callbacks, the per-exploration MCP endpoint) are the only ones reachable without it.
+The first time it starts, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`; `pimpo token` prints it again and `pimpo token rotate` replaces it. Opening it sets an http-only, same-site session cookie for a year. The token is created once and kept in the database, so the link stays valid across restarts until rotated; `PIMPO_TOKEN` replaces it. A link the owner makes for someone else is an invite: it works once, within 15 minutes, and opens a session with a token of its own; the person sees the device in **Account** and in their activity, and can sign it out there. Requests that change something with the browser's cookie must come from Pimpo's own page (the `Origin`, or `Sec-Fetch-Site`, must match the address), and JSON bodies must say `Content-Type: application/json`; clients that send `Authorization: Bearer` are exempt. Every answer carries a `Content-Security-Policy` that allows only Pimpo's own scripts and forbids framing (the Telegram Mini App page is the one exception, below). Every API call needs the cookie or `Authorization: Bearer <token>`, with the session token or a device token. The web app's files, `/api/health` and routes that check their own credential (the WhatsApp webhook, routine webhooks at `/hook/…`, the Google and Spotify sign-in callbacks, the per-exploration MCP endpoint, the Telegram Mini App sign-in) are the only ones reachable without it.
 
 ### Phones and other devices
 
@@ -320,6 +371,7 @@ The first time it starts, Pimpo prints a link: `http://127.0.0.1:7788/auth?token
 - **Passkeys.** In **Account** (the menu under your name), each person adds passkeys for themselves. Signing in with one opens a session of theirs, listed with the devices as `Passkey · <name>`. A passkey belongs to the address where it was made: `localhost` on this computer, or an https address (Tailscale's, or your own). Browsers do not allow passkeys on a bare IP address, so the home-network address (`http://192.168.x.x`) keeps using the device link, and the desktop app's own window (which opens Pimpo at `127.0.0.1`, in a system view without passkeys) does not offer them: add one from a browser at `http://localhost:7788`. Pimpo offers a passkey only where it can work. Pimpo stores only public keys (`passkeys` in the database).
 - **Expiry.** A paired device unused for 180 days, and a passkey session unused for 30, no longer opens Pimpo.
 - **Wrong sign-ins.** Past 20 wrong tokens or links in 10 minutes from one address, further wrong attempts wait a second and get HTTP 429. Requests without any credential do not count, and a valid token always works.
+- **Telegram Mini App.** `POST /api/tg/session` trades the `initData` Telegram gives the Mini App at `/tg/app` for a session: Pimpo checks Telegram's signature with the bot token (`telegram.token`), refuses data signed more than an hour ago, and opens a session of the person who paired that Telegram account (the owner or anyone in **People**), listed with the devices as `Telegram Mini App`. The session lasts one hour, opens only the Mini App's routes (state, approvals, questions, routines, costs, dashboards and widgets) within what the person may use anyway, and is sent as `Authorization: Bearer`, never as a cookie; each person keeps at most five. The bot offers the Mini App (a menu button in each paired chat, and a button on notices that wait for an answer) only while `public_url` is an https address, which Tailscale Funnel sets by itself; Telegram refuses plain http. `/tg/app` is the only page Telegram Web may frame (`frame-ancestors https://web.telegram.org`) and the only one that may load Telegram's script from `https://telegram.org`; every other answer still forbids framing.
 - **Removing a person** revokes their devices, sessions and passkeys at once.
 - **The desktop lock.** **Lock with Touch ID or Windows Hello**, in the desktop app's menu, asks the system (LocalAuthentication on a Mac, falling back to the account password; Windows Hello on Windows) before showing the window: at start and after it has been closed for five minutes. The choice is the file `lock-on` in the app's configuration folder; deleting it turns the lock off. Linux has no such check, so the item is disabled.
 - **The administrator's account.** The first visit with the login link asks for the administrator's name (`admin.account` in the database) and offers a passkey. The login link printed at the first start (and by `pimpo token`) stays the administrator's way in (the desktop app opens Pimpo with it); keep it private.
@@ -353,6 +405,21 @@ The [threat model](THREAT_MODEL.md) says what Pimpo defends against. These are t
 ### The vault
 
 Secrets (tokens, API keys, passwords, the backup passphrase) are encrypted in the database. The key is 32 random bytes kept in the system keychain (service `pimpo`, account `data-key`); keys kept under the old names `zodim` and `vigia` are carried over. On a system without a keychain, the key is a `vault.key` file in the data folder with owner-only permissions: then anyone who can read the data folder can read the secrets, so protect that folder. Code outside the vault holds only a secret's name; the value is read when a connector makes a request. An export removes the encrypted secrets from its copy of the database and carries them re-sealed with your passphrase instead, so the file never depends on this computer's vault key.
+
+### Outside password managers
+
+A secret stored as `op://Vault/Item/field` (or `op://Vault/Item/section/field`) or `vault://<mount>/data/<path>#<field>` is a reference: the vault keeps the reference, and reads the value when a connector asks for the secret. Values read stay in memory only, for five minutes (a failure for 30 seconds), and are forgotten when the password manager's settings change. Backups and exports carry the reference, not the value.
+
+The credentials are secrets in the vault too: `pm` for the house (set by the owner in **Connections › Password managers**, `GET/PUT/DELETE /api/password-managers/{onepassword|hashicorp}`, `POST /api/password-managers/{kind}/test`) and `person.<id>.pm` for each person (set in **Account**, with the same routes). A secret named `person.<id>.…` resolves only with that person's credentials; everything else resolves with the house's. `POST /api/secrets/check {"reference": "…"}` resolves a reference once with the caller's credentials and answers only `{"found": true}` or an error naming the reference.
+
+| Manager | How Pimpo reads | Notes |
+|---|---|---|
+| 1Password, service account | `op read --no-newline <ref>` with `OP_SERVICE_ACCOUNT_TOKEN` | Needs the `op` CLI on the `PATH`. It runs with only `PATH`, `HOME` and the token in its environment, and a 15-second limit. |
+| 1Password, app on this computer | `op read` signed in through the desktop app | House only. Turn on Settings › Developer › Integrate with 1Password CLI in the 1Password app. |
+| 1Password Connect | `GET /v1/vaults`, `/items` and `/items/{id}` with the Connect token | The vault and item are found by name; the field by label or id, within the section when the reference names one. |
+| HashiCorp Vault | `GET /v1/<path>` with `X-Vault-Token` (and `X-Vault-Namespace` when set), reading `data.data.<field>` | Token, or AppRole (`POST /v1/auth/<mount>/login`, mount `approle` by default); an AppRole token is kept in memory while it lasts, at most 30 minutes. |
+
+Addresses must be https; plain http is allowed only to this computer (`localhost`, `127.0.0.1`, `::1`) and only for the house's managers. Redirects are not followed, so a token is never sent to another address.
 
 ### Rules and approvals
 

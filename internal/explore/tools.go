@@ -37,7 +37,7 @@ var schemas = map[string]string{
 // Recall finds facts related to a query, by meaning when it can.
 type Recall func(ctx context.Context, query, person string) ([]memory.Fact, error)
 
-func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string) []mcp.Tool {
+func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string, origin memory.Origin) []mcp.Tool {
 	var out []mcp.Tool
 	for _, name := range capability.Names() {
 		if h.Allowed != nil && !h.Allowed[name] {
@@ -156,16 +156,21 @@ func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string) []mcp.
 		}, mcp.Tool{
 			Name:        "memory_note",
 			Description: "Remember a lasting fact about the owner for next time (e.g. who their boss is, a preference). It is saved as unconfirmed until the owner confirms it.",
-			InputSchema: json.RawMessage(`{"type":"object","required":["fact"],"properties":{"fact":{"type":"string"},"topic":{"type":"string","description":"e.g. trabalho, pessoal, preferências, contatos"}}}`),
+			InputSchema: json.RawMessage(`{"type":"object","required":["fact"],"properties":{"fact":{"type":"string"},"topic":{"type":"string","description":"e.g. trabalho, pessoal, preferências, contatos"},"email":{"type":"object","description":"When the fact comes from an email you read in this task: its sender, message id and subject.","properties":{"sender":{"type":"string"},"message_id":{"type":"string"},"subject":{"type":"string"}}}}}`),
 			Handle: func(_ context.Context, raw json.RawMessage) (any, error) {
 				var a struct {
-					Fact  string `json:"fact"`
-					Topic string `json:"topic"`
+					Fact  string    `json:"fact"`
+					Topic string    `json:"topic"`
+					Email *mailFrom `json:"email"`
 				}
 				json.Unmarshal(raw, &a)
 				// Whatever the agent claims, a note it writes is low trust:
 				// it may have read the "fact" in a hostile email.
-				f, err := mem.AddFor(a.Fact, a.Topic, h.Source, memory.Low, h.Person)
+				origins := []memory.Origin{origin}
+				if o, ok := emailOrigin(h, a.Email); ok {
+					origins = append(origins, o)
+				}
+				f, err := mem.AddFrom(a.Fact, a.Topic, h.Source, memory.Low, h.Person, origins...)
 				if err != nil {
 					return nil, err
 				}
@@ -174,6 +179,30 @@ func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string) []mcp.
 		})
 	}
 	return out
+}
+
+// mailFrom is the email a noted fact was read in, as the agent says.
+type mailFrom struct {
+	Sender    string `json:"sender"`
+	MessageID string `json:"message_id"`
+	Subject   string `json:"subject"`
+}
+
+// emailOrigin is the email a fact came from, taken only when the sender
+// appears in mail this run read, so the agent cannot invent one. The
+// run's own origin is always kept too: forgetting the conversation
+// forgets the fact whatever the agent said about its email.
+func emailOrigin(h *host.Host, m *mailFrom) (memory.Origin, bool) {
+	if m == nil || !strings.Contains(m.Sender, "@") {
+		return memory.Origin{}, false
+	}
+	sender := strings.ToLower(strings.TrimSpace(m.Sender))
+	for _, c := range h.Calls() {
+		if c.Error == "" && strings.Contains(c.Capability, "mail") && strings.Contains(strings.ToLower(string(c.Result)), sender) {
+			return memory.Origin{Kind: memory.FromEmail, Ref: m.MessageID, Sender: sender, Label: m.Subject}, true
+		}
+	}
+	return memory.Origin{}, false
 }
 
 // hostOf is the host a call's URL really connects to, or "" when the URL

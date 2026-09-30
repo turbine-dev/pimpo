@@ -13,6 +13,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/budget"
 	"github.com/turbine-dev/pimpo/internal/llm"
 	"github.com/turbine-dev/pimpo/internal/models"
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
 )
 
@@ -81,10 +82,12 @@ func (a *App) quickSetup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if key := strings.TrimSpace(c.Key); key != "" {
+			done := a.track(ctx, kvEntry("models", c.Provider, people.OwnerID, nil, "model."+c.Provider+".key"))
 			if err := a.Vault.Set(ctx, "model."+c.Provider+".key", key); err != nil {
 				server.WriteError(w, err)
 				return
 			}
+			done()
 			a.Events.Append(ctx, "model.key", actor(ctx), map[string]any{"provider": c.Provider, "set": true})
 		}
 		e, err := a.modelEndpoint(ctx, c.Provider)

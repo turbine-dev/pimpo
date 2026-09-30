@@ -50,10 +50,13 @@ type Server struct {
 	// Pimpo, such as its public https address behind a proxy that does not
 	// pass the Host on.
 	TrustedOrigin func(origin string) bool
-	mux           *http.ServeMux
-	patterns      []string
-	failures      limiter
-	attempts      limiter
+	// Narrow says whether a token that opens only part of Pimpo, such as
+	// a Telegram Mini App session, may use a route; nil narrows nothing.
+	Narrow   func(token, pattern string) bool
+	mux      *http.ServeMux
+	patterns []string
+	failures limiter
+	attempts limiter
 }
 
 // limiter counts failed sign-ins by address. Tokens are random 192-bit
@@ -171,9 +174,28 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h := w.Header()
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("Referrer-Policy", "no-referrer")
-	h.Set("X-Frame-Options", "DENY")
-	h.Set("Content-Security-Policy", policy(r.Host))
+	if MiniApp(r.URL.Path) {
+		// Telegram Web shows Mini Apps in a frame of its own page; only it
+		// may frame this one page, which also loads Telegram's script.
+		h.Set("Content-Security-Policy", miniAppPolicy(r.Host))
+	} else {
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Content-Security-Policy", policy(r.Host))
+	}
 	s.mux.ServeHTTP(w, r)
+}
+
+// MiniAppPath is the page Telegram opens as the house's Mini App.
+const MiniAppPath = "/tg/app"
+
+// MiniApp says whether a path is the Mini App page.
+func MiniApp(path string) bool { return path == MiniAppPath || path == MiniAppPath+"/" }
+
+// miniAppPolicy is the web app's policy, but Telegram's script may load and
+// Telegram Web may frame the page.
+func miniAppPolicy(host string) string {
+	p := strings.Replace(policy(host), "script-src 'self'", "script-src 'self' https://telegram.org", 1)
+	return strings.Replace(p, "frame-ancestors 'none'", "frame-ancestors https://web.telegram.org", 1)
 }
 
 var plainHost = regexp.MustCompile(`^[A-Za-z0-9.\-]+(:[0-9]+)?$|^\[[0-9A-Fa-f:.]+\](:[0-9]+)?$`)
@@ -248,6 +270,10 @@ func (s *Server) auth(pattern string, h http.HandlerFunc) http.Handler {
 		// page on another port of this computer.
 		if !safeMethod(r.Method) && !s.SameOrigin(r) {
 			WriteJSON(w, http.StatusForbidden, map[string]string{"error": "this request did not come from Pimpo's own page"})
+			return
+		}
+		if s.Narrow != nil && !s.Narrow(tok, pattern) {
+			WriteJSON(w, http.StatusForbidden, map[string]string{"error": "this sign-in does not open that part of Pimpo"})
 			return
 		}
 		if person != people.OwnerID && (s.Allow == nil || !s.Allow(pattern, person)) {

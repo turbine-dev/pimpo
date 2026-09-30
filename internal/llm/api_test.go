@@ -270,3 +270,75 @@ func TestReadKimi(t *testing.T) {
 		t.Fatalf("agent %s", a)
 	}
 }
+
+// A long Anthropic conversation asks for server-side compaction, keeps the
+// summary block for the next turn, and counts the summary's tokens.
+func TestAnthropicCompaction(t *testing.T) {
+	var calls []string
+	mcp := fakeMCP(t, &calls)
+	defer mcp.Close()
+	var bodies []map[string]any
+	var betas []string
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		bodies = append(bodies, body)
+		betas = append(betas, r.Header.Get("anthropic-beta"))
+		switch len(bodies) {
+		case 1:
+			io.WriteString(w, `{"content":[{"type":"tool_use","id":"tu1","name":"weather_today","input":{"city":"Lisboa"}}],"usage":{"input_tokens":20000,"output_tokens":100,"cache_read_input_tokens":60000}}`)
+		case 2:
+			io.WriteString(w, `{"content":[{"type":"compaction","content":"Summary: asked about Lisboa."},{"type":"tool_use","id":"tu2","name":"weather_today","input":{"city":"Porto"}}],"usage":{"input_tokens":3000,"output_tokens":80,"iterations":[{"type":"compaction","input_tokens":90000,"output_tokens":2000},{"type":"message","input_tokens":3000,"output_tokens":80}]}}`)
+		default:
+			io.WriteString(w, `{"content":[{"type":"text","text":"Pronto."}],"usage":{"input_tokens":3200,"output_tokens":20,"iterations":[{"type":"message","input_tokens":3200,"output_tokens":20}]}}`)
+		}
+	}))
+	defer api.Close()
+	a := API{Provider: "anthropic", Key: "ak", Base: api.URL, Model: "claude-opus-5-5", PriceIn: 4, PriceOut: 20, CompactAt: 100000}
+	resp, err := a.Run(context.Background(), AgentRequest{Prompt: "Tempo?", MCPURL: mcp.URL})
+	if err != nil || resp.Text != "Pronto." {
+		t.Fatalf("%+v %v", resp, err)
+	}
+	if _, ok := bodies[0]["context_management"]; ok || betas[0] != "" {
+		t.Fatalf("a short first turn asked for compaction: %v %q", bodies[0], betas[0])
+	}
+	cm, _ := json.Marshal(bodies[1]["context_management"])
+	if betas[1] != "compact-2026-01-12" || string(cm) != `{"edits":[{"trigger":{"type":"input_tokens","value":100000},"type":"compact_20260112"}]}` {
+		t.Fatalf("second turn: %q %s", betas[1], cm)
+	}
+	// The summary goes back first in the assistant turn, and the beta stays
+	// on even though the conversation is short again.
+	if betas[2] != "compact-2026-01-12" {
+		t.Fatalf("third turn beta %q", betas[2])
+	}
+	msgs := bodies[2]["messages"].([]any)
+	back := msgs[len(msgs)-2].(map[string]any)["content"].([]any)[0].(map[string]any)
+	if back["type"] != "compaction" || back["content"] != "Summary: asked about Lisboa." {
+		t.Fatalf("summary not kept: %v", back)
+	}
+	in := 20000.0 + 3000 + 90000 + 3200
+	out := 100.0 + 80 + 2000 + 20
+	if want := (in*4+out*20)/1e6 + 60000*0.1*4/1e6; math.Abs(resp.CostUSD-want) > 1e-12 {
+		t.Fatalf("cost %v, want %v", resp.CostUSD, want)
+	}
+}
+
+// A model without compaction answers without it.
+func TestAnthropicCompactionRefused(t *testing.T) {
+	n := 0
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n++
+		if r.Header.Get("anthropic-beta") != "" {
+			w.WriteHeader(400)
+			io.WriteString(w, `{"error":{"type":"invalid_request_error","message":"context_management: compaction is not supported for this model"}}`)
+			return
+		}
+		io.WriteString(w, `{"content":[{"type":"text","text":"ok"}],"usage":{"input_tokens":10,"output_tokens":1}}`)
+	}))
+	defer api.Close()
+	a := API{Provider: "anthropic", Key: "ak", Base: api.URL, Model: "claude-haiku-4-5", PriceIn: 1, PriceOut: 5, CompactAt: 50000}
+	resp, err := a.Generate(context.Background(), Request{Prompt: strings.Repeat("palavra ", 20000)})
+	if err != nil || resp.Text != "ok" || n != 2 {
+		t.Fatalf("%+v %v after %d calls", resp, err, n)
+	}
+}
