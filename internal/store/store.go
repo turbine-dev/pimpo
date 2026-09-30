@@ -77,6 +77,34 @@ CREATE TABLE IF NOT EXISTS chat_turns (
   seq         INTEGER NOT NULL,
   exploration TEXT NOT NULL,
   PRIMARY KEY (chat, seq)
+);
+CREATE TABLE IF NOT EXISTS widgets (
+  id         TEXT PRIMARY KEY,
+  person     TEXT NOT NULL DEFAULT '',
+  routine    TEXT NOT NULL DEFAULT '',
+  key        TEXT NOT NULL DEFAULT '',
+  kind       TEXT NOT NULL,
+  title      TEXT NOT NULL,
+  snapshot   TEXT NOT NULL,
+  shared     INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS widgets_routine_key ON widgets (routine, key);
+CREATE TABLE IF NOT EXISTS widget_history (
+  widget TEXT NOT NULL,
+  ts     TEXT NOT NULL,
+  value  REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS widget_history_widget ON widget_history (widget, ts);
+CREATE TABLE IF NOT EXISTS dashboards (
+  id         TEXT PRIMARY KEY,
+  person     TEXT NOT NULL DEFAULT '',
+  name       TEXT NOT NULL,
+  emoji      TEXT NOT NULL DEFAULT '',
+  position   INTEGER NOT NULL DEFAULT 0,
+  layout     TEXT NOT NULL DEFAULT '[]',
+  shared     INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL
 );`
 
 // columns added after the first release, applied to older databases.
@@ -419,6 +447,12 @@ func (s *Store) StartRun(ctx context.Context, routine string, version int) (int6
 		return 0, err
 	}
 	return res.LastInsertId()
+}
+
+// RunVersion is the routine and code version a run started with.
+func (s *Store) RunVersion(ctx context.Context, id int64) (routine string, version int, err error) {
+	err = s.db.QueryRowContext(ctx, `SELECT routine, version FROM runs WHERE id = ?`, id).Scan(&routine, &version)
+	return routine, version, err
 }
 
 func (s *Store) FinishRun(ctx context.Context, id int64, outcome, errText string, cost float64, calls int) error {

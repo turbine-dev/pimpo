@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RoutineCard } from '../components/RoutineCard'
 import { RepoPanel } from '../components/RepoPanel'
+import { RoutineApprovals } from '../components/RoutineApprovals'
 import { RunHistory } from '../components/RunHistory'
 import { SinceYesterday } from '../components/SinceYesterday'
 import { Button, Card, EmptyState } from '../components/ui'
@@ -58,6 +59,8 @@ export function Routines({ onNew }: { onNew: () => void }) {
       )}
 
       <Reminders />
+
+      <RoutineApprovals />
 
       {(imported.data?.length ?? 0) > 0 && <ImportedTasks items={imported.data!} />}
 

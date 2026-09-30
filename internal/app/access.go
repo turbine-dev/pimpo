@@ -36,6 +36,7 @@ var guestRoutes = routeSet(
 	"GET /api/passkeys", "POST /api/passkeys/begin", "POST /api/passkeys/finish", "DELETE /api/passkeys/{id}",
 	"GET /api/me/devices", "DELETE /api/me/devices/{id}",
 	"GET /api/me/limits",
+	"GET /api/dashboards", "GET /api/dashboards/{id}/widgets", "GET /api/widgets", "GET /api/widgets/{id}",
 )
 
 // memberRoutes add to a guest's what a member manages for themselves.
@@ -46,6 +47,7 @@ var memberRoutes = routeSet(
 	"GET /api/runs",
 	"GET /api/receipts", "POST /api/actions/{id}/undo",
 	"GET /api/approvals", "POST /api/approvals/{id}/{answer}",
+	"GET /api/grants", "DELETE /api/grants/{id}",
 	"GET /api/reminders", "DELETE /api/reminders/{id}",
 	"GET /api/cost",
 	"GET /api/jobs", "GET /api/jobs/{id}", "POST /api/jobs", "POST /api/jobs/{id}/start", "POST /api/jobs/{id}/stop",
@@ -55,6 +57,8 @@ var memberRoutes = routeSet(
 	"GET /api/destinations", "GET /api/geocode",
 	"POST /api/open",
 	"PUT /api/people/{id}/connections/{kind}",
+	"POST /api/dashboards", "PUT /api/dashboards/{id}", "DELETE /api/dashboards/{id}",
+	"PUT /api/widgets/{id}", "DELETE /api/widgets/{id}", "POST /api/widgets/{id}/refresh",
 )
 
 // ownerOnlyRoutes are the owner's and say so; listing them keeps the

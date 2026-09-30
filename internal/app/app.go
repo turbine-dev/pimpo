@@ -166,6 +166,7 @@ type App struct {
 	Policy    policy.Policy
 	Rules     *policy.Engine
 	Approvals *approval.Manager
+	Grants    *approval.Grants
 	Outbox    *outbox.Outbox
 	Undo      *undo.Undo
 	Memory    *memory.Memory
@@ -271,6 +272,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		asker, _ := a.People.Get(ctx, person)
 		return a.People.Responsible(ctx, person).ID, asker.Name
 	}}
+	a.Grants = &approval.Grants{Events: events}
 	router := a.router()
 	a.Router = router
 	a.Outbox = &outbox.Outbox{DB: events.DB(), Events: events, Send: func(ctx context.Context, args any) (any, error) { return router.Call(ctx, "gmail.send", "", args) }}
@@ -293,6 +295,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.googleRoutes()
 	a.routes()
 	a.safetyRoutes()
+	a.grantRoutes()
 	a.memoryRoutes()
 	a.migrateRoutes()
 	a.pairingRoutes()
@@ -328,6 +331,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.jobRoutes()
 	a.passkeyRoutes()
 	a.accountRoutes()
+	a.widgetRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()
@@ -562,6 +566,7 @@ func (a *App) router() *connector.Router {
 		codeCap{a},
 		browserCap{a},
 		phoneCap{a},
+		widgetCap{a},
 		audioCap{a},
 		askCap{a},
 		a.spotify(),
@@ -663,7 +668,7 @@ func (a *App) judge(ctx context.Context, question string, item any) (judge.Answe
 }
 
 func (a *App) decide(ctx context.Context, act policy.Action) policy.Decision {
-	return a.Policy.Decide(ctx, act)
+	return a.granted(ctx, act, a.Policy.Decide(ctx, act))
 }
 
 func (a *App) generate(ctx context.Context, r llm.Request) (llm.Response, error) {
@@ -1172,14 +1177,17 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 			return "", err
 		}
 		return h.a.answer(ctx, qid, i)
-	case "approve", "always", "deny", "batch":
-		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run}[action]
+	case "approve", "always", "deny", "batch", "grant":
+		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run, "grant": approval.Routine}[action]
 		if ans == approval.Always && people.From(ctx) != people.OwnerID {
 			// Only the owner makes lasting rules.
 			ans, action = approval.Once, "approve"
 		}
-		if !h.a.Approvals.Resolve(ctx, id, ans, who) {
-			return "", errors.New(i18n.T(ctx, "msg.approval.gone"))
+		if err := h.a.resolveApproval(ctx, id, ans, nil); err != nil {
+			if errors.Is(err, errApprovalGone) {
+				return "", errors.New(i18n.T(ctx, "msg.approval.gone"))
+			}
+			return "", errors.New(i18n.T(ctx, "msg.approval.noGrant"))
 		}
 		return i18n.T(ctx, "msg.approval."+action), nil
 	}
@@ -1192,7 +1200,7 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 func (h handler) allowed(ctx context.Context, action, id string) error {
 	person := people.From(ctx)
 	switch action {
-	case "approve", "always", "deny", "batch":
+	case "approve", "always", "deny", "batch", "grant":
 		if h.a.Approvals.MayAnswer(id, person) {
 			return nil
 		}
