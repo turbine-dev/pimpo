@@ -16,6 +16,16 @@ type Inbound struct {
 	// Chat is where to answer; empty means answer From directly.
 	Chat string
 	Text string
+	// ReplyTo is the id of the message this one replies to, when the
+	// person used the service's own reply; empty otherwise.
+	ReplyTo string
+}
+
+// Replier is a link whose people can answer a message by replying to it.
+// SendMessage sends like Send and returns the ids of the messages sent
+// (one per part of a long text), which a later Inbound.ReplyTo names.
+type Replier interface {
+	SendMessage(ctx context.Context, to, text string) ([]string, error)
 }
 
 type Link interface {

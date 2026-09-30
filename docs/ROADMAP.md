@@ -23,6 +23,8 @@ The order comes from scoring each item with Jev (TypeSafe) on user value, differ
 | **M4** | v0.9 | Hands | agent-driven browser · code sandbox · learning the owner |
 | **M5** | v1.0 | Everywhere | stable formats · phone as part of the agent · voice conversation · parallel agents and long tasks · more channels |
 | **M6** | v1.1 | Each person their own | a login per person · privacy between people, the owner included · passkeys and sessions |
+| **M8** | v1.3 | Less friction | replies answer their notice · conversation search · approvals bound to the operation · questions as cards · settings history · database integrity · private credential prompts · lasting progress |
+| **M9** | v1.4 | Where the family already is | a Telegram dashboard · push triggers · who owns a memory · lessons to review · models and spending per person · live model catalog · outside password managers · one list of what needs you |
 
 Sizes: **S** is days, **M** one to two weeks, **L** several weeks. Items marked **owner** need something only the project owner can do (an account, a certificate, a decision).
 
@@ -240,6 +242,92 @@ Every route has an access rule, and a route without one is the owner's. Routines
 ### 6.3 Passkeys and sessions · M
 
 A passkey to sign in on a computer, sessions that expire and can be revoked one by one, and a limit on sign-in attempts.
+
+---
+
+## M8 · Less friction (v1.3)
+
+Goal: the small things people run into every day stop getting in the way. Most items are small and several come from what OpenClaw 2.0 and Codex shipped in 2026, adapted to Pimpo's rules.
+
+### 8.1 A reply answers its notice · S
+
+Telegram and WhatsApp already put a notice's choices on buttons of that message. On Discord, Slack and Signal, which have no buttons, replying to a notice (the channel's own reply) with a number answers that notice, and only that one, however old it is and whatever arrived after it. A bare number keeps working for the latest notice as today. A reply to a notice already answered, expired or meant for someone else says so and does nothing.
+
+**Done when** a reply to an older notice resolves it while a newer one waits, on every channel that has replies. *Done.*
+
+### 8.2 Conversation search · S
+
+Search earlier conversations by words or an exact phrase, each person only in their own.
+
+### 8.3 Approvals bound to the operation · M
+
+"Approve for this routine" lets a routine repeat one action without asking again, as long as the action is the same: the same capability, recipients, hosts and amounts within the approved limit. Anything different asks again, and the owner sees and revokes these approvals in one place. It replaces most uses of a broad "always" rule.
+
+### 8.4 Questions as cards · M
+
+A routine's question offers its choices as buttons in the app and on every channel with buttons, and a typed answer is checked against them.
+
+### 8.5 Settings history · S
+
+Every change to rules, budgets, connections, models and people is recorded with who made it and when, secrets hidden, and can be undone.
+
+### 8.6 Database integrity · S
+
+Pimpo checks its database at start and before every snapshot. A damaged one is set aside, the last good snapshot is offered, and nothing is written over it.
+
+### 8.7 Private credential prompts · S
+
+When a routine or a connection needs a password or key, Pimpo asks for it in a form of its own that writes straight to the vault; it never passes through a chat, a channel, a model or the log.
+
+### 8.8 Lasting progress · S
+
+Long jobs and routine runs show progress that survives a reload and follows the person to the phone and the channels.
+
+---
+
+## M9 · Where the family already is (v1.4)
+
+Goal: Pimpo meets people in the apps they already use and learns without being told twice, without giving up any promise of M6.
+
+### 9.1 A Telegram dashboard · M
+
+A Telegram Mini App with the person's approvals, routines, spending, questions and their M7 widgets, signed in as that person.
+
+### 9.2 Push triggers · M
+
+Gmail (through Google's push notifications), Slack and GitHub start routines as events happen, instead of Pimpo checking every few minutes. The events reach routines as data, like everything read from outside.
+
+### 9.3 Who owns a memory · S
+
+Each fact shows where it came from (a conversation, an email, a routine), and a person can delete everything derived from one source.
+
+### 9.4 Lessons to review · M
+
+When Pimpo notices something worth keeping (a preference, a routine it could compile, a fix that worked), it proposes it as a lesson; the person accepts, edits or rejects each one in one place. Nothing becomes a rule or a routine without that.
+
+### 9.5 Models and spending per person · S
+
+The owner chooses which models each person and each assistant may use, and a daily limit per person inside the house's.
+
+### 9.6 A live model catalog · S
+
+The list of models comes from the providers themselves, with prices, and long conversations with Anthropic use its server-side context compaction.
+
+### 9.7 Outside password managers · M
+
+Secrets can live in 1Password or HashiCorp Vault; Pimpo keeps only a reference and reads the value when a connector needs it.
+
+### 9.8 One list of what needs you · S
+
+Approvals, questions and failed routines in one list, newest and most urgent first, on the app and the phone.
+
+### To study before planning
+
+Each would need an [RFC](rfcs/) first:
+
+- **A house conversation.** Several people in one conversation (planning a trip), opt-in, with named participants, and without anyone's private memory reaching it.
+- **Site tools (WebMCP).** Using the tools a site declares instead of clicking through it, under the same host scope and risks as the browser.
+- **Computer history as memory.** Only on the person's own computer, off by default, and probably not at all.
 
 ---
 

@@ -44,7 +44,7 @@ func TestDiscordDirectMessages(t *testing.T) {
 			var b map[string]string
 			json.NewDecoder(r.Body).Decode(&b)
 			rec.add(r.URL.Path + "=" + b["content"])
-			io.WriteString(w, `{}`)
+			fmt.Fprintf(w, `{"id":"msg-%d"}`, len(rec.hits))
 		case ws:
 			c, _ := websocket.Accept(w, r, nil)
 			defer c.CloseNow()
@@ -64,6 +64,7 @@ func TestDiscordDirectMessages(t *testing.T) {
 				`{"channel_id":"g1","guild_id":"x","content":"in a server","author":{"id":"u1"}}`,
 				`{"channel_id":"dm-1","content":"sou um bot","author":{"id":"b","bot":true}}`,
 				`{"channel_id":"dm-1","content":"oi pimpo","author":{"id":"u1"}}`,
+				`{"channel_id":"dm-1","content":"2","author":{"id":"u1"},"message_reference":{"message_id":"msg-7"}}`,
 			} {
 				wsjson.Write(ctx, c, map[string]any{"op": 0, "t": "MESSAGE_CREATE", "s": s, "d": json.RawMessage(d)})
 				s++
@@ -79,11 +80,14 @@ func TestDiscordDirectMessages(t *testing.T) {
 	}
 	var got []Inbound
 	err := d.Run(context.Background(), func(in Inbound) { got = append(got, in) })
-	if err == nil || len(got) != 1 || got[0] != (Inbound{From: "u1", Chat: "dm-1", Text: "oi pimpo"}) {
+	if err == nil || len(got) != 2 || got[0] != (Inbound{From: "u1", Chat: "dm-1", Text: "oi pimpo"}) || got[1] != (Inbound{From: "u1", Chat: "dm-1", Text: "2", ReplyTo: "msg-7"}) {
 		t.Fatalf("%v %+v", err, got)
 	}
 	d.Send(context.Background(), "u1", "olá")
-	d.Send(context.Background(), "u2", strings.Repeat("a", 2500))
+	// Each part of a long text is a message a reply can name.
+	if ids, err := d.SendMessage(context.Background(), "u2", strings.Repeat("a", 2500)); err != nil || strings.Join(ids, ",") != "msg-3,msg-4" {
+		t.Fatalf("%v %v", ids, err)
+	}
 	want := fmt.Sprintf("identify:2:tk:%d|/channels/dm-1/messages=olá|/channels/dm-2/messages=%s|/channels/dm-2/messages=%s", directMessages, strings.Repeat("a", 1900), strings.Repeat("a", 600))
 	if rec.all() != want {
 		t.Fatalf("%s", rec.all())
@@ -113,7 +117,7 @@ func TestSlackSocketMode(t *testing.T) {
 			var b map[string]string
 			json.NewDecoder(r.Body).Decode(&b)
 			rec.add(b["channel"] + "=" + b["text"])
-			io.WriteString(w, `{"ok":true}`)
+			io.WriteString(w, `{"ok":true,"ts":"1700000000.000100"}`)
 		case "/ws":
 			c, _ := websocket.Accept(w, r, nil)
 			defer c.CloseNow()
@@ -123,6 +127,7 @@ func TestSlackSocketMode(t *testing.T) {
 				`{"type":"message","channel_type":"channel","channel":"C1","user":"U1","text":"no canal"}`,
 				`{"type":"message","channel_type":"im","channel":"D1","user":"U1","text":"editada","subtype":"message_changed"}`,
 				`{"type":"message","channel_type":"im","channel":"D1","user":"U1","text":"oi pimpo"}`,
+				`{"type":"message","channel_type":"im","channel":"D1","user":"U1","text":"2","thread_ts":"1700000000.000100"}`,
 			} {
 				wsjson.Write(ctx, c, map[string]any{"type": "events_api", "envelope_id": fmt.Sprint("e", i), "payload": map[string]any{"event": json.RawMessage(e)}})
 				var ack map[string]string
@@ -140,12 +145,14 @@ func TestSlackSocketMode(t *testing.T) {
 	}
 	var got []Inbound
 	s.Run(context.Background(), func(in Inbound) { got = append(got, in) })
-	if len(got) != 1 || got[0].Text != "oi pimpo" || got[0].From != "U1" {
+	if len(got) != 2 || got[0].Text != "oi pimpo" || got[0].From != "U1" || got[0].ReplyTo != "" || got[1].ReplyTo != "1700000000.000100" {
 		t.Fatalf("%+v", got)
 	}
 	s.Send(context.Background(), "U1", "olá")
-	s.Send(context.Background(), "U2", "oi")
-	if rec.all() != "ack:e0|ack:e1|ack:e2|D1=olá|D2=oi" {
+	if ids, err := s.SendMessage(context.Background(), "U2", "oi"); err != nil || len(ids) != 1 || ids[0] != "1700000000.000100" {
+		t.Fatalf("%v %v", ids, err)
+	}
+	if rec.all() != "ack:e0|ack:e1|ack:e2|ack:e3|D1=olá|D2=oi" {
 		t.Fatal(rec.all())
 	}
 	if err := (&Slack{BotToken: "xoxb", AppToken: "bad", API: srv.URL}).Check(context.Background()); err == nil || !strings.Contains(err.Error(), "app token") {
@@ -161,6 +168,7 @@ func TestSignalThroughSignalCLI(t *testing.T) {
 			w.Header().Set("Content-Type", "text/event-stream")
 			fmt.Fprint(w, "event:receive\ndata:{\"jsonrpc\":\"2.0\",\"method\":\"receive\",\"params\":{\"envelope\":{\"sourceNumber\":\"+5511999\",\"typingMessage\":{}}}}\n\n")
 			fmt.Fprint(w, "event:receive\ndata:{\"jsonrpc\":\"2.0\",\"method\":\"receive\",\"params\":{\"envelope\":{\"sourceNumber\":\"+5511999\",\"dataMessage\":{\"message\":\"oi pimpo\"}}}}\n\n")
+			fmt.Fprint(w, "event:receive\ndata:{\"jsonrpc\":\"2.0\",\"method\":\"receive\",\"params\":{\"envelope\":{\"sourceNumber\":\"+5511999\",\"dataMessage\":{\"message\":\"2\",\"quote\":{\"id\":1700000000123}}}}}\n\n")
 		case "/api/v1/rpc":
 			var req struct {
 				Method string         `json:"method"`
@@ -169,18 +177,18 @@ func TestSignalThroughSignalCLI(t *testing.T) {
 			json.NewDecoder(r.Body).Decode(&req)
 			b, _ := json.Marshal(req.Params)
 			rec.add(req.Method + string(b))
-			io.WriteString(w, `{"jsonrpc":"2.0","id":1,"result":{}}`)
+			io.WriteString(w, `{"jsonrpc":"2.0","id":1,"result":{"timestamp":1700000000456}}`)
 		}
 	}))
 	defer srv.Close()
 	s := &Signal{URL: srv.URL, Account: "+5511000"}
 	var got []Inbound
 	s.Run(context.Background(), func(in Inbound) { got = append(got, in) })
-	if len(got) != 1 || got[0] != (Inbound{From: "+5511999", Text: "oi pimpo"}) {
+	if len(got) != 2 || got[0] != (Inbound{From: "+5511999", Text: "oi pimpo"}) || got[1] != (Inbound{From: "+5511999", Text: "2", ReplyTo: "1700000000123"}) {
 		t.Fatalf("%+v", got)
 	}
-	if err := s.Send(context.Background(), "+5511999", "olá"); err != nil {
-		t.Fatal(err)
+	if ids, err := s.SendMessage(context.Background(), "+5511999", "olá"); err != nil || len(ids) != 1 || ids[0] != "1700000000456" {
+		t.Fatalf("%v %v", ids, err)
 	}
 	if rec.all() != `send{"account":"+5511000","message":"olá","recipient":["+5511999"]}` {
 		t.Fatal(rec.all())
