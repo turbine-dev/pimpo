@@ -36,6 +36,9 @@ const (
 	passkeyHandles = "passkey.handles"
 	passkeyIdle    = 30 * 24 * time.Hour
 	ceremonyTTL    = 5 * time.Minute
+	// maxCeremonies caps the sign-ins and passkey additions waiting for an
+	// answer, so nobody can fill the memory by starting them.
+	maxCeremonies = 500
 )
 
 type storedPasskey struct {
@@ -170,26 +173,37 @@ var ceremonies = struct {
 	m map[string]ceremony
 }{m: map[string]ceremony{}}
 
-func putCeremony(c ceremony) string {
-	ceremonies.Lock()
-	defer ceremonies.Unlock()
-	now := time.Now()
+var errBusy = server.StatusError{Status: http.StatusTooManyRequests, Msg: "too many sign-ins waiting; try again in a few minutes"}
+
+// pruneCeremonies drops the expired ones; the caller holds the lock.
+func pruneCeremonies(now time.Time) {
 	for k, v := range ceremonies.m {
 		if now.After(v.expires) {
 			delete(ceremonies.m, k)
 		}
+	}
+}
+
+func putCeremony(c ceremony) (string, error) {
+	ceremonies.Lock()
+	defer ceremonies.Unlock()
+	now := time.Now()
+	pruneCeremonies(now)
+	if len(ceremonies.m) >= maxCeremonies {
+		return "", errBusy
 	}
 	b := make([]byte, 16)
 	rand.Read(b)
 	key := hex.EncodeToString(b)
 	c.expires = now.Add(ceremonyTTL)
 	ceremonies.m[key] = c
-	return key
+	return key, nil
 }
 
 func takeCeremony(key string) (ceremony, bool) {
 	ceremonies.Lock()
 	defer ceremonies.Unlock()
+	pruneCeremonies(time.Now())
 	c, ok := ceremonies.m[key]
 	delete(ceremonies.m, key)
 	return c, ok && time.Now().Before(c.expires)
@@ -242,7 +256,11 @@ func (a *App) passkeyRoutes() {
 		if name == "" {
 			name = "Passkey"
 		}
-		key := putCeremony(ceremony{session: *session, person: person, name: name, rpID: rpID})
+		key, err := putCeremony(ceremony{session: *session, person: person, name: name, rpID: rpID})
+		if err != nil {
+			server.WriteError(w, err)
+			return
+		}
 		server.WriteJSON(w, 200, map[string]any{"key": key, "options": opts})
 	})
 	a.Server.Handle("POST /api/passkeys/finish", func(w http.ResponseWriter, r *http.Request) {
@@ -269,6 +287,7 @@ func (a *App) passkeyRoutes() {
 		a.Events.Append(ctx, "passkey.added", actor(ctx), map[string]string{"id": k.ID, "name": k.Name, "person": c.person})
 		server.WriteJSON(w, 200, passkeyView{k.ID, k.Name, k.RPID, k.Created, k.LastUsed})
 	})
+	// Removing a passkey also signs out the sessions it opened.
 	a.Server.Handle("DELETE /api/passkeys/{id}", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		passkeysMu.Lock()
@@ -288,12 +307,26 @@ func (a *App) passkeyRoutes() {
 			server.WriteError(w, server.StatusError{Status: 404, Msg: "no such passkey"})
 			return
 		}
+		devicesMu.Lock()
+		devs := a.devices(ctx)
+		left := devs[:0]
+		for _, d := range devs {
+			if !(d.Session && d.Passkey == r.PathValue("id") && mine(ctx, d.Person)) {
+				left = append(left, d)
+			}
+		}
+		a.saveDevices(ctx, left)
+		devicesMu.Unlock()
 		a.Events.Append(ctx, "passkey.removed", actor(ctx), map[string]string{"id": r.PathValue("id"), "person": people.From(ctx)})
 		server.WriteJSON(w, 200, map[string]string{"removed": r.PathValue("id")})
 	})
 
 	// Signing in: the browser offers the passkeys it has for this address.
 	a.Server.HandlePublic("POST /auth/passkey/begin", func(w http.ResponseWriter, r *http.Request) {
+		if a.Server.Attempt(r) {
+			server.WriteError(w, errBusy)
+			return
+		}
 		wa, rpID, err := a.relyingParty(r)
 		if err != nil {
 			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
@@ -304,7 +337,12 @@ func (a *App) passkeyRoutes() {
 			server.WriteError(w, err)
 			return
 		}
-		server.WriteJSON(w, 200, map[string]any{"key": putCeremony(ceremony{session: *session, rpID: rpID}), "options": opts})
+		key, err := putCeremony(ceremony{session: *session, rpID: rpID})
+		if err != nil {
+			server.WriteError(w, err)
+			return
+		}
+		server.WriteJSON(w, 200, map[string]any{"key": key, "options": opts})
 	})
 	a.Server.HandlePublic("POST /auth/passkey/finish", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -337,6 +375,14 @@ func (a *App) passkeyRoutes() {
 			return
 		}
 		id := base64.RawURLEncoding.EncodeToString(cred.ID)
+		// A signature count that went backwards means two copies of the
+		// passkey exist: one of them was cloned. Neither signs in, and the
+		// person sees why.
+		if cred.Authenticator.CloneWarning {
+			a.Events.Append(ctx, "passkey.cloned", "human:"+who, map[string]string{"id": id, "person": who})
+			server.WriteJSON(w, 401, map[string]string{"error": "this passkey looks copied; remove it in your account and add a new one"})
+			return
+		}
 		name := "Passkey"
 		passkeysMu.Lock()
 		list := a.passkeys(ctx)
@@ -349,7 +395,7 @@ func (a *App) passkeyRoutes() {
 		}
 		a.savePasskeys(ctx, list)
 		passkeysMu.Unlock()
-		token := a.newSession(ctx, who, "Passkey · "+name)
+		token := a.newSession(ctx, who, "Passkey · "+name, id)
 		server.SetSession(w, r, token)
 		a.Events.Append(ctx, "passkey.signed_in", "human:"+who, map[string]string{"id": id, "person": who})
 		server.WriteJSON(w, 200, map[string]string{"state": "signed_in"})
@@ -358,14 +404,12 @@ func (a *App) passkeyRoutes() {
 
 // newSession opens a session for a person, kept like a paired device so it
 // shows in the list and is revoked the same way; it expires sooner.
-func (a *App) newSession(ctx context.Context, person, name string) string {
-	b := make([]byte, 24)
-	rand.Read(b)
-	token := hex.EncodeToString(b)
+func (a *App) newSession(ctx context.Context, person, name, passkey string) string {
+	token, id := newToken()
 	devicesMu.Lock()
 	defer devicesMu.Unlock()
 	now := time.Now()
-	list := append(a.devices(ctx), Device{ID: hex.EncodeToString(b[:4]), Name: name, Hash: hashToken(token), Created: now, LastSeen: now, Person: personField(person), Session: true})
+	list := append(a.devices(ctx), Device{ID: id, Name: name, Hash: hashToken(token), Created: now, LastSeen: now, Person: personField(person), Session: true, Passkey: passkey})
 	a.saveDevices(ctx, list)
 	return token
 }

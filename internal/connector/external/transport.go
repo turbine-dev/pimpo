@@ -4,11 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -52,7 +55,7 @@ func dial(ctx context.Context, e Endpoint, timeout time.Duration) (transport, er
 		if client == nil {
 			client = &http.Client{Timeout: timeout}
 		}
-		t = &httpConn{name: e.Name, url: e.URL, headers: e.Headers, timeout: timeout, client: client}
+		t = &httpConn{name: e.Name, url: e.URL, headers: e.Headers, timeout: timeout, client: sameHostOnly(client, e.URL)}
 	} else {
 		s, err := startProcess(e, timeout)
 		if err != nil {
@@ -117,16 +120,30 @@ func Probe(ctx context.Context, e Endpoint) ([]Tool, error) {
 	return listTools(ctx, t)
 }
 
-// SuggestedRisk reads the tool's own hints; without them the tool is
-// treated as irreversible, the MCP default, so it asks before running.
-func (t Tool) SuggestedRisk() string {
+// ClaimedRisk is what the tool's own hints say about it: "read",
+// "reversible", or "" without hints. It is the server's claim, never
+// checked, so the owner is shown it but every tool starts as irreversible.
+func (t Tool) ClaimedRisk() string {
 	switch {
 	case t.Annotations.ReadOnly != nil && *t.Annotations.ReadOnly:
 		return "read"
 	case t.Annotations.Destructive != nil && !*t.Annotations.Destructive:
 		return "reversible"
 	}
-	return "irreversible"
+	return ""
+}
+
+// ReviewHash fingerprints what the owner reviewed about a tool: its
+// description and input schema. A server that changes either later is
+// stopped until the owner reviews it again.
+func (t Tool) ReviewHash() string {
+	schema := []byte("null")
+	var v any
+	if json.Unmarshal(t.InputSchema, &v) == nil {
+		schema, _ = json.Marshal(v)
+	}
+	sum := sha256.Sum256([]byte(t.Description + "\x00" + string(schema)))
+	return hex.EncodeToString(sum[:])
 }
 
 type rpcResponse struct {
@@ -236,6 +253,27 @@ func (s *stdioConn) rpc(ctx context.Context, method string, params any) (json.Ra
 		s.close()
 		return nil, ctx.Err()
 	}
+}
+
+// sameHostOnly copies a client so it follows redirects only on the
+// server's own host: Go keeps custom headers, such as an API key, on a
+// redirect to another host.
+func sameHostOnly(c *http.Client, raw string) *http.Client {
+	host := ""
+	if u, err := url.Parse(raw); err == nil {
+		host = u.Hostname()
+	}
+	cc := *c
+	cc.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if host == "" || req.URL.User != nil || !strings.EqualFold(req.URL.Hostname(), host) {
+			return fmt.Errorf("redirect to %s is outside %s", req.URL.Hostname(), host)
+		}
+		if len(via) > 5 {
+			return errors.New("too many redirects")
+		}
+		return nil
+	}
+	return &cc
 }
 
 // httpConn speaks MCP's streamable HTTP: one POST per message, answered

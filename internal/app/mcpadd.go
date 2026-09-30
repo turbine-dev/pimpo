@@ -134,7 +134,10 @@ type probedTool struct {
 	Capability  string `json:"capability"`
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description"`
-	Risk        string `json:"risk"`
+	// Risk is the suggestion, always irreversible (asks first); Claimed is
+	// what the server says about the tool, shown as its claim.
+	Risk    string `json:"risk"`
+	Claimed string `json:"claimed,omitempty"`
 }
 
 var nonMethod = regexp.MustCompile(`[^a-z0-9_]+`)
@@ -157,7 +160,7 @@ func probed(name string, tools []external.Tool) []probedTool {
 	seen := map[string]bool{}
 	out := []probedTool{}
 	for _, t := range tools {
-		out = append(out, probedTool{Tool: t.Name, Capability: name + "." + methodName(t.Name, seen), Title: t.Title, Description: t.Description, Risk: t.SuggestedRisk()})
+		out = append(out, probedTool{Tool: t.Name, Capability: name + "." + methodName(t.Name, seen), Title: t.Title, Description: t.Description, Risk: "irreversible", Claimed: t.ClaimedRisk()})
 	}
 	return out
 }
@@ -250,7 +253,7 @@ func (a *App) addServer(w http.ResponseWriter, r *http.Request) {
 			desc = "the result of " + t.Name
 		}
 		m.Capabilities = append(m.Capabilities, external.Capability{Name: name + "." + method, Tool: t.Name, Risk: risk,
-			Signature: method + "(" + signature(t.InputSchema) + ")", Returns: desc, Schema: t.InputSchema})
+			Signature: method + "(" + signature(t.InputSchema) + ")", Returns: desc, Schema: t.InputSchema, Reviewed: t.ReviewHash()})
 		delete(req.Tools, t.Name)
 	}
 	if len(req.Tools) > 0 {

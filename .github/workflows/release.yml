@@ -16,8 +16,7 @@ on:
         required: true
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 concurrency:
   group: release-${{ inputs.version || github.ref_name }}
@@ -26,17 +25,19 @@ concurrency:
 jobs:
   tag:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # pushes the tag
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }
       - id: tag
         name: Tag
         shell: bash
         env: { VERSION: "${{ inputs.version }}" }
         run: |
-          if [ "${{ github.event_name }}" != workflow_dispatch ]; then
+          if [ "$GITHUB_EVENT_NAME" != workflow_dispatch ]; then
             echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -59,20 +60,26 @@ jobs:
   binaries:
     needs: tag
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # creates the draft release
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0, ref: "refs/tags/${{ needs.tag.outputs.tag }}" }
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with: { go-version-file: go.mod }
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with: { node-version-file: .nvmrc }
-      - uses: goreleaser/goreleaser-action@v7
+      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with: { args: release --clean }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs checksums.txt (.goreleaser.yaml, signs).
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
 
   desktop:
     needs: [tag, binaries]
+    permissions:
+      contents: write # attaches the installers and latest.json
     uses: ./.github/workflows/desktop.yml
     with:
       tag: ${{ needs.tag.outputs.tag }}
@@ -80,6 +87,9 @@ jobs:
 
   docker:
     needs: [tag, binaries]
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/docker.yml
     with:
       tag: ${{ needs.tag.outputs.tag }}

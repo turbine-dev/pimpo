@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	goruntime "runtime"
@@ -17,7 +18,13 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
+	"github.com/chromedp/cdproto/cdp"
+	"github.com/chromedp/cdproto/fetch"
+	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
+
+	"github.com/turbine-dev/pimpo/internal/netguard"
 )
 
 // Page is what a call returns.
@@ -55,6 +62,9 @@ type Browser struct {
 	Profile string
 	// ExecPath is Chrome's binary; empty finds it.
 	ExecPath string
+	// AllowPrivate lets pages reach this computer and private networks;
+	// tests only.
+	AllowPrivate bool
 
 	mu      sync.Mutex
 	alloc   context.Context
@@ -68,6 +78,15 @@ type tab struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	last   time.Time
+
+	mu      sync.Mutex
+	allowed Allowed
+}
+
+func (t *tab) scope() Allowed {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.allowed
 }
 
 func (b *Browser) start() error {
@@ -161,7 +180,7 @@ func (b *Browser) Close() {
 	}
 }
 
-func (b *Browser) tabFor(run string) (*tab, error) {
+func (b *Browser) tabFor(run string, allowed Allowed) (*tab, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if err := b.start(); err != nil {
@@ -169,18 +188,99 @@ func (b *Browser) tabFor(run string) (*tab, error) {
 	}
 	if t, ok := b.tabs[run]; ok {
 		t.last = time.Now()
+		t.mu.Lock()
+		t.allowed = allowed
+		t.mu.Unlock()
 		return t, nil
 	}
 	ctx, cancel := chromedp.NewContext(b.root)
+	t := &tab{ctx: ctx, cancel: cancel, last: time.Now(), allowed: allowed}
+	b.guard(t)
 	// The first Run opens the tab, bound to the context it is given: its
-	// own, not a call's shorter one.
-	if err := chromedp.Run(ctx); err != nil {
+	// own, not a call's shorter one. Every request the tab makes is held
+	// until guard lets it go.
+	if err := chromedp.Run(ctx,
+		fetch.Enable().WithPatterns([]*fetch.RequestPattern{{URLPattern: "*", RequestStage: fetch.RequestStageRequest}}),
+		network.Enable(),
+		network.SetBypassServiceWorker(true),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			_, err := page.AddScriptToEvaluateOnNewDocument(noSockets).Do(ctx)
+			return err
+		}),
+	); err != nil {
 		cancel()
 		return nil, fmt.Errorf("could not open a tab: %w", err)
 	}
-	t := &tab{ctx: ctx, cancel: cancel, last: time.Now()}
 	b.tabs[run] = t
 	return t, nil
+}
+
+// noSockets removes the ways a page talks to the network that request
+// interception does not see.
+const noSockets = `(() => { for (const n of ['WebSocket', 'WebTransport', 'RTCPeerConnection', 'webkitRTCPeerConnection', 'RTCDataChannel']) { try { Object.defineProperty(window, n, {value: undefined, writable: false, configurable: false}); } catch (e) {} } })()`
+
+// guard decides every request of a tab before Chrome sends it: the page,
+// each redirect, subresources, fetches and form posts. What is off the
+// run's hosts, or on this computer or a private network, never leaves.
+func (b *Browser) guard(t *tab) {
+	chromedp.ListenTarget(t.ctx, func(ev any) {
+		e, ok := ev.(*fetch.EventRequestPaused)
+		if !ok {
+			return
+		}
+		go func() {
+			c := chromedp.FromContext(t.ctx)
+			if c == nil || c.Target == nil {
+				return
+			}
+			exec := cdp.WithExecutor(t.ctx, c.Target)
+			if vet(e.Request.URL, t.scope(), b.private) != nil {
+				fetch.FailRequest(e.RequestID, network.ErrorReasonBlockedByClient).Do(exec)
+				return
+			}
+			fetch.ContinueRequest(e.RequestID).Do(exec)
+		}()
+	})
+}
+
+// private says whether a host is, or resolves to, an address on this
+// computer or a private network.
+func (b *Browser) private(host string) bool {
+	if b.AllowPrivate {
+		return false
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return netguard.Blocked(ip)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	addrs, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil || len(addrs) == 0 {
+		return true
+	}
+	for _, a := range addrs {
+		if netguard.Blocked(a.IP) {
+			return true
+		}
+	}
+	return false
+}
+
+// vet is the decision on one request: an http(s) URL without user info,
+// on a host the run may reach, that is not private.
+func vet(raw string, allowed Allowed, private func(host string) bool) error {
+	u, err := netguard.ParseURL(raw)
+	if err != nil {
+		return err
+	}
+	host := strings.ToLower(u.Hostname())
+	if allowed == nil || !allowed(host) {
+		return fmt.Errorf("%s is outside the sites this may reach", host)
+	}
+	if private(host) {
+		return fmt.Errorf("%s is on this computer or a private network", host)
+	}
+	return nil
 }
 
 // EndRun closes a run's tab.
@@ -193,13 +293,16 @@ func (b *Browser) EndRun(run string) {
 	}
 }
 
+// errBlocked is a navigation guard refused, such as a redirect elsewhere.
+var errBlocked = errors.New("the page went outside the sites this may reach")
+
 // Allowed says whether a page's host may be reached.
 type Allowed func(host string) bool
 
 func checkURL(raw string, allowed Allowed) (*url.URL, error) {
-	u, err := url.Parse(raw)
-	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
-		return nil, errors.New("give an http or https address")
+	u, err := netguard.ParseURL(raw)
+	if err != nil {
+		return nil, errors.New("give an http or https address, without a user name")
 	}
 	if !allowed(u.Hostname()) {
 		return nil, fmt.Errorf("%s is outside the sites this may reach", u.Hostname())
@@ -212,11 +315,14 @@ func (b *Browser) Open(ctx context.Context, run, address string, allowed Allowed
 	if _, err := checkURL(address, allowed); err != nil {
 		return Page{}, err
 	}
-	t, err := b.tabFor(run)
+	t, err := b.tabFor(run, allowed)
 	if err != nil {
 		return Page{}, err
 	}
 	if err := b.do(ctx, t, chromedp.Navigate(address)); err != nil {
+		if strings.Contains(err.Error(), "ERR_BLOCKED_BY_CLIENT") {
+			return Page{}, errBlocked
+		}
 		return Page{}, err
 	}
 	return b.page(ctx, t, allowed)
@@ -224,7 +330,7 @@ func (b *Browser) Open(ctx context.Context, run, address string, allowed Allowed
 
 // Read describes the run's current page.
 func (b *Browser) Read(ctx context.Context, run string, allowed Allowed) (Page, error) {
-	t, err := b.tabFor(run)
+	t, err := b.tabFor(run, allowed)
 	if err != nil {
 		return Page{}, err
 	}
@@ -233,7 +339,7 @@ func (b *Browser) Read(ctx context.Context, run string, allowed Allowed) (Page, 
 
 // Follow follows a link on the current page.
 func (b *Browser) Follow(ctx context.Context, run string, ref int, allowed Allowed) (Page, error) {
-	t, err := b.tabFor(run)
+	t, err := b.tabFor(run, allowed)
 	if err != nil {
 		return Page{}, err
 	}
@@ -249,7 +355,7 @@ func (b *Browser) Follow(ctx context.Context, run string, ref int, allowed Allow
 
 // Type types into a field without submitting.
 func (b *Browser) Type(ctx context.Context, run string, ref int, text string, allowed Allowed) (Page, error) {
-	t, err := b.tabFor(run)
+	t, err := b.tabFor(run, allowed)
 	if err != nil {
 		return Page{}, err
 	}
@@ -273,7 +379,7 @@ func (b *Browser) Type(ctx context.Context, run string, ref int, text string, al
 // Choose picks an option in a select, or sets a checkbox (value "on" or
 // "off").
 func (b *Browser) Choose(ctx context.Context, run string, ref int, value string, allowed Allowed) (Page, error) {
-	t, err := b.tabFor(run)
+	t, err := b.tabFor(run, allowed)
 	if err != nil {
 		return Page{}, err
 	}
@@ -302,7 +408,7 @@ func (b *Browser) Choose(ctx context.Context, run string, ref int, value string,
 // Click presses a button (or anything clickable) and describes the page
 // it leads to, which must still be in scope.
 func (b *Browser) Click(ctx context.Context, run string, ref int, allowed Allowed) (Page, error) {
-	t, err := b.tabFor(run)
+	t, err := b.tabFor(run, allowed)
 	if err != nil {
 		return Page{}, err
 	}
@@ -353,6 +459,11 @@ func (b *Browser) page(ctx context.Context, t *tab, allowed Allowed) (Page, erro
 	var p Page
 	if err := b.do(ctx, t, chromedp.WaitReady("body", chromedp.ByQuery), chromedp.Evaluate(fmt.Sprintf(describe, maxElements, maxText), &p)); err != nil {
 		return Page{}, err
+	}
+	if strings.HasPrefix(p.URL, "chrome-error:") {
+		// guard refused where a click or a form was going.
+		b.do(ctx, t, chromedp.Navigate("about:blank"))
+		return Page{}, errBlocked
 	}
 	if u, err := url.Parse(p.URL); err != nil || !allowed(u.Hostname()) {
 		// A redirect or a form led elsewhere: leave, say nothing of it.

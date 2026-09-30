@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -123,6 +124,12 @@ func TestCloudBackupsToS3(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(ta.Home, "import-pending", "pimpo.db")); err != nil {
 		t.Fatal("restore was not staged")
+	}
+	b.mu.Lock()
+	b.objects["pimpo-20200102-000000.pimpo"] = unsealedArchive()
+	b.mu.Unlock()
+	if code, out := ta.do(t, "POST", "/api/backup/cloud/restore", map[string]string{"name": "pimpo-20200102-000000.pimpo"}); code != 400 || !strings.Contains(fmt.Sprint(out["error"]), "not sealed") {
+		t.Fatalf("an unsealed cloud backup was staged: %d %v", code, out)
 	}
 	if code, _ := ta.do(t, "POST", "/api/backup/cloud/restore", map[string]string{"name": "../notes.txt"}); code != 400 {
 		t.Fatal("restored a file that is not a backup")

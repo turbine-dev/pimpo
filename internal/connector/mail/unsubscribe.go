@@ -10,6 +10,8 @@ import (
 	"net/textproto"
 	"strings"
 	"time"
+
+	"github.com/turbine-dev/pimpo/internal/netguard"
 )
 
 // listUnsubscribe reads the List-Unsubscribe headers (RFC 2369, RFC 8058)
@@ -43,8 +45,24 @@ func listUnsubscribe(raw []byte) (target string, oneClick bool) {
 	return https, false
 }
 
-// HTTP is used for one-click unsubscribe; tests replace it.
-var unsubscribeClient = &http.Client{Timeout: 20 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+// authResults reads the Authentication-Results headers (RFC 8601) in
+// the order they appear.
+func authResults(raw []byte) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	h, _ := textproto.NewReader(bufio.NewReader(strings.NewReader(string(raw)))).ReadMIMEHeader()
+	return h.Values("Authentication-Results")
+}
+
+// unsubscribeClient posts one-click unsubscribes: the link comes from a
+// stranger's email, so it follows no redirect and never reaches this
+// computer or a private network. Tests replace it.
+var unsubscribeClient = &http.Client{
+	Timeout:       20 * time.Second,
+	Transport:     netguard.Transport(),
+	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+}
 
 func (m *Mail) unsubscribe(ctx context.Context, id string) (any, error) {
 	found, err := m.findByID(ctx, id)
@@ -55,6 +73,9 @@ func (m *Mail) unsubscribe(ctx context.Context, id string) (any, error) {
 		return nil, errors.New("this sender offers no way to unsubscribe")
 	}
 	if found.oneClick {
+		if _, err := netguard.ParseURL(found.unsubscribe); err != nil {
+			return nil, err
+		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, found.unsubscribe, strings.NewReader("List-Unsubscribe=One-Click"))
 		if err != nil {
 			return nil, err

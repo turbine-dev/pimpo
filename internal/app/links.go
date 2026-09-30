@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/turbine-dev/pimpo/internal/chatlink"
 	"github.com/turbine-dev/pimpo/internal/connector/services"
@@ -20,13 +21,80 @@ import (
 // Signal. The owner pairs by sending "pimpo <code>" in a private message;
 // strangers get nothing. These services have no buttons, so choices come
 // numbered and the owner answers with the number.
+//
+// A bare number is easy to send by mistake or for the wrong notice, so it
+// only answers the latest notice, once, within choiceLife; when a newer
+// notice has just replaced unanswered choices, the number is not taken
+// and the new choices are shown again. Choices that make a lasting rule
+// ("always") are never offered by number: those are made in the app.
+
+const (
+	choiceLife   = 10 * time.Minute
+	choiceSettle = time.Minute
+)
 
 type linkRun struct {
 	link   chatlink.Link
 	cancel context.CancelFunc
 	// pending are the choices of the last notice, answered by number.
-	mu      sync.Mutex
-	pending []explore.Action
+	mu       sync.Mutex
+	pending  []explore.Action
+	asked    string
+	at       time.Time
+	replaced bool
+}
+
+// offer makes a notice's choices the ones a number answers; a notice
+// without choices clears them.
+func (r *linkRun) offer(text string, actions []explore.Action) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	// The same choices again (a notice mirrored twice) leave nothing to
+	// mix up.
+	same := slices.EqualFunc(r.pending, actions, func(x, y explore.Action) bool { return x.Data == y.Data })
+	r.replaced = len(r.pending) > 0 && !same && time.Since(r.at) < choiceLife
+	r.pending, r.asked, r.at = slices.Clone(actions), text, time.Now()
+	if len(actions) == 0 {
+		r.pending, r.replaced = nil, false
+	}
+}
+
+// choose takes the n-th choice and uses it up. again is set when the
+// number may have been meant for the notice before: send it and wait.
+func (r *linkRun) choose(n int) (act explore.Action, again string, ok bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if len(r.pending) == 0 || time.Since(r.at) > choiceLife {
+		r.pending = nil
+		return act, "", false
+	}
+	if n < 1 || n > len(r.pending) {
+		return act, "", false
+	}
+	if r.replaced && time.Since(r.at) < choiceSettle {
+		r.replaced = false
+		return act, r.asked, false
+	}
+	act = r.pending[n-1]
+	r.pending = nil
+	return act, "", true
+}
+
+// numbered are the choices a number may answer, and how they read.
+func numbered(ctx context.Context, actions []explore.Action) ([]explore.Action, string) {
+	var keep []explore.Action
+	var opts []string
+	for _, act := range actions {
+		if strings.HasPrefix(act.Data, "always:") {
+			continue
+		}
+		keep = append(keep, act)
+		opts = append(opts, fmt.Sprintf("%d = %s", len(keep), act.Label))
+	}
+	if len(keep) == 0 {
+		return nil, ""
+	}
+	return keep, i18n.T(ctx, "msg.link.choose", "options", strings.Join(opts, " · "))
 }
 
 var linksMu sync.Mutex
@@ -84,13 +152,18 @@ func (a *App) linkMessage(ctx context.Context, kind string, run *linkRun, in cha
 	text := strings.TrimSpace(in.Text)
 	owner, _ := a.Events.Get(ctx, linkOwnerKey(kind))
 	if code, ok := pairingCode(text); ok {
-		if owner == "" && code == a.Channel.PairingCode() {
-			a.Events.Put(ctx, linkOwnerKey(kind), in.From)
-			a.Events.Append(ctx, "channel.paired", "human:owner", map[string]string{"channel": kind})
-			reply(i18n.T(ctx, "msg.pair.link"))
-		} else if owner == "" {
-			reply(i18n.T(ctx, "msg.pair.linkBad"))
+		// A wrong code gets no answer: guessing teaches nothing.
+		sender := kind + ":" + in.From
+		if owner != "" || a.Channel.Blocked(sender) {
+			return
 		}
+		if !a.Channel.ClaimOwner(code) {
+			a.Channel.Wrong(sender)
+			return
+		}
+		a.Events.Put(ctx, linkOwnerKey(kind), in.From)
+		a.Events.Append(ctx, "channel.paired", "human:owner", map[string]string{"channel": kind})
+		reply(i18n.T(ctx, "msg.pair.link"))
 		return
 	}
 	if owner == "" || in.From != owner {
@@ -99,11 +172,13 @@ func (a *App) linkMessage(ctx context.Context, kind string, run *linkRun, in cha
 	pctx := people.With(ctx, people.OwnerID)
 	h := handler{a}
 	if n, err := strconv.Atoi(text); err == nil && !noApprovals(run.link) {
-		run.mu.Lock()
-		pending := run.pending
-		run.mu.Unlock()
-		if n >= 1 && n <= len(pending) {
-			action, id, _ := strings.Cut(pending[n-1].Data, ":")
+		act, again, ok := run.choose(n)
+		if again != "" {
+			reply(again)
+			return
+		}
+		if ok {
+			action, id, _ := strings.Cut(act.Data, ":")
 			out, err := h.Button(pctx, action, id)
 			if err != nil {
 				out = "⚠️ " + err.Error()
@@ -151,15 +226,11 @@ func (a *App) mirrorLinks(ctx context.Context, n explore.Notice) {
 			// A channel that can break or be taken over is never the way
 			// to approve: the choice waits for the app or another channel.
 			text += "\n\n" + i18n.T(ctx, "msg.link.approveElsewhere")
-		} else if len(n.Actions) > 0 {
-			var opts []string
-			for i, act := range n.Actions {
-				opts = append(opts, fmt.Sprintf("%d = %s", i+1, act.Label))
-			}
-			text += "\n\n" + i18n.T(ctx, "msg.link.choose", "options", strings.Join(opts, " · "))
-			run.mu.Lock()
-			run.pending = slices.Clone(n.Actions)
-			run.mu.Unlock()
+		} else if choices, line := numbered(ctx, n.Actions); len(choices) > 0 {
+			text += "\n\n" + line
+			run.offer(text, choices)
+		} else {
+			run.offer(text, nil)
 		}
 		go func(kind string, run *linkRun) {
 			a.health.report(kind, run.link.Send(context.WithoutCancel(ctx), owner, text))

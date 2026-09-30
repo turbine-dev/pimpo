@@ -1,6 +1,6 @@
 # Pimpo on a home server or a VPS:
 #   docker compose up -d
-#   docker compose logs pimpo | grep auth     # the login link
+#   docker compose exec pimpo pimpo token     # the login link
 # Reach it from elsewhere through Tailscale (Ajustes › Celular) or a reverse
 # proxy with https; the port is published on this machine only.
 services:

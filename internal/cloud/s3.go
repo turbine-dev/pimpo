@@ -8,8 +8,10 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -41,19 +43,56 @@ func (s *S3) region() string {
 	return s.Region
 }
 
+// Bucket names follow Amazon's rules: 3 to 63 lowercase letters, digits,
+// dots and hyphens, starting and ending with a letter or digit. Other
+// services also take capitals and underscores. Either way the name cannot
+// change the address a signed request goes to.
+var (
+	amazonBucket = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)
+	otherBucket  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{1,61}[A-Za-z0-9]$`)
+	ipLike       = regexp.MustCompile(`^\d+\.\d+\.\d+\.\d+$`)
+)
+
+func (s *S3) checkBucket() error {
+	if s.Bucket == "" {
+		return errors.New("the bucket name is missing")
+	}
+	rule := otherBucket
+	if s.Endpoint == "" {
+		rule = amazonBucket
+	}
+	if !rule.MatchString(s.Bucket) || strings.Contains(s.Bucket, "..") || ipLike.MatchString(s.Bucket) {
+		return errors.New("the bucket name is not valid: use 3 to 63 lowercase letters, digits, dots and hyphens")
+	}
+	return nil
+}
+
+// loopback is an endpoint on this machine, which may use plain http
+// (MinIO for tests).
+func loopback(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 // url addresses the bucket by host on Amazon and by path elsewhere, which
 // every compatible service accepts.
 func (s *S3) url(key string, q url.Values) (string, error) {
-	if s.Bucket == "" {
-		return "", errors.New("the bucket name is missing")
+	if err := s.checkBucket(); err != nil {
+		return "", err
 	}
 	var base string
 	if s.Endpoint == "" {
 		base = "https://" + s.Bucket + ".s3." + s.region() + ".amazonaws.com/"
 	} else {
 		u, err := url.Parse(strings.TrimRight(s.Endpoint, "/"))
-		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") {
+		if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
 			return "", errors.New("the endpoint must be an address like https://storage.example.com")
+		}
+		if u.Scheme != "https" && !loopback(u.Hostname()) {
+			return "", errors.New("the endpoint must use https")
 		}
 		base = u.Scheme + "://" + u.Host + "/" + s.Bucket + "/"
 	}

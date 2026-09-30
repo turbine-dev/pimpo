@@ -128,8 +128,36 @@ func TestS3AddressesAmazonByHost(t *testing.T) {
 	if u, _ := s.url("pimpo 1.pimpo", nil); u != "https://minha-casa.s3.sa-east-1.amazonaws.com/pimpo%201.pimpo" {
 		t.Fatal(u)
 	}
-	if _, err := (&S3{Endpoint: "storage.example.com", Bucket: "b"}).url("x", nil); err == nil {
+	if _, err := (&S3{Endpoint: "storage.example.com", Bucket: "bkt"}).url("x", nil); err == nil {
 		t.Fatal("accepted an endpoint without a scheme")
+	}
+}
+
+// Keys and backups never travel in the clear, and a bucket name cannot
+// send a signed request elsewhere.
+func TestS3RefusesPlainHTTPAndOddBuckets(t *testing.T) {
+	for _, ep := range []string{"http://storage.example.com", "http://192.168.1.5:9000", "https://user:pw@storage.example.com"} {
+		if _, err := (&S3{Endpoint: ep, Bucket: "casa"}).url("x", nil); err == nil {
+			t.Fatalf("accepted %s", ep)
+		}
+	}
+	for _, ep := range []string{"http://127.0.0.1:9000", "http://localhost:9000", "http://[::1]:9000", "https://storage.example.com"} {
+		if _, err := (&S3{Endpoint: ep, Bucket: "casa"}).url("x", nil); err != nil {
+			t.Fatalf("refused %s: %v", ep, err)
+		}
+	}
+	for _, b := range []string{"evil.com#", "a", "casa/../x", "Casa", "casa..x", "192.168.1.1", "-casa", "casa?x=1", strings.Repeat("a", 64)} {
+		if _, err := (&S3{Bucket: b}).url("x", nil); err == nil {
+			t.Fatalf("accepted the bucket %q", b)
+		}
+	}
+	for _, b := range []string{"minha-casa", "backups.2026", "abc"} {
+		if _, err := (&S3{Bucket: b}).url("x", nil); err != nil {
+			t.Fatalf("refused the bucket %q: %v", b, err)
+		}
+	}
+	if _, err := (&S3{Endpoint: "https://s3.eu.example.com", Bucket: "My_Bucket"}).url("x", nil); err != nil {
+		t.Fatalf("a compatible service's bucket: %v", err)
 	}
 }
 

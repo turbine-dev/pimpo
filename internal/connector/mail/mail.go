@@ -40,8 +40,11 @@ type Message struct {
 	MessageID string `json:"message_id,omitempty"`
 	// CanUnsubscribe is true when the sender offers a List-Unsubscribe.
 	CanUnsubscribe bool `json:"can_unsubscribe"`
-	unsubscribe    string
-	oneClick       bool
+	// AuthResults are the message's Authentication-Results headers, top
+	// first: the top one is the receiving provider's own verdict.
+	AuthResults []string `json:"-"`
+	unsubscribe string
+	oneClick    bool
 }
 
 // Account is one IMAP mailbox. Password is resolved from the vault per call.
@@ -284,6 +287,7 @@ func toMessage(fm *imapclient.FetchMessageBuffer, section *imap.FetchItemBodySec
 	raw := fm.FindBodySection(section)
 	msg.Snippet = snippet(raw)
 	msg.unsubscribe, msg.oneClick = listUnsubscribe(raw)
+	msg.AuthResults = authResults(raw)
 	msg.CanUnsubscribe = msg.unsubscribe != ""
 	return msg
 }

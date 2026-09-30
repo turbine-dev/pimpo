@@ -151,3 +151,22 @@ func TestWaitingForTheOwnerStopsTheRunClock(t *testing.T) {
 		t.Fatal("the request of an ended run can still be answered")
 	}
 }
+
+// Only the one responsible answers a request: a member's own requests are
+// theirs, and the owner cannot answer them.
+func TestOnlyTheResponsibleAnswers(t *testing.T) {
+	m, n := manager(t, time.Minute)
+	m.Responsible = func(_ context.Context, person string) (string, string) { return person, person }
+	go m.Ask(context.Background(), policy.Action{Capability: "gmail.send", Risk: 3, Source: "routine:x#1", Person: "ana"}, "")
+	<-n.got
+	id := idOf(n.list[0])
+	if m.MayAnswer(id, "owner") || m.MayAnswer(id, "") || m.MayAnswer(id, "bia") || !m.MayAnswer(id, "ana") {
+		t.Fatal("someone other than ana may answer her request")
+	}
+	go m.Ask(context.Background(), policy.Action{Capability: "gmail.send", Risk: 3, Source: "routine:y#1"}, "")
+	<-n.got
+	own := idOf(n.list[1])
+	if !m.MayAnswer(own, "owner") || m.MayAnswer(own, "ana") {
+		t.Fatal("the owner's own request")
+	}
+}

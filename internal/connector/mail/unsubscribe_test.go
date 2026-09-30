@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -45,5 +46,18 @@ func TestOneClickUnsubscribe(t *testing.T) {
 	}
 	if res.(map[string]any)["method"] != "one-click" || body != "POST List-Unsubscribe=One-Click" {
 		t.Fatalf("result %v body %q", res, body)
+	}
+}
+
+// The link comes from a stranger's email: it must not reach this computer.
+func TestOneClickUnsubscribeStaysOffPrivateAddresses(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer srv.Close()
+	resp, err := unsubscribeClient.Post(srv.URL, "application/x-www-form-urlencoded", strings.NewReader("List-Unsubscribe=One-Click"))
+	if err == nil {
+		resp.Body.Close()
+	}
+	if err == nil || !strings.Contains(err.Error(), "private address") {
+		t.Fatalf("posted to a loopback address: %v", err)
 	}
 }

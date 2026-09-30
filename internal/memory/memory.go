@@ -276,6 +276,25 @@ func Mine(f Fact, person string) bool {
 	return f.Person == owned(person) || (f.Person == "casa" && owned(person) == "")
 }
 
+// SharedBy names the person who shared a house fact when that was not the
+// owner: a member's word for the house, never the owner's confirmation.
+func SharedBy(f Fact) string {
+	if f.Person == "casa" && f.Source != "" && f.Source != "owner" {
+		return f.Source
+	}
+	return ""
+}
+
+// OwnersWord is a fact a run may follow as its person's own confirmed
+// word: confirmed, and not shared into the house by someone else.
+func OwnersWord(f Fact) bool { return f.Trust == High && SharedBy(f) == "" }
+
+// Authored is a fact the person may take back: one of theirs, or a house
+// fact they shared.
+func Authored(f Fact, person string) bool {
+	return Mine(f, person) || (SharedBy(f) != "" && SharedBy(f) == person)
+}
+
 // Visible is a fact the person may read: their own and the house's.
 func Visible(f Fact, person string) bool { return visible(f, person) }
 
@@ -375,7 +394,16 @@ func (m *Memory) History(limit int) ([]Version, error) {
 
 // Restore brings memory back to how it was at a version, as a new commit,
 // so the restore itself can be undone.
-func (m *Memory) Restore(hash string) error {
+func (m *Memory) Restore(hash string) error { return m.restore(hash, nil) }
+
+// RestoreFor brings back only what the person may change (their own facts
+// and, for the owner, the house's) as they were at a version; everyone
+// else's facts stay as they are now.
+func (m *Memory) RestoreFor(hash, person string) error {
+	return m.restore(hash, func(f Fact) bool { return Mine(f, person) })
+}
+
+func (m *Memory) restore(hash string, only func(Fact) bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	c, err := m.repo.CommitObject(plumbing.NewHash(hash))
@@ -390,6 +418,24 @@ func (m *Memory) Restore(hash string) error {
 	}
 	if facts == nil {
 		facts = []Fact{}
+	}
+	if only != nil {
+		now, err := m.load()
+		if err != nil {
+			return err
+		}
+		kept := []Fact{}
+		for _, f := range now {
+			if !only(f) {
+				kept = append(kept, f)
+			}
+		}
+		for _, f := range facts {
+			if only(f) {
+				kept = append(kept, f)
+			}
+		}
+		facts = kept
 	}
 	return m.save(facts, "restore to "+hash[:8]+" ("+c.Author.When.Format("02/01 15:04")+")")
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/explore"
@@ -49,8 +50,8 @@ func (h *handler) Button(_ context.Context, action, id string) (string, error) {
 
 func msg(chat int64, text string) telegram.Update {
 	m := &telegram.Message{Text: text}
-	m.Chat.ID = chat
-	m.From.FirstName = "Dener"
+	m.Chat.ID, m.Chat.Type = chat, "private"
+	m.From.ID, m.From.FirstName = chat, "Dener"
 	return telegram.Update{Message: m}
 }
 
@@ -85,7 +86,7 @@ func TestPairingAndOwnerOnly(t *testing.T) {
 	}
 
 	cb := &telegram.Callback{ID: "1", Data: "compile:e1", Message: &telegram.Message{ID: 5, Text: "Quer uma rotina?"}}
-	cb.Message.Chat.ID = 42
+	cb.Message.Chat.ID, cb.Message.Chat.Type, cb.From.ID = 42, "private", 42
 	c.handle(ctx, bot, telegram.Update{Callback: cb})
 	if len(h.buttons) != 1 || h.buttons[0] != "compile:e1" || !strings.Contains(bot.edits[0], "Rotina criada.") {
 		t.Fatalf("button %v edits %v", h.buttons, bot.edits)
@@ -197,5 +198,71 @@ func TestMutedNoticesStayInTheInbox(t *testing.T) {
 	evs, _ := ev.List(ctx, event.Query{Types: []string{EventNotice}})
 	if len(evs) != 2 {
 		t.Fatalf("a muted notice left the inbox: %d", len(evs))
+	}
+}
+
+// A group's chat id is shared by everyone in it: a group never pairs and
+// is never heard, even the owner's chat id with someone else speaking.
+func TestGroupsAndChannelsAreNeverAWayIn(t *testing.T) {
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "v.db"))
+	defer ev.Close()
+	bot := &fakeBot{}
+	h := &handler{}
+	c := &Channel{Events: ev, Bot: func(context.Context) Bot { return bot }, Handler: h}
+	ctx := context.Background()
+	group := msg(-100, "/start "+c.PairingCode())
+	group.Message.Chat.Type, group.Message.From.ID = "supergroup", 7
+	c.handle(ctx, bot, group)
+	if chat, _ := c.Chat(ctx); chat != 0 {
+		t.Fatalf("a group paired: %d", chat)
+	}
+	ev.Put(ctx, chatKey, "-100")
+	group = msg(-100, "manda meus emails")
+	group.Message.Chat.Type, group.Message.From.ID = "group", 7
+	c.handle(ctx, bot, group)
+	cb := &telegram.Callback{ID: "1", Data: "approve:a1", Message: &telegram.Message{ID: 5}}
+	cb.Message.Chat.ID, cb.Message.Chat.Type, cb.From.ID = -100, "group", 7
+	c.handle(ctx, bot, telegram.Update{Callback: cb})
+	if len(h.requests) != 0 || len(h.buttons) != 0 {
+		t.Fatalf("a group reached the handler: %v %v", h.requests, h.buttons)
+	}
+}
+
+// Guessing the pairing code is hopeless: it is long, a wrong code gets
+// no answer, a sender who keeps guessing is ignored, and the code is
+// used once and changes when someone keeps guessing.
+func TestPairingCodeResistsGuessing(t *testing.T) {
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "v.db"))
+	defer ev.Close()
+	bot := &fakeBot{}
+	c := &Channel{Events: ev, Bot: func(context.Context) Bot { return bot }, Handler: &handler{}}
+	ctx := context.Background()
+	code := c.PairingCode()
+	if len(code) < 10 || c.PairingCode() != code {
+		t.Fatalf("code %q", code)
+	}
+	for _, guess := range []string{"", "000000", "123456", "AAAAAAAAAA"} {
+		c.handle(ctx, bot, msg(99, "/start "+guess))
+	}
+	if len(bot.sent) != 0 {
+		t.Fatalf("wrong codes were answered: %v", bot.sent)
+	}
+	c.handle(ctx, bot, msg(99, "/start "+code))
+	if chat, _ := c.Chat(ctx); chat != 0 {
+		t.Fatal("a sender who kept guessing paired")
+	}
+	if !c.ClaimOwner(strings.ToLower(code)) || c.ClaimOwner(code) {
+		t.Fatal("the code must work once, whatever the case")
+	}
+	next := c.PairingCode()
+	for i := range globalTries {
+		c.Wrong("signal:" + strings.Repeat("x", i+1))
+	}
+	if c.PairingCode() == next {
+		t.Fatal("many wrong codes did not change the code")
+	}
+	c.made = c.made.Add(-codeLife - time.Minute)
+	if c.PairingCode() == code || c.ClaimOwner(next) {
+		t.Fatal("an old code still works")
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -66,5 +67,14 @@ print("linhas", len(rows))`, Files: map[string]string{"gastos.csv": "item,valor\
 	res, err = d.Run(ctx, Job{Language: "shell", Code: "sleep 90"})
 	if err != nil || !res.TimedOut {
 		t.Fatalf("no timeout: %+v %v", res, err)
+	}
+}
+
+// A tag can be moved to other contents; a digest cannot.
+func TestImagesArePinnedByDigest(t *testing.T) {
+	for lang, rt := range languages {
+		if !regexp.MustCompile(`^[a-z0-9.]+:[a-z0-9.-]+@sha256:[0-9a-f]{64}$`).MatchString(rt.image) {
+			t.Errorf("%s image %q is not pinned by digest", lang, rt.image)
+		}
 	}
 }

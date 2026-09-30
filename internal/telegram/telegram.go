@@ -48,6 +48,9 @@ type Message struct {
 	Chat struct {
 		ID    int64  `json:"id"`
 		Title string `json:"title,omitempty"`
+		// Type is "private" for a person's own chat with the bot, else
+		// "group", "supergroup" or "channel".
+		Type string `json:"type"`
 	} `json:"chat"`
 	From struct {
 		ID        int64  `json:"id"`

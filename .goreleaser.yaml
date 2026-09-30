@@ -29,6 +29,20 @@ archives:
 checksum:
   name_template: checksums.txt
 
+# checksums.txt.sig is the base64 Ed25519 signature of checksums.txt, made
+# with the release key (the RELEASE_SIGNING_KEY secret). `pimpo update` and
+# scripts/install.sh check it against the public key built into Pimpo
+# (docs/RELEASES.md). Without the key the release fails rather than ship
+# unsigned; `make release-snapshot` skips signing.
+signs:
+  - id: checksums
+    artifacts: checksum
+    cmd: go
+    args: ["run", "./cmd/pimpo", "release", "sign", "--key-env", "RELEASE_SIGNING_KEY", "--out", "${signature}", "${artifact}"]
+    signature: "${artifact}.sig"
+    env:
+      - 'RELEASE_SIGNING_KEY={{ index .Env "RELEASE_SIGNING_KEY" }}'
+
 changelog:
   sort: asc
   filters:

@@ -31,4 +31,14 @@ describe('Gallery', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Instalar esta rotina' }))
     await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url === '/api/gallery/agenda/install')).toBe(true))
   })
+
+  it('warns before installing a routine that could send your data out', async () => {
+    const leaky = { ...items[0], id: 'resumo', routine: routine('Resumo da caixa', ['gmail.search', 'http.getJSON:api.example.net']), report: { verified: true, uses: ['gmail.search'], sends: true, outside: ['api.example.net'], risk: 'read' } }
+    const calls = mockFetch({ '/api/gallery': [leaky], 'POST /api/gallery/resumo/install': { id: 'resumo' } })
+    wrap(<Gallery />)
+    await userEvent.click(await screen.findByText('Resumo da caixa'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('api.example.net')
+    await userEvent.click(screen.getByRole('button', { name: 'Instalar mesmo assim' }))
+    await waitFor(() => expect(calls.find((c) => c.url === '/api/gallery/resumo/install')?.body).toEqual({ confirm: true }))
+  })
 })

@@ -17,6 +17,8 @@ import (
 	"github.com/turbine-dev/pimpo/internal/llm"
 	"github.com/turbine-dev/pimpo/internal/memory"
 	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/policy"
+	"github.com/turbine-dev/pimpo/internal/routine"
 )
 
 // callTool calls an MCP tool and returns its text, or the error text.
@@ -184,6 +186,38 @@ func TestGateFamilyIsolation(t *testing.T) {
 	}
 	mu.Unlock()
 
+	// A member's own request is hers alone to answer: not the owner's.
+	var anaAsked approval.Request
+	gotAna := make(chan struct{})
+	sub2 := ta.Events.Subscribe(ctx)
+	go func() {
+		for e := range sub2 {
+			if e.Type == approval.EventRequested {
+				e.Decode(&anaAsked)
+				close(gotAna)
+				return
+			}
+		}
+	}()
+	go func() {
+		_, err := ta.Approvals.Ask(ctx, policy.Action{Capability: "gmail.send", Risk: 3, Source: "routine:ana-r#1", Person: "ana", Role: "member"}, "")
+		done <- err
+	}()
+	<-gotAna
+	if anaAsked.Responsible != "ana" {
+		t.Fatalf("ana's approval went to %q", anaAsked.Responsible)
+	}
+	if _, err := (handler{ta.App}).Button(people.With(ctx, people.OwnerID), "approve", anaAsked.ID); err == nil {
+		t.Fatal("the owner answered a member's own request")
+	}
+	if code, _ := ta.do(t, "POST", "/api/approvals/"+anaAsked.ID+"/once", nil); code != 404 {
+		t.Fatalf("the owner answered a member's own request over the API: %d", code)
+	}
+	if _, err := (handler{ta.App}).Button(people.With(ctx, "ana"), "deny", anaAsked.ID); err != nil {
+		t.Fatalf("ana could not answer her own request: %v", err)
+	}
+	<-done
+
 	// Buttons for the owner's things do nothing for others.
 	exps, _ := ta.Store.Explorations(ctx)
 	for _, e := range exps {
@@ -195,6 +229,11 @@ func TestGateFamilyIsolation(t *testing.T) {
 	}
 	if _, err := (handler{ta.App}).Button(people.With(ctx, "ana"), "run", "anything"); err == nil {
 		t.Fatal("ana ran a routine")
+	}
+	ta.Store.SaveRoutine(ctx, "ana-r", routine.Routine{Name: "Ana's", Code: "async function run() {}"}, "test", "human:ana")
+	ta.Store.SetRoutinePerson(ctx, "ana-r", "ana")
+	if _, err := (handler{ta.App}).Button(ctx, "run", "ana-r"); err == nil {
+		t.Fatal("the owner ran ana's routine")
 	}
 
 	// Removing someone takes their accounts with them.

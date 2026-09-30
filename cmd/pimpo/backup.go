@@ -21,7 +21,7 @@ func passphrase(in io.Reader, out io.Writer) string {
 	if p := os.Getenv("PIMPO_BACKUP_PASSPHRASE"); p != "" {
 		return p
 	}
-	fmt.Fprint(out, "Passphrase for the backup's secrets: ")
+	fmt.Fprint(out, "Passphrase for the backup: ")
 	line, _ := bufio.NewReader(in).ReadString('\n')
 	return strings.TrimSpace(line)
 }
@@ -57,18 +57,19 @@ func exportCmd(args []string, out io.Writer) error {
 		os.Remove(fs.Arg(0))
 		return err
 	}
-	fmt.Fprintf(out, "Exported everything to %s (%d secrets, encrypted with your passphrase).\n", fs.Arg(0), m.Secrets)
+	fmt.Fprintf(out, "Exported everything to %s (%d secrets), encrypted with your passphrase.\n", fs.Arg(0), m.Secrets)
 	return nil
 }
 
 func importCmd(args []string, out io.Writer) error {
 	fs := flag.NewFlagSet("import", flag.ContinueOnError)
 	dir := fs.String("data", "", "data directory (default ~/.pimpo)")
+	unsealed := fs.Bool("unsealed", false, "also take a backup that is not sealed as a whole (made by export before version 2 of the format); its database, memory and connectors cannot be checked")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if fs.NArg() != 1 {
-		return errors.New("usage: pimpo import FILE.pimpo")
+		return errors.New("usage: pimpo import [--unsealed] FILE.pimpo")
 	}
 	home := dataDir(*dir)
 	if running(home) {
@@ -81,15 +82,21 @@ func importCmd(args []string, out io.Writer) error {
 	defer f.Close()
 	stage := filepath.Join(home, "import-pending")
 	os.RemoveAll(stage)
-	m, secrets, err := backup.Unpack(f, stage, passphrase(os.Stdin, out))
+	unpack := backup.Unpack
+	if *unsealed {
+		fmt.Fprintln(out, "Warning: an unsealed backup cannot be checked. Anyone who had the file could have changed its database (people, paired devices), memory or connectors. Import it only if you are sure where it came from.")
+		unpack = backup.UnpackUnsealed
+	}
+	m, secrets, err := unpack(f, stage, passphrase(os.Stdin, out))
 	if err != nil {
+		return err
+	}
+	key := vault.OSKey(home)
+	if err := stageSecrets(stage, key, secrets); err != nil {
 		os.RemoveAll(stage)
 		return err
 	}
-	if err := saveStagedSecrets(stage, secrets); err != nil {
-		return err
-	}
-	keep, err := applyImport(home)
+	keep, err := applyImport(home, key)
 	if err != nil {
 		return err
 	}

@@ -207,6 +207,7 @@ function AddServer({ listing, env = {}, headers = {}, onClose }: { listing: McpL
                         <div className="min-w-0 flex-1">
                           <code className="font-mono text-[12.5px]">{x.tool}</code>
                           {x.description && <p className="line-clamp-2 text-[12px] text-ink-3">{x.description}</p>}
+                          {x.claimed && <p className="text-[11.5px] text-ink-3">{t('mcp.claim', { risk: t(`mcp.risk.${x.claimed}` as TKey) })}</p>}
                         </div>
                         <select className="h-8 rounded-lg border border-line bg-bg px-2 text-[12px]" value={chosen[x.tool] ?? x.risk} disabled={!chosen[x.tool]} aria-label={t('mcp.riskOf', { tool: x.tool })}
                           onChange={(e) => setChosen({ ...chosen, [x.tool]: e.target.value as CapRisk })}>

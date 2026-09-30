@@ -39,7 +39,7 @@ export type McpSource = { name: string; command?: string; args?: string[]; url?:
 export type OpenApiOp = { id: string; method: string; path: string; summary: string; risk: CapRisk }
 export type OpenApiPreview = { title: string; description: string; base: string; keys: { name: string; description: string }[]; operations: OpenApiOp[]; unsupported: { id: string; why: string }[] }
 export type OpenApiSource = { url?: string; spec?: string; header?: string }
-export type McpTool = { tool: string; capability: string; title?: string; description: string; risk: CapRisk }
+export type McpTool = { tool: string; capability: string; title?: string; description: string; risk: CapRisk; claimed?: CapRisk }
 
 export type RecentRun = { id: number; routine: string; name: string; version: number; started_at: string; ended_at?: string; outcome: 'ok' | 'failed' | 'skipped' | 'running'; error?: string; cost_usd: number; calls: number }
 
@@ -103,7 +103,7 @@ export type GalleryItem = {
   hash: string
   published: string
   installed: boolean
-  report: { verified: boolean; problems?: string[]; uses: string[]; sends: boolean; risk: 'read' | 'notify' | 'reversible' | 'irreversible' }
+  report: { verified: boolean; problems?: string[]; uses: string[]; sends: boolean; outside?: string[]; risk: 'read' | 'notify' | 'reversible' | 'irreversible' }
 }
 
 export type CatalogKind = {
@@ -209,6 +209,8 @@ export type RepoView = { path: string; git: boolean; remote: boolean; head?: str
 
 export type Finding = { id: string; group: string; name: string; state: 'ok' | 'warn' | 'fail'; detail?: string; fix?: string; link?: string }
 
+export type MyDevice = { id: string; name: string; created: string; last_seen?: string; session?: boolean; pending?: boolean; current?: boolean }
+
 export type Snapshot = { name: string; label: string; when: string; bytes: number }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -254,6 +256,8 @@ export const api = {
   saveAccount: (name: string) => request<{ name: string }>('PUT', '/api/account', { name }),
   passkeys: () => request<{ id: string; name: string; address: string; created: string; last_used?: string }[]>('GET', '/api/passkeys'),
   deletePasskey: (id: string) => request<{ removed: string }>('DELETE', `/api/passkeys/${encodeURIComponent(id)}`),
+  myDevices: () => request<MyDevice[]>('GET', '/api/me/devices'),
+  signOutDevice: (id: string) => request<{ revoked: string }>('DELETE', `/api/me/devices/${encodeURIComponent(id)}`),
   phone: () => request<PhoneState>('GET', '/api/phone'),
   phoneShares: (shares: PhoneShare[]) => request<{ shares: PhoneShare[] }>('POST', '/api/phone/shares', { shares }),
   phoneKey: () => request<{ key: string }>('POST', '/api/phone/key'),
@@ -367,8 +371,8 @@ export const api = {
   migratePreview: (from: MigrationSource, home: string) => request<MigrationPlan>('POST', '/api/migrate/preview', { from, home }),
   migrateApply: (from: MigrationSource, home: string, o: ImportOptions) => request<Imported>('POST', '/api/migrate/apply', { from, home, ...o }),
   exploreImported: (id: string) => request<{ id: string }>('POST', `/api/explorations/${id}/explore`),
-  pairing: () => request<{ base: string; devices: { id: string; name: string; person: string; created: string; last_seen?: string }[] }>('GET', '/api/pairing'),
-  setPairing: (base: string, device?: string, person?: string) => request<{ base: string; link?: string; id?: string }>('POST', '/api/pairing', { base, device, person: person || undefined }),
+  pairing: () => request<{ base: string; devices: { id: string; name: string; person: string; created: string; last_seen?: string; pending?: boolean }[] }>('GET', '/api/pairing'),
+  setPairing: (base: string, device?: string, person?: string) => request<{ base: string; link?: string; id?: string; expires?: string }>('POST', '/api/pairing', { base, device, person: person || undefined }),
   remote: () => request<RemoteState>('GET', '/api/remote'),
   switchRemote: (kind: 'tailscale' | 'lan', on: boolean) => request<RemoteState>('POST', `/api/remote/${kind}/${on ? 'on' : 'off'}`),
   revokeDevice: (id: string) => request<void>('DELETE', `/api/devices/${id}`),
@@ -378,7 +382,7 @@ export const api = {
   removePerson: (id: string) => request<void>('DELETE', `/api/people/${id}`),
   personConnection: (id: string, kind: 'mail' | 'calendar', body: Record<string, string>) => request<void>('PUT', `/api/people/${id}/connections/${kind}`, body),
   gallery: (fresh = false) => request<GalleryItem[]>('GET', `/api/gallery${fresh ? '?fresh=1' : ''}`),
-  installFromGallery: (id: string) => request<RoutineSummary>('POST', `/api/gallery/${id}/install`),
+  installFromGallery: (id: string, confirm = false) => request<RoutineSummary>('POST', `/api/gallery/${id}/install`, confirm ? { confirm } : undefined),
   publishRoutine: (id: string, author: string) => request<{ entry: unknown; author: { name: string; key: string } }>('POST', `/api/routines/${id}/publish`, { author }),
   catalog: () => request<{ connectors: CatalogKind[]; broken: string[] }>('GET', '/api/catalog'),
   setCatalog: (id: string, values: Record<string, string>) => request<void>('PUT', `/api/catalog/${id}`, values),

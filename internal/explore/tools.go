@@ -10,6 +10,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/host"
 	"github.com/turbine-dev/pimpo/internal/mcp"
 	"github.com/turbine-dev/pimpo/internal/memory"
+	"github.com/turbine-dev/pimpo/internal/netguard"
 )
 
 // toolName maps "gmail.search" to "gmail_search"; MCP tool names cannot
@@ -141,7 +142,11 @@ func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string) []mcp.
 				}
 				var out []map[string]any
 				for _, f := range facts {
-					out = append(out, map[string]any{"fact": f.Text, "topic": f.Topic, "confirmed_by_owner": f.Trust == memory.High})
+					item := map[string]any{"fact": f.Text, "topic": f.Topic, "confirmed_by_owner": memory.OwnersWord(f)}
+					if by := memory.SharedBy(f); by != "" {
+						item["shared_by"] = by
+					}
+					out = append(out, item)
 				}
 				if out == nil {
 					out = []map[string]any{}
@@ -171,15 +176,10 @@ func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string) []mcp.
 	return out
 }
 
+// hostOf is the host a call's URL really connects to, or "" when the URL
+// is not an absolute http(s) one or hides another host behind user info.
 func hostOf(url string) string {
-	h := url
-	if i := strings.Index(h, "://"); i >= 0 {
-		h = h[i+3:]
-	}
-	h, _, _ = strings.Cut(h, "/")
-	h, _, _ = strings.Cut(h, "?")
-	h, _, _ = strings.Cut(h, ":")
-	return strings.ToLower(h)
+	return netguard.Host(url)
 }
 
 // ident turns "needs reply" into "needs_reply" so it can be a JavaScript name.

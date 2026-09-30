@@ -37,7 +37,7 @@ export function CloudBackup() {
   const saved = s.config.kind !== ''
   const set = (p: Partial<CloudConfig>) => setC({ ...c, ...p })
   const driveBlocked = c.kind === 'drive' && (!s.google.connected || !s.google.drive)
-  const ready = c.kind !== '' && !driveBlocked && (s.has_passphrase || pass.length >= 8) && (c.kind !== 's3' || (!!c.bucket && (s.has_keys || (!!keys.access_key && !!keys.secret_key))))
+  const ready = c.kind !== '' && !driveBlocked && (s.has_passphrase || pass.length >= 12) && (c.kind !== 's3' || (!!c.bucket && (s.has_keys || (!!keys.access_key && !!keys.secret_key))))
 
   return (
     <Card className="p-5">

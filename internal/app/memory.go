@@ -91,9 +91,14 @@ func (a *App) addFact(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	me := people.From(r.Context())
+	ctx := r.Context()
+	me := people.From(ctx)
 	person := me
 	if req.Shared {
+		if err := a.mayShare(ctx, me); err != nil {
+			server.WriteError(w, err)
+			return
+		}
 		person = people.Household
 	}
 	f, err := a.Memory.AddFor(req.Text, req.Topic, me, memory.High, person)
@@ -105,11 +110,42 @@ func (a *App) addFact(w http.ResponseWriter, r *http.Request) {
 	server.WriteJSON(w, 200, f)
 }
 
+// sharedLimit is how many house facts one member may keep: everyone's
+// runs read them, so one person cannot fill the house's memory.
+const sharedLimit = 20
+
+// mayShare says whether a person may add a fact for the whole house. A
+// guest keeps only their own; a member's are attributed to them, never
+// read as the owner's word, and limited in number.
+func (a *App) mayShare(ctx context.Context, me string) error {
+	if me == people.OwnerID {
+		return nil
+	}
+	if a.People.Role(ctx, me) != people.Member {
+		return server.StatusError{Status: 403, Msg: "a guest keeps facts only for themselves"}
+	}
+	all, err := a.Memory.List()
+	if err != nil {
+		return err
+	}
+	n := 0
+	for _, f := range all {
+		if memory.SharedBy(f) == me {
+			n++
+		}
+	}
+	if n >= sharedLimit {
+		return server.StatusError{Status: 409, Msg: "you already share many facts with the house; remove one first"}
+	}
+	return nil
+}
+
 func (a *App) removeFact(w http.ResponseWriter, r *http.Request) {
 	if !a.needMemory(w) {
 		return
 	}
-	if f, ok := a.Memory.Get(r.PathValue("id")); !ok || !memory.Mine(f, people.From(r.Context())) {
+	// The author of a house fact may take it back.
+	if f, ok := a.Memory.Get(r.PathValue("id")); !ok || !memory.Authored(f, people.From(r.Context())) {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "no such fact"})
 		return
 	}
@@ -141,7 +177,8 @@ func (a *App) restoreMemory(w http.ResponseWriter, r *http.Request) {
 	if !a.needMemory(w) {
 		return
 	}
-	if err := a.Memory.Restore(r.PathValue("hash")); err != nil {
+	// Only the restorer's facts go back; everyone else's stay as they are.
+	if err := a.Memory.RestoreFor(r.PathValue("hash"), people.From(r.Context())); err != nil {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: err.Error()})
 		return
 	}

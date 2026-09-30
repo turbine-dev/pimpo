@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -54,7 +55,7 @@ func (a *App) galleryIndex(ctx context.Context, fresh bool) (gallery.Index, erro
 	if err != nil && src == gallery.DefaultIndex {
 		// Offline, or the community index moved: the starter set that came
 		// with this version still verifies on its own.
-		err = json.Unmarshal(starter.Index, &ix)
+		ix, err = gallery.Parse(starter.Index)
 	}
 	if err != nil {
 		return gallery.Index{}, err
@@ -95,8 +96,21 @@ func (a *App) installFromGallery(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "no such routine in the gallery"})
 		return
 	}
-	if rep := ix.Verify(ctx, e); !rep.Verified {
+	rep := ix.Verify(ctx, e)
+	if !rep.Verified {
 		server.WriteError(w, server.StatusError{Status: 422, Msg: "not installed: " + strings.Join(rep.Problems, "; ")})
+		return
+	}
+	if err := a.trustAuthor(ctx, ix, e); err != nil {
+		server.WriteError(w, server.StatusError{Status: 422, Msg: "not installed: " + err.Error()})
+		return
+	}
+	var req struct {
+		Confirm bool `json:"confirm"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	if rep.Sends && !req.Confirm {
+		server.WriteError(w, server.StatusError{Status: 409, Msg: "this routine can send your data out of Pimpo; confirm to install it"})
 		return
 	}
 	// Someone else's copy is theirs: this person gets their own.
@@ -117,7 +131,8 @@ func (a *App) installFromGallery(w http.ResponseWriter, r *http.Request) {
 		rt.Person = p
 	}
 	a.Events.Put(ctx, "gallery.origin."+rt.ID, e.ID)
-	a.Events.Append(ctx, "gallery.installed", actor(ctx), map[string]string{"routine": rt.ID, "author": e.Author, "hash": e.Hash})
+	a.rememberGalleryVersion(ctx, ix, rt.ID, e)
+	a.Events.Append(ctx, "gallery.installed", actor(ctx), map[string]any{"routine": rt.ID, "author": e.Author, "hash": e.Hash, "sends": rep.Sends})
 	a.Scheduler.Changed(ctx, rt.ID)
 	server.WriteJSON(w, 200, a.summary(ctx, rt))
 }
@@ -255,8 +270,17 @@ func (a *App) updateFromGallery(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "the routine is no longer in the gallery"})
 		return
 	}
-	if rep := ix.Verify(ctx, e); !rep.Verified {
+	rep := ix.Verify(ctx, e)
+	if !rep.Verified {
 		server.WriteError(w, server.StatusError{Status: 422, Msg: "not updated: " + strings.Join(rep.Problems, "; ")})
+		return
+	}
+	if err := a.galleryUpdateAllowed(ctx, ix, rt, e); err != nil {
+		server.WriteError(w, server.StatusError{Status: 422, Msg: "not updated: " + err.Error()})
+		return
+	}
+	if sends, _ := gallery.Sends(rt.Body); rep.Sends && !sends {
+		server.WriteError(w, server.StatusError{Status: 422, Msg: "not updated: the new version can send your data out of Pimpo; install it again from the gallery to review it"})
 		return
 	}
 	if _, err := a.Store.SaveRoutine(ctx, rt.ID, e.Routine, "updated from the gallery: "+e.Author+" "+e.Hash[:12], "human:owner"); err != nil {
@@ -274,8 +298,89 @@ func (a *App) updateFromGallery(w http.ResponseWriter, r *http.Request) {
 	}
 	a.Store.SetRoutineSettings(ctx, rt.ID, store.Settings{Schedule: rt.Settings.Schedule, Params: kept})
 	a.Events.Put(ctx, "gallery.origin."+rt.ID, e.ID)
+	a.rememberGalleryVersion(ctx, ix, rt.ID, e)
 	a.Events.Append(ctx, "gallery.updated", "human:owner", map[string]string{"routine": rt.ID, "hash": e.Hash})
 	a.Scheduler.Changed(ctx, rt.ID)
 	rt, _ = a.Store.Routine(ctx, rt.ID)
 	server.WriteJSON(w, 200, a.summary(ctx, rt))
+}
+
+// Trust on first use: the first key seen for an author is the one their
+// later entries must be signed with, and a routine only updates to a
+// newer entry by the author it was installed from. The index brings both
+// the entries and the keys, so without this whoever controls the index
+// could swap in their own key.
+const galleryAuthorsKey = "gallery.authors"
+
+func (a *App) galleryAuthors(ctx context.Context) map[string]string {
+	raw, _ := a.Events.Get(ctx, galleryAuthorsKey)
+	m := map[string]string{}
+	json.Unmarshal([]byte(raw), &m)
+	return m
+}
+
+// trustAuthor refuses an entry signed with a key other than the one first
+// seen for its author.
+func (a *App) trustAuthor(ctx context.Context, ix gallery.Index, e gallery.Entry) error {
+	key := ix.Authors[e.Author].Key
+	if known, ok := a.galleryAuthors(ctx)[e.Author]; ok && known != key {
+		return errors.New("the author " + e.Author + " now signs with a different key than when you first installed from them; if they really changed it, remove their routines and install again")
+	}
+	return nil
+}
+
+type galleryVersion struct {
+	Author    string    `json:"author"`
+	Key       string    `json:"key"`
+	Published time.Time `json:"published"`
+	// Hashes are every version installed, so an older one is never taken
+	// back.
+	Hashes []string `json:"hashes"`
+}
+
+func (a *App) galleryVersionOf(ctx context.Context, id string) (galleryVersion, bool) {
+	raw, _ := a.Events.Get(ctx, "gallery.version."+id)
+	var v galleryVersion
+	return v, raw != "" && json.Unmarshal([]byte(raw), &v) == nil
+}
+
+// rememberGalleryVersion records who signed the version now installed.
+func (a *App) rememberGalleryVersion(ctx context.Context, ix gallery.Index, id string, e gallery.Entry) {
+	key := ix.Authors[e.Author].Key
+	authors := a.galleryAuthors(ctx)
+	if _, ok := authors[e.Author]; !ok && key != "" {
+		authors[e.Author] = key
+		b, _ := json.Marshal(authors)
+		a.Events.Put(ctx, galleryAuthorsKey, string(b))
+	}
+	v, _ := a.galleryVersionOf(ctx, id)
+	v.Author, v.Key, v.Published = e.Author, key, e.Published
+	if !slices.Contains(v.Hashes, e.Hash) {
+		v.Hashes = append(v.Hashes, e.Hash)
+	}
+	b, _ := json.Marshal(v)
+	a.Events.Put(ctx, "gallery.version."+id, string(b))
+}
+
+// galleryUpdateAllowed checks an update is by the same author, with the
+// same key, and not an older version than the one installed.
+func (a *App) galleryUpdateAllowed(ctx context.Context, ix gallery.Index, rt store.Routine, e gallery.Entry) error {
+	if err := a.trustAuthor(ctx, ix, e); err != nil {
+		return err
+	}
+	v, ok := a.galleryVersionOf(ctx, rt.ID)
+	if !ok {
+		// Installed before versions were recorded: this update is the
+		// first use.
+		return nil
+	}
+	switch {
+	case e.Author != v.Author:
+		return errors.New("the gallery now lists this routine under another author (" + e.Author + ", not " + v.Author + ")")
+	case ix.Authors[e.Author].Key != v.Key:
+		return errors.New("the author signs with a different key than the version you installed")
+	case slices.Contains(v.Hashes, e.Hash) || e.Published.Before(v.Published):
+		return errors.New("the gallery offers an older version than the one you have")
+	}
+	return nil
 }

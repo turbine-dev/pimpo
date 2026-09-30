@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 type Snapshot struct {
@@ -105,6 +107,12 @@ func prune(home string) {
 	}
 }
 
+// Access is what a restore keeps from the present rather than bring back
+// from the past: who may sign in (paired devices, passkeys, the login
+// link) and who is in the household. A device or person removed after the
+// snapshot stays removed.
+var Access = []string{"devices", "passkeys", "passkey.handles", "session_token", "people"}
+
 // Restore puts a snapshot back. Pimpo must not be running. The current
 // state is snapshotted first, so a restore can itself be undone.
 func Restore(home, name string, current *sql.DB) error {
@@ -112,21 +120,74 @@ func Restore(home, name string, current *sql.DB) error {
 	if _, err := os.Stat(filepath.Join(src, "pimpo.db")); err != nil {
 		return fmt.Errorf("snapshot %s not found", name)
 	}
-	if current != nil {
-		if _, err := Create(current, home, "before-restore"); err != nil {
+	if current == nil {
+		db, err := sql.Open("sqlite", filepath.Join(home, "pimpo.db"))
+		if err != nil {
 			return err
 		}
-		current.Close()
+		current = db
 	}
+	access, err := readAccess(current)
+	if err != nil {
+		current.Close()
+		return err
+	}
+	if _, err := Create(current, home, "before-restore"); err != nil {
+		current.Close()
+		return err
+	}
+	current.Close()
 	for _, f := range []string{"pimpo.db", "pimpo.db-wal", "pimpo.db-shm"} {
 		os.Remove(filepath.Join(home, f))
 	}
 	if err := copyFile(filepath.Join(src, "pimpo.db"), filepath.Join(home, "pimpo.db")); err != nil {
 		return err
 	}
+	if err := writeAccess(filepath.Join(home, "pimpo.db"), access); err != nil {
+		return err
+	}
 	os.RemoveAll(filepath.Join(home, "memory"))
 	if err := copyDir(filepath.Join(src, "memory"), filepath.Join(home, "memory")); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
+	}
+	return nil
+}
+
+// readAccess reads the Access keys; a missing one is kept as missing.
+func readAccess(db *sql.DB) (map[string]*string, error) {
+	out := map[string]*string{}
+	for _, k := range Access {
+		var v string
+		err := db.QueryRow(`SELECT value FROM kv WHERE key = ?`, k).Scan(&v)
+		switch {
+		case err == nil:
+			out[k] = &v
+		case errors.Is(err, sql.ErrNoRows):
+			out[k] = nil
+		case strings.Contains(err.Error(), "no such table"):
+			return out, nil
+		default:
+			return nil, fmt.Errorf("read who may sign in: %w", err)
+		}
+	}
+	return out, nil
+}
+
+func writeAccess(path string, access map[string]*string) error {
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	for k, v := range access {
+		if v == nil {
+			_, err = db.Exec(`DELETE FROM kv WHERE key = ?`, k)
+		} else {
+			_, err = db.Exec(`INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, k, *v)
+		}
+		if err != nil {
+			return fmt.Errorf("keep who may sign in: %w", err)
+		}
 	}
 	return nil
 }
@@ -148,8 +209,10 @@ func copyFile(src, dst string) error {
 	return out.Close()
 }
 
+// copyDir copies folders and regular files only: a symlink planted in the
+// memory folder is not followed out of it.
 func copyDir(src, dst string) error {
-	if _, err := os.Stat(src); err != nil {
+	if _, err := os.Lstat(src); err != nil {
 		return err
 	}
 	return filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {
@@ -158,10 +221,13 @@ func copyDir(src, dst string) error {
 		}
 		rel, _ := filepath.Rel(src, p)
 		target := filepath.Join(dst, rel)
-		if d.IsDir() {
+		switch {
+		case d.IsDir():
 			return os.MkdirAll(target, 0o700)
+		case d.Type().IsRegular():
+			return copyFile(p, target)
 		}
-		return copyFile(p, target)
+		return nil
 	})
 }
 

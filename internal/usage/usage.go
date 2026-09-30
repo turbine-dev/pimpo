@@ -15,6 +15,7 @@ import (
 	"github.com/robfig/cron/v3"
 
 	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/store"
 )
 
@@ -91,8 +92,15 @@ type Approvals struct {
 	Expired  int `json:"expired"`
 }
 
-// Build reads the log and the store for the days before now.
+// Build reads the log and the store for the days before now, for the
+// owner's own routines.
 func Build(ctx context.Context, ev *event.Store, st *store.Store, now time.Time, days int, zone *time.Location) (Report, error) {
+	return BuildFor(ctx, ev, st, now, days, zone, people.OwnerID)
+}
+
+// BuildFor reports only on the person's own routines: nobody, the owner
+// included, learns how anyone else's routines did.
+func BuildFor(ctx context.Context, ev *event.Store, st *store.Store, now time.Time, days int, zone *time.Location, person string) (Report, error) {
 	if days <= 0 {
 		days = 21
 	}
@@ -101,9 +109,15 @@ func Build(ctx context.Context, ev *event.Store, st *store.Store, now time.Time,
 	}
 	since := now.Add(-time.Duration(days) * 24 * time.Hour)
 	rep := Report{Since: since, Until: now, Routines: []Routine{}}
-	routines, err := st.Routines(ctx)
+	all, err := st.Routines(ctx)
 	if err != nil {
 		return rep, err
+	}
+	var routines []store.Routine
+	for _, r := range all {
+		if people.Norm(r.Person) == people.Norm(person) {
+			routines = append(routines, r)
+		}
 	}
 	events, err := ev.List(ctx, event.Query{Types: []string{"routine.run.started", "routine.run.finished", "routine.run.failed", "routine.run.missed",
 		"routine.paused", "routine.resumed", "routine.created", "approval.requested", "approval.resolved", "system.started", "system.gap"}, Newest: true, Limit: 50000})

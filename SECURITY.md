@@ -33,6 +33,7 @@ Anything that breaks the promises in [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md
 - one person of the house reaching another's data
 - a gallery routine or connector that does more than it declares
 - a way past the web UI's authentication
+- a way to make `pimpo update`, the installer or the gallery accept something not signed with the keys built into Pimpo
 
 ## Audits
 

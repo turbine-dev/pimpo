@@ -97,15 +97,17 @@ func TestCloudVoice(t *testing.T) {
 }
 
 // The chat's readings are kept: the same text with the same voice comes
-// back from the cache, another voice is read anew.
+// back from the cache, another voice is read anew. Each person's readings
+// are their own, and nothing in the answer says whether it was cached.
 func TestSpeakCache(t *testing.T) {
 	if _, err := exec.LookPath("say"); err != nil {
 		t.Skip("no macOS voices")
 	}
 	ta := newApp(t, weatherAgent, &llm.Fake{})
 	ta.Home = t.TempDir()
-	speak := func() (int, string) {
-		req, _ := http.NewRequest("POST", ta.srv.URL+"/api/speak", strings.NewReader(`{"text":"Bom dia, tudo certo?","language":"pt-BR"}`))
+	const text = "Bom dia, tudo certo?"
+	speak := func() int {
+		req, _ := http.NewRequest("POST", ta.srv.URL+"/api/speak", strings.NewReader(`{"text":"`+text+`","language":"pt-BR"}`))
 		req.Header.Set("Authorization", "Bearer tok")
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := http.DefaultClient.Do(req)
@@ -114,18 +116,32 @@ func TestSpeakCache(t *testing.T) {
 		}
 		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
-		return resp.StatusCode, resp.Header.Get("X-Pimpo-Cache")
+		for k := range resp.Header {
+			if strings.Contains(strings.ToLower(k), "cache") {
+				t.Fatalf("the answer tells about the cache: %s", k)
+			}
+		}
+		return resp.StatusCode
 	}
-	if code, cache := speak(); code != 200 || cache != "" {
-		t.Fatalf("first %d %q", code, cache)
+	v := ta.Settings(context.Background()).chatVoice()
+	cached := func(person string) bool {
+		_, ok := ta.cachedSpeech(speechKey(v, "pt-BR", person+"\x00"+spoken(text)))
+		return ok
 	}
-	if code, cache := speak(); code != 200 || cache != "hit" {
-		t.Fatalf("second %d %q", code, cache)
+	if code := speak(); code != 200 || !cached("owner") {
+		t.Fatalf("first %d, cached %v", code, cached("owner"))
+	}
+	if cached("ana") {
+		t.Fatal("the owner's reading is in someone else's cache")
+	}
+	if code := speak(); code != 200 {
+		t.Fatalf("second %d", code)
 	}
 	s := ta.Settings(context.Background())
 	s.ChatVoice = "system"
 	ta.do(t, "PUT", "/api/settings", s)
-	if _, cache := speak(); cache == "hit" {
+	v = ta.Settings(context.Background()).chatVoice()
+	if cached("owner") {
 		t.Fatal("another voice came from the cache")
 	}
 }

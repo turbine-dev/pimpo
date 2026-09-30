@@ -15,6 +15,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/turbine-dev/pimpo/internal/netguard"
 )
 
 // A declarative connector needs no program: connector.json describes each
@@ -135,6 +137,16 @@ func (h *HTTPSpec) validate(caps []Capability, env []string) error {
 		}
 	}
 	return nil
+}
+
+// remoteURLOK: a remote MCP server is https, or plain http only on this
+// computer, judged by the URL's exact host.
+func remoteURLOK(raw string) bool {
+	u, err := netguard.ParseURL(raw)
+	if err != nil {
+		return false
+	}
+	return u.Scheme == "https" || isLoopback(u.Hostname())
 }
 
 func isLoopback(host string) bool {
@@ -318,10 +330,7 @@ func httpClient(base *url.URL, timeout time.Duration) *http.Client {
 			}
 			return nil
 		}
-		if ip == nil || ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
-			return fmt.Errorf("refusing to connect to private address %s", host)
-		}
-		return nil
+		return netguard.Control("", address, nil)
 	}}
 	return &http.Client{
 		Timeout:   timeout,

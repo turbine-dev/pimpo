@@ -4,8 +4,6 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -66,11 +64,15 @@ func run(args []string) error {
 		return reportCmd(args, os.Stdout)
 	case "update":
 		return updateCmd(args, os.Stdout)
+	case "release":
+		return releaseCmd(args, os.Stdout)
+	case "token":
+		return tokenCmd(args, os.Stdout)
 	case "version":
 		fmt.Println(version)
 		return nil
 	}
-	return fmt.Errorf("unknown command %q (try: serve, update, export, import, routines, report, local, protect, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
+	return fmt.Errorf("unknown command %q (try: serve, token, update, release, export, import, routines, report, local, protect, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
 }
 
 func dataDir(flagValue string) string {
@@ -110,7 +112,7 @@ func serve(args []string) error {
 		return err
 	}
 	if pendingImport(home) {
-		keep, err := applyImport(home)
+		keep, err := applyImport(home, vault.OSKey(home))
 		if err != nil {
 			return fmt.Errorf("finishing the import: %w", err)
 		}
@@ -143,7 +145,7 @@ func serve(args []string) error {
 	defer os.Remove(filepath.Join(home, "pimpo.pid"))
 	go dailySnapshots(ctx, store, home)
 
-	token, err := sessionToken(ctx, store)
+	token, created, err := sessionToken(ctx, store)
 	if err != nil {
 		return err
 	}
@@ -179,7 +181,17 @@ func serve(args []string) error {
 		return err
 	}
 	srv := a.Server
-	fmt.Printf("Pimpo %s is running.\n\n  Open: http://%s/auth?token=%s\n\nData: %s\n", version, ln.Addr(), token, home)
+	store.Put(ctx, listenKey, ln.Addr().String())
+	if os.Getenv("PIMPO_TOKEN") == "" {
+		go followToken(ctx, store, token, srv.SetToken)
+	}
+	// The login link opens everything, so it is printed only when made;
+	// `pimpo token` prints it again, `pimpo token rotate` replaces it.
+	if created {
+		fmt.Printf("Pimpo %s is running.\n\n  Open: %s\n\nData: %s\n", version, loginLink(ln.Addr().String(), token), home)
+	} else {
+		fmt.Printf("Pimpo %s is running at http://%s\n\n  Sign in with a passkey or a paired device; `pimpo token` prints the login link.\n\nData: %s\n", version, ln.Addr(), home)
+	}
 	httpSrv := &http.Server{Handler: srv, ReadHeaderTimeout: 10 * time.Second}
 	go func() {
 		<-ctx.Done()
@@ -316,20 +328,4 @@ func snapshots(cmd string, args []string) error {
 		return nil
 	}
 	return nil
-}
-
-// sessionToken is created once and kept, so the login link stays valid
-// across restarts until the user rotates it.
-func sessionToken(ctx context.Context, s *event.Store) (string, error) {
-	// Browser tests pin the token so they can log in.
-	if t := os.Getenv("PIMPO_TOKEN"); t != "" {
-		return t, s.Put(ctx, "session_token", t)
-	}
-	if t, err := s.Get(ctx, "session_token"); err != nil || t != "" {
-		return t, err
-	}
-	b := make([]byte, 24)
-	rand.Read(b)
-	t := hex.EncodeToString(b)
-	return t, s.Put(ctx, "session_token", t)
 }

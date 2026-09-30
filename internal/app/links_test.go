@@ -45,8 +45,8 @@ func TestSignalLikeChannelPairsAndAnswersByNumber(t *testing.T) {
 	ta.links = map[string]*linkRun{"signal": run}
 
 	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: "pimpo 000000"})
-	if !strings.Contains(l.last(), "não confere") {
-		t.Fatalf("%q", l.last())
+	if l.last() != "" {
+		t.Fatalf("a wrong code was answered: %q", l.last())
 	}
 	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: "pimpo " + ta.Channel.PairingCode()})
 	if !strings.Contains(l.last(), "conectado por aqui") {

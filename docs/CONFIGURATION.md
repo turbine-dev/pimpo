@@ -21,11 +21,12 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 
 | Command | Flags | What it does |
 |---|---|---|
-| `pimpo serve` | `--addr` (default `127.0.0.1:7788`), `--data DIR`, `--demo` | Runs the server, the web app and the channels. Prints the login link. |
-| `pimpo update` | `--check`, `--beta`, `--version vX.Y.Z`, `--rollback` | Replaces this binary with the latest release after checking it against the release's checksums, keeping the old one as `pimpo.previous`; `--rollback` puts it back. Restart Pimpo afterwards: its first start keeps a snapshot of the data (`before-VERSION`). The desktop app updates itself instead. |
+| `pimpo serve` | `--addr` (default `127.0.0.1:7788`), `--data DIR`, `--demo` | Runs the server, the web app and the channels. Prints the login link the first time. |
+| `pimpo token` | `rotate`, `--data DIR` | Prints the owner's login link; `rotate` replaces it, signing out every browser that used the old one (a running Pimpo follows within seconds, unless `PIMPO_TOKEN` fixes the token). |
+| `pimpo update` | `--check`, `--beta`, `--version vX.Y.Z`, `--rollback` | Replaces this binary with the latest release after checking it against the release's checksums, whose signature must match a release key built into Pimpo, keeping the old one as `pimpo.previous`; `--rollback` puts it back. Restart Pimpo afterwards: its first start keeps a snapshot of the data (`before-VERSION`). The desktop app updates itself instead. |
 | `pimpo version` | | Prints the version. |
-| `pimpo export FILE.pimpo` | `--data DIR` | Writes everything to one file, secrets sealed with a passphrase. Refuses to overwrite an existing file. |
-| `pimpo import FILE.pimpo` | `--data DIR` | Replaces the data with a backup. Pimpo must be stopped. What was there is kept aside. |
+| `pimpo export FILE.pimpo` | `--data DIR` | Writes everything to one file, sealed as a whole with a passphrase. Refuses to overwrite an existing file. |
+| `pimpo import FILE.pimpo` | `--data DIR`, `--unsealed` | Replaces the data with a backup. Pimpo must be stopped. What was there is kept aside. `--unsealed` also takes a file exported before format 2, whose contents cannot be checked. |
 | `pimpo snapshots` | `--data DIR` | Lists the local snapshots, with date and size. |
 | `pimpo snapshot [LABEL…]` | `--data DIR` | Takes a snapshot now. |
 | `pimpo restore NAME` | `--data DIR` | Goes back to a snapshot. Pimpo must be stopped. The current state is snapshotted first. |
@@ -39,9 +40,11 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 | `pimpo migrate openclaw\|hermes` | `--home DIR`, `--data DIR`, `--apply`, `--secrets`, `--trust` | Shows what would come over from OpenClaw or Hermes; `--apply` imports it (Pimpo must be stopped), `--secrets` also brings the Telegram token and mail password, `--trust` treats imported memories and rules as your own words. Takes a snapshot first. |
 | `pimpo gallery keygen` | `--out KEYFILE` | Creates a signing key for publishing routines. |
 | `pimpo gallery build DIR` | `--key KEYFILE`, `--author ID`, `--name NAME` | Signs `DIR/routines/*.json` into `DIR/index.json`, then verifies it. |
-| `pimpo gallery verify INDEX` | | Verifies a gallery index (file or URL). Fails on any problem. |
+| `pimpo gallery sign-authors DIR` | `--key KEYFILE` | Maintainers: signs the authors in `DIR/index.json` with the gallery root key. |
+| `pimpo gallery verify INDEX` | | Verifies a gallery index (file or URL), its authors' signature included. Fails on any problem. |
 | `pimpo protect suggest` | `--domain D` or `--pattern REGEX`, `--capability NAME`, `--reason TEXT` | Prints a protection-list entry to propose by pull request. |
 | `pimpo protect sign DIR` | `--key KEYFILE` | Maintainers: signs `DIR/entries.json` into `DIR/list.json`. |
+| `pimpo release sign FILE` | `--key KEYFILE` or `--key-env NAME`, `--out SIGFILE` | Maintainers: writes `FILE.sig`, the Ed25519 signature the release uses for `checksums.txt` ([RELEASES.md](RELEASES.md)). |
 | `pimpo protect verify FILE` | | Checks a signed protection list. |
 
 `serve` does a few things before it listens: it finishes an import started in the web app, applies a snapshot restore chosen in the web app, and takes a snapshot when the version changed since the last start. While it runs it takes a snapshot every 24 hours.
@@ -92,7 +95,7 @@ Pimpo reads only these. None of them is needed for normal use.
 |---|---|---|
 | `PIMPO_HOME` | every command | The data folder, when `--data` is not given. |
 | `ZODIM_HOME` | every command | Same as `PIMPO_HOME`, from when Pimpo was called Zodim. `PIMPO_HOME` wins. |
-| `PIMPO_BACKUP_PASSPHRASE` | `export`, `import` | The backup passphrase, instead of asking on the terminal. At least 8 characters. |
+| `PIMPO_BACKUP_PASSPHRASE` | `export`, `import` | The backup passphrase, instead of asking on the terminal. At least 12 characters for a new export. |
 | `PIMPO_TOKEN` | `serve` | Fixes the login token instead of the stored one, and stores it. The desktop app and browser tests use it. |
 | `PIMPO_TELEGRAM_API` | `serve` | The address of a self-hosted Telegram Bot API server. Empty uses Telegram's. |
 | `PIMPO_DESKTOP_NOTIFY` | `serve` | Any value: show notices as system notifications, and complete `PATH` from the usual install folders and the login shell (so the `claude`, `codex` and `opencode` CLIs are found when started from the Finder). Set by the desktop app. |
@@ -300,7 +303,7 @@ For a server (Docker or systemd) and reaching it safely from elsewhere, see [SEL
 
 ### Logging in
 
-At start, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`. Opening it sets an http-only, same-site session cookie for a year. The token is created once and kept in the database, so the link stays valid across restarts; `PIMPO_TOKEN` replaces it. Every API call needs the cookie or `Authorization: Bearer <token>`, with the session token or a device token. The web app's files, `/api/health` and routes that check their own credential (the WhatsApp webhook, routine webhooks at `/hook/…`, the Google and Spotify sign-in callbacks, the per-exploration MCP endpoint) are the only ones reachable without it.
+The first time it starts, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`; `pimpo token` prints it again and `pimpo token rotate` replaces it. Opening it sets an http-only, same-site session cookie for a year. The token is created once and kept in the database, so the link stays valid across restarts until rotated; `PIMPO_TOKEN` replaces it. A link the owner makes for someone else is an invite: it works once, within 15 minutes, and opens a session with a token of its own; the person sees the device in **Account** and in their activity, and can sign it out there. Requests that change something with the browser's cookie must come from Pimpo's own page (the `Origin`, or `Sec-Fetch-Site`, must match the address), and JSON bodies must say `Content-Type: application/json`; clients that send `Authorization: Bearer` are exempt. Every answer carries a `Content-Security-Policy` that allows only Pimpo's own scripts and forbids framing. Every API call needs the cookie or `Authorization: Bearer <token>`, with the session token or a device token. The web app's files, `/api/health` and routes that check their own credential (the WhatsApp webhook, routine webhooks at `/hook/…`, the Google and Spotify sign-in callbacks, the per-exploration MCP endpoint) are the only ones reachable without it.
 
 ### Phones and other devices
 
@@ -318,7 +321,7 @@ At start, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`. Opening i
 - **Expiry.** A paired device unused for 180 days, and a passkey session unused for 30, no longer opens Pimpo.
 - **Wrong sign-ins.** Past 20 wrong tokens or links in 10 minutes from one address, further wrong attempts wait a second and get HTTP 429. Requests without any credential do not count, and a valid token always works.
 - **Removing a person** revokes their devices, sessions and passkeys at once.
-- **The administrator's account.** The first visit with the login link asks for the administrator's name (`admin.account` in the database) and offers a passkey. The login link printed at start stays the administrator's way in (the desktop app opens Pimpo with it); keep it private.
+- **The administrator's account.** The first visit with the login link asks for the administrator's name (`admin.account` in the database) and offers a passkey. The login link printed at the first start (and by `pimpo token`) stays the administrator's way in (the desktop app opens Pimpo with it); keep it private.
 
 ## Local models
 
@@ -337,7 +340,7 @@ Without a local speech-to-text model, voice notes use whisper.cpp (`whisper-cli`
 There are three kinds of copies. The [user guide](USER_GUIDE.md#moving-and-backups) has the details.
 
 - **Local snapshots** (**Settings › Backup › Local copies**, `pimpo snapshots`, `pimpo restore`): the database and memory, every day, before each update, before an import and before a migration. The last 10 are kept in `~/.pimpo/snapshots`. A restore chosen in the app takes effect at the next start. A snapshot brings back data, not the old version of the app.
-- **Export and import** (**Settings › Backup › Export and import everything**, `pimpo export`, `pimpo import`): one `.pimpo` file with the database, memory, installed connectors and the vault's secrets. The secrets are sealed with a passphrase of at least 8 characters; the rest of the file is not encrypted, so keep it somewhere private. Importing keeps what was there in `before-import-<date>/`.
+- **Export and import** (**Settings › Backup › Export and import everything**, `pimpo export`, `pimpo import`): one `.pimpo` file with the database, memory, installed connectors and the vault's secrets. The whole file is encrypted and authenticated with a passphrase of at least 12 characters, and an import checks every file and the event history before placing anything. Files exported before format 2 (only their secrets sealed) open only with `pimpo import --unsealed`. Importing keeps what was there in `before-import-<date>/`.
 - **Cloud backup** (**Settings › Backup › Automatic cloud backup**): the same export, encrypted as a whole on this computer (database and memory included), sent daily (default) or weekly to Amazon S3 or a compatible service (R2, B2, MinIO, Wasabi) or to Google Drive. It keeps the newest copies, 7 by default, from 1 to 90. S3 needs the bucket, region, service address (empty for Amazon), an optional folder, and an access key that can read, write, list and delete there. Drive needs Google connected with Drive allowed.
 
 Keep the passphrase outside Pimpo: without it no one can open a backup.

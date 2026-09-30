@@ -69,7 +69,7 @@ func TestChatRehearsesThenDoesExactlyWhatItShowed(t *testing.T) {
 	mu.Lock()
 	second := prompts[1]
 	mu.Unlock()
-	if !strings.Contains(second, "Owner: Anota: pagar a conta de luz") || !strings.HasSuffix(second, "Now the owner says: e a de água também") {
+	if !strings.Contains(second, `"owner":"Anota: pagar a conta de luz"`) || !strings.HasSuffix(second, "Now the owner says: e a de água também") {
 		t.Fatalf("the second message lost the conversation: %q", second)
 	}
 

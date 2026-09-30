@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/turbine-dev/pimpo/internal/i18n"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -35,6 +36,8 @@ type When struct {
 	ArgsContain []string `json:"args_contain,omitempty"`
 	// Hosts matches http calls to these hosts.
 	Hosts []string `json:"hosts,omitempty"`
+	// Paths matches actions whose files are all inside these folders.
+	Paths []string `json:"paths,omitempty"`
 	// People and Roles match who the run acts for ("ana"; "member", "guest").
 	People []string `json:"people,omitempty"`
 	Roles  []string `json:"roles,omitempty"`
@@ -75,6 +78,9 @@ func (w When) matches(a Action) bool {
 	if len(w.Hosts) > 0 && !contains(w.Hosts, strings.ToLower(a.Scope)) {
 		return false
 	}
+	if len(w.Paths) > 0 && !allInside(a.Paths, w.Paths) {
+		return false
+	}
 	if len(w.ArgsContain) > 0 {
 		b, _ := json.Marshal(a.Args)
 		text := strings.ToLower(string(b))
@@ -83,6 +89,29 @@ func (w When) matches(a Action) bool {
 			hit = hit || strings.Contains(text, strings.ToLower(s))
 		}
 		if !hit {
+			return false
+		}
+	}
+	return true
+}
+
+// allInside reports whether there is at least one path and every one is
+// inside one of the folders. Paths must be absolute and clean; anything
+// else never matches.
+func allInside(paths, folders []string) bool {
+	if len(paths) == 0 {
+		return false
+	}
+	for _, p := range paths {
+		if !filepath.IsAbs(p) || filepath.Clean(p) != p {
+			return false
+		}
+		in := false
+		for _, f := range folders {
+			f = filepath.Clean(f)
+			in = in || p == f || strings.HasPrefix(p, strings.TrimSuffix(f, string(filepath.Separator))+string(filepath.Separator))
+		}
+		if !in {
 			return false
 		}
 	}
@@ -140,6 +169,11 @@ func (r Rule) Validate() error {
 	case "", "read", "notify", "reversible", "irreversible":
 	default:
 		return fmt.Errorf("unknown risk %q", r.When.MinRisk)
+	}
+	for _, p := range r.When.Paths {
+		if !filepath.IsAbs(p) {
+			return fmt.Errorf("the folder %q must be a full path", p)
+		}
 	}
 	for _, role := range r.When.Roles {
 		if role != "owner" && role != "member" && role != "guest" {
@@ -291,6 +325,12 @@ func (e *Engine) hosts(ctx context.Context) map[string]bool {
 	return m
 }
 
+// KnownHost says whether the owner answered about a web host, and how.
+func (e *Engine) KnownHost(ctx context.Context, host string) (allowed, known bool) {
+	allowed, known = e.hosts(ctx)[strings.ToLower(host)]
+	return allowed, known
+}
+
 // Decide checks the rules; with no match, the risk decides: reversible
 // changes are allowed but made undoable, everything else is allowed. A
 // guest's request never changes anything without the responsible person.
@@ -323,9 +363,10 @@ func (e *Engine) decide(ctx context.Context, a Action) Decision {
 			d = Decision{Verdict: Ask, Reason: "first time reaching " + a.Scope}
 		}
 	}
-	// Blocks always win. A rule naming both a source and capabilities (what
-	// "always allow" creates) is specific and overrides general rules;
-	// among rules of the same kind the strictest wins.
+	// Blocks always win. A rule naming capabilities and narrowing them to a
+	// source (what "always allow" creates), hosts or folders is specific and
+	// overrides general rules; among rules of the same kind the strictest
+	// wins.
 	var general, specific *Decision
 	for _, r := range e.Rules(ctx) {
 		if r.Off || !r.When.matches(a) {
@@ -335,7 +376,7 @@ func (e *Engine) decide(ctx context.Context, a Action) Decision {
 			return Decision{Verdict: Block, Reason: r.Text, Rule: r.ID}
 		}
 		slot := &general
-		if r.When.Source != "" && len(r.When.Capabilities) > 0 {
+		if len(r.When.Capabilities) > 0 && (r.When.Source != "" || len(r.When.Hosts) > 0 || len(r.When.Paths) > 0) {
 			slot = &specific
 		}
 		if *slot == nil || strength[r.Then] > strength[(*slot).Verdict] {

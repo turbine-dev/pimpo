@@ -5,13 +5,12 @@ package owner
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"github.com/turbine-dev/pimpo/internal/i18n"
-	"math/big"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/explore"
@@ -58,19 +57,11 @@ type Channel struct {
 	// ReadPhoto finds the text in a photo; nil means photos are ignored.
 	ReadPhoto func(ctx context.Context, image []byte) (string, error)
 
-	mu   sync.Mutex
-	code string
-}
-
-// PairingCode returns a short code the owner sends as "/start <code>".
-func (c *Channel) PairingCode() string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.code == "" {
-		n, _ := rand.Int(rand.Reader, big.NewInt(900000))
-		c.code = strconv.FormatInt(n.Int64()+100000, 10)
-	}
-	return c.code
+	mu      sync.Mutex
+	code    string
+	made    time.Time
+	wrong   int
+	senders map[string]*tries
 }
 
 func (c *Channel) Chat(ctx context.Context) (int64, error) {
@@ -165,9 +156,19 @@ func (c *Channel) who(ctx context.Context, chat int64) (string, bool) {
 	return "", false
 }
 
+// private says whether a message comes from a person's own chat with the
+// bot. In groups and channels the chat id is shared by many people, so
+// they are never a way in.
+func private(m *telegram.Message) bool {
+	return m != nil && m.Chat.Type == "private" && m.Chat.ID == m.From.ID
+}
+
 func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 	if u.Message != nil {
 		m := u.Message
+		if !private(m) {
+			return
+		}
 		text := strings.TrimSpace(m.Text)
 		if strings.HasPrefix(text, "/start") {
 			c.pair(ctx, bot, m, strings.TrimSpace(strings.TrimPrefix(text, "/start")))
@@ -217,7 +218,7 @@ func (c *Channel) handle(ctx context.Context, bot Bot, u telegram.Update) {
 		return
 	}
 	if cb := u.Callback; cb != nil {
-		if cb.Message == nil {
+		if cb.Message == nil || cb.Message.Chat.Type != "private" || cb.From.ID != cb.Message.Chat.ID {
 			bot.Answer(ctx, cb.ID, "")
 			return
 		}
@@ -266,30 +267,35 @@ func (c *Channel) listen(ctx context.Context, bot Bot, fileID string) (string, e
 	return c.Transcribe(ctx, audio)
 }
 
+// pair links the chat to the owner or to an invited person. Wrong codes
+// get no answer, so guessing teaches nothing, and they count against
+// the sender.
 func (c *Channel) pair(ctx context.Context, bot Bot, m *telegram.Message, code string) {
 	chat, _ := c.Chat(ctx)
-	if c.People != nil && code != "" && chat != m.Chat.ID {
-		if p, err := c.People.Pair(ctx, code, m.Chat.ID); err == nil {
-			c.Events.Append(ctx, EventPaired, "human:"+p.ID, map[string]any{"chat": m.Chat.ID, "person": p.ID})
-			bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.person", "name", p.Name))
-			return
-		}
-	}
-	if chat != 0 && chat != m.Chat.ID {
-		return
-	}
 	if chat == m.Chat.ID {
 		bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.already"))
 		return
 	}
-	if code == "" || code != c.PairingCode() {
-		bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.badCode"))
+	sender := "telegram:" + strconv.FormatInt(m.From.ID, 10)
+	if code == "" || c.Blocked(sender) {
+		return
+	}
+	if c.People != nil {
+		p, err := c.People.Pair(ctx, code, m.Chat.ID)
+		if err == nil {
+			c.Events.Append(ctx, EventPaired, "human:"+p.ID, map[string]any{"chat": m.Chat.ID, "person": p.ID})
+			bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.person", "name", p.Name))
+			return
+		}
+		if !errors.Is(err, people.ErrUnknown) {
+			return
+		}
+	}
+	if chat != 0 || !c.ClaimOwner(code) {
+		c.Wrong(sender)
 		return
 	}
 	c.Events.Put(ctx, chatKey, strconv.FormatInt(m.Chat.ID, 10))
 	c.Events.Append(ctx, EventPaired, "human:owner", map[string]any{"chat": m.Chat.ID, "name": m.From.FirstName})
-	c.mu.Lock()
-	c.code = ""
-	c.mu.Unlock()
 	bot.Send(ctx, m.Chat.ID, i18n.T(ctx, "msg.pair.owner", "name", m.From.FirstName))
 }

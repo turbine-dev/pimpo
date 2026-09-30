@@ -2,12 +2,15 @@ package app
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"github.com/turbine-dev/pimpo/internal/owner"
 	"io"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/turbine-dev/pimpo/internal/connector"
 	"github.com/turbine-dev/pimpo/internal/explore"
@@ -45,7 +48,7 @@ func (a *App) ownerWhatsApp(ctx context.Context) string {
 func (a *App) whatsappVerify(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	want, _ := a.Vault.Get(r.Context(), "whatsapp.verify_token")
-	if q.Get("hub.mode") != "subscribe" || want == "" || q.Get("hub.verify_token") != want {
+	if q.Get("hub.mode") != "subscribe" || want == "" || subtle.ConstantTimeCompare([]byte(q.Get("hub.verify_token")), []byte(want)) != 1 {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -73,8 +76,53 @@ func (a *App) whatsappWebhook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	bg := context.WithoutCancel(ctx)
 	for _, m := range msgs {
-		a.whatsappMessage(bg, m)
+		if waSeen.fresh(m, time.Now()) {
+			a.whatsappMessage(bg, m)
+		}
 	}
+}
+
+// A signed webhook body stays valid forever, so Meta's retries and
+// anyone replaying a captured body would repeat a message (an approval,
+// a request). Each message id is handled once; old messages are dropped.
+const (
+	waRecent = 2048
+	waMaxAge = 24 * time.Hour
+)
+
+type recentIDs struct {
+	mu    sync.Mutex
+	seen  map[string]bool
+	order []string
+}
+
+var waSeen recentIDs
+
+// fresh says whether m is new: it has an id not seen among the recent
+// ones and is not older than waMaxAge. It remembers m.
+func (r *recentIDs) fresh(m whatsapp.Inbound, now time.Time) bool {
+	if !m.Time.IsZero() && now.Sub(m.Time) > waMaxAge {
+		return false
+	}
+	if m.ID == "" {
+		// Meta always sends one; without it a replay cannot be told apart.
+		return false
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.seen[m.ID] {
+		return false
+	}
+	if r.seen == nil {
+		r.seen = map[string]bool{}
+	}
+	if len(r.order) >= waRecent {
+		delete(r.seen, r.order[0])
+		r.order = r.order[1:]
+	}
+	r.seen[m.ID] = true
+	r.order = append(r.order, m.ID)
+	return true
 }
 
 func (a *App) whatsappMessage(ctx context.Context, m whatsapp.Inbound) {
@@ -129,22 +177,33 @@ func pairingCode(text string) (string, bool) {
 	return "", false
 }
 
+// whatsappPair links the number to the owner or an invited person. Wrong
+// codes get no answer, so guessing teaches nothing, and they count
+// against the number.
 func (a *App) whatsappPair(ctx context.Context, m whatsapp.Inbound, code string, reply func(string)) {
-	if a.ownerWhatsApp(ctx) == "" && code == a.Channel.PairingCode() {
-		if _, taken := a.People.ByWhatsApp(ctx, m.From); taken {
-			return
-		}
+	sender := "whatsapp:" + m.From
+	if a.Channel.Blocked(sender) {
+		return
+	}
+	_, taken := a.People.ByWhatsApp(ctx, m.From)
+	if taken || a.ownerWhatsApp(ctx) == m.From {
+		return
+	}
+	if a.ownerWhatsApp(ctx) == "" && a.Channel.ClaimOwner(code) {
 		a.Events.Put(ctx, "whatsapp.owner", m.From)
 		a.Events.Append(ctx, "whatsapp.paired", "human:owner", map[string]string{"person": people.OwnerID})
 		reply(i18n.T(ctx, "msg.pair.whatsapp"))
 		return
 	}
-	if p, err := a.People.PairWhatsApp(ctx, code, m.From); err == nil {
+	p, err := a.People.PairWhatsApp(ctx, code, m.From)
+	if err == nil {
 		a.Events.Append(ctx, "whatsapp.paired", "human:"+p.ID, map[string]string{"person": p.ID})
 		reply(i18n.T(ctx, "msg.pair.whatsappPerson", "name", p.Name))
 		return
 	}
-	reply(i18n.T(ctx, "msg.pair.whatsappBad"))
+	if errors.Is(err, people.ErrUnknown) {
+		a.Channel.Wrong(sender)
+	}
 }
 
 // mirrorWhatsApp sends a notice to the person on WhatsApp too. WhatsApp

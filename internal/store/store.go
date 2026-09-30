@@ -563,3 +563,32 @@ func (s *Store) RunCostSince(ctx context.Context, routine string, t time.Time) (
 
 // DB exposes the connection for tests and migrations.
 func (s *Store) DB() *sql.DB { return s.db }
+
+// ForgetPerson deletes a removed person's routines (with their versions
+// and runs) and explorations, and returns the routine ids so the
+// scheduler can let them go.
+func (s *Store) ForgetPerson(ctx context.Context, person string) ([]string, error) {
+	if person == "" || person == "owner" {
+		return nil, errors.New("the owner is never forgotten")
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT id FROM routines WHERE person = ?`, person)
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		rows.Scan(&id)
+		ids = append(ids, id)
+	}
+	rows.Close()
+	for _, id := range ids {
+		for _, q := range []string{`DELETE FROM runs WHERE routine = ?`, `DELETE FROM routine_versions WHERE routine = ?`, `DELETE FROM routines WHERE id = ?`} {
+			if _, err := s.db.ExecContext(ctx, q, id); err != nil {
+				return ids, err
+			}
+		}
+	}
+	_, err = s.db.ExecContext(ctx, `DELETE FROM explorations WHERE person = ?`, person)
+	return ids, err
+}

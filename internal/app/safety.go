@@ -257,6 +257,7 @@ var ruleSchema = json.RawMessage(`{"type":"object","required":["when","then","su
   "source":{"type":"string"},
   "args_contain":{"type":"array","items":{"type":"string"}},
   "hosts":{"type":"array","items":{"type":"string"}},
+  "paths":{"type":"array","items":{"type":"string"},"description":"full folder paths; matches when every file the action names is inside one"},
   "people":{"type":"array","items":{"type":"string"},"description":"ids of the people the rule is about"},
   "roles":{"type":"array","items":{"type":"string","enum":["owner","member","guest"]}}}}}}`)
 

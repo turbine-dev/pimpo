@@ -31,7 +31,9 @@ Fixes for serious issues ship within 7 days of a report, on stable and on every 
    Getting the certificates (a maintainer's task): **Apple**, join the Apple Developer Program, create a *Developer ID Application* certificate, export it as `.p12` (its base64 is `APPLE_CERTIFICATE`), and create an app-specific password for notarization (`APPLE_PASSWORD`). **Windows**, buy an OV or EV code-signing certificate from a certificate authority and export it as `.pfx`. Set each secret with `gh secret set NAME < file`.
 
    The same desktop builds run on demand (**Actions › desktop › Run workflow**) and on pull requests that touch `desktop/`, keeping the installers as workflow artifacts for 14 days.
-4. A maintainer checks the draft and publishes it. `scripts/install.sh` verifies checksums before installing.
+4. A maintainer checks the draft and publishes it. `scripts/install.sh` verifies the signature and the checksums before installing.
+
+   GoReleaser signs `checksums.txt` into `checksums.txt.sig` (`signs` in `.goreleaser.yaml`, which runs `pimpo release sign --key-env RELEASE_SIGNING_KEY`), so a release fails rather than ship unsigned when the `RELEASE_SIGNING_KEY` secret is missing; `make release-snapshot` skips signing.
 
 ## Updates
 
@@ -39,9 +41,13 @@ Fixes for serious issues ship within 7 days of a report, on stable and on every 
 
 Before installing, the app remembers the version it leaves. **Go back to** the previous version then asks Pimpo to restore, on its next start, the snapshot the new version took of the data when it first started (`before-VERSION`), and installs the earlier version again.
 
-**Command line and servers.** `pimpo update` checks and installs the latest release for this system, verified against the release's checksums, and `pimpo update --rollback` puts the previous binary back (see [CONFIGURATION.md](CONFIGURATION.md#running-pimpo)).
+**Command line and servers.** `pimpo update` checks and installs the latest release for this system, verified against the release's checksums once their signature (`checksums.txt.sig`) matches a release key built into Pimpo; without a valid signature it installs nothing. `pimpo update --rollback` puts the previous binary back (see [CONFIGURATION.md](CONFIGURATION.md#running-pimpo)).
 
 **For maintainers.** The release workflow signs update bundles when the repository has two secrets, `TAURI_SIGNING_PRIVATE_KEY` (the contents of the private key file) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. It then builds the macOS `.app.tar.gz`, the Windows setup and the Linux AppImage with their `.sig` files, writes `latest.json` (`scripts/latest-json.py`) and attaches it to the release and to `channel-beta`. Without the secrets the installers are built as before and the workflow warns that automatic updates are off. The key pair was generated with `npx tauri signer generate`; the private key is held by the maintainers, never in the repository. Losing it means shipping a new public key in a version users install by hand.
+
+**Release key.** `checksums.txt` is signed with an Ed25519 key: the private key (base64 of the 64-byte key) is the `RELEASE_SIGNING_KEY` repository secret, which only the goreleaser step of `release.yml` receives, and the maintainers keep a copy in `~/.config/zodim/release-signing.key`, never in the repository. The public key is `releaseKeys` in `cmd/pimpo/release.go` and `release_keys` in `scripts/install.sh`. To sign by hand: `pimpo release sign --key ~/.config/zodim/release-signing.key checksums.txt`. To rotate, make a new key (`pimpo gallery keygen --out FILE` makes one in the same format), add its public key to both lists next to the old one and release that version, then switch the secret to the new key; drop the old public key a few releases later. A leaked key is rotated the same way, and the release notes say which versions to update by hand.
+
+**Gallery root key.** The authors in the gallery's `index.json` are signed with the gallery root key (`gallery.RootKeys` in `internal/gallery/gallery.go`, a list for rotation), kept by the maintainers in `~/.config/zodim/gallery-root.key`. After reviewing a new or changed author, a maintainer runs `pimpo gallery sign-authors --key ~/.config/zodim/gallery-root.key DIR`, both in the community gallery repository and for the starter `gallery/index.json` shipped in the binary. Rotating works like the release key: ship the new public key next to the old one, then sign with the new key.
 
 ## Packages and the website
 

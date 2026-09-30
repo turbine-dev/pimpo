@@ -53,6 +53,8 @@ type Capability struct {
 	Signature string          `json:"signature"`
 	Returns   string          `json:"returns"`
 	Schema    json.RawMessage `json:"schema,omitempty"`
+	// Reviewed is the ReviewHash of an imported tool when the owner added it.
+	Reviewed string `json:"reviewed,omitempty"`
 	// Request and Result describe a declarative connector's call.
 	Request *Request `json:"request,omitempty"`
 	Result  *Result  `json:"result,omitempty"`
@@ -92,7 +94,7 @@ func Load(dir string) (Manifest, error) {
 	if kinds != 1 {
 		return man, errors.New("connector.json needs one of: a command, a url (an MCP server) or http (requests described here)")
 	}
-	if man.URL != "" && !strings.HasPrefix(man.URL, "https://") && !strings.HasPrefix(man.URL, "http://127.0.0.1") && !strings.HasPrefix(man.URL, "http://localhost") {
+	if man.URL != "" && !remoteURLOK(man.URL) {
 		return man, errors.New("a remote connector needs an https url")
 	}
 	if len(man.Capabilities) == 0 {
@@ -229,10 +231,10 @@ func (c *Connector) start(ctx context.Context) error {
 		return err
 	}
 	var offered, declared []string
-	have := map[string]bool{}
+	have := map[string]Tool{}
 	for _, t := range tools {
 		offered = append(offered, t.Name)
-		have[t.Name] = true
+		have[t.Name] = t
 	}
 	for _, cap := range c.Manifest.Capabilities {
 		declared = append(declared, cap.tool())
@@ -240,10 +242,15 @@ func (c *Connector) start(ctx context.Context) error {
 	sort.Strings(offered)
 	sort.Strings(declared)
 	if c.Imported {
-		for _, d := range declared {
-			if !have[d] {
+		for _, cap := range c.Manifest.Capabilities {
+			t, ok := have[cap.tool()]
+			switch {
+			case !ok:
 				conn.close()
-				return fmt.Errorf("%s no longer offers the tool %s; add it again to review what changed", c.Name, d)
+				return fmt.Errorf("%s no longer offers the tool %s; add it again to review what changed", c.Name, cap.tool())
+			case cap.Reviewed != "" && t.ReviewHash() != cap.Reviewed:
+				conn.close()
+				return fmt.Errorf("%s changed the description or parameters of %s since you reviewed it; add it again to review what changed", c.Name, cap.tool())
 			}
 		}
 	} else if strings.Join(offered, ",") != strings.Join(declared, ",") {
