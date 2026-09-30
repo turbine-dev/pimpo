@@ -220,9 +220,9 @@ The desktop app updates itself: when a new version is ready it says so at the to
   - Each backup is encrypted on your computer with the passphrase you choose, database and memory included, so the storage service cannot read it. Keep the passphrase somewhere safe: without it no one can open the backups.
   - **See backups › Restore** brings one back; it takes effect when Pimpo restarts, and what was there is kept aside. If a backup fails, you get a message.
 
-- **Settings › Export and import everything** creates one file with everything, the keys sealed with a passphrase you choose. Import it on another computer. What was there before is kept aside.
-- `pimpo export file.pimpo` and `pimpo import file.pimpo` do the same from the terminal.
-- `pimpo snapshots` and `pimpo restore` go back to an automatic daily snapshot.
+- **Settings › Export and import everything** creates one file with everything, all encrypted with a passphrase of at least 12 characters you choose. Import it on another computer. What was there before is kept aside.
+- `pimpo export file.pimpo` and `pimpo import file.pimpo` do the same from the terminal. A file exported by an older Pimpo, not sealed as a whole, opens only with `pimpo import --unsealed file.pimpo`.
+- `pimpo snapshots` and `pimpo restore` go back to an automatic daily snapshot. Paired devices, passkeys and people stay as they are now, so a device you removed does not come back.
 - `pimpo routines import FOLDER` installs routines from a folder in the repository's layout (`routines/<id>/`), after the same checks as the repository: manifest, their own tests and an audit. They arrive paused; review their settings and resume each one. `--active` installs them running.
 - Coming from OpenClaw or Hermes? Use **Settings › Bring over from OpenClaw or Hermes**, or `pimpo migrate openclaw`.
 

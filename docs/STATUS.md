@@ -26,7 +26,7 @@ What is built, what each phase gate needs, and which gates wait on people or tim
 
 ## Export, import and extension
 
-- `pimpo export` / `pimpo import`, and **Settings › Export and import everything**, move everything (database, memory, connectors, secrets sealed with a passphrase) between machines.
+- `pimpo export` / `pimpo import`, and **Settings › Export and import everything**, move everything (database, memory, connectors and secrets, sealed as a whole with a passphrase) between machines.
 - Connectors, channels, judges and Guard clients plug in without recompiling ([SDK](SDK.md), [connectors](CONNECTORS.md)).
 
 ## After the roadmap: closing the gaps with OpenClaw

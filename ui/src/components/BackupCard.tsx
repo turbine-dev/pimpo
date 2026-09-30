@@ -11,7 +11,8 @@ async function post(path: string, body: BodyInit, json = false) {
 }
 
 // Everything in one file: routines, history, receipts, memory, people,
-// connectors and secrets, the secrets sealed with a passphrase.
+// connectors and secrets, all sealed with a passphrase. Import takes only
+// files sealed that way.
 export function BackupCard() {
   const t = useT()
   const [pass, setPass] = useState('')
@@ -43,7 +44,7 @@ export function BackupCard() {
       <p className="mb-4 text-[13px] text-ink-3">{t('backup.text')}</p>
       <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); exp.mutate() }}>
         <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder={t('backup.passPlaceholder')} aria-label={t('backup.passExport')} className={input + ' min-w-[220px] flex-1'} />
-        <Button type="submit" disabled={pass.length < 8 || exp.isPending}><Download size={15} /> {t('backup.export')}</Button>
+        <Button type="submit" disabled={pass.length < 12 || exp.isPending}><Download size={15} /> {t('backup.export')}</Button>
       </form>
       {exp.error && <p className="mt-2 text-[13px] text-danger">{exp.error.message}</p>}
       <form className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4" onSubmit={(e) => { e.preventDefault(); imp.mutate() }}>

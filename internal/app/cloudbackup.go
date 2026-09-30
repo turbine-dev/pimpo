@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -107,10 +108,7 @@ func (a *App) backupToCloud(ctx context.Context) cloudRun {
 		if _, err := backup.Export(ctx, a.Events.DB(), a.Home, a.Vault, pass, a.Version, &buf); err != nil {
 			return err
 		}
-		sealed, err := backup.Seal(buf.Bytes(), pass)
-		if err != nil {
-			return err
-		}
+		sealed := buf.Bytes()
 		run.Name, run.Size = "pimpo-"+run.At.UTC().Format("20060102-150405")+".pimpo", len(sealed)
 		if err := store.Put(ctx, run.Name, sealed); err != nil {
 			return err
@@ -256,8 +254,8 @@ func (a *App) putCloud(w http.ResponseWriter, r *http.Request) {
 	} else {
 		c.Endpoint, c.Region, c.Bucket, c.Prefix = "", "", "", ""
 	}
-	if req.Passphrase != "" && len(req.Passphrase) < 8 {
-		bad("choose a passphrase of at least 8 characters")
+	if req.Passphrase != "" && len(req.Passphrase) < backup.MinPassphrase {
+		bad(fmt.Sprintf("choose a passphrase of at least %d characters", backup.MinPassphrase))
 		return
 	}
 	if req.Passphrase == "" && a.vaultValue(ctx, "backup.passphrase") == "" {
@@ -365,7 +363,9 @@ func (a *App) restoreCloud(w http.ResponseWriter, r *http.Request) {
 }
 
 // stageImport checks and stages a backup; it takes effect when Pimpo
-// restarts, since the database cannot be swapped while it is open.
+// restarts, since the database cannot be swapped while it is open. Only
+// archives sealed as a whole are taken, and their secrets wait encrypted
+// with this machine's vault key.
 func (a *App) stageImport(w http.ResponseWriter, r *http.Request, file io.Reader, pass string) {
 	if a.Home == "" {
 		server.WriteError(w, server.StatusError{Status: 503, Msg: "import is not available here"})
@@ -379,8 +379,8 @@ func (a *App) stageImport(w http.ResponseWriter, r *http.Request, file io.Reader
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
-	b, _ := json.Marshal(secrets)
-	if err := os.WriteFile(filepath.Join(stage, "secrets.json"), b, 0o600); err != nil {
+	if err := backup.SaveStaged(stage, a.Vault, secrets); err != nil {
+		os.RemoveAll(stage)
 		server.WriteError(w, err)
 		return
 	}
