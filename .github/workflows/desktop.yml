@@ -192,8 +192,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Only the installers: the same run also holds the Docker build record
+      # (*.dockerbuild), which download-artifact cannot extract.
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with: { path: installers, merge-multiple: true }
+        with: { path: installers, pattern: "pimpo-desktop-*", merge-multiple: true }
       - name: Attach to the draft release
         shell: bash
         env: { GH_TOKEN: "${{ github.token }}", TAG: "${{ inputs.tag }}" }
@@ -217,7 +219,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with: { path: installers, merge-multiple: true }
+        with: { path: installers, pattern: "pimpo-desktop-*", merge-multiple: true }
       - name: latest.json
         id: manifest
         shell: bash

@@ -53,6 +53,7 @@ export default function App() {
   }, [])
   useLiveEvents()
   const state = useQuery({ queryKey: ['state'], queryFn: api.state, refetchInterval: 30_000 })
+  const [creatingAdmin, setCreatingAdmin] = useState(false)
   const attention = (state.data?.awaiting ?? 0) + (state.data?.broken ?? 0) + (state.data?.approvals ?? 0)
   if (location.pathname === '/mascot') {
     // The desktop app's floating window: only the cat, on a transparent page.
@@ -63,7 +64,11 @@ export default function App() {
     return <Mascot standalone onOpen={(path) => { location.pathname !== path && window.location.assign('/open?path=' + encodeURIComponent(path)) }} />
   }
   if (state.error instanceof ApiError && state.error.status === 401) return <SignIn />
-  if (state.data?.role === 'owner' && state.data.admin_account === false && location.pathname !== '/mascot') return <CreateAdmin />
+  // The account screen stays until the person finishes it, passkey step
+  // included, even once the server already knows the account.
+  if (creatingAdmin || (state.data?.role === 'owner' && state.data.admin_account === false && location.pathname !== '/mascot')) {
+    return <CreateAdmin onStart={() => setCreatingAdmin(true)} onDone={() => setCreatingAdmin(false)} />
+  }
   if (location.pathname === '/welcome') {
     return (
       <div className="min-h-full px-4">
