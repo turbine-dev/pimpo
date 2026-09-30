@@ -105,6 +105,7 @@ For work too big for one answer ("compare these 20 suppliers on price, delivery 
 
 - **Needs you** lists what is waiting for you: approvals, finished explorations, problems. On the phone it is the first tab.
 - Approval buttons: **Allow** (this time), **All this run** (the rest of this run), **Always** (this routine, from now on), **Deny**.
+- **For this routine** lets a routine repeat exactly this action without asking again: the same kind of action to the same recipients, on the same site, with an amount up to the one you approved (you can raise the limit in **Needs you**). A different recipient, site or larger amount asks again, and so does a new version of the routine. The email's words can change every day; who it goes to cannot. **Routines › Approved for routines** lists these approvals and takes any back. It is safer than **Always**, which allows the whole capability for that routine. Members use it for their own routines; WhatsApp to other people, locks and alarms still always ask. On WhatsApp it takes the place of **Always**, which stays in the app.
 - **Rules**: write rules in plain words ("never delete emails from my boss"). You see exactly what the rule will enforce, and a test against last week, before saving.
 - Some things always ask, whatever the rules say: WhatsApp to other people, locks and alarms.
 

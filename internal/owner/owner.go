@@ -122,9 +122,17 @@ func (c *Channel) Notify(ctx context.Context, n explore.Notice) error {
 	if bot == nil || chat == 0 {
 		return nil
 	}
+	// One row fits four buttons; more go three to a row, so labels stay readable.
+	per := len(n.Actions)
+	if per > 4 {
+		per = 3
+	}
 	var rows [][]telegram.Button
 	var row []telegram.Button
 	for _, a := range n.Actions {
+		if len(row) == per {
+			rows, row = append(rows, row), nil
+		}
 		row = append(row, telegram.Button{Text: a.Label, Data: a.Data})
 	}
 	if len(row) > 0 {
