@@ -40,8 +40,10 @@ signs:
     cmd: go
     args: ["run", "./cmd/pimpo", "release", "sign", "--key-env", "RELEASE_SIGNING_KEY", "--out", "${signature}", "${artifact}"]
     signature: "${artifact}.sig"
-    env:
-      - 'RELEASE_SIGNING_KEY={{ index .Env "RELEASE_SIGNING_KEY" }}'
+    # The key reaches the command through the environment GoReleaser copies
+    # to it. No env entry here: GoReleaser templates those entries against
+    # the list itself, not the environment, so repeating the key would
+    # replace it with an empty value.
 
 changelog:
   sort: asc
