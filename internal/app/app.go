@@ -225,6 +225,8 @@ type App struct {
 	listenFn     context.CancelFunc
 	external     map[string]*external.Connector
 	externalErrs []string
+	// damaged is why the database last failed its check while running.
+	damaged string
 }
 
 // New assembles an App on top of an open event store.

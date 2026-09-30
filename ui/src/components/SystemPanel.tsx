@@ -135,7 +135,7 @@ export function SystemPanel({ open, onOpenChange }: { open: boolean; onOpenChang
 
 // A finding's name: the app's word for the parts it knows, else the name
 // the server gave (a channel, a model, a service).
-const known: Record<string, TKey> = { disk: 'sys.disk', snapshots: 'snap.title', cloud: 'cloud.title', routines: 'nav.routines', budget: 'settings.budget', mail: 'people.mail', calendar: 'people.calendar' }
+const known: Record<string, TKey> = { disk: 'sys.disk', database: 'sys.database', snapshots: 'snap.title', cloud: 'cloud.title', routines: 'nav.routines', budget: 'settings.budget', mail: 'people.mail', calendar: 'people.calendar' }
 
 // Doctor tests every part for real on demand and says how to fix each
 // failure, failures first.

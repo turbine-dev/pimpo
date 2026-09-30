@@ -96,6 +96,7 @@
   "msg.routine.reran": "Rodou de novo e deu certo. Rotina reativada.",
   "msg.start.failed": "Não deu para começar: {error}",
   "msg.upgrade": "O Pimpo foi atualizado de {from} para {to}. Uma cópia de tudo como estava antes ficou guardada: se algo parecer errado, vá em Ajustes › Backup › Cópias locais e volte a ela.",
+  "msg.dbDamaged": "O banco de dados do Pimpo falhou na verificação, então a cópia de hoje não foi feita, para não substituir uma cópia boa. Feche e abra o Pimpo de novo: ele separa o arquivo danificado e oferece a cópia boa mais recente.",
   "msg.voice.failed": "🎙️ Não deu para entender o áudio: {error}",
   "people.you": "Você",
   "policy.protect": "rede de proteção: {reason} (marcado por {count} pessoas)",

@@ -130,6 +130,8 @@ Pimpo was called Zodim, and Vigia before that. When `~/.pimpo` does not exist ye
 | `tailscale/` | The state of the built-in Tailscale node, when **From anywhere** is on. |
 | `snapshots/` | Local snapshots: a copy of `pimpo.db` and `memory/` each. The last 10 are kept. |
 | `restore-pending` | A snapshot chosen in the web app, applied at the next start. |
+| `quarantine/` | Databases that failed their check at start, each in a folder named for the time, with its journal and the reason. Pimpo never deletes them. |
+| `recovery.json` | Present while Pimpo is in recovery: the quarantine folder, the reason and the recovery link's token. |
 | `import-pending/` | A backup imported from the web app, applied at the next start. Its secrets wait there only until then. |
 | `before-import-<date>/` | What was here before an import. Delete it when you no longer need it. |
 | `pimpo.pid` | The running server's process id. `import`, `restore` and `migrate --apply` use it to refuse while Pimpo runs. |

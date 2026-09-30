@@ -96,6 +96,7 @@
   "msg.routine.reran": "Ran again and it worked. Routine turned back on.",
   "msg.start.failed": "Couldn’t start: {error}",
   "msg.upgrade": "Pimpo was updated from {from} to {to}. A copy of everything as it was before is kept: if something looks wrong, go to Settings › Backup › Local copies and go back to it.",
+  "msg.dbDamaged": "Pimpo's database failed its check, so today's copy was not made, so as not to replace a good one. Close and reopen Pimpo: it sets the damaged file aside and offers the newest good copy.",
   "msg.voice.failed": "🎙️ Couldn’t understand the audio: {error}",
   "people.you": "You",
   "policy.protect": "protection network: {reason} (reported by {count} people)",

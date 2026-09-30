@@ -96,6 +96,7 @@
   "msg.routine.reran": "Erneut ausgeführt, und es hat geklappt. Routine wieder aktiviert.",
   "msg.start.failed": "Konnte nicht starten: {error}",
   "msg.upgrade": "Pimpo wurde von {from} auf {to} aktualisiert. Eine Kopie von allem im vorherigen Zustand wurde aufbewahrt: Wenn etwas nicht stimmt, geh zu Einstellungen › Backup › Lokale Kopien und kehre zu ihr zurück.",
+  "msg.dbDamaged": "Die Datenbank von Pimpo hat die Prüfung nicht bestanden, daher wurde die heutige Kopie nicht erstellt, um keine gute zu ersetzen. Schließe Pimpo und öffne es wieder: Es legt die beschädigte Datei beiseite und bietet die neueste gute Kopie an.",
   "msg.voice.failed": "🎙️ Die Sprachnachricht konnte nicht verstanden werden: {error}",
   "people.you": "Du",
   "policy.protect": "Schutznetz: {reason} (von {count} Personen gemeldet)",
