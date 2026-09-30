@@ -1,7 +1,7 @@
 # RFC 0003: Dashboards and widgets
 
 - Author: Pimpo maintainers
-- Status: draft
+- Status: accepted
 - Discussion: the pull request that adds this file
 
 ## Problem
@@ -145,9 +145,10 @@ Every surface reads the same **widget feed**. `GET /api/widgets/feed` returns th
 | 7.6 | iOS widgets (home and lock screen), then macOS WidgetKit | L | an iOS widget refreshes on its own and redacts on the lock screen · needs the Apple account |
 | 7.7 | Windows Widgets board | M | only if people ask for it after 7.4 |
 
-## Decisions for the owner
+## Decisions (2026-09-30)
 
-1. **An Apple Developer account** (US$ 99 a year). It is needed for iOS widgets and macOS WidgetKit, and it is the same account 2.2 needs to sign the Mac app. Without it, the Mac gets floating widgets and the iPhone gets dashboards inside the app.
-2. **Shared dashboards.** Should a person be able to share a dashboard with the house, showing only widgets marked for the house? Or should dashboards stay strictly personal?
-3. **Refresh now with a model.** Should it always ask before spending, or only above a set amount?
-4. **Order.** Web dashboards and floating widgets first (7.1–7.4, nothing to buy), then Android, then iOS?
+1. **No Apple Developer account for now.** The Mac gets floating widgets (7.4) and the iPhone gets dashboards inside the app. 7.6 waits.
+2. **Shared dashboards: yes.** A dashboard can be shared with the house. It shows others only widgets marked shared, and their own ready-made ones.
+3. **Refresh now:** it runs at once, unless the routine uses a model and its last run cost a cent or more; then it asks first.
+4. **Order:** as proposed. Dashboards, routines as widgets and floating widgets come first, then Android, then iOS.
+5. **Dashboards are tabs.** Any number of them, and widgets come in many good-looking kinds (numbers, goals, status, lists, tables, and line, area, bar and donut charts).

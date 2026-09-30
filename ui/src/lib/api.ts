@@ -197,6 +197,17 @@ export type CostView = { today: number; limit: number; month: number; projected_
 
 export type JobPart = { id: string; title: string; instructions: string; capabilities: string[]; state: 'waiting' | 'running' | 'done' | 'failed'; exploration?: string; summary?: string; error?: string; cost_usd: number; attempts: number }
 export type LongJob = { id: string; request: string; state: 'planned' | 'running' | 'reporting' | 'done' | 'stopped' | 'failed'; budget_usd: number; spent_usd: number; parts: JobPart[]; report?: string; error?: string; created: string; updated: string }
+export type WidgetKind = 'metric' | 'progress' | 'list' | 'status' | 'text' | 'table' | 'chart'
+export type WidgetSnap = {
+  kind: WidgetKind; title: string; subtitle?: string; value?: number; goal?: number; unit?: string; trend?: number
+  status?: 'ok' | 'warn' | 'alert'; text?: string; link?: string
+  items?: { title: string; detail?: string; badge?: string; value?: string; status?: string; link?: string }[]
+  columns?: string[]; rows?: string[][]; chart?: 'line' | 'area' | 'bar' | 'donut'
+  series?: { name?: string; points: { label?: string; y: number }[] }[]; meta?: Record<string, string>
+}
+export type WidgetView = { id: string; source: 'routine' | 'builtin' | 'status'; routine?: string; kind: WidgetKind; title: string; snapshot: WidgetSnap; history?: { t: string; v: number }[]; updated: string; stale?: boolean; shared?: boolean; mine: boolean }
+export type LayoutItem = { id: string; x: number; y: number; w: number; h: number }
+export type Dashboard = { id: string; name: string; emoji: string; position: number; layout: LayoutItem[]; shared: boolean; mine: boolean; updated: string }
 export type PhoneShare = 'location' | 'camera' | 'shortcuts'
 export type PhonePlace = { name: string; lat?: number; lon?: number; radius?: number }
 export type PhoneState = { places: PhonePlace[]; shares: PhoneShare[]; device?: { id: string; name: string; shares: PhoneShare[]; has_key: boolean } }
@@ -267,6 +278,15 @@ export const api = {
   deletePasskey: (id: string) => request<{ removed: string }>('DELETE', `/api/passkeys/${encodeURIComponent(id)}`),
   myDevices: () => request<MyDevice[]>('GET', '/api/me/devices'),
   signOutDevice: (id: string) => request<{ revoked: string }>('DELETE', `/api/me/devices/${encodeURIComponent(id)}`),
+  dashboards: () => request<Dashboard[]>('GET', '/api/dashboards'),
+  createDashboard: (name: string, emoji: string) => request<Dashboard>('POST', '/api/dashboards', { name, emoji }),
+  saveDashboard: (id: string, d: Partial<Pick<Dashboard, 'name' | 'emoji' | 'position' | 'layout' | 'shared'>>) => request<Dashboard>('PUT', `/api/dashboards/${id}`, d),
+  deleteDashboard: (id: string) => request<{ removed: string }>('DELETE', `/api/dashboards/${id}`),
+  dashboardWidgets: (id: string) => request<Record<string, WidgetView | { id: string; hidden: true }>>('GET', `/api/dashboards/${id}/widgets`),
+  widgets: () => request<WidgetView[]>('GET', '/api/widgets'),
+  shareWidget: (id: string, shared: boolean) => request<WidgetView>('PUT', `/api/widgets/${encodeURIComponent(id)}`, { shared }),
+  deleteWidget: (id: string) => request<{ removed: string }>('DELETE', `/api/widgets/${encodeURIComponent(id)}`),
+  refreshWidget: (id: string, confirm = false) => request<{ run: unknown }>('POST', `/api/widgets/${encodeURIComponent(id)}/refresh`, { confirm }),
   phone: () => request<PhoneState>('GET', '/api/phone'),
   phoneShares: (shares: PhoneShare[]) => request<{ shares: PhoneShare[] }>('POST', '/api/phone/shares', { shares }),
   phoneKey: () => request<{ key: string }>('POST', '/api/phone/key'),
@@ -346,6 +366,7 @@ export const api = {
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[]; state: Record<string, unknown>; used_by: string[] }>('GET', `/api/routines/${id}`),
+  routineWidget: (id: string, kind: string) => request<{ exploration: string }>('POST', `/api/routines/${id}/widget`, { kind }),
   routineAction: (id: string, action: 'run' | 'pause' | 'resume' | 'repair' | 'forget') => request<{ run?: Run; error?: string; exploration?: string }>('POST', `/api/routines/${id}/${action}`),
   explorations: (state?: string) => request<Exploration[]>('GET', `/api/explorations${state ? `?state=${state}` : ''}`),
   exploration: (id: string) => request<{ exploration: Exploration; actions: VEvent<ActionRecord>[] }>('GET', `/api/explorations/${id}`),
