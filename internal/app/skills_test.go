@@ -112,4 +112,21 @@ func TestProtectionListRefusesASkill(t *testing.T) {
 	if code != 422 || !strings.Contains(out["error"].(string), "steals wallets") {
 		t.Fatalf("%d %v", code, out)
 	}
+	// A skill installed before the list knew it stops working once it does.
+	ta.Protect = nil
+	code, out = upload(t, ta, "/api/skills/preview", skillZip(map[string]string{"SKILL.md": skillFile}), nil)
+	if code != 200 {
+		t.Fatalf("preview %d %v", code, out)
+	}
+	if code, got := ta.do(t, "POST", "/api/skills/install", map[string]any{"token": out["token"], "capabilities": []string{}}); code != 200 {
+		t.Fatalf("install %d %v", code, got)
+	}
+	ctx := context.Background()
+	if _, err := ta.skillText(ta.installedSkills(ctx)[0]); err != nil {
+		t.Fatal(err)
+	}
+	ta.Protect = g
+	if _, err := ta.skillText(ta.installedSkills(ctx)[0]); err == nil || !strings.Contains(err.Error(), "steals wallets") {
+		t.Fatalf("a reported skill still loads: %v", err)
+	}
 }

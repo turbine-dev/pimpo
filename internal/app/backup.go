@@ -128,10 +128,10 @@ func (a *App) installConnector(w http.ResponseWriter, r *http.Request) {
 		}
 		p := filepath.Join(tmp, name)
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(p, 0o755)
+			os.MkdirAll(p, 0o700)
 			continue
 		}
-		os.MkdirAll(filepath.Dir(p), 0o755)
+		os.MkdirAll(filepath.Dir(p), 0o700)
 		rc, err := f.Open()
 		if err != nil {
 			server.WriteError(w, err)
@@ -157,6 +157,12 @@ func (a *App) installConnector(w http.ResponseWriter, r *http.Request) {
 	m, err := external.Load(root)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 422, Msg: err.Error()})
+		return
+	}
+	// Replacing an installed connector is fine; taking the name of one of
+	// Pimpo's own families (gmail, notify, web...) is not.
+	if a.externalConnector(m.Name) == nil && a.nameTaken(m.Name) {
+		server.WriteError(w, server.StatusError{Status: 409, Msg: m.Name + " is the name of something Pimpo already has; rename the connector"})
 		return
 	}
 	dest := filepath.Join(a.Home, "connectors", m.Name)

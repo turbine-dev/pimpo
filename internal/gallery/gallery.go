@@ -19,7 +19,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -101,8 +103,12 @@ type Report struct {
 	Problems []string `json:"problems,omitempty"`
 	// Uses is what the audit saw the routine call.
 	Uses []string `json:"uses"`
-	// Sends is true when the routine can reach anyone but the owner.
-	Sends bool `json:"sends"`
+	// Sends is true when the routine can reach anyone but the owner: it
+	// sends to other people, or it reads the owner's data and can reach
+	// hosts outside (Outside), where that data could go. Installing such a
+	// routine takes the owner's confirmation.
+	Sends   bool     `json:"sends"`
+	Outside []string `json:"outside,omitempty"`
 	// Risk is the highest risk among the declared capabilities.
 	Risk string `json:"risk"`
 }
@@ -148,20 +154,53 @@ func (ix Index) Verify(ctx context.Context, e Entry) Report {
 		if spec.Risk > top {
 			top = spec.Risk
 		}
-		if spec.Risk == capability.Irreversible && strings.Contains(spec.Name, "send") {
-			r.Sends = true
-		}
 	}
+	r.Sends, r.Outside = Sends(e.Routine)
 	r.Risk = top.String()
 	sort.Strings(r.Problems)
 	r.Verified = len(r.Problems) == 0
 	return r
 }
 
-// Load reads an index from a URL or a local file.
+// publicReads read nothing of the owner's.
+var publicReads = map[string]bool{"web.search": true, "rss.read": true, "code.run": true}
+
+// Sends reports whether a routine can reach anyone but the owner, and the
+// outside hosts it can reach: it sends to other people, or it reads the
+// owner's data (email, calendar, notes...) and can reach a host outside.
+func Sends(r routine.Routine) (bool, []string) {
+	sends, private := false, false
+	var outside []string
+	for _, entry := range r.Manifest.Capabilities {
+		spec, scope, err := capability.Parse(entry)
+		if err != nil {
+			continue
+		}
+		switch {
+		case spec.Risk == capability.Irreversible && strings.Contains(spec.Name, "send"):
+			sends = true
+		case spec.Scoped:
+			outside = append(outside, scope)
+		case spec.Risk == capability.Read && !publicReads[spec.Name]:
+			private = true
+		}
+	}
+	sort.Strings(outside)
+	return sends || (private && len(outside) > 0), outside
+}
+
+// Load reads an index from an https URL or a local file. Plain http is
+// refused, except to this machine (tests, a local mirror): anyone on the
+// way could change the entries and the authors' keys that come with them.
 func Load(ctx context.Context, src string) (Index, error) {
 	var raw []byte
 	var err error
+	if strings.HasPrefix(src, "http://") {
+		u, perr := url.Parse(src)
+		if perr != nil || !loopback(u.Hostname()) {
+			return Index{}, errors.New("the gallery address must start with https://")
+		}
+	}
 	if strings.HasPrefix(src, "https://") || strings.HasPrefix(src, "http://") {
 		req, rerr := http.NewRequestWithContext(ctx, "GET", src, nil)
 		if rerr != nil {
@@ -187,6 +226,14 @@ func Load(ctx context.Context, src string) (Index, error) {
 		return Index{}, fmt.Errorf("gallery index: %w", err)
 	}
 	return ix, nil
+}
+
+func loopback(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // Find returns an entry by id.

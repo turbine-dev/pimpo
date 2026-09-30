@@ -57,11 +57,13 @@ type runtimeSpec struct {
 	cmd   []string
 }
 
-// languages are the programs a job may be; images are official ones.
+// languages are the programs a job may be; images are official ones,
+// pinned by digest (the multi-platform index) so a retagged image is never
+// run. Update a digest together with its tag.
 var languages = map[string]runtimeSpec{
-	"python":     {image: "python:3.12-alpine", file: "main.py", cmd: []string{"python", "-I", "main.py"}},
-	"javascript": {image: "node:22-alpine", file: "main.js", cmd: []string{"node", "main.js"}},
-	"shell":      {image: "alpine:3.20", file: "main.sh", cmd: []string{"sh", "main.sh"}},
+	"python":     {image: "python:3.12-alpine@sha256:4c47124a8391cb7a9f571164147d154777cf012a4ece5f86097130d7a4478111", file: "main.py", cmd: []string{"python", "-I", "main.py"}},
+	"javascript": {image: "node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402", file: "main.js", cmd: []string{"node", "main.js"}},
+	"shell":      {image: "alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc", file: "main.sh", cmd: []string{"sh", "main.sh"}},
 }
 
 // Languages lists what a job may be written in.

@@ -78,7 +78,8 @@ func TestAddMCPServerFromTheRegistry(t *testing.T) {
 		t.Fatalf("%d %v", code, probe)
 	}
 	tools := probe["tools"].([]any)
-	if len(tools) != 2 || tools[0].(map[string]any)["risk"] != "read" || tools[1].(map[string]any)["risk"] != "irreversible" || tools[0].(map[string]any)["capability"] != "weather.get_forecast" {
+	// The server's hint is only its claim: every tool starts as irreversible.
+	if len(tools) != 2 || tools[0].(map[string]any)["risk"] != "irreversible" || tools[0].(map[string]any)["claimed"] != "read" || tools[1].(map[string]any)["risk"] != "irreversible" || tools[0].(map[string]any)["capability"] != "weather.get_forecast" {
 		t.Fatalf("%v", tools)
 	}
 
@@ -90,7 +91,7 @@ func TestAddMCPServerFromTheRegistry(t *testing.T) {
 		t.Fatalf("%d %v", code, out)
 	}
 	raw, _ := os.ReadFile(filepath.Join(ta.Home, "connectors", "weather", "connector.json"))
-	if strings.Contains(string(raw), "k-123") || strings.Contains(string(raw), "delete-station") {
+	if strings.Contains(string(raw), "k-123") || strings.Contains(string(raw), "delete-station") || !strings.Contains(string(raw), `"reviewed"`) {
 		t.Fatalf("manifest holds a secret or an unchosen tool: %s", raw)
 	}
 	spec, ok := capability.Catalog["weather.get_forecast"]
