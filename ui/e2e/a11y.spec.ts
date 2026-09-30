@@ -16,8 +16,10 @@ for (const theme of ['dark', 'light']) {
       expect(results.violations.map((v) => `account: ${v.id}`)).toEqual([])
       await page.getByLabel('Seu nome').fill('Dener')
       await page.getByRole('button', { name: 'Criar conta' }).click()
+      // Where the browser can make passkeys, the next step offers one.
       const later = page.getByRole('button', { name: 'Agora não' })
-      if (await later.isVisible()) await later.click()
+      await later.waitFor({ timeout: 5000 }).then(() => later.click(), () => {})
+      await expect(create).toBeHidden()
     }
     for (const path of ['/', '/routines', '/inbox', '/receipts', '/rules', '/cost', '/connections', '/settings', '/settings#modelos', '/settings#backup', '/settings#notificacoes', '/chat', '/assistants', '/help', '/welcome', '/memory', '/people', '/gallery', '/import']) {
       await page.goto(path)

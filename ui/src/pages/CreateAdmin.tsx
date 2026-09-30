@@ -10,13 +10,15 @@ import { addPasskey, canUsePasskeys } from '../lib/passkey'
 // CreateAdmin is the first visit: the person who installed Pimpo makes the
 // administrator's account, and a passkey to come back with, before anything
 // else.
-export function CreateAdmin() {
+export function CreateAdmin({ onStart, onDone }: { onStart?: () => void; onDone?: () => void }) {
   const t = useT()
   const qc = useQueryClient()
   const [name, setName] = useState('')
   const [step, setStep] = useState<'name' | 'passkey'>('name')
-  const finish = () => qc.invalidateQueries({ queryKey: ['state'] })
-  const save = useMutation({ mutationFn: () => api.saveAccount(name.trim()), onSuccess: () => (canUsePasskeys() ? setStep('passkey') : finish()) })
+  const finish = () => { qc.invalidateQueries({ queryKey: ['state'] }); onDone?.() }
+  // Saving the name tells the app the account exists; the screen asks to
+  // stay until the passkey step is answered.
+  const save = useMutation({ mutationFn: () => { onStart?.(); return api.saveAccount(name.trim()) }, onSuccess: () => (canUsePasskeys() ? setStep('passkey') : finish()), onError: () => onDone?.() })
   const passkey = useMutation({ mutationFn: () => addPasskey(t('acct.defaultName')), onSuccess: finish })
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 text-center">
