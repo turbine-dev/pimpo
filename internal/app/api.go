@@ -463,7 +463,7 @@ type connection struct {
 
 func (a *App) connections(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	has := func(name string) bool { _, err := a.Vault.Get(ctx, name); return err == nil }
+	has := func(name string) bool { return a.Vault.Has(ctx, name) }
 	out := []connection{}
 	tg := connection{Kind: "telegram", Configured: has("telegram.token")}
 	if tg.Configured {
@@ -533,7 +533,12 @@ func (a *App) putConnection(w http.ResponseWriter, r *http.Request) {
 	switch kind {
 	case "telegram":
 		tok := strings.TrimSpace(req["token"])
-		if _, merr := (telegram.Bot{Token: tok}).Me(ctx); merr != nil {
+		plain, perr := a.plainSecret(ctx, "telegram.token", tok)
+		if perr != nil {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: perr.Error()})
+			return
+		}
+		if _, merr := (telegram.Bot{Token: plain}).Me(ctx); merr != nil {
 			server.WriteError(w, server.StatusError{Status: 400, Msg: "Telegram did not accept this token"})
 			return
 		}
@@ -558,7 +563,7 @@ func (a *App) putConnection(w http.ResponseWriter, r *http.Request) {
 		}
 		a.Events.Put(ctx, "mail.addr", addr)
 		a.Events.Put(ctx, "mail.user", strings.TrimSpace(req["user"]))
-		err = a.Vault.Set(ctx, "mail.password", strings.ReplaceAll(req["password"], " ", ""))
+		err = a.Vault.Set(ctx, "mail.password", appPassword(req["password"]))
 	case "calendar":
 		var urls []string
 		for _, l := range strings.Split(req["feeds"], "\n") {

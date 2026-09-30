@@ -240,6 +240,22 @@ If a channel keeps failing for three minutes (Telegram, Discord, Slack or Signal
 
 **A service with a REST API** needs no program and no recompiling: describe its requests in a `connector.json` (the address, the key it needs, and for each capability the method, path and what to keep from the answer) and send it in **Connections › Install connector (.json · .zip)**. Pimpo checks it, runs its contract and asks for the key. [CONNECTORS.md](CONNECTORS.md#json-connectors) explains the format; `examples/connectors/hnsearch` is a complete one. If the service publishes an OpenAPI (Swagger) description, **Connections › From OpenAPI** writes the file for you: give its address, choose the operations and how risky each one is, fill in the key and install.
 
+## Secrets in 1Password or HashiCorp Vault
+
+Any secret field (a model key, a bot token, a connector's key, an app password, the backup passphrase) can hold a reference instead of the secret: choose the link icon, **Use a reference**, and type where the secret is:
+
+- 1Password: `op://Vault/Item/field` (or `op://Vault/Item/section/field`), the same reference 1Password's "Copy secret reference" gives.
+- HashiCorp Vault: `vault://secret/data/path#field`, a KV version 2 path (the mount, `data`, then the path) and the field.
+
+**Check** reads it once and says only "Found" or why not; the value is never shown. Pimpo keeps only the reference and reads the value when a connection needs it, keeping it in memory for up to five minutes. If the reference cannot be read later, the connection fails with a message that names the reference.
+
+Set up the password managers first. The administrator sets up the house's in **Connections › Password managers**; they read the house's references. Each person can add their own in **Account › Password managers**, and only their own connections use them: nobody else sees them or reads with them, not even the administrator, and a person's references never read with the house's credentials.
+
+- **1Password:** a service account token (the `op` command line must be installed), the 1Password app on this computer (house only; turn on Settings › Developer › Integrate with 1Password CLI) or a 1Password Connect server with its token.
+- **HashiCorp Vault:** its https address, a token or an AppRole (role id and secret id), and a namespace if you use them.
+
+**Test** checks that the password manager answers. Backups and exports keep the references as references, so a restored copy reads from the same place.
+
 ## Gallery
 
 Browse ready-made routines, filtered by what they can touch. Pimpo checks the author's signature, runs the routine's tests, and audits what it really calls before installing. To share one of yours, use **Publish** on its page.

@@ -330,7 +330,7 @@ The list of models comes from the providers themselves, with prices, and long co
 
 ### 9.7 Outside password managers · M
 
-Secrets can live in 1Password or HashiCorp Vault; Pimpo keeps only a reference and reads the value when a connector needs it.
+Secrets can live in 1Password or HashiCorp Vault; Pimpo keeps only a reference and reads the value when a connector needs it. *Done.*
 
 ### 9.8 One list of what needs you · S
 

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { api, type CapRisk, type OpenApiPreview, type OpenApiSource } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT, type TKey } from '../lib/i18n'
+import { SecretInput } from './SecretInput'
 import { Button } from './ui'
 
 const field = 'h-9 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -118,7 +119,7 @@ export function OpenApiImport() {
           {d.keys.map((k) => (
             <label key={k.name} className="block space-y-1">
               <span className="text-[12.5px] text-ink-2"><code className="font-mono">{k.name}</code> ({t('common.optional')})</span>
-              <input className={field} type="password" autoComplete="off" value={keys[k.name] ?? ''} onChange={(e) => setKeys({ ...keys, [k.name]: e.target.value })} />
+              <SecretInput className={field} autoComplete="off" value={keys[k.name] ?? ''} onValue={(v) => setKeys({ ...keys, [k.name]: v })} />
               <span className="block text-[11.5px] text-ink-3">{k.description}</span>
             </label>
           ))}

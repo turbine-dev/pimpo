@@ -64,6 +64,7 @@ var memberRoutes = routeSet(
 	"PUT /api/people/{id}/connections/{kind}",
 	"GET /api/history", "POST /api/history/{id}/undo",
 	"GET /api/credentials", "GET /api/credentials/{id}", "POST /api/credentials/{id}", "DELETE /api/credentials/{id}",
+	"GET /api/password-managers", "PUT /api/password-managers/{kind}", "DELETE /api/password-managers/{kind}", "POST /api/password-managers/{kind}/test", "POST /api/secrets/check",
 	"POST /api/dashboards", "PUT /api/dashboards/{id}", "DELETE /api/dashboards/{id}",
 	"PUT /api/widgets/{id}", "DELETE /api/widgets/{id}", "POST /api/widgets/{id}/refresh",
 )

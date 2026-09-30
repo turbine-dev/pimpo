@@ -6,6 +6,7 @@ import { relative, usd } from '../lib/format'
 import { useT } from '../lib/i18n'
 import { addPasskey, canUsePasskeys, passkeyMessage } from '../lib/passkey'
 import { label } from '../components/ModelSetup'
+import { PasswordManagers } from '../components/PasswordManagers'
 import { Button, Card } from '../components/ui'
 import { SettingsHistory } from '../components/SettingsHistory'
 import { useRole } from '../lib/roles'
@@ -20,8 +21,9 @@ export function Account() {
   const done = () => qc.invalidateQueries({ queryKey: ['passkeys'] })
   const add = useMutation({ mutationFn: () => addPasskey(name.trim() || t('acct.defaultName')), onSuccess: () => { setName(''); done() } })
   const remove = useMutation({ mutationFn: api.deletePasskey, onSuccess: done })
-  // A member's own accounts have their own history; the owner's is in
-  // Settings, and a guest has no accounts to change.
+  // A member's own accounts have their own history and password
+  // managers; the owner's are in Settings and Connections, and a guest
+  // has no accounts to change.
   const role = useRole()
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -52,6 +54,7 @@ export function Account() {
       </Card>
       <MyDevices />
       {role === 'member' && <SettingsHistory mine />}
+      {role === 'member' && <PasswordManagers />}
       <MyLimits />
     </div>
   )

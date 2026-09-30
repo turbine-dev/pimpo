@@ -378,6 +378,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.voiceRoutes()
 	a.modelRoutes()
 	a.systemRoutes()
+	a.passwordManagerRoutes()
 	return a, nil
 }
 

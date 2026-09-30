@@ -459,7 +459,7 @@ func (a *App) cost(w http.ResponseWriter, r *http.Request) {
 // setup reports what the first-run guide still needs.
 func (a *App) setup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	has := func(name string) bool { _, err := a.Vault.Get(ctx, name); return err == nil }
+	has := func(name string) bool { return a.Vault.Has(ctx, name) }
 	chat, _ := a.Channel.Chat(ctx)
 	done, _ := a.Events.Get(ctx, "setup.done")
 	preset, _ := a.Events.Get(ctx, "setup.preset")

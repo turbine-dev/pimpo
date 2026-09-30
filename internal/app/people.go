@@ -228,7 +228,7 @@ func (a *App) personConnection(w http.ResponseWriter, r *http.Request) {
 		}
 		a.Events.Put(ctx, personal(pctx, "mail.addr"), addr)
 		a.Events.Put(ctx, personal(pctx, "mail.user"), strings.TrimSpace(req["user"]))
-		err = a.Vault.Set(ctx, personal(pctx, "mail.password"), strings.ReplaceAll(req["password"], " ", ""))
+		err = a.Vault.Set(ctx, personal(pctx, "mail.password"), appPassword(req["password"]))
 	case "calendar":
 		var urls []string
 		for _, l := range strings.Split(req["feeds"], "\n") {

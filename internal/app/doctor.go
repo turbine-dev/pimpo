@@ -70,7 +70,7 @@ func (a *App) doctor(ctx context.Context) []finding {
 		wg.Add(1)
 		go func() { defer wg.Done(); fn() }()
 	}
-	has := func(name string) bool { v, _ := a.Vault.Get(ctx, name); return v != "" }
+	has := func(name string) bool { return a.Vault.Has(ctx, name) }
 
 	// Channels.
 	if has("telegram.token") {
