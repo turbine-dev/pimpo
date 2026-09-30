@@ -4,7 +4,7 @@ Ready-made routines for [Pimpo](https://github.com/turbine-dev/pimpo). Each one 
 
 Pimpo checks every routine before installing it:
 
-1. The author is listed in `index.json` and the Ed25519 signature covers exactly this code, manifest and tests.
+1. The author is listed in `index.json`, the list of authors is signed by a gallery root key built into Pimpo, and the author's Ed25519 signature covers exactly this code, manifest and tests.
 2. The routine was not removed after a report.
 3. Its own tests pass.
 4. An audit run with every capability reachable shows it calls only what the manifest declares.
@@ -21,6 +21,7 @@ A routine declares what people may change in `manifest.params`: a city, a limit,
 2. Add the routine as `routines/<id>.json` and your author entry to `index.json`, or run
    `pimpo gallery build --key <your key file> --author <id> --name "Your Name" .`
 3. Open a pull request. CI runs `pimpo gallery verify index.json`, and a maintainer reads the code. Routines that send anything to other people (e-mail, WhatsApp to others) always get a human review.
+4. A new author, or a changed name or key, also waits for a maintainer: after checking who you are, they sign the list of authors with the gallery root key (`pimpo gallery sign-authors --key <root key file> .`). Until then `pimpo gallery verify` refuses the index. Routines by an author already listed need no new signature.
 
 ## Reporting a routine
 

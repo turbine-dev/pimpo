@@ -64,13 +64,15 @@ func run(args []string) error {
 		return reportCmd(args, os.Stdout)
 	case "update":
 		return updateCmd(args, os.Stdout)
+	case "release":
+		return releaseCmd(args, os.Stdout)
 	case "token":
 		return tokenCmd(args, os.Stdout)
 	case "version":
 		fmt.Println(version)
 		return nil
 	}
-	return fmt.Errorf("unknown command %q (try: serve, token, update, export, import, routines, report, local, protect, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
+	return fmt.Errorf("unknown command %q (try: serve, token, update, release, export, import, routines, report, local, protect, migrate, gallery, connector, snapshot, snapshots, restore, version)", cmd)
 }
 
 func dataDir(flagValue string) string {
