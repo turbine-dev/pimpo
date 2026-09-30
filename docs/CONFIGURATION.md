@@ -321,6 +321,7 @@ The first time it starts, Pimpo prints a link: `http://127.0.0.1:7788/auth?token
 - **Expiry.** A paired device unused for 180 days, and a passkey session unused for 30, no longer opens Pimpo.
 - **Wrong sign-ins.** Past 20 wrong tokens or links in 10 minutes from one address, further wrong attempts wait a second and get HTTP 429. Requests without any credential do not count, and a valid token always works.
 - **Removing a person** revokes their devices, sessions and passkeys at once.
+- **The desktop lock.** **Lock with Touch ID or Windows Hello**, in the desktop app's menu, asks the system (LocalAuthentication on a Mac, falling back to the account password; Windows Hello on Windows) before showing the window: at start and after it has been closed for five minutes. The choice is the file `lock-on` in the app's configuration folder; deleting it turns the lock off. Linux has no such check, so the item is disabled.
 - **The administrator's account.** The first visit with the login link asks for the administrator's name (`admin.account` in the database) and offers a passkey. The login link printed at the first start (and by `pimpo token`) stays the administrator's way in (the desktop app opens Pimpo with it); keep it private.
 
 ## Local models
