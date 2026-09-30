@@ -93,6 +93,7 @@ For work too big for one answer ("compare these 20 suppliers on price, delivery 
 - **Ready-made widgets.** They need no routine: what needs you, today's runs, your reminders, spent this month, and today's limit.
 - **Routines as widgets.**
   - Ask for one in the chat: "show me the dollar every hour", "keep a widget with today's orders". The routine then updates its widget each time it runs.
+  - A routine you already have becomes one with **Turn into a widget** on its page. Pick a kind, or let Pimpo pick. Pimpo redoes the routine so it also shows its result, keeping everything else it does, and you approve the new version as with any change. A routine that already shows a widget offers **See on dashboards** instead.
   - Any routine can also go on a dashboard as its **health**: its last run, success rate and next run.
 - **Refreshing.** Widgets update live as routines run, and say when they are out of date. **Refresh now** in a widget's menu runs its routine once. When the routine uses a model and its last run cost a cent or more, it asks first.
 - **Sharing.**

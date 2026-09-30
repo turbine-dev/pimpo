@@ -307,3 +307,32 @@ func TestRepairTellsWhatBroke(t *testing.T) {
 		t.Fatalf("repair request does not say what broke: %q", e.Request)
 	}
 }
+
+func TestImproveReexploresTheSameRequestWithTheChange(t *testing.T) {
+	s, _, _, _ := setup(t)
+	ctx := context.Background()
+	id, _ := s.Start(ctx, "Arquiva as newsletters não lidas e me avisa", "human:owner")
+	s.Wait()
+	r, err := s.Approve(ctx, id, "human:owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var prompt string
+	agent := s.Agent
+	s.Agent = llm.FakeAgent{Script: func(ctx context.Context, req llm.AgentRequest) (llm.Response, error) {
+		prompt = req.Prompt
+		return agent.Run(ctx, req)
+	}}
+	eid, err := s.Improve(ctx, r.ID, "Also show the result with widget.show.", "human:owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Wait()
+	e, _ := s.Store.Exploration(ctx, eid)
+	if e.Routine != r.ID || !strings.Contains(e.Request, "newsletters") || !strings.Contains(e.Request, "widget.show") {
+		t.Fatalf("improve: routine %q request %q", e.Routine, e.Request)
+	}
+	if !strings.Contains(prompt, "widget.show") {
+		t.Fatal("the change did not reach the explorer")
+	}
+}
