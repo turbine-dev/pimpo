@@ -310,7 +310,14 @@ At start, Pimpo prints a link: `http://127.0.0.1:7788/auth?token=…`. Opening i
 - **De qualquer lugar**: Tailscale runs inside Pimpo, as a node named `pimpo` (installs from before the rename keep `zodim`), and serves Pimpo with Tailscale Funnel on port 443, giving an `https://pimpo.<your-network>.ts.net` link. Funnel makes that link reachable from the internet, protected by the login token. The first time, you sign in to Tailscale in the browser; your tailnet must allow HTTPS and Funnel.
 - **Usar outro endereço**: an address of your own (a reverse proxy, `tailscale serve`). It must be https, or http on a private address.
 
-**Gerar código** pairs a device: it gets its own token, shown once as a link and QR code, and kept only as a hash. Revoke one device with the trash icon next to it; the others keep working. Device tokens also authenticate bridges and scripts that use the [API](SDK.md#authentication).
+**Gerar código** pairs a device: it gets its own token, shown once as a link and QR code, and kept only as a hash. Choose whose device it is: it signs in as that person and acts only for them. Revoke one device with the trash icon next to it; the others keep working. Device tokens also authenticate bridges and scripts that use the [API](SDK.md#authentication).
+
+### Sign-in and sessions
+
+- **Passkeys.** In **Conta** (the menu under your name), each person adds passkeys for themselves. Signing in with one opens a session of theirs, listed with the devices as `Passkey · <name>`. A passkey belongs to the address where it was made: `localhost` on this computer, or an https address (Tailscale's, or your own). Browsers do not allow passkeys on a bare IP address, so the home-network address (`http://192.168.x.x`) keeps using the device link. Pimpo stores only public keys (`passkeys` in the database).
+- **Expiry.** A paired device unused for 180 days, and a passkey session unused for 30, no longer opens Pimpo.
+- **Wrong sign-ins.** Past 20 wrong tokens or links in 10 minutes from one address, further wrong attempts wait a second and get HTTP 429. Requests without any credential do not count, and a valid token always works.
+- **Removing a person** revokes their devices, sessions and passkeys at once.
 
 ## Local models
 

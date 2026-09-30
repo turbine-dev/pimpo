@@ -30,6 +30,7 @@ var guestRoutes = routeSet(
 	"GET /api/media", "GET /api/media/{id}",
 	"GET /api/assistants",
 	"GET /api/memory", "POST /api/memory", "DELETE /api/memory/{id}", "POST /api/memory/{id}/confirm", "GET /api/memory/search",
+	"GET /api/passkeys", "POST /api/passkeys/begin", "POST /api/passkeys/finish", "DELETE /api/passkeys/{id}",
 )
 
 // memberRoutes add to a guest's what a member manages for themselves.

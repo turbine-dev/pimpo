@@ -1,6 +1,9 @@
 import { Skills } from './pages/Skills'
 import { Phone } from './pages/Phone'
 import { Jobs } from './pages/Jobs'
+import { Account } from './pages/Account'
+import { SignIn } from './pages/SignIn'
+
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
@@ -14,7 +17,7 @@ import { Home } from './pages/Home'
 import { Assistants } from './pages/Assistants'
 import { Chat } from './pages/Chat'
 import { Help } from './pages/Help'
-import { api } from './lib/api'
+import { api, ApiError } from './lib/api'
 import { useLiveEvents } from './lib/live'
 import { Connections } from './pages/Connections'
 import { Cost } from './pages/Cost'
@@ -58,6 +61,7 @@ export default function App() {
     document.body.style.overflow = 'hidden'
     return <Mascot standalone onOpen={(path) => { location.pathname !== path && window.location.assign('/open?path=' + encodeURIComponent(path)) }} />
   }
+  if (state.error instanceof ApiError && state.error.status === 401) return <SignIn />
   if (location.pathname === '/welcome') {
     return (
       <div className="min-h-full px-4">
@@ -80,6 +84,7 @@ export default function App() {
         <Route path="/skills" element={<Skills />} />
         <Route path="/phone" element={<Phone />} />
         <Route path="/jobs" element={<Jobs />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/jobs/:id" element={<Jobs />} />
         <Route path="/help" element={<Help />} />
         <Route path="/inbox" element={<Inbox />} />

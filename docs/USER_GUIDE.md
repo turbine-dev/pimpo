@@ -99,9 +99,11 @@ Once a week Pimpo looks at what you asked and decided yourself (the requests you
 
 ## People
 
-In **Pessoas**, invite family members as a member or a guest. They send the invite code to the bot and get their own memory and accounts. To give someone the app, open **Ajustes › Abrir no celular**, choose whose device it is and scan the code on their phone: it signs in as them.
+In **Pessoas**, invite family members as a member or a guest. They send the invite code to the bot and get their own memory and accounts. To give someone the app, pair a device for them in **Ajustes › Abrir no celular** (choose whose device it is): it signs in as them.
 
 Everything is private to its person: routines, conversations, memory, activity, approvals, recordings, long jobs and what their phone shares. Nobody sees anyone else's, and that includes you, the owner: you run the house (people, connections, models, rules, backups) but never see what the others keep. Only costs are shared, as a total, because the budget is the house's. A fact marked **da casa** in Memória is shared with everyone.
+
+**Signing in.** Besides the link, each person can add a **passkey** in **Conta** (the menu under your name): afterwards Pimpo opens with Touch ID, Face ID, Windows Hello or a security key, as them. A passkey works at the address where it was made, `localhost` on the computer or an https address; on the home-network address, use the link. Sessions and devices left unused expire (30 and 180 days).
 
 A member manages their own routines and answers their own approvals; a guest can only ask, and a guest's changes wait for the person responsible for them. A lasting "always allow" is a rule for the whole house, so only the owner makes those. Removing a person revokes their devices at once.
 

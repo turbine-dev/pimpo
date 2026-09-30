@@ -83,8 +83,11 @@ func (l *limiter) fail(addr string, now time.Time) bool {
 	return len(kept) > failLimit
 }
 
-func (s *Server) refuse(w http.ResponseWriter, r *http.Request, msg string) {
-	if s.failures.fail(clientOf(r), time.Now()) {
+// refuse answers a request that did not sign in. Only a wrong credential
+// counts as a failed sign-in: a page asking without one, as the app does
+// before anyone signs in, is not an attempt.
+func (s *Server) refuse(w http.ResponseWriter, r *http.Request, tok, msg string) {
+	if tok != "" && s.failures.fail(clientOf(r), time.Now()) {
 		time.Sleep(time.Second)
 		WriteJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many wrong sign-ins from here; wait a few minutes"})
 		return
@@ -138,7 +141,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	if !s.valid(r.URL.Query().Get("token")) {
-		s.refuse(w, r, "invalid or expired link")
+		s.refuse(w, r, r.URL.Query().Get("token"), "invalid or expired link")
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: cookie, Value: r.URL.Query().Get("token"), Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
@@ -166,9 +169,10 @@ func (s *Server) who(t string) (string, bool) {
 
 func (s *Server) auth(pattern string, h http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		person, ok := s.who(TokenOf(r))
+		tok := TokenOf(r)
+		person, ok := s.who(tok)
 		if !ok {
-			s.refuse(w, r, "open the login link Pimpo printed at startup")
+			s.refuse(w, r, tok, "open the login link Pimpo printed at startup")
 			return
 		}
 		// Every request acts for the person its token belongs to, and
@@ -179,6 +183,12 @@ func (s *Server) auth(pattern string, h http.HandlerFunc) http.Handler {
 		}
 		h(w, r.WithContext(people.With(r.Context(), person)))
 	})
+}
+
+// SetSession signs the browser in with a session token, as the login link
+// does.
+func SetSession(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{Name: cookie, Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
 }
 
 // TokenOf is the credential a request carries: a bearer token, or the

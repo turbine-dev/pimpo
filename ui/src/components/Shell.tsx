@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { canOpen, useRole } from '../lib/roles'
 import { UpdateBanner } from './Updates'
-import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, Users, Puzzle } from 'lucide-react'
+import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, KeyRound, Users, Puzzle } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
@@ -124,6 +124,7 @@ function UserMenu({ onSystem, theme, toggleTheme }: { onSystem: () => void; them
   const [open, setOpen] = useState(false)
   const ref = useOutside(open, () => setOpen(false))
   const go = (to: string) => () => { setOpen(false); nav(to) }
+  const role = useRole()
   const item = 'flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-[13px] text-ink-2 hover:bg-sunken hover:text-ink'
   return (
     <div ref={ref} className="relative flex-1">
@@ -138,10 +139,11 @@ function UserMenu({ onSystem, theme, toggleTheme }: { onSystem: () => void; them
       </button>
       {open && (
         <div role="menu" className="absolute bottom-full left-0 z-40 mb-2 w-72 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-pop)]">
-          <button role="menuitem" className={item} onClick={go('/settings')}><Settings size={15} /> {t('nav.settings')}</button>
-          <button role="menuitem" className={item} onClick={go('/cost')}><Coins size={15} /> {t('shell.usage')}</button>
-          <button role="menuitem" className={item} onClick={() => { setOpen(false); onSystem() }}><Activity size={15} /> {t('sys.title')} <Kbd>⌘⇧D</Kbd></button>
-          <button role="menuitem" className={item} onClick={go('/settings#celular')}><Smartphone size={15} /> {t('shell.pairPhone')}</button>
+          <button role="menuitem" className={item} onClick={go('/account')}><KeyRound size={15} /> {t('acct.title')}</button>
+          {role === 'owner' && <button role="menuitem" className={item} onClick={go('/settings')}><Settings size={15} /> {t('nav.settings')}</button>}
+          {role !== 'guest' && <button role="menuitem" className={item} onClick={go('/cost')}><Coins size={15} /> {t('shell.usage')}</button>}
+          {role === 'owner' && <button role="menuitem" className={item} onClick={() => { setOpen(false); onSystem() }}><Activity size={15} /> {t('sys.title')} <Kbd>⌘⇧D</Kbd></button>}
+          {role === 'owner' && <button role="menuitem" className={item} onClick={go('/settings#celular')}><Smartphone size={15} /> {t('shell.pairPhone')}</button>}
           <div className="my-1 border-t border-line" />
           <button role="menuitem" className={item} onClick={() => { toggleTheme() }}>{theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />} {theme === 'dark' ? t('shell.light') : t('shell.dark')}</button>
           <button role="menuitem" className={item} onClick={go('/help')}><CircleHelp size={15} /> {t('nav.help')}</button>

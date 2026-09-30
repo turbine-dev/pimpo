@@ -3,7 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
-import { api } from './lib/api'
+import { api, ApiError } from './lib/api'
 import { LocaleProvider } from './lib/i18n'
 import './index.css'
 
@@ -20,7 +20,9 @@ if (desktop) {
   }, true)
 }
 
-const queries = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true, staleTime: 5_000 } } })
+// Not signed in, or not allowed: asking again will not change the answer.
+const final = (e: unknown) => e instanceof ApiError && [401, 403, 404].includes(e.status)
+const queries = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true, staleTime: 5_000, retry: (n, e) => !final(e) && n < 3 } } })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

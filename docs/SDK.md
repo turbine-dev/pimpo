@@ -13,7 +13,7 @@ Every way to extend Pimpo works with the binary you already have: no recompiling
 
 ## Authentication
 
-Every API call carries a device token: `Authorization: Bearer <token>`. Create one in **Ajustes › Abrir no celular** by giving the device a name (for example "Matrix bridge"). It can be revoked there at any time.
+Every API call carries a device token: `Authorization: Bearer <token>`. Create one in **Ajustes › Abrir no celular** by giving the device a name (for example "Matrix bridge"). It can be revoked there at any time. A token acts for the person it was made for, and only for them: a member's token reaches only the routes open to members and sees only that member's routines, memory and activity (HTTP 403 for anything else); the owner's token administers the house but sees nobody else's things. Tokens unused for 180 days stop working, and repeated wrong tokens from one address get HTTP 429.
 
 ## Channel API
 

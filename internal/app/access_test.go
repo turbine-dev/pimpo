@@ -246,4 +246,15 @@ func TestWrongSignInsAreLimited(t *testing.T) {
 	if code, _ := ta.raw(t, "tok", "GET", "/api/state", nil); code != 200 {
 		t.Fatalf("the owner was locked out: %d", code)
 	}
+	// Asking without any credential, as the app does before sign-in, is
+	// not a wrong sign-in.
+	fresh := newApp(t, weatherAgent, &llm.Fake{})
+	for i := 0; i < 40; i++ {
+		req, _ := http.NewRequest("GET", fresh.srv.URL+"/api/state", nil)
+		resp, _ := http.DefaultClient.Do(req)
+		resp.Body.Close()
+		if resp.StatusCode != 401 {
+			t.Fatalf("a request without a credential got %d", resp.StatusCode)
+		}
+	}
 }
