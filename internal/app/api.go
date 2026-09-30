@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -270,6 +271,22 @@ func (a *App) routineAction(w http.ResponseWriter, r *http.Request) {
 		err = a.Store.SetRoutineState(ctx, id, store.RoutinePaused)
 	case "resume":
 		err = a.Store.SetRoutineState(ctx, id, store.RoutineActive)
+	case "widget":
+		// Turn into a widget: re-explore the task so it also ends with
+		// widget.show; approving the result saves a new version.
+		var body struct {
+			Kind string `json:"kind"`
+		}
+		_ = server.Decode(r, &body)
+		change := "Also show the result at a glance on the owner's dashboard with widget.show, keeping everything else the routine does."
+		if slices.Contains(widgetKinds, body.Kind) {
+			change += " Use the " + body.Kind + " kind."
+		}
+		var eid string
+		if eid, err = a.Explore.Improve(ctx, id, change, actor(ctx)); err == nil {
+			server.WriteJSON(w, 202, map[string]string{"exploration": eid})
+			return
+		}
 	case "repair":
 		var eid string
 		eid, err = a.Explore.Repair(ctx, id, "", actor(ctx))

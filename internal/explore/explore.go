@@ -158,15 +158,7 @@ func (s *Service) Repair(ctx context.Context, routineID, problem, actor string) 
 	if err != nil {
 		return "", err
 	}
-	request := r.Body.Description
-	if exps, err := s.Store.Explorations(ctx, store.ExplorationDone); err == nil {
-		for _, e := range exps {
-			if e.Routine == routineID {
-				request = e.Request
-				break
-			}
-		}
-	}
+	request := s.originalRequest(ctx, r)
 	if problem == "" {
 		problem = lastFailure(ctx, s.Store, routineID)
 	}
@@ -174,6 +166,33 @@ func (s *Service) Repair(ctx context.Context, routineID, problem, actor string) 
 		request += "\n\n(Last time the automatic routine failed with: " + problem + ")"
 	}
 	return s.start(people.With(ctx, r.Person), request, actor, routineID, Options{})
+}
+
+// Improve re-explores a routine's task with a change the owner asked for,
+// such as also showing its result on a widget; approving it saves a new
+// version of the same routine, as a repair does.
+func (s *Service) Improve(ctx context.Context, routineID, change, actor string) (string, error) {
+	r, err := s.Store.Routine(ctx, routineID)
+	if err != nil {
+		return "", err
+	}
+	return s.start(people.With(ctx, r.Person), s.originalRequest(ctx, r)+"\n\n"+change, actor, routineID, Options{})
+}
+
+// originalRequest is what the owner asked for when the routine was made,
+// or its description when that exploration is gone.
+func (s *Service) originalRequest(ctx context.Context, r store.Routine) string {
+	if exps, err := s.Store.Explorations(ctx, store.ExplorationDone); err == nil {
+		for _, e := range exps {
+			if e.Routine == r.ID && e.Request != "" {
+				return e.Request
+			}
+		}
+	}
+	if r.Body.Description != "" {
+		return r.Body.Description
+	}
+	return r.Body.Name
 }
 
 // lastFailure is the error of the routine's latest run, when that run
@@ -664,6 +683,7 @@ Do the owner's request once, right now, using ONLY the pimpo tools. This run is 
 - Read what you need (calendar_events, gmail_search, http_getJSON). Prefer precise queries.
 - Changes (archive, label) are simulated while exploring: call them exactly as you would for real.
 - telegram_send really sends to the owner: send the final result there, exactly as the owner should receive it every time.
+- When the owner asks to SEE or TRACK something at a glance ("as a widget", "on my dashboard", "keep an eye on", "show me the dollar every hour"), finish with widget_show instead, in the kind that fits: one number → metric (with unit, and trend when there is a previous value), progress towards a goal → progress, ok or not → status, a few items → list, rows and columns → table, values over time or parts of a whole → chart (line, area, bar or donut), a short summary → text. Give it a short title in the owner's language. To TELL the owner something, use telegram_send; when they ask for both, do both.
 - Every subjective decision MUST be recorded with decide, one call per item, yes or no, BEFORE you act on it: is this email important? is it a promotion or newsletter? does it need a reply? Record the items you leave out too (yes=false). The automatic routine can only repeat decisions you recorded; unrecorded ones are lost. Objective checks (dates, amounts, senders the owner named) need no decide.
 - A one-time reminder ("in 30 minutes remind me to…", "tomorrow at 9 remind me…") is reminder_set with at (ISO 8601 with the offset shown above) or in (30m, 2h, 1d); it is sent once by itself, so no routine is needed. When apple_reminders_add is among your tools, use it instead: the reminder rings on the owner's iPhone and Watch. What repeats ("every Monday…") is a routine instead.
 - If something cannot be done with these tools, say so plainly.
