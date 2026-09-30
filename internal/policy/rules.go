@@ -232,6 +232,10 @@ var alwaysAsk = map[string]string{
 	"ha.critical":      "locks, alarms, covers and valves always wait for approval",
 }
 
+// AlwaysAsks reports whether a capability asks every time, whatever rules
+// or earlier answers say.
+func AlwaysAsks(capability string) bool { return alwaysAsk[capability] != "" }
+
 // strength orders verdicts: when several rules match, the strictest wins.
 var strength = map[Verdict]int{Allow: 0, Reversible: 1, Ask: 2, Block: 3}
 
@@ -317,6 +321,22 @@ func (e *Engine) AllowHost(ctx context.Context, host string, allowed bool, actor
 	_, err := e.Events.Append(ctx, "policy.host", actor, map[string]any{"host": host, "allowed": allowed})
 	return err
 }
+
+// ForgetHost drops the owner's answer about a web host, so the next read
+// asks again; undoing a remembered answer uses it.
+func (e *Engine) ForgetHost(ctx context.Context, host, actor string) error {
+	hosts := e.hosts(ctx)
+	delete(hosts, strings.ToLower(host))
+	b, _ := json.Marshal(hosts)
+	if err := e.Events.Put(ctx, hostsKey, string(b)); err != nil {
+		return err
+	}
+	_, err := e.Events.Append(ctx, "policy.host", actor, map[string]any{"host": host, "forgotten": true})
+	return err
+}
+
+// Hosts are the owner's answers about web hosts, by host.
+func (e *Engine) Hosts(ctx context.Context) map[string]bool { return e.hosts(ctx) }
 
 func (e *Engine) hosts(ctx context.Context) map[string]bool {
 	raw, _ := e.Events.Get(ctx, hostsKey)

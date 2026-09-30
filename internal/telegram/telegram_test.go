@@ -109,3 +109,17 @@ func TestPollReportsHealth(t *testing.T) {
 		t.Fatal("failed polls were not reported")
 	}
 }
+
+// A reply carries the message it replies to, with that message's buttons.
+func TestReplyCarriesTheButtons(t *testing.T) {
+	var u Update
+	err := json.Unmarshal([]byte(`{"update_id":1,"message":{"message_id":9,"text":"natação","chat":{"id":42,"type":"private"},
+	  "reply_to_message":{"message_id":7,"text":"❓ Que treino?","reply_markup":{"inline_keyboard":[[{"text":"Corrida","callback_data":"answer:q.0"},{"text":"Natação","callback_data":"answer:q.1"}]]}}}}`), &u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := u.Message.ReplyTo
+	if r == nil || r.ID != 7 || r.Markup == nil || len(r.Markup.Keyboard[0]) != 2 || r.Markup.Keyboard[0][1].Data != "answer:q.1" {
+		t.Fatalf("%+v", r)
+	}
+}

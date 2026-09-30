@@ -119,6 +119,9 @@ func Open(db *sql.DB) (*Store, error) {
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("migrate store: %w", err)
 	}
+	if _, err := db.Exec(progressSchema); err != nil {
+		return nil, fmt.Errorf("migrate store: %w", err)
+	}
 	for _, stmt := range additions {
 		if _, err := db.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return nil, fmt.Errorf("migrate store: %w", err)
@@ -167,6 +170,9 @@ type Settings struct {
 	Model string `json:"model,omitempty"`
 	// Effort is how hard that model thinks; "" uses the default.
 	Effort string `json:"effort,omitempty"`
+	// Push has the watch hear of new items as they happen (Gmail, Slack)
+	// instead of checking every few minutes.
+	Push bool `json:"push,omitempty"`
 }
 
 // Watch is what the routine waits for, with the owner's interval, or nil.
@@ -447,6 +453,12 @@ func (s *Store) StartRun(ctx context.Context, routine string, version int) (int6
 		return 0, err
 	}
 	return res.LastInsertId()
+}
+
+// RunVersion is the routine and code version a run started with.
+func (s *Store) RunVersion(ctx context.Context, id int64) (routine string, version int, err error) {
+	err = s.db.QueryRowContext(ctx, `SELECT routine, version FROM runs WHERE id = ?`, id).Scan(&routine, &version)
+	return routine, version, err
 }
 
 func (s *Store) FinishRun(ctx context.Context, id int64, outcome, errText string, cost float64, calls int) error {

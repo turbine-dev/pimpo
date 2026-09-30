@@ -307,3 +307,19 @@ func TestStagedSecretsAreEncrypted(t *testing.T) {
 		t.Fatalf("%v %v", got, err)
 	}
 }
+
+// A reference to an outside password manager is exported as the
+// reference; Pimpo does not read what it points to.
+func TestExportKeepsReferences(t *testing.T) {
+	ctx := context.Background()
+	ev, v, home := fixture(t)
+	v.Set(ctx, "model.openai.key", "op://Home/OpenAI/credential")
+	v.Set(ctx, "person.ana.mail.password", "vault://secret/data/ana#mail")
+	_, secrets, err := Unpack(bytes.NewReader(export(t, ev, v, home)), t.TempDir(), pass)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if secrets["model.openai.key"] != "op://Home/OpenAI/credential" || secrets["person.ana.mail.password"] != "vault://secret/data/ana#mail" {
+		t.Fatalf("secrets %v", secrets)
+	}
+}

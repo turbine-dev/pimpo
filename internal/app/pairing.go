@@ -52,6 +52,9 @@ type Device struct {
 	// it opens nothing by itself, works once and only until Expires.
 	Invite  bool      `json:"invite,omitempty"`
 	Expires time.Time `json:"expires,omitzero"`
+	// MiniApp marks a session the Telegram Mini App opened: it lasts
+	// until Expires and opens only the Mini App's routes.
+	MiniApp bool `json:"mini_app,omitempty"`
 }
 
 const devicesKey = "devices"
@@ -78,7 +81,7 @@ func newToken() (token, id string) {
 // expired says whether a device no longer opens anything: an invite past
 // its time, or a device unused for too long.
 func (d Device) expired(now time.Time) bool {
-	if d.Invite {
+	if d.Invite || d.MiniApp {
 		return now.After(d.Expires)
 	}
 	last := d.LastSeen
@@ -262,6 +265,7 @@ func (a *App) setPairing(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	go a.syncMiniApp(context.WithoutCancel(ctx))
 	out := map[string]string{"base": base}
 	home := ""
 	if a.LAN != nil {

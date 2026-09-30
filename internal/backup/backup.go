@@ -214,8 +214,16 @@ func Export(ctx context.Context, db *sql.DB, home string, vault Secrets, passphr
 	if err != nil {
 		return Manifest{}, err
 	}
+	// A reference to an outside password manager travels as the
+	// reference, never as what it points to.
+	read := vault.Get
+	if r, ok := vault.(interface {
+		Raw(ctx context.Context, name string) (string, error)
+	}); ok {
+		read = r.Raw
+	}
 	for _, n := range names {
-		v, err := vault.Get(ctx, n)
+		v, err := read(ctx, n)
 		if err != nil {
 			return Manifest{}, err
 		}

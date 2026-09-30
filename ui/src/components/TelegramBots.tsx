@@ -3,6 +3,7 @@ import { Bot, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { useT } from '../lib/i18n'
+import { SecretInput } from './SecretInput'
 import { Button, Card } from './ui'
 
 const input = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -42,7 +43,7 @@ export function TelegramBots({ telegram = true }: { telegram?: boolean }) {
       {detect.error && <p className="mb-3 text-[13px] text-danger">{detect.error.message}</p>}
       <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); add.mutate() }}>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('bots.name')} aria-label={t('bots.name')} className={input + ' w-40'} />
-        <input value={token} onChange={(e) => setToken(e.target.value)} type="password" placeholder={t('bots.token')} aria-label={t('bots.token')} className={input + ' min-w-[220px] flex-1'} />
+        <SecretInput value={token} onValue={setToken} placeholder={t('bots.token')} aria-label={t('bots.token')} className={input + ' w-full'} box="min-w-[220px] flex-1" />
         <Button type="submit" disabled={!token.trim() || add.isPending}>{t('bots.add')}</Button>
       </form>
       {add.error && <p className="mt-2 text-[13px] text-danger">{add.error.message}</p>}

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"net/http"
@@ -34,18 +35,19 @@ func (a approver) Ask(ctx context.Context, act policy.Action, reason string) (bo
 // remember turns "always" into a lasting permission: a known host for web
 // reads, a specific rule for everything else.
 func (a *App) remember(ctx context.Context, act policy.Action) {
-	if (act.Capability == "http.getJSON" || act.Capability == "web.read") && act.Scope != "" {
-		a.Rules.AllowHost(ctx, act.Scope, true, "human:owner")
-		return
-	}
-	rule := policy.AllowAlways(act)
-	rules := a.Rules.Rules(ctx)
-	for _, r := range rules {
-		if r.ID == rule.ID {
-			return
+	a.changeRules(ctx, func() error {
+		if (act.Capability == "http.getJSON" || act.Capability == "web.read") && act.Scope != "" {
+			return a.Rules.AllowHost(ctx, act.Scope, true, "human:owner")
 		}
-	}
-	a.Rules.SaveRules(ctx, append(rules, rule), "human:owner")
+		rule := policy.AllowAlways(act)
+		rules := a.Rules.Rules(ctx)
+		for _, r := range rules {
+			if r.ID == rule.ID {
+				return nil
+			}
+		}
+		return a.Rules.SaveRules(ctx, append(rules, rule), "human:owner")
+	})
 }
 
 // describeAction is the sentence shown in approval requests.
@@ -179,9 +181,19 @@ func (a *App) undoAction(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) answerApproval(w http.ResponseWriter, r *http.Request) {
 	ans := approval.Answer(r.PathValue("answer"))
-	if ans != approval.Once && ans != approval.Always && ans != approval.Deny && ans != approval.Run {
-		server.WriteError(w, server.StatusError{Status: 400, Msg: "answer must be once, run, always or deny"})
+	if ans != approval.Once && ans != approval.Always && ans != approval.Deny && ans != approval.Run && ans != approval.Routine {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "answer must be once, run, routine, always or deny"})
 		return
+	}
+	// "For this routine" may carry the most a later amount may be.
+	var body struct {
+		Limit *float64 `json:"limit"`
+	}
+	if ans == approval.Routine && r.ContentLength > 0 {
+		if err := server.Decode(r, &body); err != nil {
+			server.WriteError(w, err)
+			return
+		}
 	}
 	ctx := r.Context()
 	if !slices.ContainsFunc(a.myApprovals(ctx), func(q approval.Request) bool { return q.ID == r.PathValue("id") }) {
@@ -193,8 +205,11 @@ func (a *App) answerApproval(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 403, Msg: "a lasting permission is a rule for the whole house; ask the owner, or answer once"})
 		return
 	}
-	if !a.Approvals.Resolve(ctx, r.PathValue("id"), ans, actor(ctx)) {
-		server.WriteError(w, server.StatusError{Status: 410, Msg: "this request is no longer waiting"})
+	if err := a.resolveApproval(ctx, r.PathValue("id"), ans, body.Limit); err != nil {
+		if errors.Is(err, errApprovalGone) {
+			err = server.StatusError{Status: 410, Msg: err.Error()}
+		}
+		server.WriteError(w, err)
 		return
 	}
 	server.WriteJSON(w, 200, map[string]string{"answer": string(ans)})
@@ -227,11 +242,15 @@ func (a *App) putPreset(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rules := append(preset, keep...)
-	if err := a.Rules.SaveRules(r.Context(), rules, "human:owner"); err != nil {
+	if err := a.changeRules(r.Context(), func() error {
+		if err := a.Rules.SaveRules(r.Context(), rules, "human:owner"); err != nil {
+			return err
+		}
+		return a.Events.Put(r.Context(), "setup.preset", req.Preset)
+	}); err != nil {
 		server.WriteError(w, err)
 		return
 	}
-	a.Events.Put(r.Context(), "setup.preset", req.Preset)
 	server.WriteJSON(w, 200, rules)
 }
 
@@ -241,7 +260,7 @@ func (a *App) putRules(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	if err := a.Rules.SaveRules(r.Context(), rules, "human:owner"); err != nil {
+	if err := a.changeRules(r.Context(), func() error { return a.Rules.SaveRules(r.Context(), rules, "human:owner") }); err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
@@ -440,7 +459,7 @@ func (a *App) cost(w http.ResponseWriter, r *http.Request) {
 // setup reports what the first-run guide still needs.
 func (a *App) setup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	has := func(name string) bool { _, err := a.Vault.Get(ctx, name); return err == nil }
+	has := func(name string) bool { return a.Vault.Has(ctx, name) }
 	chat, _ := a.Channel.Chat(ctx)
 	done, _ := a.Events.Get(ctx, "setup.done")
 	preset, _ := a.Events.Get(ctx, "setup.preset")

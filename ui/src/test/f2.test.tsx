@@ -55,9 +55,7 @@ describe('Rules', () => {
 describe('Inbox approvals', () => {
   it('answers an approval request', async () => {
     const calls = mockFetch({
-      '/api/approvals': [{ id: 'ab12', action: { capability: 'gmail.send', risk: 3, source: 'routine:cobranca#2', args: {} }, text: 'cobranca quer enviar um e-mail para cliente@acme.com', reason: 'Sempre me pergunte', created: now }],
-      '/api/explorations?state=ready': [],
-      '/api/routines': [],
+      '/api/needs': { total: 1, counts: { approval: 1 }, items: [{ kind: 'approval', id: 'ab12', title: 'cobranca quer enviar um e-mail para cliente@acme.com', detail: 'Sempre me pergunte', created: now, urgency: 3, actions: ['once', 'run', 'always', 'deny'], risk: 3 }] },
     })
     wrap(<Inbox />)
     expect(await screen.findByText('cobranca quer enviar um e-mail para cliente@acme.com')).toBeInTheDocument()

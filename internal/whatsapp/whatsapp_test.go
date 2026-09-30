@@ -70,3 +70,43 @@ func TestWebhook(t *testing.T) {
 		t.Fatalf("%+v", in)
 	}
 }
+
+// More choices than three buttons come as a list; its id is returned so
+// a reply can name it.
+func TestSendList(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&got)
+		w.Write([]byte(`{"messages":[{"id":"wamid.L1"}]}`))
+	}))
+	defer srv.Close()
+	c := Client{Token: "tok", PhoneID: "123", BaseURL: srv.URL}
+	rows := []Button{{"answer:q.0", "Corrida"}, {"answer:q.1", "Bicicleta"}, {"answer:q.2", "Natação"}, {"answer:q.3", "Musculação com um nome bem comprido"}}
+	id, err := c.SendList(context.Background(), "5511999990000", "Que treino?", "Escolher", rows)
+	if err != nil || id != "wamid.L1" {
+		t.Fatalf("%q %v", id, err)
+	}
+	in := got["interactive"].(map[string]any)
+	action := in["action"].(map[string]any)
+	rs := action["sections"].([]any)[0].(map[string]any)["rows"].([]any)
+	last := rs[3].(map[string]any)
+	if in["type"] != "list" || action["button"] != "Escolher" || len(rs) != 4 || last["id"] != "answer:q.3" || len([]rune(last["title"].(string))) > 24 {
+		t.Fatalf("list %v", got)
+	}
+	if id, _ := c.SendID(context.Background(), "5511999990000", "oi"); id != "wamid.L1" {
+		t.Fatalf("id %q", id)
+	}
+}
+
+func TestParseListReplyAndReplies(t *testing.T) {
+	body := []byte(`{"entry":[{"changes":[{"value":{"messages":[
+	  {"id":"wamid.B1","from":"5511999990000","type":"interactive","interactive":{"type":"list_reply","list_reply":{"id":"answer:q.3","title":"Musculação"}}},
+	  {"id":"wamid.B2","from":"5511999990000","type":"text","text":{"body":"natação"},"context":{"from":"15550000000","id":"wamid.L1"}}]}}]}]}`)
+	in, err := Parse(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(in) != 2 || in[0].Button != "answer:q.3" || in[1].Text != "natação" || in[1].ReplyTo != "wamid.L1" {
+		t.Fatalf("%+v", in)
+	}
+}

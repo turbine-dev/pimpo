@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/connector"
 )
 
 type hit struct {
@@ -253,5 +255,27 @@ func TestWebhooks(t *testing.T) {
 	}
 	if (*hits)[0].Body["content"] != "@everyone oi" || !strings.Contains(flat((*hits)[0].Body["allowed_mentions"]), `"parse":[]`) {
 		t.Fatalf("discord body %v", (*hits)[0].Body)
+	}
+}
+
+// A missing key and a refused one both say which field to ask for, so
+// the app can ask its person privately.
+func TestMissingAndRefusedKeys(t *testing.T) {
+	missing := func(_ context.Context, f string) (string, error) {
+		return "", &connector.MissingCredential{Connector: "github", Field: f, Err: errors.New("not found")}
+	}
+	k, _ := Get("github")
+	_, err := k.Connector(func(string) Config { return missing }).Call(context.Background(), "github.issues", "", map[string]any{"repo": "a/b"})
+	var mc *connector.MissingCredential
+	if !errors.As(err, &mc) || mc.Connector != "github" || mc.Field != "token" || mc.Invalid || !strings.Contains(err.Error(), "GitHub is not set up") {
+		t.Fatalf("missing: %v", err)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(401) }))
+	defer srv.Close()
+	BaseURL["github"] = srv.URL
+	defer delete(BaseURL, "github")
+	_, err = k.Connector(func(string) Config { return cfg(map[string]string{"token": "old"}) }).Call(context.Background(), "github.issues", "", map[string]any{"repo": "a/b"})
+	if !errors.As(err, &mc) || mc.Field != "token" || !mc.Invalid {
+		t.Fatalf("refused: %v", err)
 	}
 }

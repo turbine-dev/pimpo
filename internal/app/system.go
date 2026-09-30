@@ -62,7 +62,7 @@ func (a *App) system(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) components(ctx context.Context) []component {
-	has := func(name string) bool { v, _ := a.Vault.Get(ctx, name); return v != "" }
+	has := func(name string) bool { return a.Vault.Has(ctx, name) }
 	state := func(on bool) string {
 		if on {
 			return "ok"

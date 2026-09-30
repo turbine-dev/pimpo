@@ -8,6 +8,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/owner"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -161,6 +162,13 @@ func (a *App) whatsappMessage(ctx context.Context, m whatsapp.Inbound) {
 	if text == "" {
 		return
 	}
+	if m.ReplyTo != "" {
+		// Words in reply to a question are checked against its options.
+		if out, ok := h.Reply(pctx, waSent.choices(m.ReplyTo), text); ok {
+			reply(out)
+			return
+		}
+	}
 	out, err := h.Request(owner.Via(pctx, "whatsapp"), text)
 	if err != nil {
 		out = i18n.T(ctx, "msg.start.failed", "error", err)
@@ -207,7 +215,9 @@ func (a *App) whatsappPair(ctx context.Context, m whatsapp.Inbound, code string,
 }
 
 // mirrorWhatsApp sends a notice to the person on WhatsApp too. WhatsApp
-// shows three buttons at most: the less common "rest of this run" goes.
+// shows three buttons at most: the less common "rest of this run" goes,
+// and so does "always" when "for this routine", the narrower lasting
+// answer, takes its place; a question with more options comes as a list.
 func (a *App) mirrorWhatsApp(ctx context.Context, n explore.Notice) {
 	c := a.wa(ctx)
 	if c == nil {
@@ -217,16 +227,58 @@ func (a *App) mirrorWhatsApp(ctx context.Context, n explore.Notice) {
 	if err != nil || p.WhatsApp == "" {
 		return
 	}
+	grant := slices.ContainsFunc(n.Actions, func(act explore.Action) bool { return strings.HasPrefix(act.Data, "grant:") })
 	var buttons []whatsapp.Button
 	for _, act := range n.Actions {
-		if strings.HasPrefix(act.Data, "batch:") {
+		if strings.HasPrefix(act.Data, "batch:") || (grant && strings.HasPrefix(act.Data, "always:")) {
 			continue
 		}
 		buttons = append(buttons, whatsapp.Button{ID: act.Data, Title: act.Label})
 	}
 	// Not a health signal: a failed send is usually about that message
 	// (the 24-hour window, a blocked number), not WhatsApp being down.
-	c.Send(ctx, p.WhatsApp, n.Text, buttons...)
+	var id string
+	if len(buttons) > 3 && questionOf(n.Actions) != "" {
+		id, _ = c.SendList(ctx, p.WhatsApp, n.Text, i18n.T(ctx, "msg.answer.choose"), buttons)
+	} else {
+		id, _ = c.SendID(ctx, p.WhatsApp, n.Text, buttons...)
+	}
+	if questionOf(n.Actions) != "" {
+		waSent.remember(id, n.Actions)
+	}
+}
+
+// sentChoices are the questions sent on WhatsApp by message id, so a
+// reply in words to one is checked against its options.
+type sentChoices struct {
+	mu    sync.Mutex
+	byID  map[string][]explore.Action
+	order []string
+}
+
+var waSent sentChoices
+
+func (s *sentChoices) remember(id string, choices []explore.Action) {
+	if id == "" {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.byID == nil {
+		s.byID = map[string][]explore.Action{}
+	}
+	s.byID[id] = choices
+	s.order = append(s.order, id)
+	for len(s.order) > waRecent {
+		delete(s.byID, s.order[0])
+		s.order = s.order[1:]
+	}
+}
+
+func (s *sentChoices) choices(id string) []explore.Action {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.byID[id]
 }
 
 // whatsappCap is whatsapp.send (to whoever the run works for) and

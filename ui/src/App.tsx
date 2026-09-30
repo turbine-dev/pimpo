@@ -5,6 +5,8 @@ import { Account } from './pages/Account'
 import { Dashboards } from './pages/Dashboards'
 import { SignIn } from './pages/SignIn'
 import { CreateAdmin } from './pages/CreateAdmin'
+import { Recovery } from './pages/Recovery'
+import { Credential } from './pages/Credential'
 
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
@@ -15,12 +17,14 @@ import { NewTask } from './components/NewTask'
 import { Palette } from './components/Palette'
 import { Welcome } from './pages/Welcome'
 import { Shell } from './components/Shell'
+import { useNeeds } from './components/Needs'
 import { Home } from './pages/Home'
 import { Assistants } from './pages/Assistants'
 import { Chat } from './pages/Chat'
 import { Help } from './pages/Help'
 import { api, ApiError } from './lib/api'
 import { useLiveEvents } from './lib/live'
+import { FloatingWidget } from './pages/FloatingWidget'
 import { Connections } from './pages/Connections'
 import { Cost } from './pages/Cost'
 import { Receipts } from './pages/Receipts'
@@ -29,6 +33,7 @@ import { Design } from './pages/Design'
 import { ExplorationPage } from './pages/ExplorationPage'
 import { Inbox } from './pages/Inbox'
 import { Memory } from './pages/Memory'
+import { Lessons } from './pages/Lessons'
 import { RoutinePage } from './pages/RoutinePage'
 import { Routines } from './pages/Routines'
 import { Import } from './pages/Import'
@@ -55,7 +60,9 @@ export default function App() {
   useLiveEvents()
   const state = useQuery({ queryKey: ['state'], queryFn: api.state, refetchInterval: 30_000 })
   const [creatingAdmin, setCreatingAdmin] = useState(false)
-  const attention = (state.data?.awaiting ?? 0) + (state.data?.broken ?? 0) + (state.data?.approvals ?? 0)
+  // The bell counts the same list the inbox shows.
+  const needs = useNeeds(!!state.data)
+  const attention = needs.data?.total ?? (state.data?.awaiting ?? 0) + (state.data?.broken ?? 0) + (state.data?.approvals ?? 0)
   if (location.pathname === '/mascot') {
     // The desktop app's floating window: only the cat, on a transparent page.
     // Links go through /open, which the app turns into its main window.
@@ -64,6 +71,11 @@ export default function App() {
     document.body.style.overflow = 'hidden'
     return <Mascot standalone onOpen={(path) => { location.pathname !== path && window.location.assign('/open?path=' + encodeURIComponent(path)) }} />
   }
+  if (location.pathname.startsWith('/float/')) {
+    // The desktop app's floating widget: one widget on a transparent page.
+    return <FloatingWidget id={decodeURIComponent(location.pathname.slice('/float/'.length))} />
+  }
+  if (state.error instanceof ApiError && state.error.recovery) return <Recovery />
   if (state.error instanceof ApiError && state.error.status === 401) return <SignIn />
   // The account screen stays until the person finishes it, passkey step
   // included, even once the server already knows the account.
@@ -98,10 +110,12 @@ export default function App() {
         <Route path="/jobs/:id" element={<Jobs />} />
         <Route path="/help" element={<Help />} />
         <Route path="/inbox" element={<Inbox />} />
+        <Route path="/credentials/:id" element={<Credential />} />
         <Route path="/receipts" element={<Receipts />} />
         <Route path="/rules" element={<Rules />} />
         <Route path="/cost" element={<Cost />} />
         <Route path="/memory" element={<Memory />} />
+        <Route path="/lessons" element={<Lessons />} />
         <Route path="/connections" element={<Connections />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/import" element={<Import />} />

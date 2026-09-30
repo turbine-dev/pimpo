@@ -48,8 +48,10 @@ import (
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/policy"
 	"github.com/turbine-dev/pimpo/internal/protect"
+	"github.com/turbine-dev/pimpo/internal/push"
 	"github.com/turbine-dev/pimpo/internal/remote"
 	"github.com/turbine-dev/pimpo/internal/scheduler"
+	"github.com/turbine-dev/pimpo/internal/secretscan"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/speech"
 	"github.com/turbine-dev/pimpo/internal/store"
@@ -94,6 +96,8 @@ type Settings struct {
 	SuggestOff bool `json:"suggest_off,omitempty"`
 	// LearnOff stops learning preferences from the owner's own requests.
 	LearnOff bool `json:"learn_off,omitempty"`
+	// LessonDigestOff stops the weekly notice of lessons waiting.
+	LessonDigestOff bool `json:"lesson_digest_off,omitempty"`
 	// LMStudioURL and CustomURL are where LM Studio and an OpenAI-compatible
 	// server of the owner's answer (without /v1 for LM Studio).
 	LMStudioURL string `json:"lmstudio_url,omitempty"`
@@ -121,6 +125,22 @@ type Settings struct {
 	AutoOff    bool   `json:"auto_off,omitempty"`
 	AutoLight  string `json:"auto_light,omitempty"`
 	AutoStrong string `json:"auto_strong,omitempty"`
+	// CompactOff stops Anthropic's server-side compaction of long
+	// conversations; CompactAt is the size in tokens where it starts
+	// (0 is 150000; the API's minimum is 50000).
+	CompactOff bool `json:"compact_off,omitempty"`
+	CompactAt  int  `json:"compact_at,omitempty"`
+}
+
+// compactAt is when Anthropic models summarize a long conversation, 0 off.
+func (s Settings) compactAt() int {
+	switch {
+	case s.CompactOff:
+		return 0
+	case s.CompactAt == 0:
+		return 150000
+	}
+	return s.CompactAt
 }
 
 func (s Settings) fallbacks(job string) []string { return s.Fallbacks[job] }
@@ -166,6 +186,7 @@ type App struct {
 	Policy    policy.Policy
 	Rules     *policy.Engine
 	Approvals *approval.Manager
+	Grants    *approval.Grants
 	Outbox    *outbox.Outbox
 	Undo      *undo.Undo
 	Memory    *memory.Memory
@@ -179,6 +200,12 @@ type App struct {
 	jobRunning sync.Mutex
 	jobRuns    map[string]bool
 	jobPoll    time.Duration
+	progress   progressState
+	// ProgressEvery is how often a followed job's message is edited;
+	// 0 means every 10 seconds. ProgressSinks replaces the channels it
+	// goes to; tests only.
+	ProgressEvery time.Duration
+	ProgressSinks func(ctx context.Context, person string) []progressSink
 	// ListenAddr is where the server listens (--addr); the home network uses its port.
 	ListenAddr string
 	Google     *oauth.Google
@@ -192,6 +219,12 @@ type App struct {
 	VoiceAPI map[string]string
 	// SheetsAPI replaces Google Sheets' address; tests only.
 	SheetsAPI string
+	// GmailAPI and GoogleCerts replace Gmail's and Google's key addresses,
+	// and GmailToken each person's Gmail token, for push; tests only.
+	GmailAPI    string
+	GoogleCerts string
+	GmailToken  func(ctx context.Context) (string, error)
+	verifier    *push.Verifier
 	// WhatsAppAPI replaces the Graph API; tests only.
 	WhatsAppAPI string
 	// VoiceModel is the whisper.cpp model used for voice notes.
@@ -225,6 +258,8 @@ type App struct {
 	listenFn     context.CancelFunc
 	external     map[string]*external.Connector
 	externalErrs []string
+	// damaged is why the database last failed its check while running.
+	damaged string
 }
 
 // New assembles an App on top of an open event store.
@@ -244,6 +279,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Budget = &budget.Budget{Events: events, Zone: zone}
 	a.Channel = &owner.Channel{Events: events, Bot: a.bot, Handler: handler{a}}
 	a.People = &people.Directory{Events: events, OwnerChat: a.Channel.Chat, OwnerWhatsApp: a.ownerWhatsApp}
+	a.Budget.PersonLimit = a.personLimit
 	a.Channel.People = a.People
 	a.Channel.Mirror = func(ctx context.Context, n explore.Notice) {
 		a.mirrorWhatsApp(ctx, n)
@@ -270,6 +306,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		asker, _ := a.People.Get(ctx, person)
 		return a.People.Responsible(ctx, person).ID, asker.Name
 	}}
+	a.Grants = &approval.Grants{Events: events}
 	router := a.router()
 	a.Router = router
 	a.Outbox = &outbox.Outbox{DB: events.DB(), Events: events, Send: func(ctx context.Context, args any) (any, error) { return router.Call(ctx, "gmail.send", "", args) }}
@@ -282,8 +319,9 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	}}
 	env := host.Env{Router: router, Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide),
 		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
-		RoleOf: func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) }}
-	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone}
+		RoleOf:  func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) },
+		Missing: a.missingCredential}
+	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone, Progress: a.runProgress, Pushed: a.pushLive}
 	a.Explore = &explore.Service{Guide: docs.Guide, Skills: a.exploreSkills, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 3, Installed: a.installedRoutines,
 		Helpers: func(ctx context.Context, id string) (runtime.Helper, error) { return a.Scheduler.Library(ctx, id) }},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
@@ -292,13 +330,17 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.googleRoutes()
 	a.routes()
 	a.safetyRoutes()
+	a.grantRoutes()
 	a.memoryRoutes()
 	a.migrateRoutes()
 	a.pairingRoutes()
+	a.miniAppRoutes()
 	a.peopleRoutes()
+	a.limitRoutes()
 	a.whatsappRoutes()
 	a.galleryRoutes()
 	a.catalogRoutes()
+	a.historyRoutes()
 	a.backupRoutes()
 	a.guardRoutes()
 	a.channelRoutes()
@@ -312,6 +354,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.localRoutes()
 	a.speechRoutes()
 	a.webhookRoutes()
+	a.pushRoutes()
 	a.questionRoutes()
 	a.spotifyRoutes()
 	a.doctorRoutes()
@@ -322,18 +365,23 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.skillRoutes()
 	a.browserRoutes()
 	a.learnRoutes()
+	a.lessonRoutes()
 	a.phoneRoutes()
 	a.jobRoutes()
+	a.progressRoutes()
+	a.needRoutes()
 	a.passkeyRoutes()
 	a.accountRoutes()
 	a.widgetRoutes()
 	a.widgetFeedRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
+	a.credentialRoutes()
 	a.assistantRoutes()
 	a.voiceRoutes()
 	a.modelRoutes()
 	a.systemRoutes()
+	a.passwordManagerRoutes()
 	return a, nil
 }
 
@@ -377,6 +425,10 @@ func (a *App) Start(ctx context.Context) error {
 	a.background(func() { a.aliveLoop(ctx, time.Minute) })
 	a.background(func() { a.suggestLoop(ctx, 30*time.Minute) })
 	a.background(func() { a.learnLoop(ctx, time.Hour) })
+	a.settleProgress(ctx)
+	a.background(func() { a.pushLoop(ctx, time.Hour) })
+	a.background(func() { a.lessonDigestLoop(ctx, time.Hour) })
+	a.background(func() { a.catalogLoop(ctx, time.Hour) })
 	a.resumeJobs(ctx)
 	go func() {
 		<-ctx.Done()
@@ -404,6 +456,7 @@ func (a *App) restartListener(ctx context.Context) {
 		return
 	}
 	go a.Channel.Listen(lctx)
+	go a.syncMiniApp(lctx)
 }
 
 func loadZone(name string) *time.Location {
@@ -421,7 +474,20 @@ func (a *App) Settings(ctx context.Context) Settings {
 	return s
 }
 
+// SaveSettings checks and keeps the settings, and records in the history
+// what changed, the models apart from the rest.
 func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error {
+	general := a.track(ctx, histEntry{Area: "settings", Store: histSettings, Person: people.OwnerID})
+	models := a.track(ctx, histEntry{Area: "models", Store: histSettings, Person: people.OwnerID})
+	if err := a.saveSettings(ctx, s, actor); err != nil {
+		return err
+	}
+	general()
+	models()
+	return nil
+}
+
+func (a *App) saveSettings(ctx context.Context, s Settings, actor string) error {
 	if _, err := time.LoadLocation(s.Zone); err != nil {
 		return server.StatusError{Status: 400, Msg: "unknown time zone " + s.Zone}
 	}
@@ -463,6 +529,9 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 			return server.StatusError{Status: 400, Msg: "prices are USD per million tokens, from 0 to 1000"}
 		}
 		known[m.ID] = true
+	}
+	if s.CompactAt != 0 && (s.CompactAt < 50000 || s.CompactAt > 1000000) {
+		return server.StatusError{Status: 400, Msg: "compaction starts between 50000 and 1000000 tokens"}
 	}
 	for _, v := range []voiceChoice{s.routineVoice(), {s.ChatVoice, s.ChatVoiceModel, s.ChatVoiceName}} {
 		switch v.Engine {
@@ -562,6 +631,7 @@ func (a *App) router() *connector.Router {
 		codeCap{a},
 		browserCap{a},
 		phoneCap{a},
+		slackCap{a},
 		widgetCap{a},
 		audioCap{a},
 		askCap{a},
@@ -622,7 +692,13 @@ func (m mailConn) Call(ctx context.Context, c, s string, args any) (any, error) 
 	}
 	smtp, _ := m.a.Events.Get(ctx, personal(ctx, "mail.smtp"))
 	pw := personal(ctx, "mail.password")
-	acct := mail.Account{Addr: addr, Username: user, SMTP: smtp, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) { return m.a.secret(ctx, pw) }}
+	acct := mail.Account{Addr: addr, Username: user, SMTP: smtp, Insecure: m.a.MailInsecure, Password: func(ctx context.Context) (string, error) {
+		v, err := m.a.Vault.Get(ctx, pw)
+		if errors.Is(err, vault.ErrNotFound) {
+			return "", &connector.MissingCredential{Connector: "mail", Field: "password", Err: errors.New("email is not set up; open Connections")}
+		}
+		return v, err
+	}}
 	if auth, _ := m.a.Events.Get(ctx, personal(ctx, "mail.auth")); auth == "oauth" && m.a.Google != nil && people.From(ctx) == people.OwnerID {
 		acct.Token = m.a.Google.Token
 	}
@@ -664,12 +740,16 @@ func (a *App) judge(ctx context.Context, question string, item any) (judge.Answe
 }
 
 func (a *App) decide(ctx context.Context, act policy.Action) policy.Decision {
-	return a.Policy.Decide(ctx, act)
+	return a.granted(ctx, act, a.Policy.Decide(ctx, act))
 }
 
 func (a *App) generate(ctx context.Context, r llm.Request) (llm.Response, error) {
 	if r.Model == "" {
 		r.Model = a.Settings(ctx).CompileModel
+	}
+	var ok bool
+	if r.Model, ok = a.fitModel(ctx, r.Model); !ok {
+		return llm.Response{}, a.errNoModel(ctx)
 	}
 	return a.LLM.Generate(ctx, r)
 }
@@ -677,6 +757,10 @@ func (a *App) generate(ctx context.Context, r llm.Request) (llm.Response, error)
 func (a *App) runAgent(ctx context.Context, r llm.AgentRequest) (llm.Response, error) {
 	if r.Model == "" {
 		r.Model = a.Settings(ctx).ExploreModel
+	}
+	var ok bool
+	if r.Model, ok = a.fitModel(ctx, r.Model); !ok {
+		return llm.Response{}, a.errNoModel(ctx)
 	}
 	return a.Agent.Run(ctx, r)
 }
@@ -777,7 +861,12 @@ func (c claude) Run(ctx context.Context, r llm.AgentRequest) (llm.Response, erro
 // when a job falls back and once when its model answers again. The
 // owner's own spending limit and a cancelled task are never retried.
 func (a *App) withFallback(ctx context.Context, job, primary string, call func(model string) (llm.Response, error)) (llm.Response, error) {
-	chain := append([]string{primary}, a.Settings(ctx).fallbacks(job)...)
+	// Only what the person and the assistant may use is tried.
+	chain := a.allowedChain(ctx, append([]string{primary}, a.Settings(ctx).fallbacks(job)...))
+	if len(chain) == 0 {
+		return llm.Response{}, a.errNoModel(ctx)
+	}
+	primary = chain[0]
 	var firstErr error
 	for i, model := range chain {
 		if i > 0 && slices.Contains(chain[:i], model) {
@@ -844,6 +933,9 @@ func (a *App) apiModel(ctx context.Context, model string) (llm.API, bool, error)
 // apiFor reaches one provider's model with its price, key and address.
 func (a *App) apiFor(ctx context.Context, provider, name string, in, out float64) (llm.API, bool, error) {
 	api := llm.API{Provider: provider, Model: name, PriceIn: in, PriceOut: out, Base: modelBase[provider]}
+	if provider == "anthropic" {
+		api.CompactAt = a.Settings(ctx).compactAt()
+	}
 	base, err := a.modelEndpoint(ctx, provider)
 	if err != nil {
 		return api, true, err
@@ -932,6 +1024,20 @@ type handler struct{ a *App }
 func actor(ctx context.Context) string { return "human:" + people.From(ctx) }
 
 func (h handler) Request(ctx context.Context, text string) (string, error) {
+	// A pasted key goes no further than here: not to the model, the
+	// conversation or the log. The person is told, and nothing is kept.
+	text, warning := h.a.guardPasted(ctx, text)
+	if warning == "" {
+		return h.request(ctx, text)
+	}
+	if secretscan.Only(text) {
+		return warning, nil
+	}
+	reply, err := h.request(ctx, text)
+	return warning + "\n\n" + reply, err
+}
+
+func (h handler) request(ctx context.Context, text string) (string, error) {
 	via := owner.ChannelOf(ctx)
 	if via == "" {
 		if _, err := h.a.Explore.Start(ctx, text, actor(ctx)); err != nil {
@@ -939,7 +1045,17 @@ func (h handler) Request(ctx context.Context, text string) (string, error) {
 		}
 		return i18n.T(ctx, "msg.request.started"), nil
 	}
+	if out, ok := h.a.bareAnswer(ctx, via, text); ok {
+		return out, nil
+	}
 	return h.a.converse(ctx, via, text)
+}
+
+// Reply takes a typed reply to a notice with choices on a chat channel:
+// a question's options are matched; other notices are not answered in
+// words.
+func (h handler) Reply(ctx context.Context, choices []explore.Action, text string) (string, bool) {
+	return h.a.replyAnswer(ctx, choices, text)
 }
 
 // convQuiet is how long a chat-channel conversation waits for the next
@@ -966,30 +1082,34 @@ func (a *App) converse(ctx context.Context, via, text string) (string, error) {
 		return a.effortCommand(ctx, key, strings.TrimSpace(m[1])), nil
 	}
 	var ids []string
-	conv := ""
+	var chat store.Chat
 	if raw, _ := a.Events.Get(ctx, key); raw != "" {
 		id, at, _ := strings.Cut(raw, "|")
 		if sec, err := strconv.ParseInt(at, 10, 64); err == nil && time.Since(time.Unix(sec, 0)) < convQuiet {
-			if _, turns, err := a.Store.Chat(ctx, id); err == nil {
-				conv, ids = id, turns
+			if c, turns, err := a.Store.Chat(ctx, id); err == nil {
+				chat, ids = c, turns
 			}
 		}
 	}
-	history := a.history(ctx, ids)
-	convEffort, _ := a.Events.Get(ctx, key+".effort")
-	pick := a.routeModel(ctx, text, history, a.convModel(ctx, key), convEffort)
-	o := explore.Options{Context: history, Model: pick.Model, Effort: pick.Effort}
-	exp, err := a.Explore.StartWith(ctx, text, actor(ctx), o)
-	if err != nil {
-		return "", err
-	}
-	if conv == "" {
+	fresh := chat.ID == ""
+	if fresh {
 		title := channelTitle(via) + " · " + text
 		if r := []rune(title); len(r) > 60 {
 			title = string(r[:59]) + "…"
 		}
-		conv = chatID()
-		if err := a.Store.CreateChat(ctx, store.Chat{ID: conv, Title: title, Person: chatPerson(person)}); err != nil {
+		chat = store.Chat{ID: chatID(), Title: title, Person: chatPerson(person)}
+	}
+	history := a.history(ctx, ids)
+	convEffort, _ := a.Events.Get(ctx, key+".effort")
+	pick := a.routeModel(ctx, text, history, a.convModel(ctx, key), convEffort)
+	o := explore.Options{Context: history, Model: pick.Model, Effort: pick.Effort, Origin: chatOrigin(chat)}
+	exp, err := a.Explore.StartWith(ctx, text, actor(ctx), o)
+	if err != nil {
+		return "", err
+	}
+	conv := chat.ID
+	if fresh {
+		if err := a.Store.CreateChat(ctx, chat); err != nil {
 			return "", err
 		}
 	}
@@ -1047,16 +1167,11 @@ func (a *App) convModel(ctx context.Context, key string) string {
 // choices; with a name (or "auto"), it fixes that model on this channel.
 func (a *App) modelCommand(ctx context.Context, key, arg string) string {
 	arg = strings.ToLower(arg)
-	s := a.Settings(ctx)
 	options := []string{Auto}
-	if claudeInstalled() {
-		options = append(options, "sonnet", "opus", "haiku")
-	}
-	if llm.CodexBinary() != "" {
-		options = append(options, "codex")
-	}
-	for _, m := range s.Models {
-		options = append(options, m.ID)
+	for _, m := range a.houseModels(ctx) {
+		if a.modelAllowed(ctx, m) {
+			options = append(options, m)
+		}
 	}
 	if arg == "" {
 		current := a.convModel(ctx, key)
@@ -1165,14 +1280,17 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 			return "", err
 		}
 		return h.a.answer(ctx, qid, i)
-	case "approve", "always", "deny", "batch":
-		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run}[action]
+	case "approve", "always", "deny", "batch", "grant":
+		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run, "grant": approval.Routine}[action]
 		if ans == approval.Always && people.From(ctx) != people.OwnerID {
 			// Only the owner makes lasting rules.
 			ans, action = approval.Once, "approve"
 		}
-		if !h.a.Approvals.Resolve(ctx, id, ans, who) {
-			return "", errors.New(i18n.T(ctx, "msg.approval.gone"))
+		if err := h.a.resolveApproval(ctx, id, ans, nil); err != nil {
+			if errors.Is(err, errApprovalGone) {
+				return "", errors.New(i18n.T(ctx, "msg.approval.gone"))
+			}
+			return "", errors.New(i18n.T(ctx, "msg.approval.noGrant"))
 		}
 		return i18n.T(ctx, "msg.approval."+action), nil
 	}
@@ -1185,7 +1303,7 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 func (h handler) allowed(ctx context.Context, action, id string) error {
 	person := people.From(ctx)
 	switch action {
-	case "approve", "always", "deny", "batch":
+	case "approve", "always", "deny", "batch", "grant":
 		if h.a.Approvals.MayAnswer(id, person) {
 			return nil
 		}

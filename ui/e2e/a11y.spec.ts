@@ -21,7 +21,7 @@ for (const theme of ['dark', 'light']) {
       await later.waitFor({ timeout: 5000 }).then(() => later.click(), () => {})
       await expect(create).toBeHidden()
     }
-    for (const path of ['/', '/routines', '/inbox', '/receipts', '/rules', '/cost', '/connections', '/settings', '/settings#modelos', '/settings#backup', '/settings#notificacoes', '/chat', '/assistants', '/help', '/welcome', '/memory', '/people', '/gallery', '/import', '/dashboards']) {
+    for (const path of ['/', '/routines', '/inbox', '/receipts', '/rules', '/cost', '/connections', '/settings', '/settings#modelos', '/settings#backup', '/settings#notificacoes', '/chat', '/assistants', '/help', '/welcome', '/memory', '/people', '/gallery', '/import', '/dashboards', '/float/builtin:today']) {
       await page.goto(path)
       await page.waitForLoadState('networkidle')
       const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()

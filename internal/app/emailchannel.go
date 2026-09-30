@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/turbine-dev/pimpo/internal/connector/mail"
+	"github.com/turbine-dev/pimpo/internal/memory"
 	"github.com/turbine-dev/pimpo/internal/people"
 )
 
@@ -60,7 +61,9 @@ func (a *App) checkEmailChannel(ctx context.Context) int {
 		}
 		a.Events.Put(ctx, key, time.Now().Format(time.RFC3339))
 		text := strings.TrimSpace(pimpoSubject.ReplaceAllString(m.Subject, "") + "\n" + m.Snippet)
-		reply, err := handler{a}.Request(ctx, text)
+		// Facts noted while answering come from this email.
+		from := memory.WithOrigin(ctx, memory.Origin{Kind: memory.FromEmail, Ref: id, Sender: me, Label: m.Subject})
+		reply, err := handler{a}.Request(from, text)
 		if err != nil {
 			reply = i18n.T(ctx, "msg.start.failed", "error", err)
 		}

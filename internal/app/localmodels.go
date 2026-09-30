@@ -14,6 +14,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/llm"
 	"github.com/turbine-dev/pimpo/internal/local"
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/speech"
 	"github.com/turbine-dev/pimpo/internal/voice"
@@ -210,6 +211,7 @@ func (a *App) speechRoutes() {
 			return
 		}
 		var err error
+		done := a.track(r.Context(), kvEntry("models", "elevenlabs", people.OwnerID, nil, "voice.elevenlabs.key"))
 		if key := strings.TrimSpace(req.Key); key == "" {
 			err = a.Vault.Delete(r.Context(), "voice.elevenlabs.key")
 		} else {
@@ -223,6 +225,7 @@ func (a *App) speechRoutes() {
 			server.WriteError(w, err)
 			return
 		}
+		done()
 		a.Events.Append(r.Context(), "voice.key", actor(r.Context()), map[string]string{"provider": "elevenlabs"})
 		server.WriteJSON(w, 200, map[string]bool{"ok": true})
 	})

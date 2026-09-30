@@ -7,6 +7,7 @@ import { cn } from '../lib/cn'
 import { useT, type TKey } from '../lib/i18n'
 import { Button } from '../components/ui'
 import { DragHandle, WidgetBody, WidgetCard } from '../components/widgets/Widget'
+import { canFloat, setFloating, useFloating } from '../components/widgets/floating'
 import { canPinToHome, pinToHome } from '../components/widgets/homescreen'
 
 const COLS = 12
@@ -178,6 +179,7 @@ function Board({ board, editing, onLayout, onAdd }: { board: Dashboard; editing:
   useEffect(() => { setLayout(board.layout) }, [board.layout])
   const grid = useRef<HTMLDivElement>(null)
   const [refreshing, setRefreshing] = useState<string | null>(null)
+  const floating = useFloating()
 
   const commit = (next: LayoutItem[], moved?: string) => {
     const s = settle(next, moved)
@@ -259,6 +261,7 @@ function Board({ board, editing, onLayout, onAdd }: { board: Dashboard; editing:
                 onRemove={editing ? () => commit(layout.filter((l) => l.id !== it.id)) : undefined}
                 onRefresh={'hidden' in w || w.source === 'builtin' ? undefined : () => refresh(it.id)}
                 onShare={'hidden' in w || w.source !== 'routine' || !w.mine ? undefined : (s) => share(it.id, s)}
+                floating={floating.includes(it.id)} onFloat={'hidden' in w || !canFloat() ? undefined : (on) => setFloating(it.id, on)}
                 onPinHome={'hidden' in w || !canPinToHome() ? undefined : () => { pinToHome(it.id).catch(() => {}) }}>
                 {!('hidden' in w) && <WidgetBody w={w} size={size} />}
               </WidgetCard>

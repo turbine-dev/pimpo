@@ -74,4 +74,56 @@ describe('Model setup', () => {
     expect(await within(dialog).findByText(/A conta ficou sem créditos/)).toBeInTheDocument()
     expect(saved).toBe(false)
   })
+
+  it('marks new and retired models, looks again on demand, and suggests switching', async () => {
+    const calls = mockFetch({
+      '/api/settings': { ...settings, judge_model: 'anthropic:claude-old', models: [{ id: 'anthropic:claude-old', price_in: 1, price_out: 5 }] },
+      '/api/models': { keys: { anthropic: true }, claude_code: true, providers },
+      '/api/models/detect': { ollama: [], ollama_url: '', lmstudio: [], lmstudio_url: '' },
+      '/api/models/retired': { retired: ['anthropic:claude-old'] },
+      '/api/models/catalog/anthropic': [
+        { id: 'claude-old', name: 'claude-old', price_in: 1, price_out: 5, priced: true, mine: true, retired: true },
+        { id: 'claude-brand-new', name: 'claude-brand-new', price_in: 0, price_out: 0, priced: false, new: true },
+        { id: 'or-new', name: 'Priced new', price_in: 1, price_out: 2, priced: true, new: true },
+      ],
+      '/api/models/catalog/anthropic?fresh=1': [{ id: 'claude-sonnet-5', name: 'Claude Sonnet 5', price_in: 3, price_out: 15, priced: true }],
+    })
+    wrap()
+    // The job using a retired model says so, and so does the owner's list.
+    expect(await screen.findByText(/deixou de ser oferecido pelo fornecedor. Escolha outro modelo/)).toBeInTheDocument()
+    expect(screen.getAllByText('Retirado').length).toBeGreaterThan(0)
+
+    await userEvent.click(screen.getByRole('button', { name: /Anthropic/ }))
+    const dialog = await screen.findByRole('dialog')
+    const rows = await within(dialog).findAllByRole('listitem')
+    const brand = rows.find((r) => r.textContent?.includes('claude-brand-new'))!
+    expect(within(brand).getByText('Novo · sem preço')).toBeInTheDocument()
+    expect(within(brand).getByRole('button', { name: /Testar e usar/ })).toBeDisabled()
+    expect(within(rows.find((r) => r.textContent?.includes('Priced new'))!).getByText('Novo')).toBeInTheDocument()
+    const old = rows.find((r) => r.textContent?.includes('claude-old'))!
+    expect(within(old).getByText('Retirado')).toBeInTheDocument()
+    expect(within(old).queryByRole('button', { name: /Testar e usar/ })).toBeNull()
+
+    await userEvent.click(within(dialog).getByRole('button', { name: /Ver de novo/ }))
+    expect(await within(dialog).findByText('Claude Sonnet 5')).toBeInTheDocument()
+    expect(calls.some((c) => c.url === '/api/models/catalog/anthropic?fresh=1')).toBe(true)
+  })
+
+  it('turns Anthropic compaction off and sets where it starts', async () => {
+    let saved: Record<string, unknown> | undefined
+    mockFetch({
+      '/api/settings': settings,
+      'PUT /api/settings': (b: unknown) => { saved = b as Record<string, unknown>; return b },
+      '/api/models': { keys: {}, claude_code: true, providers },
+      '/api/models/detect': { ollama: [], ollama_url: '', lmstudio: [], lmstudio_url: '' },
+    })
+    wrap()
+    const at = await screen.findByLabelText('Começa em (tokens)')
+    await userEvent.clear(at)
+    await userEvent.type(at, '200000')
+    await userEvent.click(within(at.closest('form')!).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(saved?.compact_at).toBe(200000))
+    await userEvent.click(screen.getByRole('switch', { name: /Resumir conversas longas/ }))
+    await waitFor(() => expect(saved?.compact_off).toBe(true))
+  })
 })

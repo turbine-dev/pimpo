@@ -20,9 +20,20 @@ describe('Home', () => {
       '/api/runs?outcome=&before=0&limit=50': [{ id: 1, routine: 'news', name: 'Notícias', started_at: now.toISOString(), outcome: 'failed', cost_usd: 0, calls: 1, version: 1 }],
       '/api/chats': [{ id: 'c1', title: 'Agenda de amanhã', updated_at: now.toISOString(), turns: 2 }],
       'POST /api/chats': { chat: 'c2', turn: 'e2' },
+      '/api/needs': { total: 4, counts: { approval: 2, failed_routine: 1, exploration_ready: 1 }, items: [
+        { kind: 'approval', id: 'a1', title: 'Enviar e-mail para a Ana', urgency: 3, actions: ['once', 'run', 'always', 'deny'], risk: 3 },
+        { kind: 'approval', id: 'a2', title: 'Arquivar 3 e-mails', urgency: 3, actions: ['once', 'run', 'always', 'deny'], risk: 2 },
+        { kind: 'failed_routine', id: 'news', title: 'Notícias', urgency: 1, actions: ['run', 'repair', 'open'], link: '/routines/news' },
+        { kind: 'exploration_ready', id: 'e1', title: 'Resumo semanal', urgency: 0, actions: ['open'], link: '/explorations/e1' },
+      ] },
     })
     wrap(<Routes><Route path="/" element={<Home />} /><Route path="/chat/:id" element={<p>conversa aberta</p>} /></Routes>)
-    expect(await screen.findByText('2 aprovações · 1 rotina parada')).toBeInTheDocument()
+    // The three most urgent, and how many more wait.
+    const top = await screen.findByRole('list', { name: 'Precisa de você' })
+    expect(within(top).getByText('Enviar e-mail para a Ana')).toBeInTheDocument()
+    expect(within(top).getByText('Notícias não rodou')).toBeInTheDocument()
+    expect(within(top).queryByText('Resumo semanal')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Mais 1/ })).toHaveAttribute('href', '/inbox')
     expect(screen.getByText('Notícias')).toBeInTheDocument()
     expect(screen.getByText('falhou')).toBeInTheDocument()
     expect(screen.getByText('Resumo matinal')).toBeInTheDocument()
@@ -34,24 +45,37 @@ describe('Home', () => {
   })
 })
 
+describe('Home running now', () => {
+  it('shows what runs now above the day', async () => {
+    mockFetch({
+      '/api/needs': { total: 0, counts: {}, items: [] },
+      '/api/progress': [{ id: 'run:brief:3', person: 'owner', kind: 'run', routine: 'brief', run: 3, title: 'Resumo matinal', label: 'gmail.search', done: 4, total: 0, state: 'running', cost_usd: 0, started_at: now.toISOString(), updated_at: now.toISOString() }],
+    })
+    wrap(<Home />)
+    const section = await screen.findByRole('region', { name: 'Rodando agora' })
+    expect(within(section).getByText('Resumo matinal')).toBeInTheDocument()
+  })
+})
+
 describe('Inbox panel', () => {
-  it('answers an approval in place and filters by tab', async () => {
+  it('answers an approval in place and filters by kind', async () => {
     const calls = mockFetch({
-      '/api/approvals': [{ id: 'a1', text: 'Enviar e-mail para a Ana', reason: 'irreversível', created: now.toISOString(), action: { capability: 'gmail.send', args: {}, risk: 3, source: 'x' } }],
-      '/api/explorations?state=ready': [],
-      '/api/routines': [{ id: 'news', name: 'Notícias', state: 'broken', runs: [] }],
-      '/api/system': { components: [{ id: 'signal', group: 'channel', name: 'Signal', state: 'error', detail: 'signal-cli is not answering' }] },
+      '/api/needs': { total: 3, counts: { approval: 1, failed_routine: 1, system: 1 }, items: [
+        { kind: 'approval', id: 'a1', title: 'Enviar e-mail para a Ana', detail: 'irreversível', created: now.toISOString(), urgency: 3, actions: ['once', 'run', 'always', 'deny'], risk: 3 },
+        { kind: 'failed_routine', id: 'news', title: 'Notícias', urgency: 1, actions: ['run', 'repair', 'open'], link: '/routines/news' },
+        { kind: 'system', id: 'signal', title: 'Signal', detail: 'signal-cli is not answering', urgency: 1, actions: [], link: '/settings' },
+      ] },
       'POST /api/approvals/a1/once': {},
     })
     wrap(<InboxPanel onClose={() => {}} />)
     expect(await screen.findByText('Enviar e-mail para a Ana')).toBeInTheDocument()
-    expect(await screen.findByText('Notícias não rodou')).toBeInTheDocument()
+    expect(screen.getByText('Notícias não rodou')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('tab', { name: /Sistema/ }))
     expect(screen.getByText('signal-cli is not answering')).toBeInTheDocument()
     expect(screen.queryByText('Enviar e-mail para a Ana')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('tab', { name: /Aprovações/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Permitir' }))
-    await waitFor(() => expect(calls.some((c) => c.url === '/api/approvals/a1/once')).toBe(true))
+    await waitFor(() => expect(calls.some((c) => c.url === '/api/approvals/a1/once' && c.method === 'POST')).toBe(true))
   })
 })
 
