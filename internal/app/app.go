@@ -48,6 +48,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/policy"
 	"github.com/turbine-dev/pimpo/internal/protect"
+	"github.com/turbine-dev/pimpo/internal/push"
 	"github.com/turbine-dev/pimpo/internal/remote"
 	"github.com/turbine-dev/pimpo/internal/scheduler"
 	"github.com/turbine-dev/pimpo/internal/secretscan"
@@ -200,6 +201,12 @@ type App struct {
 	VoiceAPI map[string]string
 	// SheetsAPI replaces Google Sheets' address; tests only.
 	SheetsAPI string
+	// GmailAPI and GoogleCerts replace Gmail's and Google's key addresses,
+	// and GmailToken each person's Gmail token, for push; tests only.
+	GmailAPI    string
+	GoogleCerts string
+	GmailToken  func(ctx context.Context) (string, error)
+	verifier    *push.Verifier
 	// WhatsAppAPI replaces the Graph API; tests only.
 	WhatsAppAPI string
 	// VoiceModel is the whisper.cpp model used for voice notes.
@@ -295,7 +302,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
 		RoleOf:  func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) },
 		Missing: a.missingCredential}
-	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone, Progress: a.runProgress}
+	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone, Progress: a.runProgress, Pushed: a.pushLive}
 	a.Explore = &explore.Service{Guide: docs.Guide, Skills: a.exploreSkills, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 3, Installed: a.installedRoutines,
 		Helpers: func(ctx context.Context, id string) (runtime.Helper, error) { return a.Scheduler.Library(ctx, id) }},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
@@ -326,6 +333,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.localRoutes()
 	a.speechRoutes()
 	a.webhookRoutes()
+	a.pushRoutes()
 	a.questionRoutes()
 	a.spotifyRoutes()
 	a.doctorRoutes()
@@ -393,6 +401,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.background(func() { a.suggestLoop(ctx, 30*time.Minute) })
 	a.background(func() { a.learnLoop(ctx, time.Hour) })
 	a.settleProgress(ctx)
+	a.background(func() { a.pushLoop(ctx, time.Hour) })
 	a.resumeJobs(ctx)
 	go func() {
 		<-ctx.Done()
@@ -591,6 +600,7 @@ func (a *App) router() *connector.Router {
 		codeCap{a},
 		browserCap{a},
 		phoneCap{a},
+		slackCap{a},
 		widgetCap{a},
 		audioCap{a},
 		askCap{a},

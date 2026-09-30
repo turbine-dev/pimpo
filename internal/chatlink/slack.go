@@ -23,9 +23,23 @@ type Slack struct {
 	BotToken string
 	AppToken string
 	API      string
+	// OnEvent, when set, hears messages in the channels the app is in
+	// and mentions of it, for routines that watch Slack.
+	OnEvent func(Event)
 
 	mu  sync.Mutex
 	dms map[string]string
+}
+
+// Event is a message in a Slack channel the app is in, or a mention of
+// the app. Its text is someone else's words: data for routines.
+type Event struct {
+	Channel  string
+	User     string
+	Text     string
+	TS       string
+	ThreadTS string
+	Mention  bool
 }
 
 func (s *Slack) Name() string { return "slack" }
@@ -105,6 +119,7 @@ func (s *Slack) Run(ctx context.Context, on func(Inbound)) error {
 					ThreadTS    string `json:"thread_ts"`
 					BotID       string `json:"bot_id"`
 					Subtype     string `json:"subtype"`
+					TS          string `json:"ts"`
 				} `json:"event"`
 			} `json:"payload"`
 		}
@@ -121,7 +136,16 @@ func (s *Slack) Run(ctx context.Context, on func(Inbound)) error {
 			return errors.New("Slack asked to reconnect")
 		case "events_api":
 			e := env.Payload.Event
-			if e.Type != "message" || e.ChannelType != "im" || e.BotID != "" || e.Subtype != "" || strings.TrimSpace(e.Text) == "" {
+			if e.BotID != "" || e.Subtype != "" || strings.TrimSpace(e.Text) == "" {
+				continue
+			}
+			if e.Type == "app_mention" || (e.Type == "message" && (e.ChannelType == "channel" || e.ChannelType == "group")) {
+				if s.OnEvent != nil {
+					s.OnEvent(Event{Channel: e.Channel, User: e.User, Text: e.Text, TS: e.TS, ThreadTS: e.ThreadTS, Mention: e.Type == "app_mention"})
+				}
+				continue
+			}
+			if e.Type != "message" || e.ChannelType != "im" {
 				continue
 			}
 			s.mu.Lock()

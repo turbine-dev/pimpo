@@ -178,7 +178,7 @@
   "svc.slackchat.description": "Slack のダイレクトメッセージで Pimpo と話せます。",
   "svc.slackchat.field.app_token.label": "App token（xapp-）",
   "svc.slackchat.field.bot_token.label": "Bot token（xoxb-）",
-  "svc.slackchat.help": "api.slack.com/apps でアプリを作成し、Socket Mode をオンにして（connections:write 付きの xapp- token が作成されます）、message.im イベントを購読し、Bot に im:history、im:write、chat:write を付与して、ワークスペースにインストールします。次に、アプリへのダイレクトメッセージで pimpo と「接続」のペアリングコードを送信します。",
+  "svc.slackchat.help": "api.slack.com/apps でアプリを作成し、Socket Mode をオンにして（connections:write 付きの xapp- token が作成されます）、message.im イベントを購読し、Bot に im:history、im:write、chat:write を付与して、ワークスペースにインストールします。次に、アプリへのダイレクトメッセージで pimpo と「接続」のペアリングコードを送信します。 Slack に反応するルーティンには、message.channels と app_mention も購読し、ボットに channels:history と app_mentions:read を与えて、アプリをチャンネルに追加してください。",
   "svc.slackchat.title": "Slack",
   "svc.todoist.description": "タスクの読み取り、作成、完了。",
   "svc.todoist.field.token.label": "API token",

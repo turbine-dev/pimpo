@@ -10,6 +10,7 @@ import { RunningNow } from '../components/ProgressCard'
 import { MakeWidget } from '../components/MakeWidget'
 import { Publish } from '../components/Publish'
 import { RoutineSettings } from '../components/RoutineSettings'
+import { GitHubCard } from '../components/GitHubCard'
 import { WebhookCard } from '../components/WebhookCard'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -87,6 +88,7 @@ export function RoutinePage() {
 
       <RoutineSettings s={s} onRedo={() => act.mutate('repair')} />
       <WebhookCard id={s.id} />
+      <GitHubCard id={s.id} />
 
       <Tabs.Root defaultValue={params.get('tab') ?? 'overview'}>
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('routine.details')}>

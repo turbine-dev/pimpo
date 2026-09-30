@@ -381,7 +381,7 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "effort is low, medium, high or max"})
 		return
 	}
-	settings := store.Settings{Schedule: req.Schedule, Params: req.Params, WatchEvery: req.WatchEvery, Model: req.Model, Effort: req.Effort}
+	settings := store.Settings{Schedule: req.Schedule, Params: req.Params, WatchEvery: req.WatchEvery, Model: req.Model, Effort: req.Effort, Push: rt.Settings.Push}
 	if err := a.Store.SetRoutineSettings(ctx, rt.ID, settings); err != nil {
 		server.WriteError(w, err)
 		return

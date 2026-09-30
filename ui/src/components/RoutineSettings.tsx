@@ -8,6 +8,7 @@ import { cn } from '../lib/cn'
 import { cronText, when } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
 import { EffortSelect, label, useModelOptions } from './ModelSetup'
+import { PushChoice } from './PushChoice'
 import { Button, Card } from './ui'
 
 const field = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -86,7 +87,7 @@ export function RoutineSettings({ s, onRedo }: { s: RoutineSummary; onRedo?: () 
         </div>
       </div>
       <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); save.mutate() }}>
-        {byHook ? <p className="text-[13px] text-ink-2">{t('rs.byWebhook')}</p> : s.watch && !s.schedule ? <WatchEditor watch={s.watch} every={every} onChange={setEvery} /> : <ScheduleEditor value={sched} onChange={setSched} />}
+        {byHook ? <p className="text-[13px] text-ink-2">{t('rs.byWebhook')}</p> : s.watch && !s.schedule ? <WatchEditor id={s.id} watch={s.watch} every={every} onChange={setEvery} /> : <ScheduleEditor value={sched} onChange={setSched} />}
         {s.default_schedule && cron !== s.default_schedule && (
           <button type="button" className="-mt-3 text-[12.5px] text-ink-3 underline" onClick={() => setSched(parseCron(s.default_schedule!))}>{t('rs.reset')} ({cronText(s.default_schedule)})</button>
         )}
@@ -147,7 +148,7 @@ function UpdateBanner({ s }: { s: RoutineSummary }) {
 
 const intervals = ['5m', '10m', '15m', '30m', '1h', '3h', '24h']
 
-function WatchEditor({ watch, every, onChange }: { watch: Watch; every: string; onChange: (e: string) => void }) {
+function WatchEditor({ id, watch, every, onChange }: { id: string; watch: Watch; every: string; onChange: (e: string) => void }) {
   const t = useT()
   return (
     <fieldset>
@@ -159,6 +160,7 @@ function WatchEditor({ watch, every, onChange }: { watch: Watch; every: string; 
         </select>
       </label>
       <p className="mt-1.5 text-[12px] text-ink-3">{t('rs.watchHint')}</p>
+      <PushChoice id={id} />
     </fieldset>
   )
 }

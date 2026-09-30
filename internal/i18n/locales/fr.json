@@ -178,7 +178,7 @@
   "svc.slackchat.description": "Parlez à Pimpo par message direct sur Slack.",
   "svc.slackchat.field.app_token.label": "Token de l’app (xapp-)",
   "svc.slackchat.field.bot_token.label": "Token du bot (xoxb-)",
-  "svc.slackchat.help": "Sur api.slack.com/apps, créez une app, activez Socket Mode (cela crée le token xapp- avec connections:write), abonnez-vous à l’événement message.im, donnez au bot im:history, im:write et chat:write, puis installez-la dans le workspace. Ensuite, envoyez à l’app en message direct : pimpo et le code d’association de Connexions.",
+  "svc.slackchat.help": "Sur api.slack.com/apps, créez une app, activez Socket Mode (cela crée le token xapp- avec connections:write), abonnez-vous à l’événement message.im, donnez au bot im:history, im:write et chat:write, puis installez-la dans le workspace. Ensuite, envoyez à l’app en message direct : pimpo et le code d’association de Connexions. Pour les routines qui réagissent à Slack, abonnez-vous aussi à message.channels et app_mention, donnez au bot channels:history et app_mentions:read, et ajoutez l'app aux canaux.",
   "svc.slackchat.title": "Slack",
   "svc.todoist.description": "Vos tâches : lire, créer et terminer.",
   "svc.todoist.field.token.label": "Token d’API",

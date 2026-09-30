@@ -182,7 +182,7 @@
   "svc.slackchat.description": "Общайтесь с Pimpo в личных сообщениях Slack.",
   "svc.slackchat.field.app_token.label": "Токен приложения (xapp-)",
   "svc.slackchat.field.bot_token.label": "Токен бота (xoxb-)",
-  "svc.slackchat.help": "На api.slack.com/apps создайте приложение, включите Socket Mode (будет создан токен xapp- с connections:write), подпишитесь на событие message.im, выдайте боту im:history, im:write и chat:write и установите приложение в рабочее пространство. Затем отправьте приложению в личном сообщении: pimpo и код привязки из «Подключений».",
+  "svc.slackchat.help": "На api.slack.com/apps создайте приложение, включите Socket Mode (будет создан токен xapp- с connections:write), подпишитесь на событие message.im, выдайте боту im:history, im:write и chat:write и установите приложение в рабочее пространство. Затем отправьте приложению в личном сообщении: pimpo и код привязки из «Подключений». Для сценариев, которые реагируют на Slack, подпишитесь также на message.channels и app_mention, дайте боту channels:history и app_mentions:read и добавьте приложение в каналы.",
   "svc.slackchat.title": "Slack",
   "svc.todoist.description": "Ваши задачи: чтение, создание и завершение.",
   "svc.todoist.field.token.label": "Токен API",

@@ -210,6 +210,9 @@ func (a *App) restartLink(ctx context.Context, kind string) {
 		return
 	}
 	lctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	if s, ok := l.(*chatlink.Slack); ok {
+		s.OnEvent = func(e chatlink.Event) { a.slackEvent(lctx, e) }
+	}
 	run := &linkRun{link: l, cancel: cancel}
 	a.links[kind] = run
 	go chatlink.Keep(lctx, l, func(in chatlink.Inbound) { a.linkMessage(lctx, kind, run, in) }, func(err error) {

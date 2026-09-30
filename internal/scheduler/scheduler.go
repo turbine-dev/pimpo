@@ -37,6 +37,9 @@ type Scheduler struct {
 	// Progress hears how each run goes: when it starts, each step, and
 	// how it ended. It is kept so a reload or a restart still shows it.
 	Progress func(ctx context.Context, p RunProgress)
+	// Pushed says whether events reach a watching routine as they happen
+	// (Gmail or Slack push); its polls then become an hourly safety net.
+	Pushed func(ctx context.Context, r store.Routine) bool
 
 	mu      sync.Mutex
 	cron    *cron.Cron

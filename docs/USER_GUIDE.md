@@ -47,6 +47,8 @@ Pimpo speaks Português, English, Español, Français, Deutsch, Italiano, 日本
 
 Ask for a reaction instead of a time ("tell me when an email from Ana arrives", "when this site publishes something new") and the routine watches instead of running on a clock. Pimpo checks the source every few minutes without any model, so the checks cost nothing, and runs the routine only with what it has not seen before; the first check only learns what is already there. Change how often it checks in the routine's settings. The empty checks stay out of **Activity**; what was found and what the routine did show up as usual. The gallery's **Email from someone important** is one.
 
+Routines that watch Gmail or Slack can also hear of new things as they happen: in the routine's settings, turn on **Hear of it as it happens**. Gmail then tells Pimpo about new mail at once (the administrator sets up Google Cloud once; see [Push triggers](CONFIGURATION.md#push-triggers)), and the settings show until when the push is active; Slack messages in the channels Pimpo's app is in, and mentions of it, arrive as they are sent (ask for "when someone mentions Pimpo in #support, tell me"). What arrives reaches the routine as data, never as orders. Each person's push wakes only their own routines. If the push stops (Pimpo was off, Google sign-in expired), the routine simply goes back to checking every few minutes.
+
 A routine can also write a little: "and tell me in one sentence what she is asking for", "suggest a reply". The part that must be composed is written by a small model (the one set for judgments) for each item, about a fraction of a cent each; everything that can be copied (sender, subject, date) stays plain code. Each text is checked against the daily limit first, shows up in **Activity**, and treats the email as data, never as orders. What the routine then does with the text still passes your rules and approvals.
 
 ## Routines that remember, and routines built from others
@@ -174,6 +176,8 @@ In **Chats**, tap **Talk** and talk: on the computer or on the phone. With **Wak
 ## Webhooks
 
 Any routine can be started by another service calling a secret address: on its page, turn on **Start by webhook**. Use it from an iPhone Shortcut ("when I leave home, send me the day's brief"), IFTTT, Zapier, GitHub or a form. What is sent (JSON, form fields or text) reaches the routine as `event.webhook` with `method`, `query` and `body`, so a routine can act on it ("when a new order arrives, tell me who bought what"). Ask for such a routine in a chat and Pimpo makes it start by webhook. Addresses work on this computer and on the home network; for internet services, turn on Tailscale with Funnel. Anyone with the address starts the routine, so treat it like a password; **New address** replaces it at once. A paused routine does not start, a call carries at most 256 KB, and a routine starts at most 30 times a minute this way.
+
+For GitHub, turn on **Start from GitHub** instead ("when a pull request is opened in my repository, tell me its title"): copy the address and the secret, shown only once, into the repository's **Settings › Webhooks**. GitHub signs every delivery with the secret, so nobody else can start the routine, and a delivery GitHub sends again starts it only once. The routine gets `event.github` with the event type, the action and the payload.
 
 ## Google Sheets
 
