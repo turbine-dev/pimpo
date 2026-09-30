@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -101,5 +102,39 @@ func TestChatRehearsesThenDoesExactlyWhatItShowed(t *testing.T) {
 	}
 	if code, _ := ta.do(t, "DELETE", "/api/chats/"+chat, nil); code != 200 {
 		t.Fatal(code)
+	}
+}
+
+// Search finds words in any order, ignoring case and accents, or a quoted
+// phrase as written, and only in the caller's own conversations.
+func TestSearchingConversations(t *testing.T) {
+	h := newHouse(t)
+	search := func(token, q string) string {
+		code, body := h.raw(t, token, "GET", "/api/chats/search?q="+url.QueryEscape(q), nil)
+		if code != 200 {
+			t.Fatalf("search %q: %d %s", q, code, body)
+		}
+		return body
+	}
+	if out := search("tok", "AMANHA ownersecret"); !strings.Contains(out, h.owner["chat"]) || !strings.Contains(out, "OWNERSECRET o que tenho amanhã?") {
+		t.Fatalf("words in any order, without accents: %s", out)
+	}
+	if out := search("tok", `"o que tenho"`); !strings.Contains(out, h.owner["chat"]) {
+		t.Fatalf("a quoted phrase: %s", out)
+	}
+	if out := search("tok", `"tenho o que"`); out != "[]\n" {
+		t.Fatalf("a quoted phrase matched out of order: %s", out)
+	}
+	if out := search("tok", "ANASECRET"); out != "[]\n" {
+		t.Fatalf("the owner found Ana's conversation: %s", out)
+	}
+	if out := search(h.ana, "anasecret"); !strings.Contains(out, h.anas["chat"]) {
+		t.Fatalf("Ana does not find her own: %s", out)
+	}
+	if out := search(h.ana, "OWNERSECRET"); out != "[]\n" {
+		t.Fatalf("Ana found the owner's conversation: %s", out)
+	}
+	if out := search("tok", "   "); out != "[]\n" {
+		t.Fatalf("an empty search: %s", out)
 	}
 }

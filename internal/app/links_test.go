@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -74,6 +75,75 @@ func TestSignalLikeChannelPairsAndAnswersByNumber(t *testing.T) {
 	ta.mirrorLinks(ctx, explore.Notice{Text: "só para a Ana", To: "ana"})
 	if strings.Contains(l.last(), "só para a Ana") {
 		t.Fatal("a notice for someone else reached the owner's channel")
+	}
+}
+
+// replyLink is a channel with replies, like Discord, Slack or Signal: each
+// message sent gets an id a reply can name.
+type replyLink struct {
+	fakeLink
+	n int
+}
+
+func (r *replyLink) SendMessage(ctx context.Context, to, text string) ([]string, error) {
+	r.Send(ctx, to, text)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.n++
+	return []string{fmt.Sprintf("m%d", r.n)}, nil
+}
+
+// Replying to a notice answers that notice, even after a newer one, once;
+// a reply to a message Pimpo does not know never falls back to the latest.
+func TestAReplyAnswersItsNotice(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ctx := context.Background()
+	l := &replyLink{}
+	run := &linkRun{link: l, cancel: func() {}}
+	ta.links = map[string]*linkRun{"signal": run}
+	ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: "pimpo " + ta.Channel.PairingCode()})
+	for _, ask := range []string{"Todo dia às 7h me manda bom dia", "Toda segunda me lembra do lixo"} {
+		ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: ask})
+		ta.Explore.Wait()
+	}
+	exps, _ := ta.Store.Explorations(ctx, store.ExplorationReady)
+	if len(exps) != 2 {
+		t.Fatalf("explorations %d", len(exps))
+	}
+	notice := func(id string) explore.Notice {
+		return explore.Notice{Text: "Quer uma rotina? " + id, Actions: []explore.Action{{Label: "Transformar em rotina", Data: "compile:" + id}, {Label: "Descartar", Data: "discard:" + id}}}
+	}
+	ta.mirrorLinks(ctx, notice(exps[0].ID))
+	waitFor(t, func() bool { return strings.Contains(l.last(), exps[0].ID) })
+	first := fmt.Sprintf("m%d", l.n)
+	ta.mirrorLinks(ctx, notice(exps[1].ID))
+	waitFor(t, func() bool { return strings.Contains(l.last(), exps[1].ID) })
+	second := fmt.Sprintf("m%d", l.n)
+
+	say := func(replyTo, text string) string {
+		ta.linkMessage(ctx, "signal", run, chatlink.Inbound{From: "+551199", Text: text, ReplyTo: replyTo})
+		return l.last()
+	}
+	if out := say(first, "2"); !strings.HasSuffix(out, "Descartado.") {
+		t.Fatalf("a reply to the older notice: %q", out)
+	}
+	if e, _ := ta.Store.Exploration(ctx, exps[1].ID); e.State != store.ExplorationReady {
+		t.Fatalf("the newer notice was answered instead: %s", e.State)
+	}
+	if out := say(first, "1"); !strings.Contains(out, "já foi respondido") {
+		t.Fatalf("a notice was answered twice: %q", out)
+	}
+	if out := say("m999", "2"); !strings.Contains(out, "Já não tenho esse aviso") {
+		t.Fatalf("a reply to an unknown message: %q", out)
+	}
+	if out := say(second, "7"); !strings.Contains(out, "não tem uma opção") {
+		t.Fatalf("a choice that does not exist: %q", out)
+	}
+	if e, _ := ta.Store.Exploration(ctx, exps[1].ID); e.State != store.ExplorationReady {
+		t.Fatalf("an unknown or wrong reply changed something: %s", e.State)
+	}
+	if out := say(second, "2"); !strings.HasSuffix(out, "Descartado.") {
+		t.Fatalf("a reply to the newer notice: %q", out)
 	}
 }
 

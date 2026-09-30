@@ -102,6 +102,7 @@ func (s *Slack) Run(ctx context.Context, on func(Inbound)) error {
 					Channel     string `json:"channel"`
 					User        string `json:"user"`
 					Text        string `json:"text"`
+					ThreadTS    string `json:"thread_ts"`
 					BotID       string `json:"bot_id"`
 					Subtype     string `json:"subtype"`
 				} `json:"event"`
@@ -129,12 +130,18 @@ func (s *Slack) Run(ctx context.Context, on func(Inbound)) error {
 			}
 			s.dms[e.User] = e.Channel
 			s.mu.Unlock()
-			on(Inbound{From: e.User, Chat: e.Channel, Text: e.Text})
+			// A reply in a notice's thread names the notice by its ts.
+			on(Inbound{From: e.User, Chat: e.Channel, Text: e.Text, ReplyTo: e.ThreadTS})
 		}
 	}
 }
 
 func (s *Slack) Send(ctx context.Context, to, text string) error {
+	_, err := s.SendMessage(ctx, to, text)
+	return err
+}
+
+func (s *Slack) SendMessage(ctx context.Context, to, text string) ([]string, error) {
 	s.mu.Lock()
 	ch := s.dms[to]
 	s.mu.Unlock()
@@ -145,9 +152,15 @@ func (s *Slack) Send(ctx context.Context, to, text string) error {
 			} `json:"channel"`
 		}
 		if err := s.call(ctx, "conversations.open", s.BotToken, map[string]any{"users": to}, &open); err != nil {
-			return err
+			return nil, err
 		}
 		ch = open.Channel.ID
 	}
-	return s.call(ctx, "chat.postMessage", s.BotToken, map[string]any{"channel": ch, "text": text}, nil)
+	var sent struct {
+		TS string `json:"ts"`
+	}
+	if err := s.call(ctx, "chat.postMessage", s.BotToken, map[string]any{"channel": ch, "text": text}, &sent); err != nil {
+		return nil, err
+	}
+	return []string{sent.TS}, nil
 }

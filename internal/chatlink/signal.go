@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync/atomic"
 )
@@ -71,7 +72,20 @@ func (s *Signal) Check(ctx context.Context) error {
 }
 
 func (s *Signal) Send(ctx context.Context, to, text string) error {
-	return s.rpc(ctx, "send", map[string]any{"recipient": []string{to}, "message": text}, nil)
+	_, err := s.SendMessage(ctx, to, text)
+	return err
+}
+
+// SendMessage returns the message's timestamp, which is how Signal names
+// the message a reply quotes.
+func (s *Signal) SendMessage(ctx context.Context, to, text string) ([]string, error) {
+	var sent struct {
+		Timestamp int64 `json:"timestamp"`
+	}
+	if err := s.rpc(ctx, "send", map[string]any{"recipient": []string{to}, "message": text}, &sent); err != nil {
+		return nil, err
+	}
+	return []string{strconv.FormatInt(sent.Timestamp, 10)}, nil
 }
 
 // Typing shows the typing indicator to a person.
@@ -114,6 +128,9 @@ func (s *Signal) Run(ctx context.Context, on func(Inbound)) error {
 					SourceNumber string `json:"sourceNumber"`
 					DataMessage  *struct {
 						Message string `json:"message"`
+						Quote   *struct {
+							ID int64 `json:"id"`
+						} `json:"quote"`
 					} `json:"dataMessage"`
 				} `json:"envelope"`
 			} `json:"params"`
@@ -124,7 +141,11 @@ func (s *Signal) Run(ctx context.Context, on func(Inbound)) error {
 				from = ev.Params.Envelope.Source
 			}
 			if text := strings.TrimSpace(ev.Params.Envelope.DataMessage.Message); text != "" && from != "" {
-				on(Inbound{From: from, Text: text})
+				in := Inbound{From: from, Text: text}
+				if q := ev.Params.Envelope.DataMessage.Quote; q != nil && q.ID != 0 {
+					in.ReplyTo = strconv.FormatInt(q.ID, 10)
+				}
+				on(in)
 			}
 		}
 		data.Reset()

@@ -27,11 +27,23 @@ import (
 // notice has just replaced unanswered choices, the number is not taken
 // and the new choices are shown again. Choices that make a lasting rule
 // ("always") are never offered by number: those are made in the app.
+//
+// Where the service has replies (Discord, Slack, Signal), replying to a
+// notice answers that notice, however old and whatever came after it. A
+// reply names its notice exactly, so it needs none of the guesses above.
 
 const (
 	choiceLife   = 10 * time.Minute
 	choiceSettle = time.Minute
+	// noticesKept is how many sent notices a reply can still answer.
+	noticesKept = 100
 )
+
+// sentNotice is a notice sent with choices, answered by replying to it.
+type sentNotice struct {
+	choices  []explore.Action
+	answered bool
+}
 
 type linkRun struct {
 	link   chatlink.Link
@@ -42,6 +54,56 @@ type linkRun struct {
 	asked    string
 	at       time.Time
 	replaced bool
+	// sent are the notices with choices, by the ids of their messages.
+	sent  map[string]*sentNotice
+	order []string
+}
+
+// remember keeps a sent notice so a reply to any of its messages answers
+// it, forgetting the oldest beyond noticesKept.
+func (r *linkRun) remember(ids []string, choices []explore.Action) {
+	if len(ids) == 0 || len(choices) == 0 {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.sent == nil {
+		r.sent = map[string]*sentNotice{}
+	}
+	n := &sentNotice{choices: slices.Clone(choices)}
+	for _, id := range ids {
+		r.sent[id] = n
+		r.order = append(r.order, id)
+	}
+	for len(r.order) > noticesKept {
+		delete(r.sent, r.order[0])
+		r.order = r.order[1:]
+	}
+}
+
+// replyChoice takes the n-th choice of the notice a reply names and uses
+// it up. known says whether that message is a notice Pimpo still has;
+// answered says it was already answered.
+func (r *linkRun) replyChoice(id string, n int) (act explore.Action, known, answered bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	sn := r.sent[id]
+	if sn == nil {
+		return act, false, false
+	}
+	if sn.answered {
+		return act, true, true
+	}
+	if n < 1 || n > len(sn.choices) {
+		return act, true, false
+	}
+	sn.answered = true
+	act = sn.choices[n-1]
+	// The same choices waiting for a bare number are answered too.
+	if slices.EqualFunc(r.pending, sn.choices, func(x, y explore.Action) bool { return x.Data == y.Data }) {
+		r.pending = nil
+	}
+	return act, true, false
 }
 
 // offer makes a notice's choices the ones a number answers; a notice
@@ -171,6 +233,27 @@ func (a *App) linkMessage(ctx context.Context, kind string, run *linkRun, in cha
 	}
 	pctx := people.With(ctx, people.OwnerID)
 	h := handler{a}
+	if n, err := strconv.Atoi(text); err == nil && in.ReplyTo != "" && !noApprovals(run.link) {
+		act, known, answered := run.replyChoice(in.ReplyTo, n)
+		switch {
+		case answered:
+			reply(i18n.T(ctx, "msg.link.answered"))
+		case !known:
+			// Never fall back to the latest notice: the reply meant
+			// another one.
+			reply(i18n.T(ctx, "msg.link.unknownNotice"))
+		case act.Data == "":
+			reply(i18n.T(ctx, "msg.link.noSuchChoice"))
+		default:
+			action, id, _ := strings.Cut(act.Data, ":")
+			out, err := h.Button(pctx, action, id)
+			if err != nil {
+				out = "⚠️ " + err.Error()
+			}
+			reply(out)
+		}
+		return
+	}
 	if n, err := strconv.Atoi(text); err == nil && !noApprovals(run.link) {
 		act, again, ok := run.choose(n)
 		if again != "" {
@@ -226,14 +309,26 @@ func (a *App) mirrorLinks(ctx context.Context, n explore.Notice) {
 			// A channel that can break or be taken over is never the way
 			// to approve: the choice waits for the app or another channel.
 			text += "\n\n" + i18n.T(ctx, "msg.link.approveElsewhere")
-		} else if choices, line := numbered(ctx, n.Actions); len(choices) > 0 {
-			text += "\n\n" + line
-			run.offer(text, choices)
-		} else {
-			run.offer(text, nil)
 		}
-		go func(kind string, run *linkRun) {
-			a.health.report(kind, run.link.Send(context.WithoutCancel(ctx), owner, text))
-		}(kind, run)
+		var choices []explore.Action
+		if len(n.Actions) > 0 && !noApprovals(run.link) {
+			var line string
+			if choices, line = numbered(ctx, n.Actions); len(choices) > 0 {
+				text += "\n\n" + line
+			}
+		}
+		if !noApprovals(run.link) {
+			run.offer(text, choices)
+		}
+		go func(kind string, run *linkRun, text string, choices []explore.Action) {
+			ctx := context.WithoutCancel(ctx)
+			if r, ok := run.link.(chatlink.Replier); ok {
+				ids, err := r.SendMessage(ctx, owner, text)
+				run.remember(ids, choices)
+				a.health.report(kind, err)
+				return
+			}
+			a.health.report(kind, run.link.Send(ctx, owner, text))
+		}(kind, run, text, choices)
 	}
 }

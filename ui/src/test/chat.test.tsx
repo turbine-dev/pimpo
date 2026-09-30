@@ -21,6 +21,24 @@ describe('Chat', () => {
     expect(screen.getByRole('link', { name: 'Ver passo a passo' })).toHaveAttribute('href', '/explorations/e1')
   })
 
+  it('searches the conversations', async () => {
+    const calls = mockFetch({
+      '/api/chats': [{ id: 'c1', title: 'Conta de luz', updated_at: new Date().toISOString(), turns: 2 }],
+      '/api/chats/search?q=conta%20de%20luz': [{ chat: 'c1', title: 'Conta de luz', turn: 'e1', snippet: 'Anota: pagar a conta de luz', at: new Date().toISOString() }],
+      '/api/chats/search?q=nada': [],
+    })
+    wrap(<Routes><Route path="/" element={<Chat />} /></Routes>)
+    const box = await screen.findByRole('searchbox', { name: 'Buscar nas conversas' })
+    await userEvent.type(box, 'conta de luz')
+    const results = await screen.findByRole('list', { name: 'Resultados da busca' })
+    expect(results).toHaveTextContent('Anota: pagar a conta de luz')
+    expect(screen.getAllByRole('link', { name: /Anota: pagar a conta de luz/ })[0]).toHaveAttribute('href', '/chat/c1')
+    await userEvent.clear(box)
+    await userEvent.type(box, 'nada')
+    expect(await screen.findByText('Nada encontrado nas suas conversas.')).toBeInTheDocument()
+    expect(calls.some((c) => c.url === '/api/chats/search?q=conta%20de%20luz')).toBe(true)
+  })
+
   it('shows what it would do and confirms it', async () => {
     let done = false
     const calls = mockFetch({
