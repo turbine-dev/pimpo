@@ -128,6 +128,10 @@ func (a *App) installConnector(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		p := filepath.Join(tmp, name)
+		if !strings.HasPrefix(p, filepath.Clean(tmp)+string(filepath.Separator)) {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: "unsafe path in zip: " + f.Name})
+			return
+		}
 		if f.FileInfo().IsDir() {
 			os.MkdirAll(p, 0o700)
 			continue

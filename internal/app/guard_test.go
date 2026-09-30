@@ -10,6 +10,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -72,7 +74,12 @@ func TestGuardForOtherAgents(t *testing.T) {
 	}
 
 	// Writes go through only inside the folders the owner allowed.
-	rules := append(ta.Rules.Rules(ctx), policy.Rule{ID: "proj", Text: "OpenClaw may write in the project", When: policy.When{Capabilities: []string{"guard.write"}, Paths: []string{"/work/proj"}}, Then: policy.Allow})
+	root := "/work"
+	if runtime.GOOS == "windows" {
+		root = `C:\work`
+	}
+	at := func(p string) string { return root + filepath.FromSlash(p) }
+	rules := append(ta.Rules.Rules(ctx), policy.Rule{ID: "proj", Text: "OpenClaw may write in the project", When: policy.When{Capabilities: []string{"guard.write"}, Paths: []string{at("/proj")}}, Then: policy.Allow})
 	if code, out := ta.do(t, "PUT", "/api/rules", rules); code != 200 {
 		t.Fatalf("rules %d %v", code, out)
 	}
@@ -80,11 +87,11 @@ func TestGuardForOtherAgents(t *testing.T) {
 		params   map[string]any
 		decision string
 	}{
-		{map[string]any{"path": "/work/proj/src/a.go"}, "allow"},
-		{map[string]any{"path": "/work/proj/../secrets/a"}, "ask"},
-		{map[string]any{"path": "/work/project2/a"}, "ask"},
+		{map[string]any{"path": at("/proj/src/a.go")}, "allow"},
+		{map[string]any{"path": at("/proj/../secrets/a")}, "ask"},
+		{map[string]any{"path": at("/project2/a")}, "ask"},
 		{map[string]any{"path": "src/a.go"}, "ask"},
-		{map[string]any{"old_path": "/work/proj/a", "new_path": "/home/me/.bashrc"}, "ask"},
+		{map[string]any{"old_path": at("/proj/a"), "new_path": at("/home/me/.bashrc")}, "ask"},
 	} {
 		if out := check("write_file", c.params); out["decision"] != c.decision {
 			t.Errorf("write %v: %v", c.params, out)
