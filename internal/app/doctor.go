@@ -248,7 +248,7 @@ func (a *App) localFindings(ctx context.Context) []finding {
 		}
 		out = append(out, f)
 	}
-	if routines, err := a.Store.Routines(ctx); err == nil {
+	if routines, err := a.myRoutines(ctx); err == nil {
 		broken := 0
 		for _, r := range routines {
 			if r.State == store.RoutineBroken {

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { canOpen, useRole } from '../lib/roles'
 import { UpdateBanner } from './Updates'
 import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, Users, Puzzle } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -168,6 +169,7 @@ function InboxButton({ count }: { count: number }) {
 
 export function Shell({ children, attention = 0, budget, healthy = true, onSearch }: { children: ReactNode; attention?: number; budget?: { spent: number; limit: number }; healthy?: boolean; onSearch?: () => void }) {
   const t = useT()
+  const role = useRole()
   const [theme, toggle] = useTheme()
   const [more, setMore] = useState(false)
   const [moreOpen, setMoreOpen] = useState(() => { try { return localStorage.getItem('pimpo.more') === '1' } catch { return false } })
@@ -189,7 +191,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
           <Link to="/" aria-label={t('chat.new')} title={t('chat.new')} className="grid size-8 place-items-center rounded-lg text-ink-2 hover:bg-sunken hover:text-ink"><Plus size={17} /></Link>
         </div>
         <nav className="flex flex-col gap-px" aria-label={t('shell.main')}>
-          {primary.map((it) => (
+          {primary.filter((it) => canOpen(it.to, role)).map((it) => (
             <NavLink key={it.to} to={it.to} end={it.to === '/'} className={({ isActive }) => link(isActive)}>
               <span className="text-ink-3 group-[.active]:text-ink">{it.icon}</span>
               <span className="flex-1">{t(it.label)}</span>
@@ -199,7 +201,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
             <ChevronDown size={17} className={cn('text-ink-3 transition', !moreOpen && '-rotate-90')} />
             <span className="flex-1 text-left">{t('nav.more')}</span>
           </button>
-          {moreOpen && secondary.map((it) => (
+          {moreOpen && secondary.filter((it) => canOpen(it.to, role)).map((it) => (
             <NavLink key={it.to} to={it.to} className={({ isActive }) => cn(link(isActive), 'pl-4')}>
               <span className="text-ink-3">{it.icon}</span>
               <span className="flex-1">{t(it.label)}</span>
@@ -250,7 +252,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
       {more && (
         <div className="fixed inset-x-0 bottom-[calc(57px+env(safe-area-inset-bottom))] z-20 border-t border-line bg-surface p-2 shadow-[var(--shadow-pop)] md:hidden">
           <div className="grid grid-cols-3 gap-1">
-            {[...primary.slice(2), { to: '/inbox', label: 'nav.inbox' as TKey, icon: <Bell size={17} /> }, ...secondary, { to: '/settings', label: 'nav.settings' as TKey, icon: <Settings size={17} /> }, { to: '/help', label: 'nav.help' as TKey, icon: <CircleHelp size={17} /> }].map((it) => (
+            {[...primary.slice(2), { to: '/inbox', label: 'nav.inbox' as TKey, icon: <Bell size={17} /> }, ...secondary, { to: '/settings', label: 'nav.settings' as TKey, icon: <Settings size={17} /> }, { to: '/help', label: 'nav.help' as TKey, icon: <CircleHelp size={17} /> }].filter((it) => canOpen(it.to, role)).map((it) => (
               <NavLink key={it.to} to={it.to} onClick={() => setMore(false)} className={({ isActive }) => cn('flex flex-col items-center gap-1 rounded-xl py-3 text-[11.5px]', isActive ? 'bg-sunken text-ink' : 'text-ink-2')}>
                 {it.icon}
                 {t(it.label)}

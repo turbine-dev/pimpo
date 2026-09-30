@@ -155,7 +155,7 @@ func (a *App) exportRepo(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "choose the repository folder first"})
 		return
 	}
-	all, err := a.Store.Routines(ctx)
+	all, err := a.myRoutines(ctx)
 	if err != nil {
 		server.WriteError(w, err)
 		return

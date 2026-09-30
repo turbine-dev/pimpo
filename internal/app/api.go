@@ -12,6 +12,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/desktop"
 	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/runtime"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
@@ -54,12 +55,33 @@ func (a *App) recentRuns(w http.ResponseWriter, r *http.Request) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
-	runs, err := a.Store.RecentRuns(r.Context(), outcome, before, limit)
-	if err != nil {
-		server.WriteError(w, err)
-		return
+	// Runs of other people's routines are left out, reading further back
+	// so a page is still full.
+	ctx := r.Context()
+	mineIDs := map[string]bool{}
+	if list, err := a.myRoutines(ctx); err == nil {
+		for _, rt := range list {
+			mineIDs[rt.ID] = true
+		}
 	}
-	server.WriteJSON(w, 200, runs)
+	out := []store.RecentRun{}
+	for len(out) < limit {
+		runs, err := a.Store.RecentRuns(ctx, outcome, before, 200)
+		if err != nil {
+			server.WriteError(w, err)
+			return
+		}
+		for _, run := range runs {
+			if mineIDs[run.Routine] && len(out) < limit {
+				out = append(out, run)
+			}
+		}
+		if len(runs) < 200 {
+			break
+		}
+		before = runs[len(runs)-1].ID
+	}
+	server.WriteJSON(w, 200, out)
 }
 
 // openLink opens a link in this computer's browser, for the desktop app,
@@ -150,14 +172,14 @@ func (a *App) summary(ctx context.Context, r store.Routine) routineSummary {
 func (a *App) state(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	spent, _ := a.Budget.Today(ctx)
-	routines, _ := a.Store.Routines(ctx)
+	routines, _ := a.myRoutines(ctx)
 	broken := 0
 	for _, rt := range routines {
 		if rt.State == store.RoutineBroken {
 			broken++
 		}
 	}
-	ready, _ := a.Store.Explorations(ctx, store.ExplorationReady)
+	ready, _ := a.myExplorations(ctx, store.ExplorationReady)
 	chat, _ := a.Channel.Chat(ctx)
 	intact, _ := a.Events.Verify(ctx)
 	server.WriteJSON(w, 200, map[string]any{
@@ -165,7 +187,9 @@ func (a *App) state(w http.ResponseWriter, r *http.Request) {
 		"healthy":         broken == 0,
 		"broken":          broken,
 		"awaiting":        len(ready),
-		"approvals":       len(a.Approvals.Open()),
+		"approvals":       len(a.myApprovals(ctx)),
+		"person":          people.From(ctx),
+		"role":            a.roleOf(ctx),
 		"telegram_paired": chat != 0,
 		"log_intact":      intact == 0,
 		"claude":          claudeInstalled(),
@@ -173,7 +197,7 @@ func (a *App) state(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) listRoutines(w http.ResponseWriter, r *http.Request) {
-	routines, err := a.Store.Routines(r.Context())
+	routines, err := a.myRoutines(r.Context())
 	if err != nil {
 		server.WriteError(w, err)
 		return
@@ -188,7 +212,7 @@ func (a *App) listRoutines(w http.ResponseWriter, r *http.Request) {
 func (a *App) getRoutine(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := r.PathValue("id")
-	rt, err := a.Store.Routine(ctx, id)
+	rt, err := a.myRoutine(ctx, id)
 	if err != nil {
 		server.WriteError(w, notFound(err))
 		return
@@ -202,7 +226,7 @@ func (a *App) getRoutine(w http.ResponseWriter, r *http.Request) {
 // usedBy lists the routines that run this one as a helper.
 func (a *App) usedBy(ctx context.Context, id string) []string {
 	out := []string{}
-	all, _ := a.Store.Routines(ctx)
+	all, _ := a.myRoutines(ctx)
 	for _, r := range all {
 		for _, u := range r.Body.Manifest.Uses {
 			if u == id {
@@ -223,7 +247,7 @@ func notFound(err error) error {
 func (a *App) routineAction(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := r.PathValue("id")
-	if _, err := a.Store.Routine(ctx, id); err != nil {
+	if _, err := a.myRoutine(ctx, id); err != nil {
 		server.WriteError(w, notFound(err))
 		return
 	}
@@ -245,7 +269,7 @@ func (a *App) routineAction(w http.ResponseWriter, r *http.Request) {
 		err = a.Store.SetRoutineState(ctx, id, store.RoutineActive)
 	case "repair":
 		var eid string
-		eid, err = a.Explore.Repair(ctx, id, "", "human:owner")
+		eid, err = a.Explore.Repair(ctx, id, "", actor(ctx))
 		if err == nil {
 			server.WriteJSON(w, 202, map[string]string{"exploration": eid})
 			return
@@ -258,7 +282,7 @@ func (a *App) routineAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.Scheduler.Changed(ctx, id)
-	a.Events.Append(ctx, "routine."+r.PathValue("action")+"d", "human:owner", map[string]string{"routine": id})
+	a.Events.Append(ctx, "routine."+r.PathValue("action")+"d", actor(ctx), map[string]string{"routine": id})
 	server.WriteJSON(w, 200, map[string]string{"state": "ok"})
 }
 
@@ -274,7 +298,7 @@ func (a *App) listExplorations(w http.ResponseWriter, r *http.Request) {
 	if s := r.URL.Query().Get("state"); s != "" {
 		states = strings.Split(s, ",")
 	}
-	list, err := a.Store.Explorations(r.Context(), states...)
+	list, err := a.myExplorations(r.Context(), states...)
 	if err != nil {
 		server.WriteError(w, err)
 		return
@@ -286,7 +310,7 @@ func (a *App) listExplorations(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getExploration(w http.ResponseWriter, r *http.Request) {
-	e, err := a.Store.Exploration(r.Context(), r.PathValue("id"))
+	e, err := a.myExploration(r.Context(), r.PathValue("id"))
 	if err != nil {
 		server.WriteError(w, notFound(err))
 		return
@@ -306,7 +330,7 @@ func (a *App) startExploration(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	id, err := a.Explore.Start(r.Context(), req.Request, "human:owner")
+	id, err := a.Explore.Start(r.Context(), req.Request, actor(r.Context()))
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
@@ -317,16 +341,20 @@ func (a *App) startExploration(w http.ResponseWriter, r *http.Request) {
 func (a *App) explorationAction(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := r.PathValue("id")
+	if _, err := a.myExploration(ctx, id); err != nil {
+		server.WriteError(w, notFound(err))
+		return
+	}
 	switch r.PathValue("action") {
 	case "compile":
-		rt, err := a.Explore.Approve(context.WithoutCancel(ctx), id, "human:owner")
+		rt, err := a.Explore.Approve(context.WithoutCancel(ctx), id, actor(ctx))
 		if err != nil {
 			server.WriteError(w, server.StatusError{Status: 422, Msg: err.Error()})
 			return
 		}
 		server.WriteJSON(w, 200, a.summary(ctx, rt))
 	case "explore":
-		e, err := a.Store.Exploration(ctx, id)
+		e, err := a.myExploration(ctx, id)
 		if err != nil || e.State != store.ExplorationImported {
 			server.WriteError(w, server.StatusError{Status: 404, Msg: "no imported task with that id"})
 			return
@@ -548,7 +576,7 @@ func respond(w http.ResponseWriter) func(v any, err error) {
 // unstop puts a routine stopped by a failure back on its schedule before
 // running it by hand; a paused one runs once and stays paused.
 func (a *App) unstop(ctx context.Context, id string) {
-	if r, err := a.Store.Routine(ctx, id); err == nil && r.State == store.RoutineBroken {
+	if r, err := a.myRoutine(ctx, id); err == nil && r.State == store.RoutineBroken {
 		a.Store.SetRoutineState(ctx, id, store.RoutineActive)
 		a.Scheduler.Changed(ctx, id)
 	}

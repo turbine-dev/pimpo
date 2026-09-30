@@ -573,6 +573,9 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'job.state.done': "完了",
   'job.state.stopped': "停止",
   'job.state.failed': "失敗",
+  'pair.me': "自分",
+  'pair.whose': "誰の端末か",
+  'pair.forPerson': "このリンクは {name} としてサインインします。その人のスマホでだけ開いてください。その人は自分のものだけを見て、あなたはその人のものを見られません。",
   'memory.confirm': '確認',
   'memory.forget': '忘れる：{text}',
 

@@ -13,6 +13,7 @@ import (
 	"github.com/coder/websocket"
 
 	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/people"
 )
 
 func newTest(t *testing.T) (*Server, *httptest.Server) {
@@ -53,7 +54,9 @@ func TestAPIRequiresTheSession(t *testing.T) {
 
 func TestEventsAndVerify(t *testing.T) {
 	s, ts := newTest(t)
+	s.Visible = func(person string, e event.Event) bool { return person == "owner" && e.Actor == "routine:brief" }
 	s.Events.Append(context.Background(), "routine.ran", "routine:brief", map[string]string{"outcome": "ok"})
+	s.Events.Append(context.Background(), "routine.ran", "routine:someone-elses", map[string]string{"outcome": "ok"})
 	get := func(path string, v any) {
 		req, _ := http.NewRequest("GET", ts.URL+path, nil)
 		req.Header.Set("Authorization", "Bearer tok")
@@ -115,5 +118,37 @@ func TestWebSocketStreamsNewEvents(t *testing.T) {
 			return
 		case <-time.After(10 * time.Millisecond):
 		}
+	}
+}
+
+// A device acts for its person, who reaches only the routes opened to them.
+func TestDevicesActForTheirPerson(t *testing.T) {
+	s, ts := newTest(t)
+	s.Device = func(tok string) (string, bool) { return "ana", tok == "ana-token" }
+	s.Allow = func(pattern, person string) bool { return pattern == "GET /api/mine" && person == "ana" }
+	var seen string
+	s.Handle("GET /api/mine", func(w http.ResponseWriter, r *http.Request) { seen = people.From(r.Context()) })
+	s.Handle("GET /api/admin", func(w http.ResponseWriter, r *http.Request) { seen = "admin" })
+	call := func(tok, path string) int {
+		req, _ := http.NewRequest("GET", ts.URL+path, nil)
+		req.Header.Set("Authorization", "Bearer "+tok)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	if call("ana-token", "/api/mine") != 200 || seen != "ana" {
+		t.Fatalf("Ana's request acted for %q", seen)
+	}
+	if call("ana-token", "/api/admin") != 403 || seen == "admin" {
+		t.Fatal("Ana reached a route not opened to her")
+	}
+	if call("tok", "/api/admin") != 200 || seen != "admin" {
+		t.Fatal("the owner was kept out")
+	}
+	if call("wrong", "/api/mine") != 401 {
+		t.Fatal("a stranger got in")
 	}
 }

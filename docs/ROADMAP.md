@@ -22,6 +22,7 @@ The order comes from scoring each item with Jev (TypeSafe) on user value, differ
 | **M3** | v0.8 | An ecosystem | gallery and protection list published, 50 routines · SKILL.md skills · proactivity |
 | **M4** | v0.9 | Hands | agent-driven browser · code sandbox · learning the owner |
 | **M5** | v1.0 | Everywhere | stable formats · phone as part of the agent · voice conversation · parallel agents and long tasks · more channels |
+| **M6** | v1.1 | Each person their own | a login per person · privacy between people, the owner included · passkeys and sessions |
 
 Sizes: **S** is days, **M** one to two weeks, **L** several weeks. Items marked **owner** need something only the project owner can do (an account, a certificate, a decision).
 
@@ -219,6 +220,26 @@ A large job ("compare these 20 suppliers and prepare a proposal") is split acros
 
 - **iMessage** on the Mac.
 - **Personal WhatsApp.** The unofficial protocol can get a number banned and breaks without warning. Offered only with a clear warning, off by default, and never as the only way to approve.
+
+---
+
+## M6 · Each person their own (v1.1)
+
+Goal: several people share one Pimpo and nobody sees anyone else's things, not even the owner who runs it.
+
+### 6.1 A login per person · M
+
+Every device and session belongs to one person and every request acts only for them. The owner pairs a phone for someone (a QR code that signs in as them); removing a person revokes their devices.
+
+### 6.2 Privacy between people · L
+
+Every route has an access rule, and a route without one is the owner's. Routines, explorations, runs, conversations, memory, receipts, approvals, questions, recordings, jobs and the phone belong to their person; the owner administers the house (people, connections, models, rules, backups) but sees none of it. Members answer their own approvals; a lasting "always" is a house rule, so it stays the owner's. The live event stream gives others only an event's type.
+
+**Done when** a test calls every route as a member with the owner's ids and as the owner with the member's, and nothing crosses.
+
+### 6.3 Passkeys and sessions · M
+
+A passkey to sign in on a computer, sessions that expire and can be revoked one by one, and a limit on sign-in attempts.
 
 ---
 

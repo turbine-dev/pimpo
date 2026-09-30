@@ -24,6 +24,6 @@ describe('Memory', () => {
     await waitFor(() => expect(calls.some((c) => c.url === '/api/memory/b/confirm')).toBe(true))
     await userEvent.type(screen.getByLabelText('Novo fato'), 'Prefiro resumos curtos')
     await userEvent.click(screen.getByRole('button', { name: /Lembrar/ }))
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.url === '/api/memory')?.body).toEqual({ text: 'Prefiro resumos curtos', topic: '' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.url === '/api/memory')?.body).toEqual({ text: 'Prefiro resumos curtos', topic: '', shared: false }))
   })
 })

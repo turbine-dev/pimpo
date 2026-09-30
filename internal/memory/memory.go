@@ -206,14 +206,14 @@ func (m *Memory) AddFor(text, topic, source string, trust Trust, person string) 
 		if f.Person == person && strings.EqualFold(f.Text, text) {
 			if trust == High && f.Trust != High {
 				facts[i].Trust, facts[i].Source = High, source
-				return facts[i], m.save(facts, "confirm: "+text)
+				return facts[i], m.save(facts, "confirm: "+said(facts[i]))
 			}
 			return f, nil
 		}
 	}
 	f := Fact{ID: newID(), Text: text, Topic: topic, Source: source, Trust: trust, Person: person, Created: time.Now()}
 	facts = append(facts, f)
-	return f, m.save(facts, "add: "+text)
+	return f, m.save(facts, "add: "+said(f))
 }
 
 func (m *Memory) Remove(id string) error {
@@ -225,7 +225,7 @@ func (m *Memory) Remove(id string) error {
 	}
 	for i, f := range facts {
 		if f.ID == id {
-			return m.save(append(facts[:i], facts[i+1:]...), "remove: "+f.Text)
+			return m.save(append(facts[:i], facts[i+1:]...), "remove: "+said(f))
 		}
 	}
 	return fmt.Errorf("fact %s not found", id)
@@ -243,7 +243,7 @@ func (m *Memory) Confirm(id string) error {
 		if facts[i].ID == id {
 			facts[i].Trust = High
 			facts[i].Source = "owner"
-			return m.save(facts, "confirm: "+facts[i].Text)
+			return m.save(facts, "confirm: "+said(facts[i]))
 		}
 	}
 	return fmt.Errorf("fact %s not found", id)
@@ -256,6 +256,40 @@ func owned(person string) string {
 		return ""
 	}
 	return person
+}
+
+// ForPrefix marks a version about someone else's fact: the history says
+// whose it was, never what it said, so the owner's history shows nothing
+// of the others'.
+const ForPrefix = "a fact of "
+
+func said(f Fact) string {
+	if f.Person == "" || f.Person == "casa" {
+		return f.Text
+	}
+	return ForPrefix + f.Person
+}
+
+// Mine is a fact the person may change: their own, never another's, and
+// the house's only for the owner.
+func Mine(f Fact, person string) bool {
+	return f.Person == owned(person) || (f.Person == "casa" && owned(person) == "")
+}
+
+// Visible is a fact the person may read: their own and the house's.
+func Visible(f Fact, person string) bool { return visible(f, person) }
+
+// Get returns one fact.
+func (m *Memory) Get(id string) (Fact, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	facts, _ := m.load()
+	for _, f := range facts {
+		if f.ID == id {
+			return f, true
+		}
+	}
+	return Fact{}, false
 }
 
 func visible(f Fact, reader string) bool {

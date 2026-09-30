@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/turbine-dev/pimpo/internal/memory"
 	"github.com/turbine-dev/pimpo/internal/people"
@@ -49,12 +50,29 @@ func (a *App) getMemory(w http.ResponseWriter, r *http.Request) {
 	if !a.needMemory(w) {
 		return
 	}
-	facts, err := a.Memory.List()
+	all, err := a.Memory.List()
 	if err != nil {
 		server.WriteError(w, err)
 		return
 	}
-	hist, _ := a.Memory.History(30)
+	me := people.From(r.Context())
+	facts := []memory.Fact{}
+	for _, f := range all {
+		if memory.Visible(f, me) {
+			facts = append(facts, f)
+		}
+	}
+	// The history is the owner's: versions about others' facts say only
+	// whose they were, and are left out.
+	hist := []memory.Version{}
+	if me == people.OwnerID {
+		all, _ := a.Memory.History(60)
+		for _, v := range all {
+			if !strings.Contains(v.Message, memory.ForPrefix) && len(hist) < 30 {
+				hist = append(hist, v)
+			}
+		}
+	}
 	server.WriteJSON(w, 200, map[string]any{"facts": facts, "history": hist})
 }
 
@@ -65,25 +83,25 @@ func (a *App) addFact(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Text  string `json:"text"`
 		Topic string `json:"topic"`
-		// Person keeps the fact for someone in the house, or "casa" for all.
-		Person string `json:"person"`
+		// Shared, when true, keeps the fact for everyone in the house;
+		// otherwise it is the person's own.
+		Shared bool `json:"shared"`
 	}
 	if err := server.Decode(r, &req); err != nil {
 		server.WriteError(w, err)
 		return
 	}
-	if req.Person != "" && req.Person != people.OwnerID && req.Person != people.Household {
-		if _, err := a.People.Get(r.Context(), req.Person); err != nil {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: "no such person"})
-			return
-		}
+	me := people.From(r.Context())
+	person := me
+	if req.Shared {
+		person = people.Household
 	}
-	f, err := a.Memory.AddFor(req.Text, req.Topic, "owner", memory.High, req.Person)
+	f, err := a.Memory.AddFor(req.Text, req.Topic, me, memory.High, person)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
-	a.Events.Append(r.Context(), "memory.changed", "human:owner", map[string]string{"added": f.ID})
+	a.Events.Append(r.Context(), "memory.changed", actor(r.Context()), map[string]string{"added": f.ID})
 	server.WriteJSON(w, 200, f)
 }
 
@@ -91,11 +109,15 @@ func (a *App) removeFact(w http.ResponseWriter, r *http.Request) {
 	if !a.needMemory(w) {
 		return
 	}
+	if f, ok := a.Memory.Get(r.PathValue("id")); !ok || !memory.Mine(f, people.From(r.Context())) {
+		server.WriteError(w, server.StatusError{Status: 404, Msg: "no such fact"})
+		return
+	}
 	if err := a.Memory.Remove(r.PathValue("id")); err != nil {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: err.Error()})
 		return
 	}
-	a.Events.Append(r.Context(), "memory.changed", "human:owner", map[string]string{"removed": r.PathValue("id")})
+	a.Events.Append(r.Context(), "memory.changed", actor(r.Context()), map[string]string{"removed": r.PathValue("id")})
 	server.WriteJSON(w, 200, map[string]string{"state": "removed"})
 }
 
@@ -103,11 +125,15 @@ func (a *App) confirmFact(w http.ResponseWriter, r *http.Request) {
 	if !a.needMemory(w) {
 		return
 	}
+	if f, ok := a.Memory.Get(r.PathValue("id")); !ok || !memory.Mine(f, people.From(r.Context())) {
+		server.WriteError(w, server.StatusError{Status: 404, Msg: "no such fact"})
+		return
+	}
 	if err := a.Memory.Confirm(r.PathValue("id")); err != nil {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: err.Error()})
 		return
 	}
-	a.Events.Append(r.Context(), "memory.changed", "human:owner", map[string]string{"confirmed": r.PathValue("id")})
+	a.Events.Append(r.Context(), "memory.changed", actor(r.Context()), map[string]string{"confirmed": r.PathValue("id")})
 	server.WriteJSON(w, 200, map[string]string{"state": "confirmed"})
 }
 

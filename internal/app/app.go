@@ -287,6 +287,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		Helpers: func(ctx context.Context, id string) (runtime.Helper, error) { return a.Scheduler.Library(ctx, id) }},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
 	a.Server = server.New(events, token)
+	a.Server.Allow, a.Server.Visible = a.allow, a.eventVisible
 	a.googleRoutes()
 	a.routes()
 	a.safetyRoutes()

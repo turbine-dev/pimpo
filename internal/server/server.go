@@ -18,6 +18,7 @@ import (
 	"github.com/coder/websocket"
 
 	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/people"
 )
 
 //go:embed all:dist
@@ -26,11 +27,17 @@ var dist embed.FS
 type Server struct {
 	Events *event.Store
 	Token  string
-	// Device accepts tokens given to paired devices, which can be revoked
-	// one by one; nil accepts only the session token.
-	Device func(token string) bool
-	mux    *http.ServeMux
-	api    map[string]http.HandlerFunc
+	// Device names the person a paired device's token belongs to; nil
+	// accepts only the owner's session token.
+	Device func(token string) (person string, ok bool)
+	// Visible says whether a person may see an event whole; others get
+	// only its type, enough to refresh a screen. nil shows nothing whole.
+	Visible func(person string, e event.Event) bool
+	// Allow says whether a person may use a route, by its pattern. nil
+	// lets only the owner in.
+	Allow    func(pattern, person string) bool
+	mux      *http.ServeMux
+	patterns []string
 }
 
 const cookie = "pimpo_session"
@@ -63,8 +70,13 @@ func (s *Server) HandlePublic(pattern string, h http.HandlerFunc) { s.mux.Handle
 
 // Handle registers an authenticated API route.
 func (s *Server) Handle(pattern string, h http.HandlerFunc) {
-	s.mux.Handle(pattern, s.auth(h))
+	s.patterns = append(s.patterns, pattern)
+	s.mux.Handle(pattern, s.auth(pattern, h))
 }
+
+// Patterns are the authenticated routes, for the test that every one of
+// them has an access rule.
+func (s *Server) Patterns() []string { return append([]string(nil), s.patterns...) }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -82,19 +94,38 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) valid(t string) bool {
-	if t == "" {
-		return false
-	}
-	return subtle.ConstantTimeCompare([]byte(t), []byte(s.Token)) == 1 || (s.Device != nil && s.Device(t))
+	_, ok := s.who(t)
+	return ok
 }
 
-func (s *Server) auth(h http.HandlerFunc) http.Handler {
+// who is the person a token belongs to: the session token is the owner's.
+func (s *Server) who(t string) (string, bool) {
+	if t == "" {
+		return "", false
+	}
+	if subtle.ConstantTimeCompare([]byte(t), []byte(s.Token)) == 1 {
+		return people.OwnerID, true
+	}
+	if s.Device != nil {
+		return s.Device(t)
+	}
+	return "", false
+}
+
+func (s *Server) auth(pattern string, h http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.valid(TokenOf(r)) {
+		person, ok := s.who(TokenOf(r))
+		if !ok {
 			WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "open the login link Pimpo printed at startup"})
 			return
 		}
-		h(w, r)
+		// Every request acts for the person its token belongs to, and
+		// only for them; routes nobody opened to them stay closed.
+		if person != people.OwnerID && (s.Allow == nil || !s.Allow(pattern, person)) {
+			WriteJSON(w, http.StatusForbidden, map[string]string{"error": "only the owner of this Pimpo can do that"})
+			return
+		}
+		h(w, r.WithContext(people.With(r.Context(), person)))
 	})
 }
 
@@ -154,10 +185,14 @@ func (s *Server) listEvents(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, err)
 		return
 	}
-	if evs == nil {
-		evs = []event.Event{}
+	me := people.From(r.Context())
+	out := []event.Event{}
+	for _, e := range evs {
+		if s.Visible != nil && s.Visible(me, e) {
+			out = append(out, e)
+		}
 	}
-	WriteJSON(w, 200, evs)
+	WriteJSON(w, 200, out)
 }
 
 func (s *Server) verifyEvents(w http.ResponseWriter, r *http.Request) {
@@ -188,12 +223,17 @@ func (s *Server) stream(w http.ResponseWriter, r *http.Request) {
 	}()
 	ping := time.NewTicker(25 * time.Second)
 	defer ping.Stop()
+	me := people.From(r.Context())
 	sub := s.Events.Subscribe(ctx)
 	for {
 		select {
 		case e, ok := <-sub:
 			if !ok {
 				return
+			}
+			if s.Visible == nil || !s.Visible(me, e) {
+				// Someone else's event: only that something changed.
+				e = event.Event{ID: e.ID, Type: e.Type, Time: e.Time, Data: json.RawMessage(`{}`)}
 			}
 			b, _ := json.Marshal(e)
 			if err := c.Write(ctx, websocket.MessageText, b); err != nil {

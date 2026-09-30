@@ -18,6 +18,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/connector"
 	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
 )
@@ -54,8 +55,17 @@ type Place struct {
 
 func (p Place) located() bool { return p.Lat != 0 || p.Lon != 0 }
 
+// placesKeyFor keeps each person's places apart; the owner's stay where
+// they were.
+func placesKeyFor(ctx context.Context) string {
+	if p := people.From(ctx); p != people.OwnerID {
+		return placesKey + "." + p
+	}
+	return placesKey
+}
+
 func (a *App) places(ctx context.Context) []Place {
-	raw, _ := a.Events.Get(ctx, placesKey)
+	raw, _ := a.Events.Get(ctx, placesKeyFor(ctx))
 	list := []Place{}
 	json.Unmarshal([]byte(raw), &list)
 	return list
@@ -158,9 +168,6 @@ func (a *App) phoneRoutes() {
 		server.WriteJSON(w, 200, map[string]string{"key": key})
 	})
 	a.Server.Handle("POST /api/phone/places", func(w http.ResponseWriter, r *http.Request) {
-		if !ownerOnly(w, r) {
-			return
-		}
 		var p Place
 		if err := server.Decode(r, &p); err != nil {
 			server.WriteError(w, err)
@@ -178,16 +185,13 @@ func (a *App) phoneRoutes() {
 		list := slices.DeleteFunc(a.places(r.Context()), func(x Place) bool { return strings.EqualFold(x.Name, p.Name) })
 		list = append(list, p)
 		b, _ := json.Marshal(list)
-		a.Events.Put(r.Context(), placesKey, string(b))
+		a.Events.Put(r.Context(), placesKeyFor(r.Context()), string(b))
 		server.WriteJSON(w, 200, list)
 	})
 	a.Server.Handle("DELETE /api/phone/places/{name}", func(w http.ResponseWriter, r *http.Request) {
-		if !ownerOnly(w, r) {
-			return
-		}
 		list := slices.DeleteFunc(a.places(r.Context()), func(x Place) bool { return strings.EqualFold(x.Name, r.PathValue("name")) })
 		b, _ := json.Marshal(list)
-		a.Events.Put(r.Context(), placesKey, string(b))
+		a.Events.Put(r.Context(), placesKeyFor(r.Context()), string(b))
 		server.WriteJSON(w, 200, list)
 	})
 
@@ -199,13 +203,23 @@ func (a *App) phoneRoutes() {
 	a.Server.HandlePublic("POST /api/phone/shortcut", a.phoneEvent(shareShortcuts, a.phoneShortcut))
 	a.Server.Handle("GET /api/phone/photos/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		if !validID(id) {
+		if !validID(id) || !a.photoIsMine(r.Context(), id) {
 			http.NotFound(w, r)
 			return
 		}
 		w.Header().Set("Content-Type", "image/jpeg")
 		http.ServeFile(w, r, filepath.Join(a.Home, "phone", "photos", id+".jpg"))
 	})
+}
+
+func (a *App) photoIsMine(ctx context.Context, id string) bool {
+	evs, _ := a.Events.List(ctx, event.Query{Types: []string{"phone.photo"}, Search: `"id":"` + id + `"`, Limit: 1})
+	if len(evs) == 0 {
+		return false
+	}
+	var d map[string]string
+	evs[0].Decode(&d)
+	return mine(ctx, d["person"])
 }
 
 func nonNil(s []string) []string {
@@ -237,6 +251,8 @@ func (a *App) phoneEvent(share string, h phoneHandler) http.HandlerFunc {
 			server.WriteJSON(w, 401, map[string]string{"error": "use a paired phone, or its key for automations"})
 			return
 		}
+		// A phone reports for the person it belongs to, and only them.
+		r = r.WithContext(people.With(r.Context(), people.Norm(d.Person)))
 		if !slices.Contains(d.Shares, share) {
 			server.WriteError(w, server.StatusError{Status: 403, Msg: "this phone does not share " + share + "; turn it on in Pimpo on the phone"})
 			return
@@ -322,7 +338,7 @@ func (a *App) phonePlace(kind string) phoneHandler {
 }
 
 func (a *App) recordPlace(ctx context.Context, d Device, kind, place string) {
-	a.Events.Append(ctx, "phone."+kind, "device:"+d.ID, map[string]string{"id": newPhoneID(), "place": place, "device": d.Name})
+	a.Events.Append(ctx, "phone."+kind, "device:"+d.ID, map[string]string{"id": newPhoneID(), "place": place, "device": d.Name, "person": people.Norm(d.Person)})
 }
 
 func (a *App) phonePhoto(_ http.ResponseWriter, r *http.Request, d Device) (map[string]any, error) {
@@ -374,7 +390,7 @@ func (a *App) phonePhoto(_ http.ResponseWriter, r *http.Request, d Device) (map[
 		}
 		text = clip(t, 4000)
 	}
-	a.Events.Append(ctx, "phone.photo", "device:"+d.ID, map[string]string{"id": id, "device": d.Name, "caption": caption, "text": text, "note": note})
+	a.Events.Append(ctx, "phone.photo", "device:"+d.ID, map[string]string{"id": id, "device": d.Name, "caption": caption, "text": text, "note": note, "person": people.Norm(d.Person)})
 	return map[string]any{"id": id, "text": text, "note": note}, nil
 }
 
@@ -387,7 +403,7 @@ func (a *App) phoneShortcut(_ http.ResponseWriter, r *http.Request, d Device) (m
 	if name == "" {
 		return nil, server.StatusError{Status: 400, Msg: "a shortcut needs a name"}
 	}
-	a.Events.Append(r.Context(), "phone.shortcut", "device:"+d.ID, map[string]string{"id": newPhoneID(), "name": name, "text": clip(req.Text, 2000), "device": d.Name})
+	a.Events.Append(r.Context(), "phone.shortcut", "device:"+d.ID, map[string]string{"id": newPhoneID(), "name": name, "text": clip(req.Text, 2000), "device": d.Name, "person": people.Norm(d.Person)})
 	return nil, nil
 }
 
@@ -402,7 +418,7 @@ func (a *App) pokePhoneWatchers(ctx context.Context) {
 		return
 	}
 	for _, r := range routines {
-		if w := r.Watch(); w != nil && r.State == store.RoutineActive && strings.HasPrefix(w.Capability, "phone.") {
+		if w := r.Watch(); w != nil && r.State == store.RoutineActive && strings.HasPrefix(w.Capability, "phone.") && mine(ctx, r.Person) {
 			a.Scheduler.Poll(ctx, r.ID)
 		}
 	}
@@ -440,6 +456,9 @@ func (c phoneCap) Call(ctx context.Context, name, _ string, args any) (any, erro
 		}
 		var d map[string]string
 		e.Decode(&d)
+		if !mine(ctx, d["person"]) {
+			continue
+		}
 		item := map[string]any{"id": d["id"], "time": e.Time.Format(time.RFC3339), "device": d["device"]}
 		switch name {
 		case "phone.arrivals":

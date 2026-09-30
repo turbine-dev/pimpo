@@ -314,7 +314,7 @@ func tooOften(s cron.Schedule) bool {
 
 func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	rt, err := a.Store.Routine(ctx, r.PathValue("id"))
+	rt, err := a.myRoutine(ctx, r.PathValue("id"))
 	if err != nil {
 		server.WriteError(w, notFound(err))
 		return

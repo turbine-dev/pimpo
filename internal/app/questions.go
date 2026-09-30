@@ -124,7 +124,7 @@ func (a *App) answer(ctx context.Context, id string, index int) (string, error) 
 		if q.ID != id {
 			continue
 		}
-		if people.Norm(people.From(ctx)) != q.Person && people.From(ctx) != people.OwnerID {
+		if people.Norm(people.From(ctx)) != people.Norm(q.Person) {
 			return "", errors.New(i18n.T(ctx, "msg.ownerOnly"))
 		}
 		if index < 0 || index >= len(q.Options) {
@@ -160,7 +160,7 @@ func (a *App) questionRoutes() {
 		me := people.Norm(people.From(r.Context()))
 		out := []question{}
 		for _, q := range a.questions(r.Context()) {
-			if q.Person == me || people.From(r.Context()) == people.OwnerID {
+			if people.Norm(q.Person) == me {
 				out = append(out, q)
 			}
 		}
