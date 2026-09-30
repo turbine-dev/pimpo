@@ -1,6 +1,6 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import type { VEvent } from './api'
+import type { Progress, VEvent } from './api'
 
 // Every event from the server refreshes the data it may have changed.
 // The socket reconnects on its own after sleep or a restart.
@@ -24,6 +24,10 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
         onEvent?.(e)
         // The mascot and other listeners hear every event without a second socket.
         window.dispatchEvent(new CustomEvent('pimpo:event', { detail: e }))
+        if (e.type === 'progress.updated') {
+          onProgress(qc, e)
+          return
+        }
         qc.invalidateQueries({ queryKey: ['state'] })
         if (e.type.startsWith('routine') || e.type.startsWith('exploration') || e.type === 'action.done') {
           qc.invalidateQueries({ queryKey: ['routines'] })
@@ -53,4 +57,21 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
     }
   }, [qc, onEvent])
   return connected
+}
+
+// A progress update replaces its record in place; someone else's comes
+// without data and changes nothing here.
+function onProgress(qc: QueryClient, e: VEvent) {
+  const p = e.data as unknown as Progress
+  if (!p?.id) return
+  qc.setQueryData<Progress[]>(['progress'], (old) => (old ? [p, ...old.filter((x) => x.id !== p.id)] : old))
+  if (p.state !== 'running') qc.invalidateQueries({ queryKey: ['progress'] })
+  if (p.kind === 'job') {
+    qc.invalidateQueries({ queryKey: ['jobs'] })
+    if (p.job) qc.invalidateQueries({ queryKey: ['job', p.job] })
+  }
+  if (p.kind === 'run' && p.state !== 'running') {
+    qc.invalidateQueries({ queryKey: ['routine'] })
+    qc.invalidateQueries({ queryKey: ['runs'] })
+  }
 }

@@ -34,6 +34,9 @@ type Scheduler struct {
 	Zone   *time.Location
 	// Now is replaceable in tests.
 	Now func() time.Time
+	// Progress hears how each run goes: when it starts, each step, and
+	// how it ended. It is kept so a reload or a restart still shows it.
+	Progress func(ctx context.Context, p RunProgress)
 
 	mu      sync.Mutex
 	cron    *cron.Cron
@@ -41,6 +44,27 @@ type Scheduler struct {
 	running map[string]bool
 	polled  map[string]time.Time
 	wg      sync.WaitGroup
+}
+
+// RunProgress is where a run is: its state, how many steps it took and
+// the step it is on, by Pimpo's own names (a capability, a judgment).
+type RunProgress struct {
+	Routine string
+	Name    string
+	Person  string
+	Run     int64
+	State   string
+	Steps   int
+	Step    string
+	CostUSD float64
+	Started time.Time
+	Error   string
+}
+
+func (s *Scheduler) progress(ctx context.Context, p RunProgress) {
+	if s.Progress != nil {
+		s.Progress(context.WithoutCancel(ctx), p)
+	}
 }
 
 var parser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
@@ -235,6 +259,18 @@ func (s *Scheduler) run(ctx context.Context, id, trigger string, event any) (sto
 	source := fmt.Sprintf("routine:%s#%d", id, runID)
 	s.Env.Events.Append(ctx, EventRunStarted, source, map[string]any{"routine": id, "run": runID, "version": r.Version, "trigger": trigger})
 	h := &host.Host{Env: s.Env, Source: source, Person: r.Person}
+	prog := RunProgress{Routine: id, Name: r.Body.Name, Person: r.Person, Run: runID, State: store.RunRunning, Started: time.Now().UTC()}
+	s.progress(ctx, prog)
+	var stepMu sync.Mutex
+	h.OnStep = func(label string) {
+		stepMu.Lock()
+		prog.Steps++
+		prog.Step = label
+		p := prog
+		stepMu.Unlock()
+		p.CostUSD = h.Cost()
+		s.progress(ctx, p)
+	}
 	if params, err := r.Body.Manifest.ResolveParams(r.Settings.Params); err == nil {
 		h.Destinations = r.Body.Manifest.Destinations(params)
 	}
@@ -256,6 +292,11 @@ func (s *Scheduler) run(ctx context.Context, id, trigger string, event any) (sto
 		outcome, errText = store.RunFailed, runErr.Error()
 	}
 	s.Store.FinishRun(context.WithoutCancel(ctx), runID, outcome, errText, h.Cost(), res.Calls)
+	stepMu.Lock()
+	prog.State, prog.Error, prog.CostUSD, prog.Step = outcome, errText, h.Cost(), ""
+	final := prog
+	stepMu.Unlock()
+	s.progress(ctx, final)
 	run := store.Run{ID: runID, Routine: id, Version: r.Version, Outcome: outcome, Error: errText, CostUSD: h.Cost(), Calls: res.Calls}
 	if runErr == nil {
 		s.Env.Events.Append(ctx, EventRunFinished, source, map[string]any{"routine": id, "run": runID, "calls": res.Calls, "cost_usd": h.Cost(), "logs": res.Logs})

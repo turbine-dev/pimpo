@@ -119,6 +119,9 @@ func Open(db *sql.DB) (*Store, error) {
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("migrate store: %w", err)
 	}
+	if _, err := db.Exec(progressSchema); err != nil {
+		return nil, fmt.Errorf("migrate store: %w", err)
+	}
 	for _, stmt := range additions {
 		if _, err := db.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
 			return nil, fmt.Errorf("migrate store: %w", err)

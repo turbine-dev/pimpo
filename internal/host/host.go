@@ -86,6 +86,9 @@ type Host struct {
 	// QuietReads leaves successful reads out of the event log; a watch
 	// polling every few minutes would otherwise bury the receipts.
 	QuietReads bool
+	// OnStep hears each step as it starts: the capability called, or a
+	// judgment or a text being written, for the run's progress.
+	OnStep func(label string)
 
 	mu        sync.Mutex
 	calls     []trace.Call
@@ -156,7 +159,15 @@ func DestinationsFrom(ctx context.Context) []string {
 	return d
 }
 
+// step tells OnStep a step is starting.
+func (h *Host) step(label string) {
+	if h.OnStep != nil {
+		h.OnStep(label)
+	}
+}
+
 func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, error) {
+	h.step(name)
 	spec := capability.Catalog[name]
 	person := people.Norm(h.Person)
 	ctx = people.With(ctx, person)
@@ -255,6 +266,7 @@ func (h *Host) record(ctx context.Context, rec ActionRecord, result any) {
 const JudgeEstimate = 0.01
 
 func (h *Host) Judge(ctx context.Context, name, question string, item any) (float64, error) {
+	h.step("judge " + name)
 	if h.Budget != nil {
 		if err := h.Budget.CheckFor(ctx, JudgeEstimate); err != nil {
 			return 0, err
@@ -282,6 +294,7 @@ const WriteEvent = "text.written"
 
 // Write lets a routine have a small model compose text, within budget.
 func (h *Host) Write(ctx context.Context, name, instruction string, input any) (string, error) {
+	h.step("write " + name)
 	if h.Budget != nil {
 		if err := h.Budget.CheckFor(ctx, WriteEstimate); err != nil {
 			return "", err

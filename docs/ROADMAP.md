@@ -296,7 +296,7 @@ When a routine or a connection needs a password or key, Pimpo asks for it in a f
 
 ### 8.8 Lasting progress · S
 
-Long jobs and routine runs show progress that survives a reload and follows the person to the phone and the channels.
+Long jobs and routine runs show progress that survives a reload and follows the person to the phone and the channels. *Done.*
 
 ---
 

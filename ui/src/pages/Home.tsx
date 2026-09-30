@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { CalendarClock, Check, ChevronRight, CircleAlert, Coins, MessageSquare, ShieldQuestion, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { RunningNow } from '../components/ProgressCard'
 import { Card } from '../components/ui'
 import { api, type RecentRun, type RoutineSummary } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -61,6 +62,8 @@ export function Home() {
         <AssistantPicker value={who} onChange={setWho} />
       </div>
       <Suggestions onPick={(text) => start.mutate({ text, spoken: false })} disabled={start.isPending} className="mt-3 sm:grid-cols-4" />
+
+      <RunningNow className="mt-8" />
 
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <Link to="/inbox" className="block">

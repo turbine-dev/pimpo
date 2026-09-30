@@ -12,6 +12,7 @@ No version has been tagged yet. The first release will include everything built 
 - Settings history (**Settings › History**): every change to rules, budget, connections, models, people and settings, with who and when, secrets never kept, and undo; a member sees their own accounts' history in **Account**.
 - Database integrity: Pimpo checks its database at start and before every snapshot; a damaged one is moved to a quarantine folder untouched, and a recovery page offers the newest snapshot that passes its check, a fresh start, or the damaged file as a zip.
 - Private credential prompts: a routine or task that needs a missing or refused key sends its person a link to a one-time form that writes straight to the vault, and keys pasted into a chat or channel are removed before the model or the log sees them.
+- Lasting progress: long jobs and routine runs show their parts or steps, the current step and the cost so far on Home, the routine and the job, the same after a reload or a restart; a followed job keeps one message up to date on Telegram, Discord and Slack.
 - Dashboards in tabs with widgets of seven kinds (numbers, goals, status, lists, tables, and line, area, bar and donut charts), ready-made widgets, and sharing with the house.
 - **Turn into a widget** on a routine's page, and requests to see or track something end in a widget.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.
