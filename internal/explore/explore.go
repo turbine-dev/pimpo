@@ -136,6 +136,9 @@ type Options struct {
 	// chat request (15 minutes, 40 turns).
 	Timeout  time.Duration
 	MaxTurns int
+	// Origin is where a fact the agent notes came from: the conversation,
+	// email or job that asked. Without it, the exploration itself.
+	Origin *memory.Origin
 }
 
 // Assistant is a named role for the agent with the capabilities it may use.
@@ -165,7 +168,8 @@ func (s *Service) Repair(ctx context.Context, routineID, problem, actor string) 
 	if problem != "" {
 		request += "\n\n(Last time the automatic routine failed with: " + problem + ")"
 	}
-	return s.start(people.With(ctx, r.Person), request, actor, routineID, Options{})
+	o := Options{Origin: &memory.Origin{Kind: memory.FromRoutine, Ref: routineID, Label: r.Body.Name}}
+	return s.start(people.With(ctx, r.Person), request, actor, routineID, o)
 }
 
 // Improve re-explores a routine's task with a change the owner asked for,
@@ -225,6 +229,11 @@ func (s *Service) start(ctx context.Context, request, actor, target string, o Op
 			return "", err
 		}
 	}
+	if o.Origin == nil {
+		if og, ok := memory.OriginOf(ctx); ok {
+			o.Origin = &og
+		}
+	}
 	id := newID()
 	e := store.Exploration{ID: id, Request: request, State: store.ExplorationRunning, Routine: target, Person: owner(people.From(ctx))}
 	if err := s.Store.SaveExploration(ctx, e); err != nil {
@@ -237,6 +246,22 @@ func (s *Service) start(ctx context.Context, request, actor, target string, o Op
 		s.run(context.WithoutCancel(ctx), e, o)
 	}()
 	return id, nil
+}
+
+// originOf is where the facts this exploration notes come from: what
+// asked for it, with the exploration as the turn.
+func originOf(e store.Exploration, o Options) memory.Origin {
+	if o.Origin == nil {
+		return memory.Origin{Kind: memory.FromExploration, Ref: e.ID, Label: e.Request}
+	}
+	out := *o.Origin
+	if out.Turn == "" {
+		out.Turn = e.ID
+	}
+	if out.Label == "" {
+		out.Label = e.Request
+	}
+	return out
 }
 
 // Wait blocks until background explorations finish (tests and shutdown).
@@ -278,7 +303,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	if s.Skills != nil {
 		skills = s.Skills(ctx)
 	}
-	all := append(tools(h, s.Memory, s.Recall, s.Guide), skillTools(h, skills)...)
+	all := append(tools(h, s.Memory, s.Recall, s.Guide, originOf(e, o)), skillTools(h, skills)...)
 	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "pimpo", Tools: all}}
 	s.mu.Unlock()
 	defer func() {

@@ -222,7 +222,9 @@ export type PhoneShare = 'location' | 'camera' | 'shortcuts'
 export type PhonePlace = { name: string; lat?: number; lon?: number; radius?: number }
 export type PhoneState = { places: PhonePlace[]; shares: PhoneShare[]; device?: { id: string; name: string; shares: PhoneShare[]; has_key: boolean } }
 
-export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low' | 'learned'; person?: string; created: string }
+export type FactOrigin = { kind: 'conversation' | 'exploration' | 'routine' | 'job' | 'email' | 'import' | 'typed' | 'learned' | 'unknown'; ref?: string; turn?: string; sender?: string; label?: string }
+export type Fact = { id: string; text: string; topic: string; source: string; trust: 'high' | 'low' | 'learned'; person?: string; created: string; origins?: FactOrigin[] }
+export type MemorySource = { key: string; origin: FactOrigin; facts: Fact[]; topics: string[] }
 export type MemoryVersion = { hash: string; message: string; when: string }
 
 export class ApiError extends Error {
@@ -438,6 +440,8 @@ export const api = {
   removeFact: (id: string) => request<void>('DELETE', `/api/memory/${id}`),
   confirmFact: (id: string) => request<void>('POST', `/api/memory/${id}/confirm`),
   restoreMemory: (hash: string) => request<void>('POST', `/api/memory-versions/${hash}/restore`),
+  memorySources: () => request<{ sources: MemorySource[] }>('GET', '/api/memory/sources'),
+  forgetSource: (key: string) => request<{ removed: Fact[] }>('POST', '/api/memory/sources/forget', { key }),
   settings: () => request<Settings>('GET', '/api/settings'),
   saveSettings: (s: Settings) => request<Settings>('PUT', '/api/settings', s),
   setBudget: (daily_usd: number) => request<void>('PUT', '/api/budget', { daily_usd }),

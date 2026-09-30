@@ -33,6 +33,7 @@ var guestRoutes = routeSet(
 	"GET /api/media", "GET /api/media/{id}",
 	"GET /api/assistants",
 	"GET /api/memory", "POST /api/memory", "DELETE /api/memory/{id}", "POST /api/memory/{id}/confirm", "GET /api/memory/search",
+	"GET /api/memory/sources", "POST /api/memory/sources/forget",
 	"GET /api/passkeys", "POST /api/passkeys/begin", "POST /api/passkeys/finish", "DELETE /api/passkeys/{id}",
 	"GET /api/me/devices", "DELETE /api/me/devices/{id}",
 	"GET /api/dashboards", "GET /api/dashboards/{id}/widgets", "GET /api/widgets", "GET /api/widgets/{id}",

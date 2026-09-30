@@ -45,6 +45,9 @@ type Fact struct {
 	// "casa" is everyone in the house.
 	Person  string    `json:"person,omitempty"`
 	Created time.Time `json:"created"`
+	// Origins are the sources the fact came from; a fact saved before
+	// they were kept has none (see From).
+	Origins []Origin `json:"origins,omitempty"`
 }
 
 type Version struct {
@@ -181,9 +184,24 @@ func (m *Memory) Add(text, topic, source string, trust Trust) (Fact, error) {
 	return m.AddFor(text, topic, source, trust, "")
 }
 
-// AddFor records a fact kept for one person.
+// AddFor records a fact kept for one person, with an origin read from its
+// source.
 func (m *Memory) AddFor(text, topic, source string, trust Trust, person string) (Fact, error) {
+	return m.AddFrom(text, topic, source, trust, person, legacy(source))
+}
+
+// AddFrom records a fact kept for one person and where it came from. A
+// repeat from another source adds that source to the fact, unless it is
+// a less trusted copy of it: a note the agent read somewhere does not
+// make what the person said forgettable with that email.
+func (m *Memory) AddFrom(text, topic, source string, trust Trust, person string, origins ...Origin) (Fact, error) {
 	person = owned(person)
+	for i := range origins {
+		origins[i] = origins[i].clean()
+	}
+	if len(origins) == 0 {
+		origins = []Origin{{Kind: FromUnknown}}
+	}
 	// A fact is one line: a newline in it could forge entries in the
 	// Markdown files people read.
 	text = strings.Join(strings.Fields(text), " ")
@@ -206,14 +224,35 @@ func (m *Memory) AddFor(text, topic, source string, trust Trust, person string) 
 		if f.Person == person && strings.EqualFold(f.Text, text) {
 			if trust == High && f.Trust != High {
 				facts[i].Trust, facts[i].Source = High, source
+				facts[i].Origins = withOrigins(f.From(), origins...)
 				return facts[i], m.save(facts, "confirm: "+said(facts[i]))
 			}
-			return f, nil
+			if rank(trust) < rank(f.Trust) {
+				return f, nil
+			}
+			more := withOrigins(f.From(), origins...)
+			if len(more) == len(f.From()) {
+				return f, nil
+			}
+			facts[i].Origins = more
+			return facts[i], m.save(facts, "source: "+said(facts[i]))
 		}
 	}
-	f := Fact{ID: newID(), Text: text, Topic: topic, Source: source, Trust: trust, Person: person, Created: time.Now()}
+	f := Fact{ID: newID(), Text: text, Topic: topic, Source: source, Trust: trust, Person: person, Created: time.Now(), Origins: origins}
 	facts = append(facts, f)
 	return f, m.save(facts, "add: "+said(f))
+}
+
+// rank orders trust: what the person said, what was learned from their
+// choices, what the agent read.
+func rank(t Trust) int {
+	switch t {
+	case High:
+		return 2
+	case Learned:
+		return 1
+	}
+	return 0
 }
 
 func (m *Memory) Remove(id string) error {

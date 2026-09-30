@@ -103,7 +103,7 @@ func (a *App) learn(ctx context.Context) []memory.Fact {
 		if text == "" || len(made) == learnMaxPerWeek || containsFold(removed, text) {
 			continue
 		}
-		f, err := a.Memory.AddFor(text, learnTopic, "aprendido: "+clip(p.Evidence, 160), memory.Learned, "")
+		f, err := a.Memory.AddFrom(text, learnTopic, "aprendido: "+clip(p.Evidence, 160), memory.Learned, "", memory.Origin{Kind: memory.FromLearned, Label: clip(p.Evidence, 80)})
 		if err != nil {
 			continue
 		}

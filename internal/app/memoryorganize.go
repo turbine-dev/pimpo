@@ -78,7 +78,7 @@ func (a *App) organizeMemory(ctx context.Context, person string) (organized, err
 	pairs := memory.Similar(facts, 40)
 	res.Checked = len(pairs)
 	gone := map[string]bool{}
-	var drop []string
+	var drop []memory.Merge
 	for _, p := range pairs {
 		if gone[p.A.ID] || gone[p.B.ID] {
 			continue
@@ -93,7 +93,7 @@ func (a *App) organizeMemory(ctx context.Context, person string) (organized, err
 		}
 		keep, lose := memory.Keeper(p)
 		gone[lose.ID] = true
-		drop = append(drop, lose.ID)
+		drop = append(drop, memory.Merge{Keep: keep.ID, Drop: lose.ID})
 		res.Merged = append(res.Merged, merge{Kept: keep.Text, Dropped: lose.Text})
 	}
 	if len(drop) > 0 {
@@ -101,7 +101,8 @@ func (a *App) organizeMemory(ctx context.Context, person string) (organized, err
 		if person != people.OwnerID {
 			msg += " (" + memory.ForPrefix + person + ")"
 		}
-		if err := a.Memory.Drop(drop, msg); err != nil {
+		// The kept fact keeps both sources.
+		if err := a.Memory.Fold(drop, msg); err != nil {
 			return res, err
 		}
 	}
@@ -241,6 +242,9 @@ func (a *App) searchMemory(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		server.WriteError(w, err)
 		return
+	}
+	for i := range res {
+		res[i].Fact = withSources(res[i].Fact, people.From(r.Context()))
 	}
 	server.WriteJSON(w, 200, map[string]any{"facts": res, "meaning": meaning})
 }

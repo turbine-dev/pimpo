@@ -14,6 +14,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/capability"
 	"github.com/turbine-dev/pimpo/internal/explore"
 	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/memory"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/policy"
 	"github.com/turbine-dev/pimpo/internal/secretscan"
@@ -225,6 +226,12 @@ func chatReply(chat, turn, warning string) map[string]string {
 	return out
 }
 
+// chatOrigin is where facts noted in a conversation come from: the
+// conversation, each turn its own part.
+func chatOrigin(c store.Chat) *memory.Origin {
+	return &memory.Origin{Kind: memory.FromConversation, Ref: c.ID, Label: c.Title}
+}
+
 // options builds an exploration's options for a chat's assistant.
 func (a *App) chatOptions(ctx context.Context, assistant, history string) (explore.Options, error) {
 	o := explore.Options{Context: history, Quiet: true}
@@ -272,6 +279,7 @@ func (a *App) newChat(w http.ResponseWriter, r *http.Request) {
 	}
 	a.setChatModel(ctx, c.ID, m.Model)
 	a.setChatEffort(ctx, c.ID, m.Effort)
+	o.Origin = chatOrigin(c)
 	pick := a.routeModel(ctx, text, "", m.Model, m.Effort)
 	o.Model, o.Effort = pick.Model, pick.Effort
 	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), text, actor(ctx), o)
@@ -367,6 +375,7 @@ func (a *App) chatMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	pick := a.routeModel(ctx, m.Text, history, a.chatModel(ctx, c.ID), a.chatEffort(ctx, c.ID))
 	o.Model, o.Effort = pick.Model, pick.Effort
+	o.Origin = chatOrigin(c)
 	exp, err := a.Explore.StartWith(context.WithoutCancel(ctx), m.Text, actor(ctx), o)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})

@@ -36,6 +36,8 @@ func (a *App) memoryRoutes() {
 	s.Handle("DELETE /api/memory/{id}", a.removeFact)
 	s.Handle("POST /api/memory/{id}/confirm", a.confirmFact)
 	s.Handle("POST /api/memory-versions/{hash}/restore", a.restoreMemory)
+	s.Handle("GET /api/memory/sources", a.memorySources)
+	s.Handle("POST /api/memory/sources/forget", a.forgetSource)
 }
 
 func (a *App) needMemory(w http.ResponseWriter) bool {
@@ -59,7 +61,7 @@ func (a *App) getMemory(w http.ResponseWriter, r *http.Request) {
 	facts := []memory.Fact{}
 	for _, f := range all {
 		if memory.Visible(f, me) {
-			facts = append(facts, f)
+			facts = append(facts, withSources(f, me))
 		}
 	}
 	// The history is the owner's: versions about others' facts say only
@@ -101,7 +103,7 @@ func (a *App) addFact(w http.ResponseWriter, r *http.Request) {
 		}
 		person = people.Household
 	}
-	f, err := a.Memory.AddFor(req.Text, req.Topic, me, memory.High, person)
+	f, err := a.Memory.AddFrom(req.Text, req.Topic, me, memory.High, person, memory.Origin{Kind: memory.FromTyped})
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
@@ -184,4 +186,75 @@ func (a *App) restoreMemory(w http.ResponseWriter, r *http.Request) {
 	}
 	a.Events.Append(r.Context(), "memory.changed", "human:owner", map[string]string{"restored": r.PathValue("hash")})
 	server.WriteJSON(w, 200, map[string]string{"state": "restored"})
+}
+
+// withSources gives every fact its origins; where a house fact someone
+// else shared came from is theirs, so only its kind shows.
+func withSources(f memory.Fact, me string) memory.Fact {
+	from := f.From()
+	if !memory.AuthoredBy(f, me) {
+		kinds := make([]memory.Origin, 0, len(from))
+		for _, o := range from {
+			kinds = append(kinds, memory.Origin{Kind: o.Kind})
+		}
+		from = kinds
+	}
+	f.Origins = from
+	return f
+}
+
+// memorySources groups the person's own facts by where they came from.
+func (a *App) memorySources(w http.ResponseWriter, r *http.Request) {
+	if !a.needMemory(w) {
+		return
+	}
+	all, err := a.Memory.List()
+	if err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	me := people.From(r.Context())
+	sources := memory.SourcesOf(all, me)
+	for i := range sources {
+		for j, f := range sources[i].Facts {
+			sources[i].Facts[j] = withSources(f, me)
+		}
+	}
+	if sources == nil {
+		sources = []memory.Source{}
+	}
+	server.WriteJSON(w, 200, map[string]any{"sources": sources})
+}
+
+// forgetSource removes every fact of the person's that came from one
+// source, as one change in the memory's history.
+func (a *App) forgetSource(w http.ResponseWriter, r *http.Request) {
+	if !a.needMemory(w) {
+		return
+	}
+	var req struct {
+		Key string `json:"key"`
+	}
+	if err := server.Decode(r, &req); err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	ctx := r.Context()
+	me := people.From(ctx)
+	kind, _, _ := strings.Cut(req.Key, ":")
+	msg := "forget source: " + kind
+	if me != people.OwnerID {
+		msg += " (" + memory.ForPrefix + me + ")"
+	}
+	gone, err := a.Memory.ForgetSource(req.Key, me, msg)
+	if err != nil {
+		server.WriteError(w, server.StatusError{Status: 404, Msg: err.Error()})
+		return
+	}
+	ids := make([]string, 0, len(gone))
+	for _, f := range gone {
+		ids = append(ids, f.ID)
+	}
+	a.Events.Append(ctx, "memory.changed", actor(ctx), map[string]any{"forgot_source": kind, "removed": ids})
+	server.WriteJSON(w, 200, map[string]any{"removed": gone})
 }
