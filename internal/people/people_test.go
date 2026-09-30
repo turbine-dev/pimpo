@@ -3,7 +3,9 @@ package people
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/turbine-dev/pimpo/internal/event"
 )
@@ -70,5 +72,41 @@ func TestContextAndVisibility(t *testing.T) {
 	}
 	if !Visible("", OwnerID) || !Visible(Household, "ana") || Visible("", "ana") || Visible("bia", "ana") {
 		t.Fatal("visibility")
+	}
+}
+
+// Invites are long, work once and run out; the People page then gets a
+// fresh one.
+func TestInvitesExpireAndRenew(t *testing.T) {
+	ctx := context.Background()
+	d := dir(t)
+	ana, _ := d.Add(ctx, "Ana", Member, "")
+	bia, _ := d.Add(ctx, "Bia", Member, "")
+	if len(ana.Invite) < 10 || ana.InviteUntil.Before(time.Now().Add(InviteLife-time.Minute)) {
+		t.Fatalf("invite %q until %v", ana.Invite, ana.InviteUntil)
+	}
+	list, _ := d.load(ctx)
+	for i := range list {
+		list[i].InviteUntil = time.Now().Add(-time.Minute)
+	}
+	d.save(ctx, list)
+	if _, err := d.Pair(ctx, ana.Invite, 5); err == nil {
+		t.Fatal("paired with an expired invite")
+	}
+	if _, err := d.PairWhatsApp(ctx, bia.Invite, "5511"); err == nil {
+		t.Fatal("paired WhatsApp with an expired invite")
+	}
+	if err := d.RenewInvites(ctx); err != nil {
+		t.Fatal(err)
+	}
+	fresh, _ := d.Get(ctx, "ana")
+	if fresh.Invite == ana.Invite || !time.Now().Before(fresh.InviteUntil) {
+		t.Fatalf("not renewed: %+v", fresh)
+	}
+	if _, err := d.Pair(ctx, " "+strings.ToLower(fresh.Invite)+" ", 5); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.PairWhatsApp(ctx, fresh.Invite, "5511"); err == nil {
+		t.Fatal("an invite worked twice")
 	}
 }

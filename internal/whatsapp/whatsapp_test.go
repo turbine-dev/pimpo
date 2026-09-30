@@ -50,7 +50,7 @@ func TestSend(t *testing.T) {
 func TestWebhook(t *testing.T) {
 	body := []byte(`{"object":"whatsapp_business_account","entry":[{"changes":[{"value":{
 	  "contacts":[{"wa_id":"5511999990000","profile":{"name":"Dener"}}],
-	  "messages":[{"from":"5511999990000","type":"text","text":{"body":"resuma meus e-mails"}},
+	  "messages":[{"id":"wamid.A1","timestamp":"1790000000","from":"5511999990000","type":"text","text":{"body":"resuma meus e-mails"}},
 	              {"from":"5511999990000","type":"interactive","interactive":{"type":"button_reply","button_reply":{"id":"approve:ab12","title":"Permitir"}}},
 	              {"from":"5511999990000","type":"image","image":{"id":"x"}}]}}]}]}`)
 	mac := hmac.New(sha256.New, []byte("secret"))
@@ -66,7 +66,7 @@ func TestWebhook(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(in) != 2 || in[0].Text != "resuma meus e-mails" || in[0].Name != "Dener" || in[1].Button != "approve:ab12" {
+	if len(in) != 2 || in[0].Text != "resuma meus e-mails" || in[0].Name != "Dener" || in[1].Button != "approve:ab12" || in[0].ID != "wamid.A1" || in[0].Time.Unix() != 1790000000 {
 		t.Fatalf("%+v", in)
 	}
 }

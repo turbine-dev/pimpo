@@ -43,6 +43,16 @@ func listUnsubscribe(raw []byte) (target string, oneClick bool) {
 	return https, false
 }
 
+// authResults reads the Authentication-Results headers (RFC 8601) in
+// the order they appear.
+func authResults(raw []byte) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	h, _ := textproto.NewReader(bufio.NewReader(strings.NewReader(string(raw)))).ReadMIMEHeader()
+	return h.Values("Authentication-Results")
+}
+
 // HTTP is used for one-click unsubscribe; tests replace it.
 var unsubscribeClient = &http.Client{Timeout: 20 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 

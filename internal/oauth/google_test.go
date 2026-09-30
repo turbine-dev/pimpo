@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 type memStore struct {
@@ -79,5 +80,28 @@ func TestSignInAndRefresh(t *testing.T) {
 	tok, _ = g.Token(ctx)
 	if tok != "a2" || refreshes != 1 {
 		t.Fatal("a fresh token was refreshed again")
+	}
+}
+
+// Sign-ins started and never finished do not pile up in memory.
+func TestAbandonedSignInsArePruned(t *testing.T) {
+	g := &Google{Store: &memStore{m: map[string]string{}}}
+	ctx := context.Background()
+	for range 5 {
+		if _, err := g.Begin(ctx, "id", "secret", "http://localhost/cb"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	g.mu.Lock()
+	for s, p := range g.pending {
+		p.created = p.created.Add(-stateLife - time.Minute)
+		g.pending[s] = p
+	}
+	g.mu.Unlock()
+	g.Begin(ctx, "id", "secret", "http://localhost/cb")
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if len(g.pending) != 1 {
+		t.Fatalf("%d sign-ins kept", len(g.pending))
 	}
 }

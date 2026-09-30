@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -145,10 +146,11 @@ func (a *App) webhook(w http.ResponseWriter, r *http.Request) {
 	var parsed any
 	if len(raw) > 0 && json.Unmarshal(raw, &parsed) == nil {
 		body = parsed
-	} else if strings.Contains(r.Header.Get("Content-Type"), "form") {
-		if err := r.ParseForm(); err == nil {
+	} else if strings.Contains(r.Header.Get("Content-Type"), "x-www-form-urlencoded") {
+		// The body was read above, so the form is parsed from the copy.
+		if vals, err := url.ParseQuery(string(raw)); err == nil {
 			form := map[string]string{}
-			for k, v := range r.PostForm {
+			for k, v := range vals {
 				form[k] = strings.Join(v, ",")
 			}
 			body = form

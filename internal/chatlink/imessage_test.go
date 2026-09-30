@@ -19,7 +19,7 @@ func messagesDB(t *testing.T) (string, *sql.DB) {
 	t.Cleanup(func() { db.Close() })
 	for _, q := range []string{
 		`CREATE TABLE handle (ROWID INTEGER PRIMARY KEY, id TEXT)`,
-		`CREATE TABLE message (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, attributedBody BLOB, handle_id INTEGER, is_from_me INTEGER)`,
+		`CREATE TABLE message (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, attributedBody BLOB, handle_id INTEGER, is_from_me INTEGER, service TEXT DEFAULT 'iMessage')`,
 		`INSERT INTO handle VALUES (1, '+5511999990000')`,
 		`INSERT INTO message (text, handle_id, is_from_me) VALUES ('mensagem antiga', 1, 0)`,
 	} {
@@ -52,6 +52,8 @@ func TestIMessageHandsOverNewMessagesOnly(t *testing.T) {
 	for _, q := range [][]any{
 		{`INSERT INTO message (text, handle_id, is_from_me) VALUES ('o que tenho amanhã?', 1, 0)`},
 		{`INSERT INTO message (text, handle_id, is_from_me) VALUES ('resposta do Pimpo', 1, 1)`},
+		// An SMS sender is easy to fake: never heard.
+		{`INSERT INTO message (text, handle_id, is_from_me, service) VALUES ('pimpo por sms', 1, 0, 'SMS')`},
 		{`INSERT INTO message (text, attributedBody, handle_id, is_from_me) VALUES (NULL, ?, 1, 0)`, archived("pimpo 123456")},
 	} {
 		if _, err := db.Exec(q[0].(string), q[1:]...); err != nil {
