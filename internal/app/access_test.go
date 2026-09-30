@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/memory"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/routine"
+	"github.com/turbine-dev/pimpo/internal/store"
 )
 
 // Every route has an access rule, decided on purpose.
@@ -93,6 +95,13 @@ func newHouse(t *testing.T) *house {
 			ta.Store.SetRoutinePerson(ctx, rid, person)
 		}
 		ids["routine"] = rid
+		// A widget of theirs, and a dashboard with it.
+		wid := "w_" + who
+		ta.Store.SaveWidget(ctx, store.Widget{ID: wid, Person: recPersonOf(person), Routine: rid, Key: "main", Kind: "metric", Title: mark + " saldo", Snapshot: json.RawMessage(`{"kind":"metric","title":"` + mark + ` saldo","value":1}`)})
+		ids["widget"] = wid
+		_, body = ta.raw(t, token, "POST", "/api/dashboards", js(map[string]string{"name": mark + " painel"}))
+		ids["dashboard"] = field(body, "id")
+		ta.raw(t, token, "PUT", "/api/dashboards/"+ids["dashboard"], js(map[string]any{"layout": []map[string]any{{"id": wid, "x": 0, "y": 0, "w": 4, "h": 3}}}))
 		j := Job{ID: "job" + who, Request: mark + " trabalho", Person: people.Norm(person), State: JobPlanned, BudgetUSD: 1, Created: time.Now()}
 		ta.saveJob(ctx, &j)
 		ids["job"] = j.ID
@@ -145,6 +154,10 @@ func fill(pattern string, ids map[string]string) (string, string, bool) {
 			id = ids["job"]
 		case strings.HasPrefix(path, "/api/memory/"):
 			id = ids["fact"]
+		case strings.HasPrefix(path, "/api/widgets/"):
+			id = ids["widget"]
+		case strings.HasPrefix(path, "/api/dashboards/"):
+			id = ids["dashboard"]
 		default:
 			return "", "", false
 		}
@@ -198,6 +211,7 @@ func TestNobodySeesAnotherPersonsThings(t *testing.T) {
 		{h.ana, "/api/cost", "routine:rotina-ana"}, {"tok", "/api/cost", "others"},
 		{h.ana, "/api/events", h.anaMark}, {h.ana, "/api/chats", h.anaMark}, {h.ana, "/api/jobs", h.anaMark},
 		{h.ana, "/api/phone", h.anaMark},
+		{h.ana, "/api/widgets", h.anaMark}, {h.ana, "/api/dashboards", h.anaMark}, {"tok", "/api/widgets", h.ownerMark},
 	} {
 		if code, body := h.raw(t, c.token, "GET", c.path, nil); code != 200 || !strings.Contains(body, c.want) {
 			t.Errorf("%s does not show its own %q: %d %.200s", c.path, c.want, code, body)
@@ -385,4 +399,11 @@ func TestRoleChangesAreShownToThePerson(t *testing.T) {
 	if code, _ := h.do(t, "PUT", "/api/people/"+h.anaID, map[string]string{"role": "member", "responsible": "ghost"}); code != 400 {
 		t.Fatalf("a member got a responsible: %d", code)
 	}
+}
+
+func recPersonOf(person string) string {
+	if person == people.OwnerID {
+		return ""
+	}
+	return person
 }

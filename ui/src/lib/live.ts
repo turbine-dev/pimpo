@@ -37,6 +37,11 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
         if (e.type === 'memory.changed') qc.invalidateQueries({ queryKey: ['memory'] })
         if (e.type === 'rules.changed') qc.invalidateQueries({ queryKey: ['rules'] })
         if (e.type === 'cost.recorded') qc.invalidateQueries({ queryKey: ['cost'] })
+        if (e.type === 'widget.updated' || e.type.startsWith('routine.run') || e.type.startsWith('approval') || e.type === 'cost.recorded') {
+          qc.invalidateQueries({ queryKey: ['dashboard-widgets'] })
+          qc.invalidateQueries({ queryKey: ['widgets'] })
+        }
+        if (e.type === 'dashboard.changed') qc.invalidateQueries({ queryKey: ['dashboards'] })
         qc.invalidateQueries({ queryKey: ['events'] })
       }
     }

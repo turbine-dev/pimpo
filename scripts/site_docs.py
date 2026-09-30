@@ -25,6 +25,8 @@ GUIDE = [
     ("guide-routines", "Routines", "How a task becomes a routine, what starts it, and how to change it.",
      ["How a task becomes a routine", "Routines that react to something new", "Routines that remember, and routines built from others",
       "Routines in a repository", "Changing a routine without code", "Run history", "Routines that ask you", "Reminders", "Long jobs", "Suggestions"]),
+    ("guide-dashboards", "Dashboards", "Tabs of widgets: routines as widgets, ready-made ones, charts and sharing.",
+     ["Dashboards"]),
     ("guide-safety", "Approvals and receipts", "What waits for you, and how to see and undo what Pimpo did.",
      ["Approvals and rules", "Receipts and undo"]),
     ("guide-memory", "Memory and people", "What Pimpo remembers, and sharing it with the people of the house.",
