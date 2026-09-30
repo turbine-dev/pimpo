@@ -58,14 +58,20 @@ func (a *App) saveSkills(ctx context.Context, list []installedSkill) error {
 }
 
 // skillText reads an installed skill from disk; it must still be what was
-// installed.
+// installed, and the protection list must not have reported it since.
 func (a *App) skillText(s installedSkill) (string, error) {
-	sk, err := skills.Read(filepath.Join(a.skillsDir(), s.ID))
+	dir := filepath.Join(a.skillsDir(), s.ID)
+	sk, err := skills.Read(dir)
 	if err != nil {
 		return "", err
 	}
 	if sk.Hash != s.Hash {
 		return "", errors.New("the skill " + s.Name + " changed on disk since it was installed; install it again to review it")
+	}
+	if raw, err := os.ReadFile(filepath.Join(dir, "SKILL.md")); err == nil && a.Protect != nil {
+		if e, bad := a.Protect.Skill(raw); bad {
+			return "", errors.New("the protection list reports the skill " + s.Name + ": " + e.Reason)
+		}
 	}
 	return sk.Instructions(), nil
 }

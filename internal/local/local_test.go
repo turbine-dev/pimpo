@@ -56,7 +56,8 @@ func withCatalog(t *testing.T, srv string, files map[string]string) {
 		return Item{ID: id, Kind: kind, Name: id, Size: int64(len(b)), URL: srv + "/" + file, SHA256: sha, Folder: "voice-x", Languages: []string{"pt-BR"}, Voice: &VoiceSpec{Type: "piper", Model: "model.onnx"}}
 	}
 	engines = map[string]Item{runtime.GOOS + "/" + runtime.GOARCH: item("sherpa-onnx", "engine", "voice.tar.bz2")}
-	Voices = []Item{item("good", "voice", "voice.tar.bz2"), item("tampered", "voice", "voice.tar.bz2"), item("evil", "voice", "evil.tar.bz2"), item("evil-link", "voice", "evil-link.tar.bz2")}
+	Voices = []Item{item("good", "voice", "voice.tar.bz2"), item("tampered", "voice", "voice.tar.bz2"), item("evil", "voice", "evil.tar.bz2"), item("evil-link", "voice", "evil-link.tar.bz2"),
+		item("evil-chain", "voice", "evil-chain.tar.bz2"), item("evil-through", "voice", "evil-through.tar.bz2")}
 }
 
 func wait(t *testing.T, m *Manager, id string) Job {
@@ -102,7 +103,7 @@ func TestInstall(t *testing.T) {
 		t.Fatal("installed twice")
 	}
 
-	for id, want := range map[string]string{"tampered": "checksum", "evil": "outside", "evil-link": "outside"} {
+	for id, want := range map[string]string{"tampered": "checksum", "evil": "outside", "evil-link": "outside", "evil-chain": "outside", "evil-through": "through a link"} {
 		j, err := m.Install(id)
 		if err != nil {
 			t.Fatal(err)
@@ -113,6 +114,9 @@ func TestInstall(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "evil.txt")); err == nil {
 		t.Fatal("an archive wrote outside its folder")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "local", "evil2.txt")); err == nil {
+		t.Fatal("a chain of links led an archive outside its folder")
 	}
 	if matches, _ := filepath.Glob(filepath.Join(dir, "local", "*.part")); len(matches) != 0 {
 		t.Fatalf("left %v", matches)

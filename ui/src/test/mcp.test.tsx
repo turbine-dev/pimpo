@@ -14,7 +14,7 @@ describe('MCP servers', () => {
       '/api/connectors/registry?q=&cursor=': { servers: [weather, { ...weather, id: 'x/docker', title: 'docker-only', kind: 'unsupported', inputs: [] }], next: '' },
       '/api/connectors/registry?q=weather&cursor=': { servers: [weather], next: '' },
       'POST /api/connectors/probe': { tools: [
-        { tool: 'get-forecast', capability: 'weather.get_forecast', description: 'Forecast for a city', risk: 'read' },
+        { tool: 'get-forecast', capability: 'weather.get_forecast', description: 'Forecast for a city', risk: 'irreversible', claimed: 'read' },
         { tool: 'delete-station', capability: 'weather.delete_station', description: '', risk: 'irreversible' },
         { tool: 'rename-station', capability: 'weather.rename_station', description: '', risk: 'irreversible' },
       ] },
@@ -32,6 +32,10 @@ describe('MCP servers', () => {
     await userEvent.type(within(dialog).getByLabelText(/X-Api-Key/), 'k-123')
     await userEvent.click(check)
     await waitFor(() => expect(calls.find((c) => c.url === '/api/connectors/probe')?.body).toMatchObject({ name: 'weather', url: 'https://mcp.acme.dev/mcp', headers: { 'X-Api-Key': 'k-123' } }))
+    // The server's own hint is shown as its claim, never pre-selected.
+    expect(await within(dialog).findByText('O servidor diz: Só lê. Não verificado.')).toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Risco de get-forecast')).toHaveValue('irreversible')
+    await userEvent.selectOptions(within(dialog).getByLabelText('Risco de get-forecast'), 'read')
     await userEvent.click(await within(dialog).findByLabelText('Incluir delete-station'))
     await userEvent.selectOptions(within(dialog).getByLabelText('Risco de rename-station'), 'reversible')
     await userEvent.click(within(dialog).getByRole('button', { name: /Instalar 2 ferramentas/ }))

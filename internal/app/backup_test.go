@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/turbine-dev/pimpo/internal/llm"
@@ -126,5 +127,15 @@ func TestInstallJSONConnector(t *testing.T) {
 	}
 	if code, _ := upload(t, ta, "/api/connectors/install", []byte(`{"name":"x"}`), nil); code != 422 {
 		t.Fatalf("bad manifest: %d", code)
+	}
+	// Installing it again replaces it; a built-in family's name is refused.
+	if code, _ := upload(t, ta, "/api/connectors/install", []byte(man), nil); code != 200 {
+		t.Fatalf("reinstall: %d", code)
+	}
+	for _, name := range []string{"gmail", "notify", "web"} {
+		clash := strings.ReplaceAll(man, "hnlocal", name)
+		if code, out := upload(t, ta, "/api/connectors/install", []byte(clash), nil); code != 409 {
+			t.Fatalf("a connector named %s was installed: %d %v", name, code, out)
+		}
 	}
 }

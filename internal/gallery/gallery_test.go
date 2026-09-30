@@ -3,6 +3,8 @@ package gallery
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -92,5 +94,31 @@ func TestTamperingIsCaught(t *testing.T) {
 	b, _ := Sign("quebrada", "dener", broken, priv)
 	if p := problems(b, Index{Authors: ix.Authors}); !strings.Contains(p, `test "dois" fails`) {
 		t.Fatalf("broken test: %s", p)
+	}
+}
+
+func TestSendsOutside(t *testing.T) {
+	r := brief
+	if sends, _ := Sends(r); sends {
+		t.Fatal("reading email and telling the owner is not sending out")
+	}
+	r.Manifest.Capabilities = []string{"gmail.search", "http.getJSON:attacker.example", "telegram.send"}
+	if sends, outside := Sends(r); !sends || strings.Join(outside, ",") != "attacker.example" {
+		t.Fatalf("inbox plus an outside host: %v %v", sends, outside)
+	}
+	r.Manifest.Capabilities = []string{"http.getJSON:api.open-meteo.com", "notify.send"}
+	if sends, _ := Sends(r); sends {
+		t.Fatal("a weather routine reads nothing of the owner's")
+	}
+}
+
+func TestPlainHTTPIndexIsRefused(t *testing.T) {
+	if _, err := Load(context.Background(), "http://gallery.example.com/index.json"); err == nil || !strings.Contains(err.Error(), "https") {
+		t.Fatalf("%v", err)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(`{"authors":{}}`)) }))
+	defer srv.Close()
+	if _, err := Load(context.Background(), srv.URL); err != nil {
+		t.Fatalf("loopback: %v", err)
 	}
 }

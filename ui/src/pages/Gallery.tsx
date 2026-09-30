@@ -90,7 +90,7 @@ function Detail({ item, onClose }: { item: GalleryItem | null; onClose: () => vo
   const qc = useQueryClient()
   const nav = useNavigate()
   const install = useMutation({
-    mutationFn: (id: string) => api.installFromGallery(id),
+    mutationFn: ({ id, confirm }: { id: string; confirm: boolean }) => api.installFromGallery(id, confirm),
     onSuccess: (r) => { qc.invalidateQueries(); onClose(); nav(`/routines/${r.id}`) },
   })
   const g = item
@@ -141,6 +141,13 @@ function Detail({ item, onClose }: { item: GalleryItem | null; onClose: () => vo
                 )}
               </section>
 
+              {g.report.verified && g.report.sends && (
+                <section role="alert" className="mb-5 flex gap-2 rounded-xl bg-danger-soft p-4 text-[13px] text-danger">
+                  <ShieldAlert size={16} className="mt-0.5 shrink-0" />
+                  <span>{g.report.outside?.length ? t('gallery.sendsOutside', { hosts: g.report.outside.join(', ') }) : t('gallery.sendsOthers')}</span>
+                </section>
+              )}
+
               <section className="mb-5">
                 <h3 className="mb-2 text-[13px] font-medium text-ink-2">{t('gallery.code')}</h3>
                 <Code code={g.routine.code} />
@@ -155,7 +162,7 @@ function Detail({ item, onClose }: { item: GalleryItem | null; onClose: () => vo
                 {g.installed ? (
                   <span className="flex items-center gap-1.5 text-[13px] text-read"><Check size={15} /> {t('gallery.alreadyInstalled')}</span>
                 ) : (
-                  <Button variant="primary" disabled={!g.report.verified || install.isPending} onClick={() => install.mutate(g.id)}>{t('gallery.install')}</Button>
+                  <Button variant="primary" disabled={!g.report.verified || install.isPending} onClick={() => install.mutate({ id: g.id, confirm: g.report.sends })}>{t(g.report.verified && g.report.sends ? 'gallery.installAnyway' : 'gallery.install')}</Button>
                 )}
               </div>
             </>

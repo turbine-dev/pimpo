@@ -2,11 +2,16 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
+
+	"golang.org/x/text/unicode/norm"
 
 	"github.com/turbine-dev/pimpo/internal/capability"
 	"github.com/turbine-dev/pimpo/internal/event"
@@ -20,17 +25,19 @@ import (
 // Guard lets agents that are not Pimpo, such as OpenClaw and Hermes, ask
 // Pimpo's rules and the shared protection list before they run a tool.
 // Their tools are sorted into a few guard.* capabilities, so the owner
-// writes rules for them like for anything else.
+// writes rules for them like for anything else. Pimpo cannot undo what
+// another agent does, so writes and tools it cannot sort ask first, unless
+// a rule allows them (writes inside folders the owner named, for example).
 
 func init() {
 	for _, s := range []capability.Spec{
 		{Name: "guard.exec", Risk: capability.Irreversible, Signature: "another agent runs a command or code", Returns: ""},
 		{Name: "guard.send", Risk: capability.Irreversible, Signature: "another agent sends a message, email or post", Returns: ""},
-		{Name: "guard.write", Risk: capability.Reversible, Signature: "another agent writes or edits files", Returns: ""},
+		{Name: "guard.write", Risk: capability.Irreversible, Signature: "another agent writes or edits files", Returns: ""},
 		{Name: "guard.delete", Risk: capability.Irreversible, Signature: "another agent deletes something", Returns: ""},
 		{Name: "guard.web", Risk: capability.Read, Signature: "another agent reads a web page or API", Returns: "", Scoped: true},
 		{Name: "guard.read", Risk: capability.Read, Signature: "another agent reads files or searches", Returns: ""},
-		{Name: "guard.other", Risk: capability.Reversible, Signature: "another agent uses some other tool", Returns: ""},
+		{Name: "guard.other", Risk: capability.Irreversible, Signature: "another agent uses some other tool", Returns: ""},
 	} {
 		capability.Register(s)
 	}
@@ -50,11 +57,22 @@ var guardKinds = []struct {
 
 var destructive = regexp.MustCompile(`(?i)(\brm\s+-\w*[rf]|\brmdir\b|\bdel\s+/|\bshred\b|\bmkfs|\bdd\s+if=|git\s+push\s+.*--force|drop\s+(table|database))`)
 
+// guardTool normalizes a tool name before it is sorted, so full-width or
+// other compatibility forms read as the plain letters they look like.
+func guardTool(tool string) string { return strings.ToLower(norm.NFKC.String(tool)) }
+
 // guardCapability sorts a foreign tool into one of the guard capabilities.
+// A name that still has non-ASCII letters after normalizing may be a
+// look-alike ("dеlete" with a Cyrillic е), so it is not sorted at all.
 func guardCapability(tool string, params map[string]any) (string, string) {
+	tool = guardTool(tool)
 	c := "guard.other"
+	ascii := true
+	for _, r := range tool {
+		ascii = ascii && r < utf8.RuneSelf
+	}
 	for _, k := range guardKinds {
-		if k.re.MatchString(tool) {
+		if ascii && k.re.MatchString(tool) {
 			c = k.cap
 			break
 		}
@@ -80,6 +98,61 @@ func guardCapability(tool string, params map[string]any) (string, string) {
 		}
 	}
 	return c, scope
+}
+
+// pathKeys are the parameters that name the files a tool touches.
+var pathKeys = []string{"path", "file_path", "filepath", "file", "filename", "target", "target_file", "destination", "dest", "source", "old_path", "new_path", "directory", "dir", "cwd", "paths"}
+
+// guardPaths are the files a tool call names, absolute and cleaned. A
+// relative path means nothing here (Pimpo does not know the agent's
+// folder), so any relative path makes the list empty and no folder rule
+// matches.
+func guardPaths(params map[string]any) []string {
+	var out []string
+	add := func(v any) bool {
+		p, ok := v.(string)
+		if !ok || !filepath.IsAbs(p) {
+			return false
+		}
+		out = append(out, filepath.Clean(p))
+		return true
+	}
+	for _, k := range pathKeys {
+		v, ok := params[k]
+		if !ok {
+			continue
+		}
+		list, isList := v.([]any)
+		if !isList {
+			list = []any{v}
+		}
+		for _, item := range list {
+			if !add(item) {
+				return nil
+			}
+		}
+	}
+	return out
+}
+
+const guardHostsKey = "guard.hosts"
+
+// firstGuardHost reports whether no agent has reached host through the
+// Guard before and the owner never answered about it, and remembers it.
+func (a *App) firstGuardHost(ctx context.Context, host string) bool {
+	if _, known := a.Rules.KnownHost(ctx, host); known {
+		return false
+	}
+	raw, _ := a.Events.Get(ctx, guardHostsKey)
+	seen := map[string]bool{}
+	json.Unmarshal([]byte(raw), &seen)
+	if seen[host] {
+		return false
+	}
+	seen[host] = true
+	b, _ := json.Marshal(seen)
+	a.Events.Put(ctx, guardHostsKey, string(b))
+	return true
 }
 
 func (a *App) guardRoutes() {
@@ -161,8 +234,13 @@ func (a *App) guardCheck(w http.ResponseWriter, r *http.Request) {
 		source += "#" + req.Session
 	}
 	args := map[string]any{"tool": req.Tool, "params": req.Params}
-	act := policy.Action{Capability: c, Scope: scope, Args: args, Risk: capability.Catalog[c].Risk, Source: source, Person: "owner", Role: "owner"}
+	act := policy.Action{Capability: c, Scope: scope, Args: args, Risk: capability.Catalog[c].Risk, Source: source, Person: "owner", Role: "owner", Paths: guardPaths(req.Params)}
 	d := a.Policy.Decide(ctx, act)
+	// A host never reached before asks once: a new host is where data
+	// would leave to.
+	if c == "guard.web" && scope != "" && (d.Verdict == policy.Allow || d.Verdict == policy.Reversible) && d.Rule == "" && a.firstGuardHost(ctx, scope) {
+		d = policy.Decision{Verdict: policy.Ask, Reason: "first time reaching " + scope}
+	}
 	ans := guardAnswer{Capability: c, Reason: d.Reason, Rule: d.Rule}
 	switch d.Verdict {
 	case policy.Block:

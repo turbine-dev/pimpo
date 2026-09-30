@@ -39,7 +39,7 @@ export type McpSource = { name: string; command?: string; args?: string[]; url?:
 export type OpenApiOp = { id: string; method: string; path: string; summary: string; risk: CapRisk }
 export type OpenApiPreview = { title: string; description: string; base: string; keys: { name: string; description: string }[]; operations: OpenApiOp[]; unsupported: { id: string; why: string }[] }
 export type OpenApiSource = { url?: string; spec?: string; header?: string }
-export type McpTool = { tool: string; capability: string; title?: string; description: string; risk: CapRisk }
+export type McpTool = { tool: string; capability: string; title?: string; description: string; risk: CapRisk; claimed?: CapRisk }
 
 export type RecentRun = { id: number; routine: string; name: string; version: number; started_at: string; ended_at?: string; outcome: 'ok' | 'failed' | 'skipped' | 'running'; error?: string; cost_usd: number; calls: number }
 
@@ -103,7 +103,7 @@ export type GalleryItem = {
   hash: string
   published: string
   installed: boolean
-  report: { verified: boolean; problems?: string[]; uses: string[]; sends: boolean; risk: 'read' | 'notify' | 'reversible' | 'irreversible' }
+  report: { verified: boolean; problems?: string[]; uses: string[]; sends: boolean; outside?: string[]; risk: 'read' | 'notify' | 'reversible' | 'irreversible' }
 }
 
 export type CatalogKind = {
@@ -378,7 +378,7 @@ export const api = {
   removePerson: (id: string) => request<void>('DELETE', `/api/people/${id}`),
   personConnection: (id: string, kind: 'mail' | 'calendar', body: Record<string, string>) => request<void>('PUT', `/api/people/${id}/connections/${kind}`, body),
   gallery: (fresh = false) => request<GalleryItem[]>('GET', `/api/gallery${fresh ? '?fresh=1' : ''}`),
-  installFromGallery: (id: string) => request<RoutineSummary>('POST', `/api/gallery/${id}/install`),
+  installFromGallery: (id: string, confirm = false) => request<RoutineSummary>('POST', `/api/gallery/${id}/install`, confirm ? { confirm } : undefined),
   publishRoutine: (id: string, author: string) => request<{ entry: unknown; author: { name: string; key: string } }>('POST', `/api/routines/${id}/publish`, { author }),
   catalog: () => request<{ connectors: CatalogKind[]; broken: string[] }>('GET', '/api/catalog'),
   setCatalog: (id: string, values: Record<string, string>) => request<void>('PUT', `/api/catalog/${id}`, values),

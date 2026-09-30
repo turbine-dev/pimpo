@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -434,7 +435,9 @@ func (m *Manager) fetch(ctx context.Context, job string, it Item, base int64) er
 }
 
 // untarBz2 unpacks the archive's top folder into dest; nothing may land
-// outside it and links may only point inside it.
+// outside it. Links may only point down from where they are (no "..", not
+// absolute), so no chain of them can lead out, and nothing is ever written
+// through a link. Hard links are skipped.
 func untarBz2(archive, dest, top string) error {
 	f, err := os.Open(archive)
 	if err != nil {
@@ -443,6 +446,9 @@ func untarBz2(archive, dest, top string) error {
 	defer f.Close()
 	tr := tar.NewReader(bzip2.NewReader(bufio.NewReaderSize(f, 1<<20)))
 	root, _ := filepath.Abs(dest)
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return err
+	}
 	inside := func(p string) bool { return p == root || strings.HasPrefix(p, root+string(os.PathSeparator)) }
 	for {
 		hdr, err := tr.Next()
@@ -462,6 +468,9 @@ func untarBz2(archive, dest, top string) error {
 		if !inside(target) {
 			return fmt.Errorf("the archive tries to write outside its folder: %s", hdr.Name)
 		}
+		if linked(root, target) {
+			return fmt.Errorf("the archive writes through a link, outside its folder: %s", hdr.Name)
+		}
 		switch hdr.Typeflag {
 		case tar.TypeDir:
 			if err := os.MkdirAll(target, 0o755); err != nil {
@@ -473,7 +482,8 @@ func untarBz2(archive, dest, top string) error {
 			if hdr.Mode&0o111 != 0 {
 				mode = 0o755
 			}
-			out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
+			os.Remove(target)
+			out, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
 			if err != nil {
 				return err
 			}
@@ -483,8 +493,8 @@ func untarBz2(archive, dest, top string) error {
 			}
 			out.Close()
 		case tar.TypeSymlink:
-			link := filepath.Join(filepath.Dir(target), hdr.Linkname)
-			if filepath.IsAbs(hdr.Linkname) || !inside(filepath.Clean(link)) {
+			l := filepath.ToSlash(hdr.Linkname)
+			if l == "" || filepath.IsAbs(hdr.Linkname) || strings.HasPrefix(l, "/") || slices.Contains(strings.Split(l, "/"), "..") {
 				return fmt.Errorf("the archive links outside its folder: %s", hdr.Name)
 			}
 			os.MkdirAll(filepath.Dir(target), 0o755)
@@ -494,6 +504,27 @@ func untarBz2(archive, dest, top string) error {
 			}
 		}
 	}
+}
+
+// linked reports whether any existing part of target below root is a
+// link, so writing there would follow it.
+func linked(root, target string) bool {
+	rel, err := filepath.Rel(root, target)
+	if err != nil {
+		return true
+	}
+	p := root
+	for _, part := range strings.Split(rel, string(os.PathSeparator)) {
+		p = filepath.Join(p, part)
+		info, err := os.Lstat(p)
+		if err != nil {
+			return false
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // Remove deletes an installed item.

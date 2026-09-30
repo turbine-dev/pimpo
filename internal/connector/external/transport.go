@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -117,16 +119,30 @@ func Probe(ctx context.Context, e Endpoint) ([]Tool, error) {
 	return listTools(ctx, t)
 }
 
-// SuggestedRisk reads the tool's own hints; without them the tool is
-// treated as irreversible, the MCP default, so it asks before running.
-func (t Tool) SuggestedRisk() string {
+// ClaimedRisk is what the tool's own hints say about it: "read",
+// "reversible", or "" without hints. It is the server's claim, never
+// checked, so the owner is shown it but every tool starts as irreversible.
+func (t Tool) ClaimedRisk() string {
 	switch {
 	case t.Annotations.ReadOnly != nil && *t.Annotations.ReadOnly:
 		return "read"
 	case t.Annotations.Destructive != nil && !*t.Annotations.Destructive:
 		return "reversible"
 	}
-	return "irreversible"
+	return ""
+}
+
+// ReviewHash fingerprints what the owner reviewed about a tool: its
+// description and input schema. A server that changes either later is
+// stopped until the owner reviews it again.
+func (t Tool) ReviewHash() string {
+	schema := []byte("null")
+	var v any
+	if json.Unmarshal(t.InputSchema, &v) == nil {
+		schema, _ = json.Marshal(v)
+	}
+	sum := sha256.Sum256([]byte(t.Description + "\x00" + string(schema)))
+	return hex.EncodeToString(sum[:])
 }
 
 type rpcResponse struct {
