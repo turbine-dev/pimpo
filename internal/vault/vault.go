@@ -1,7 +1,8 @@
 // Package vault keeps secrets encrypted at rest. The key lives in the OS
 // keychain when there is one, or in a 0600 file next to the data. Code
 // outside the vault only ever holds a secret's name; the value is resolved
-// at the moment a connector makes a request.
+// at the moment a connector makes a request. A secret may also be a
+// reference to an outside password manager (see outside.go).
 package vault
 
 import (
@@ -26,6 +27,7 @@ var ErrNotFound = errors.New("secret not found")
 type Vault struct {
 	db   *sql.DB
 	aead cipher.AEAD
+	out  *outside
 }
 
 const table = `CREATE TABLE IF NOT EXISTS secrets (name TEXT PRIMARY KEY, nonce BLOB NOT NULL, value BLOB NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')))`
@@ -143,7 +145,7 @@ func Open(db *sql.DB, key KeySource) (*Vault, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Vault{db: db, aead: aead}, nil
+	return &Vault{db: db, aead: aead, out: newOutside()}, nil
 }
 
 // Wrap encrypts data that must wait on disk outside the database, such as
@@ -180,7 +182,18 @@ func (v *Vault) Set(ctx context.Context, name, value string) error {
 	return err
 }
 
+// Get gives a secret at the moment it is used. A stored reference to an
+// outside password manager is read there, with the credentials of the
+// secret's owner (see ScopeOf).
 func (v *Vault) Get(ctx context.Context, name string) (string, error) {
+	s, err := v.stored(ctx, name)
+	if err != nil || !IsReference(s) {
+		return s, err
+	}
+	return v.Resolve(ctx, ScopeOf(name), s)
+}
+
+func (v *Vault) stored(ctx context.Context, name string) (string, error) {
 	var nonce, sealed []byte
 	err := v.db.QueryRowContext(ctx, `SELECT nonce, value FROM secrets WHERE name = ?`, name).Scan(&nonce, &sealed)
 	if errors.Is(err, sql.ErrNoRows) {

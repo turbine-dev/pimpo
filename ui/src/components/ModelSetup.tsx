@@ -7,6 +7,7 @@ import { cn } from '../lib/cn'
 import { usd } from '../lib/format'
 import { fill, useT, type TKey } from '../lib/i18n'
 import { LocalModels, Sample } from './LocalModels'
+import { SecretInput } from './SecretInput'
 import { Button, Card, Switch } from './ui'
 
 const field = 'h-9 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -325,7 +326,7 @@ function VoiceChoice({ s, save }: { s: Settings; save: (c: (s: Settings) => Sett
       {openai && v.data && !v.data.openai_key && <p className="mt-3 text-[12.5px] text-danger">{t('vc.needOpenAI')}</p>}
       {eleven && (
         <form className="mt-3 flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); setEleven.mutate(key.trim()) }}>
-          <input type="password" autoComplete="off" className={cn(field, 'min-w-[240px] flex-1')} value={key} onChange={(e) => setKey(e.target.value)}
+          <SecretInput autoComplete="off" className={cn(field, 'w-full')} box="min-w-[240px] flex-1" value={key} onValue={setKey}
             placeholder={v.data?.elevenlabs_key ? t('models.keySaved') : t('vc.elevenKey')} aria-label={t('vc.elevenKey')} />
           <Button type="submit" size="sm" disabled={!key.trim() || setEleven.isPending}>{setEleven.isPending ? <Loader2 size={13} className="animate-spin" /> : t('ms.connectSee')}</Button>
           <a className="text-[12.5px] underline" href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noreferrer">{t('ms.getKey')}</a>
@@ -518,7 +519,7 @@ function Picker({ provider, local, onClose, save, s }: { provider: Provider; loc
             <form className="space-y-2 border-b border-line p-5" onSubmit={(e) => { e.preventDefault(); connect.mutate() }}>
               {custom && <input className={cn(field, 'w-full')} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://meu-servidor.exemplo/v1" aria-label={t('ms.customUrl')} />}
               <div className="flex flex-wrap items-center gap-2">
-                <input type="password" autoComplete="off" className={cn(field, 'min-w-[220px] flex-1')} value={key} onChange={(e) => setKey(e.target.value)}
+                <SecretInput autoComplete="off" className={cn(field, 'w-full')} box="min-w-[220px] flex-1" value={key} onValue={setKey}
                   placeholder={info.data?.keys[provider.id] ? t('models.keySaved') : custom ? t('ms.keyOptional') : t('models.keyNew')} aria-label={t('models.keyOf', { provider: provider.name })} />
                 <Button type="submit" size="sm" variant={hasKey ? 'secondary' : 'primary'} disabled={(!key.trim() && !(custom && url.trim() !== (s.custom_url ?? ''))) || connect.isPending}>
                   {connect.isPending ? <Loader2 size={14} className="animate-spin" /> : hasKey ? t('ms.changeKey') : t('ms.connectSee')}

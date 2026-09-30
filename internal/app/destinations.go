@@ -208,7 +208,12 @@ func (a *App) addBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tok := strings.TrimSpace(req.Token)
-	user, err := (telegram.Bot{Token: tok, BaseURL: a.TelegramAPI}).Me(ctx)
+	plain, err := a.plainSecret(ctx, "telegram.bot", tok)
+	if err != nil {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+		return
+	}
+	user, err := (telegram.Bot{Token: plain, BaseURL: a.TelegramAPI}).Me(ctx)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "Telegram did not accept this token"})
 		return

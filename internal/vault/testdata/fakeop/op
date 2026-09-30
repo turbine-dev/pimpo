@@ -1,0 +1,23 @@
+#!/bin/sh
+# A stand-in for the 1Password CLI in tests. It records its environment
+# and arguments in $HOME, and answers from $HOME/op-store, whose lines are
+# "<token> <reference> <value>" (token "-" is the signed-in desktop app).
+env > "$HOME/op-env"
+echo "$@" >> "$HOME/op-calls"
+token="${OP_SERVICE_ACCOUNT_TOKEN:--}"
+case "$1" in
+whoami)
+	if grep -q "^$token " "$HOME/op-store" 2>/dev/null; then echo '{"user_type":"SERVICE_ACCOUNT"}'; exit 0; fi
+	echo "[ERROR] 2026/09/30 10:00:00 you are not signed in" >&2
+	exit 1 ;;
+read)
+	case "$3" in op://Slow/*) sleep 5 ;; esac
+	line=$(grep "^$token $3 " "$HOME/op-store" 2>/dev/null | head -n 1)
+	if [ -z "$line" ]; then
+		echo "[ERROR] 2026/09/30 10:00:00 could not read secret '$3': item not found" >&2
+		exit 1
+	fi
+	printf '%s' "${line#"$token $3 "}" ;;
+*)
+	exit 2 ;;
+esac

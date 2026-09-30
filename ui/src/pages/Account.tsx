@@ -5,7 +5,9 @@ import { api } from '../lib/api'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
 import { addPasskey, canUsePasskeys, passkeyMessage } from '../lib/passkey'
+import { PasswordManagers } from '../components/PasswordManagers'
 import { Button, Card } from '../components/ui'
+import { useRole } from '../lib/roles'
 
 // Account is each person's own: the passkeys that sign them in, and the
 // devices and sessions open in their name.
@@ -17,6 +19,9 @@ export function Account() {
   const done = () => qc.invalidateQueries({ queryKey: ['passkeys'] })
   const add = useMutation({ mutationFn: () => addPasskey(name.trim() || t('acct.defaultName')), onSuccess: () => { setName(''); done() } })
   const remove = useMutation({ mutationFn: api.deletePasskey, onSuccess: done })
+  // The owner sets up the house's password managers in Connections; a
+  // member keeps their own here.
+  const member = useRole() === 'member'
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div>
@@ -45,6 +50,7 @@ export function Account() {
         {canUsePasskeys() && <p className="text-[12.5px] text-ink-3">{t('acct.where')}</p>}
       </Card>
       <MyDevices />
+      {member && <PasswordManagers />}
     </div>
   )
 }

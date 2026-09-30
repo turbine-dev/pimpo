@@ -6,6 +6,7 @@ import { api, type CloudConfig } from '../lib/api'
 import { cn } from '../lib/cn'
 import { relative, when } from '../lib/format'
 import { useT } from '../lib/i18n'
+import { SecretInput } from './SecretInput'
 import { Button, Card } from './ui'
 
 const field = 'h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -62,7 +63,7 @@ export function CloudBackup() {
               <Label text={t('cloud.endpoint')}><input className={field} value={c.endpoint ?? ''} onChange={(e) => set({ endpoint: e.target.value })} placeholder={t('cloud.endpointHint')} inputMode="url" autoComplete="off" /></Label>
               <Label text={t('cloud.prefix')}><input className={field} value={c.prefix ?? ''} onChange={(e) => set({ prefix: e.target.value })} placeholder="pimpo/" autoComplete="off" /></Label>
               <Label text={t('cloud.access')}><input className={field} value={keys.access_key} onChange={(e) => setKeys({ ...keys, access_key: e.target.value })} placeholder={s.has_keys ? t('cloud.keySaved') : ''} autoComplete="off" /></Label>
-              <Label text={t('cloud.secret')}><input className={field} type="password" value={keys.secret_key} onChange={(e) => setKeys({ ...keys, secret_key: e.target.value })} placeholder={s.has_keys ? t('cloud.keySaved') : ''} autoComplete="new-password" /></Label>
+              <Label text={t('cloud.secret')}><SecretInput className={field} value={keys.secret_key} onValue={(v) => setKeys({ ...keys, secret_key: v })} placeholder={s.has_keys ? t('cloud.keySaved') : ''} autoComplete="new-password" /></Label>
             </div>
           )}
           {c.kind === 'drive' && (
@@ -81,7 +82,7 @@ export function CloudBackup() {
             <Label text={t('cloud.keep')}><input className={field} type="number" min={1} max={90} value={c.keep} onChange={(e) => set({ keep: Number(e.target.value) })} /></Label>
           </div>
           <Label text={t('cloud.pass')}>
-            <input className={field} type="password" value={pass} onChange={(e) => setPass(e.target.value)} placeholder={s.has_passphrase ? t('cloud.passSaved') : t('cloud.passNew')} autoComplete="new-password" />
+            <SecretInput className={field} value={pass} onValue={setPass} placeholder={s.has_passphrase ? t('cloud.passSaved') : t('cloud.passNew')} autoComplete="new-password" />
           </Label>
           <p className="text-[12.5px] text-ink-3">{t('cloud.passWarn')}</p>
           <div className="flex flex-wrap items-center gap-2">

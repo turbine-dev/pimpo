@@ -212,6 +212,14 @@ export type Finding = { id: string; group: string; name: string; state: 'ok' | '
 
 export type MyDevice = { id: string; name: string; created: string; last_seen?: string; session?: boolean; pending?: boolean; current?: boolean }
 
+export type PasswordManagers = {
+  house: boolean
+  op_installed: boolean
+  onepassword: { mode: '' | 'service' | 'desktop' | 'connect'; connect_url?: string }
+  hashicorp: { auth: '' | 'token' | 'approle'; addr?: string; namespace?: string; auth_mount?: string }
+}
+export type PasswordManagerInput = { mode?: string; token?: string; connect_url?: string; connect_token?: string; addr?: string; auth?: string; role_id?: string; secret_id?: string; namespace?: string; auth_mount?: string }
+
 export type Snapshot = { name: string; label: string; when: string; bytes: number }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -401,6 +409,11 @@ export const api = {
   removeBot: (id: string) => request<void>('DELETE', `/api/telegram/bots/${id}`),
   connections: () => request<Connection[]>('GET', '/api/connections'),
   googleStart: (client_id: string, client_secret: string) => request<{ url: string; redirect: string }>('POST', '/api/oauth/google/start', { client_id, client_secret }),
+  passwordManagers: () => request<PasswordManagers>('GET', '/api/password-managers'),
+  putPasswordManager: (kind: 'onepassword' | 'hashicorp', body: PasswordManagerInput) => request<PasswordManagers>('PUT', `/api/password-managers/${kind}`, body),
+  deletePasswordManager: (kind: 'onepassword' | 'hashicorp') => request<PasswordManagers>('DELETE', `/api/password-managers/${kind}`),
+  testPasswordManager: (kind: 'onepassword' | 'hashicorp') => request<{ ok: boolean }>('POST', `/api/password-managers/${kind}/test`),
+  checkReference: (reference: string) => request<{ found: boolean }>('POST', '/api/secrets/check', { reference }),
   connect: (kind: string, body: Record<string, string>) => request<void>('PUT', `/api/connections/${kind}`, body),
   disconnect: (kind: string) => request<void>('DELETE', `/api/connections/${kind}`),
 }

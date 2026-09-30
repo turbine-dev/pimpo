@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { api, type CapRisk, type McpListing, type McpTool } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT, type TKey } from '../lib/i18n'
+import { SecretInput } from './SecretInput'
 import { Button } from './ui'
 
 const field = 'h-9 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -184,8 +185,10 @@ function AddServer({ listing, env = {}, headers = {}, onClose }: { listing: McpL
               {listing.inputs.map((i) => (
                 <label key={`${i.kind}:${i.name}`} className="block space-y-1">
                   <span className="text-[12.5px] text-ink-2"><code className="font-mono">{i.name}</code>{!i.required && ` (${t('common.optional')})`}</span>
-                  <input className={field} type={i.secret ? 'password' : 'text'} value={values[`${i.kind}:${i.name}`] ?? ''} autoComplete="off"
-                    onChange={(e) => setValues({ ...values, [`${i.kind}:${i.name}`]: e.target.value })} />
+                  {i.secret
+                    ? <SecretInput className={field} value={values[`${i.kind}:${i.name}`] ?? ''} autoComplete="off" onValue={(v) => setValues({ ...values, [`${i.kind}:${i.name}`]: v })} />
+                    : <input className={field} type="text" value={values[`${i.kind}:${i.name}`] ?? ''} autoComplete="off"
+                      onChange={(e) => setValues({ ...values, [`${i.kind}:${i.name}`]: e.target.value })} />}
                   {i.description && <span className="block text-[11.5px] text-ink-3">{i.description}</span>}
                 </label>
               ))}

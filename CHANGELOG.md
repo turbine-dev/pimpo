@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- Outside password managers: any secret field can hold a reference to 1Password (`op://…`, with the op CLI or a Connect server) or HashiCorp Vault (`vault://…#field`), read when a connection needs it; the house's are set up in Connections and each person's own in Account.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.
 - On Discord, Slack and Signal, replying to a notice with a number answers that notice, even after newer ones.
 - JSON connectors: a `connector.json` that describes HTTP requests, with no program, installable as a single file.

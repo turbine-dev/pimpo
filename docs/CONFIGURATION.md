@@ -354,6 +354,21 @@ The [threat model](THREAT_MODEL.md) says what Pimpo defends against. These are t
 
 Secrets (tokens, API keys, passwords, the backup passphrase) are encrypted in the database. The key is 32 random bytes kept in the system keychain (service `pimpo`, account `data-key`); keys kept under the old names `zodim` and `vigia` are carried over. On a system without a keychain, the key is a `vault.key` file in the data folder with owner-only permissions: then anyone who can read the data folder can read the secrets, so protect that folder. Code outside the vault holds only a secret's name; the value is read when a connector makes a request. An export removes the encrypted secrets from its copy of the database and carries them re-sealed with your passphrase instead, so the file never depends on this computer's vault key.
 
+### Outside password managers
+
+A secret stored as `op://Vault/Item/field` (or `op://Vault/Item/section/field`) or `vault://<mount>/data/<path>#<field>` is a reference: the vault keeps the reference, and reads the value when a connector asks for the secret. Values read stay in memory only, for five minutes (a failure for 30 seconds), and are forgotten when the password manager's settings change. Backups and exports carry the reference, not the value.
+
+The credentials are secrets in the vault too: `pm` for the house (set by the owner in **Connections › Password managers**, `GET/PUT/DELETE /api/password-managers/{onepassword|hashicorp}`, `POST /api/password-managers/{kind}/test`) and `person.<id>.pm` for each person (set in **Account**, with the same routes). A secret named `person.<id>.…` resolves only with that person's credentials; everything else resolves with the house's. `POST /api/secrets/check {"reference": "…"}` resolves a reference once with the caller's credentials and answers only `{"found": true}` or an error naming the reference.
+
+| Manager | How Pimpo reads | Notes |
+|---|---|---|
+| 1Password, service account | `op read --no-newline <ref>` with `OP_SERVICE_ACCOUNT_TOKEN` | Needs the `op` CLI on the `PATH`. It runs with only `PATH`, `HOME` and the token in its environment, and a 15-second limit. |
+| 1Password, app on this computer | `op read` signed in through the desktop app | House only. Turn on Settings › Developer › Integrate with 1Password CLI in the 1Password app. |
+| 1Password Connect | `GET /v1/vaults`, `/items` and `/items/{id}` with the Connect token | The vault and item are found by name; the field by label or id, within the section when the reference names one. |
+| HashiCorp Vault | `GET /v1/<path>` with `X-Vault-Token` (and `X-Vault-Namespace` when set), reading `data.data.<field>` | Token, or AppRole (`POST /v1/auth/<mount>/login`, mount `approle` by default); an AppRole token is kept in memory while it lasts, at most 30 minutes. |
+
+Addresses must be https; plain http is allowed only to this computer (`localhost`, `127.0.0.1`, `::1`) and only for the house's managers. Redirects are not followed, so a token is never sent to another address.
+
 ### Rules and approvals
 
 - **Safety level**, chosen on the welcome screen: conservative (asks before any change, even reversible ones), balanced (asks before anything that cannot be undone) or liberal (asks before sending anything to other people and before anything else that cannot be undone, but deleting email moves it to the trash without asking). Installs that chose liberal before 2026-09-29 had a rule that asked only before sending email; it is replaced the next time Pimpo starts, unless you had edited it.

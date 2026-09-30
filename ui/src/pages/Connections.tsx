@@ -4,6 +4,8 @@ import { type ReactNode, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Card } from '../components/ui'
 import { Catalog, KindList, channelKinds } from '../components/Catalog'
+import { PasswordManagers } from '../components/PasswordManagers'
+import { SecretInput } from '../components/SecretInput'
 import { TelegramBots } from '../components/TelegramBots'
 import { api, type Connection } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -74,6 +76,7 @@ export function Connections() {
       <Section title={t('conn.secServices')} text={t('conn.secServicesText')}>
         <SpotifySignIn />
         <Catalog />
+        <PasswordManagers />
       </Section>
     </div>
   )
@@ -149,7 +152,7 @@ function GoogleSignIn({ connected }: { connected: boolean }) {
             <li>{t('conn.googleStep3')}</li>
           </ol>
           <input value={id} onChange={(e) => setId(e.target.value)} placeholder={t('conn.googleIdPlaceholder')} aria-label={t('conn.googleId')} className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
-          <input value={secret} onChange={(e) => setSecret(e.target.value)} type="password" placeholder={t('conn.googleSecretPlaceholder')} aria-label={t('conn.googleSecret')} className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+          <SecretInput value={secret} onValue={setSecret} placeholder={t('conn.googleSecretPlaceholder')} aria-label={t('conn.googleSecret')} className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
           {start.error && <p className="text-[13px] text-danger">{start.error.message}</p>}
           <Button variant="primary" type="submit" disabled={!id || !secret || start.isPending}>{t('conn.google')}</Button>
         </form>
@@ -213,7 +216,7 @@ function Telegram({ c }: { c?: Connection }) {
             <li>{t('conn.telegramStep2')}</li>
             <li>{t('conn.telegramStep3')}</li>
           </ol>
-          <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="123456789:AA…" aria-label={t('conn.botToken')} type="password" className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+          <SecretInput value={token} onValue={setToken} placeholder="123456789:AA…" aria-label={t('conn.botToken')} className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
           {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
           <Button variant="primary" type="submit" disabled={!token || save.isPending}>{save.isPending ? t('conn.checking') : t('conn.connect')}</Button>
         </form>
@@ -272,7 +275,9 @@ function Setup({ kind, icon, title, c, fields, help, extra }: { kind: string; ic
               {f.multiline ? (
                 <textarea rows={3} value={values[f.name] ?? ''} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} placeholder={f.placeholder} className="w-full rounded-[10px] border border-line bg-bg px-3 py-2 font-mono text-[12.5px] outline-none focus:border-accent" />
               ) : (
-                <input type={f.secret ? 'password' : 'text'} value={values[f.name] ?? ''} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} placeholder={f.placeholder} className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+                f.secret
+                  ? <SecretInput value={values[f.name] ?? ''} onValue={(v) => setValues({ ...values, [f.name]: v })} placeholder={f.placeholder} className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+                  : <input type="text" value={values[f.name] ?? ''} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} placeholder={f.placeholder} className="h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
               )}
             </label>
           ))}
