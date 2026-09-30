@@ -449,7 +449,6 @@ func untarBz2(archive, dest, top string) error {
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return err
 	}
-	inside := func(p string) bool { return p == root || strings.HasPrefix(p, root+string(os.PathSeparator)) }
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -458,6 +457,9 @@ func untarBz2(archive, dest, top string) error {
 		if err != nil {
 			return fmt.Errorf("unreadable archive: %w", err)
 		}
+		if strings.Contains(hdr.Name, "..") {
+			return fmt.Errorf("the archive tries to write outside its folder: %s", hdr.Name)
+		}
 		name := filepath.Clean(hdr.Name)
 		if rel, ok := strings.CutPrefix(name, top+string(os.PathSeparator)); ok {
 			name = rel
@@ -465,7 +467,7 @@ func untarBz2(archive, dest, top string) error {
 			continue
 		}
 		target := filepath.Join(root, name)
-		if !inside(target) {
+		if target != root && !strings.HasPrefix(target, root+string(os.PathSeparator)) {
 			return fmt.Errorf("the archive tries to write outside its folder: %s", hdr.Name)
 		}
 		if linked(root, target) {
