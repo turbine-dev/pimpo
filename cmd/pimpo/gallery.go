@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -19,6 +20,7 @@ import (
 const galleryUsage = `usage:
   pimpo gallery keygen --out KEYFILE
   pimpo gallery build --key KEYFILE --author ID --name "Your Name" DIR   (signs DIR/routines/*.json into DIR/index.json)
+  pimpo gallery sign-authors --key ROOTKEYFILE DIR                       (maintainers: signs the authors in DIR/index.json with the gallery root key)
   pimpo gallery verify INDEX                                             (file or URL; fails on any problem)`
 
 func galleryCmd(args []string, out io.Writer) error {
@@ -55,6 +57,11 @@ func galleryCmd(args []string, out io.Writer) error {
 			return errors.New(galleryUsage)
 		}
 		return galleryBuild(fs.Arg(0), *keyFile, *author, *name, out)
+	case "sign-authors":
+		if *keyFile == "" || fs.NArg() != 1 {
+			return errors.New(galleryUsage)
+		}
+		return gallerySignAuthors(fs.Arg(0), *keyFile, out)
 	case "verify":
 		if fs.NArg() != 1 {
 			return errors.New(galleryUsage)
@@ -125,19 +132,73 @@ func galleryBuild(dir, keyFile, author, name string, out io.Writer) error {
 		ix.Entries = append(ix.Entries, e)
 	}
 	sort.Slice(ix.Entries, func(i, j int) bool { return ix.Entries[i].ID < ix.Entries[j].ID })
-	b, _ := json.MarshalIndent(ix, "", " ")
-	if err := os.WriteFile(indexPath, append(b, '\n'), 0o644); err != nil {
+	if err := writeIndex(indexPath, ix); err != nil {
 		return err
+	}
+	if err := ix.CheckAuthors(gallery.RootKeys); err != nil {
+		// A new author, or a changed one, waits for a maintainer.
+		fmt.Fprintf(out, "%v: a gallery maintainer signs the authors (pimpo gallery sign-authors) after reviewing them.\n", err)
+		return verifyEntries(ix, out)
 	}
 	return galleryVerify(indexPath, out)
 }
 
-func galleryVerify(src string, out io.Writer) error {
-	ctx := context.Background()
-	ix, err := gallery.Load(ctx, src)
+// gallerySignAuthors signs the authors of DIR/index.json with a gallery
+// root key, after printing who they are.
+func gallerySignAuthors(dir, keyFile string, out io.Writer) error {
+	raw, err := os.ReadFile(keyFile)
 	if err != nil {
 		return err
 	}
+	pub, err := gallery.PublicKey(strings.TrimSpace(string(raw)))
+	if err != nil {
+		return err
+	}
+	if !slices.Contains(gallery.RootKeys, pub) {
+		return fmt.Errorf("%s is not a gallery root key this Pimpo knows", keyFile)
+	}
+	indexPath := filepath.Join(dir, "index.json")
+	b, err := os.ReadFile(indexPath)
+	if err != nil {
+		return err
+	}
+	var ix gallery.Index
+	if err := json.Unmarshal(b, &ix); err != nil {
+		return fmt.Errorf("%s: %w", indexPath, err)
+	}
+	ids := make([]string, 0, len(ix.Authors))
+	for id := range ix.Authors {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		fmt.Fprintf(out, "author %-16s %s %s\n", id, ix.Authors[id].Key, ix.Authors[id].Name)
+	}
+	if ix, err = gallery.SignAuthors(ix, strings.TrimSpace(string(raw))); err != nil {
+		return err
+	}
+	if err := writeIndex(indexPath, ix); err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "signed %d authors\n", len(ids))
+	return galleryVerify(indexPath, out)
+}
+
+func writeIndex(path string, ix gallery.Index) error {
+	b, _ := json.MarshalIndent(ix, "", " ")
+	return os.WriteFile(path, append(b, '\n'), 0o644)
+}
+
+func galleryVerify(src string, out io.Writer) error {
+	ix, err := gallery.Load(context.Background(), src)
+	if err != nil {
+		return err
+	}
+	return verifyEntries(ix, out)
+}
+
+func verifyEntries(ix gallery.Index, out io.Writer) error {
+	ctx := context.Background()
 	bad := 0
 	for _, e := range ix.Entries {
 		rep := ix.Verify(ctx, e)

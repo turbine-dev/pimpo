@@ -15,6 +15,52 @@ import (
 	"github.com/turbine-dev/pimpo/internal/trace"
 )
 
+// testGalleryRoot stands in for the gallery root key in these tests.
+var testGalleryRoot string
+
+func init() {
+	pub, priv, _ := gallery.Keygen()
+	testGalleryRoot = priv
+	gallery.RootKeys = append(gallery.RootKeys, pub)
+}
+
+func signedIndex(t *testing.T, ix gallery.Index) []byte {
+	ix, err := gallery.SignAuthors(ix, testGalleryRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := json.Marshal(ix)
+	return b
+}
+
+// An index whose authors no root key signed is refused whole: nothing is
+// listed and nothing installs from it.
+func TestGalleryRefusesUnsignedAuthors(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ctx := context.Background()
+	good := routine.Routine{Name: "Bom dia", Description: "Manda bom dia.",
+		Manifest: runtime.Manifest{Schedule: "0 7 * * *", Capabilities: []string{"telegram.send"}},
+		Code:     `async function run() { await telegram.send({text: "Bom dia!"}) }`,
+		Tests:    []routine.Test{{Name: "manda", Scenario: trace.Scenario{Expect: []trace.Expect{{Capability: "telegram.send", Contains: []string{"Bom dia"}}}}}}}
+	pub, priv, _ := gallery.Keygen()
+	e, _ := gallery.Sign("bom-dia", "mallory", good, priv)
+	b, _ := json.Marshal(gallery.Index{Authors: map[string]gallery.Author{"mallory": {Name: "Dener", Key: pub}}, Entries: []gallery.Entry{e}})
+	path := filepath.Join(t.TempDir(), "index.json")
+	os.WriteFile(path, b, 0o644)
+	s := ta.Settings(ctx)
+	s.GalleryURL = path
+	ta.SaveSettings(ctx, s, "test")
+	if code, out := ta.do(t, "GET", "/api/gallery?fresh=1", nil); code != 502 || !strings.Contains(out["error"].(string), "not signed") {
+		t.Fatalf("listed an unsigned gallery: %d %v", code, out)
+	}
+	if code, _ := ta.do(t, "POST", "/api/gallery/bom-dia/install", nil); code != 502 {
+		t.Fatalf("installed from an unsigned gallery: %d", code)
+	}
+	if _, err := ta.Store.Routine(ctx, "bom-dia"); err == nil {
+		t.Fatal("the routine was saved")
+	}
+}
+
 func TestGalleryInstallAndPublish(t *testing.T) {
 	ta := newApp(t, weatherAgent, &llm.Fake{})
 	ctx := context.Background()
@@ -37,8 +83,7 @@ func TestGalleryInstallAndPublish(t *testing.T) {
 	e3, _ := gallery.Sign("leaky", "dener", leaky, priv)
 	ix := gallery.Index{Authors: map[string]gallery.Author{"dener": {Name: "Dener", Key: pub}}, Entries: []gallery.Entry{e1, e2, e3}}
 	path := filepath.Join(t.TempDir(), "index.json")
-	b, _ := json.Marshal(ix)
-	os.WriteFile(path, b, 0o644)
+	os.WriteFile(path, signedIndex(t, ix), 0o644)
 	s := ta.Settings(ctx)
 	s.GalleryURL = path
 	ta.SaveSettings(ctx, s, "test")
@@ -107,8 +152,7 @@ func TestGalleryUpdateKeepsTheOwnersSettings(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "index.json")
 	publish := func(r routine.Routine) {
 		e, _ := gallery.Sign("clima", "dener", r, priv)
-		b, _ := json.Marshal(gallery.Index{Authors: map[string]gallery.Author{"dener": {Name: "Dener", Key: pub}}, Entries: []gallery.Entry{e}})
-		os.WriteFile(path, b, 0o644)
+		os.WriteFile(path, signedIndex(t, gallery.Index{Authors: map[string]gallery.Author{"dener": {Name: "Dener", Key: pub}}, Entries: []gallery.Entry{e}}), 0o644)
 		ta.galleryIndex(ctx, true)
 	}
 	s := ta.Settings(ctx)
@@ -146,8 +190,7 @@ func TestGalleryUpdateKeepsTheOwnersSettings(t *testing.T) {
 	newer.Description = "Agora com chuva."
 	e, _ := gallery.Sign("clima", "dener", newer, priv2)
 	other, _ := gallery.Sign("outra", "dener", old, priv2)
-	b, _ := json.Marshal(gallery.Index{Authors: map[string]gallery.Author{"dener": {Name: "Dener", Key: pub2}}, Entries: []gallery.Entry{e, other}})
-	os.WriteFile(path, b, 0o644)
+	os.WriteFile(path, signedIndex(t, gallery.Index{Authors: map[string]gallery.Author{"dener": {Name: "Dener", Key: pub2}}, Entries: []gallery.Entry{e, other}}), 0o644)
 	if code, out := ta.do(t, "POST", "/api/routines/clima/update", nil); code != 422 || !strings.Contains(out["error"].(string), "different key") {
 		t.Fatalf("swapped key on update %d %v", code, out)
 	}

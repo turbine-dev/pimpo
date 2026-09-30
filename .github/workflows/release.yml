@@ -73,6 +73,8 @@ jobs:
         with: { args: release --clean }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs checksums.txt (.goreleaser.yaml, signs).
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
 
   desktop:
     needs: [tag, binaries]

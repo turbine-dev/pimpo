@@ -21,6 +21,7 @@ No version has been tagged yet. The first release will include everything built 
 - `pimpo report`: how routines did in real use, including silent failures, late runs and time Pimpo was off.
 - The proof suite runs on any model (`-model`); DeepSeek V4 Pro through opencode passes 5 of 5.
 - Releases can be started from Actions with a version.
+- Signed releases: `checksums.txt.sig` is checked against a release key built into Pimpo by `pimpo update` (which refuses a missing or wrong signature) and by `scripts/install.sh` when OpenSSL 3 is available. The gallery's list of authors is signed by a gallery root key built in (`pimpo gallery sign-authors`).
 
 ### Fixed
 

@@ -23,7 +23,7 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 |---|---|---|
 | `pimpo serve` | `--addr` (default `127.0.0.1:7788`), `--data DIR`, `--demo` | Runs the server, the web app and the channels. Prints the login link the first time. |
 | `pimpo token` | `rotate`, `--data DIR` | Prints the owner's login link; `rotate` replaces it, signing out every browser that used the old one (a running Pimpo follows within seconds, unless `PIMPO_TOKEN` fixes the token). |
-| `pimpo update` | `--check`, `--beta`, `--version vX.Y.Z`, `--rollback` | Replaces this binary with the latest release after checking it against the release's checksums, keeping the old one as `pimpo.previous`; `--rollback` puts it back. Restart Pimpo afterwards: its first start keeps a snapshot of the data (`before-VERSION`). The desktop app updates itself instead. |
+| `pimpo update` | `--check`, `--beta`, `--version vX.Y.Z`, `--rollback` | Replaces this binary with the latest release after checking it against the release's checksums, whose signature must match a release key built into Pimpo, keeping the old one as `pimpo.previous`; `--rollback` puts it back. Restart Pimpo afterwards: its first start keeps a snapshot of the data (`before-VERSION`). The desktop app updates itself instead. |
 | `pimpo version` | | Prints the version. |
 | `pimpo export FILE.pimpo` | `--data DIR` | Writes everything to one file, sealed as a whole with a passphrase. Refuses to overwrite an existing file. |
 | `pimpo import FILE.pimpo` | `--data DIR`, `--unsealed` | Replaces the data with a backup. Pimpo must be stopped. What was there is kept aside. `--unsealed` also takes a file exported before format 2, whose contents cannot be checked. |
@@ -40,9 +40,11 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 | `pimpo migrate openclaw\|hermes` | `--home DIR`, `--data DIR`, `--apply`, `--secrets`, `--trust` | Shows what would come over from OpenClaw or Hermes; `--apply` imports it (Pimpo must be stopped), `--secrets` also brings the Telegram token and mail password, `--trust` treats imported memories and rules as your own words. Takes a snapshot first. |
 | `pimpo gallery keygen` | `--out KEYFILE` | Creates a signing key for publishing routines. |
 | `pimpo gallery build DIR` | `--key KEYFILE`, `--author ID`, `--name NAME` | Signs `DIR/routines/*.json` into `DIR/index.json`, then verifies it. |
-| `pimpo gallery verify INDEX` | | Verifies a gallery index (file or URL). Fails on any problem. |
+| `pimpo gallery sign-authors DIR` | `--key KEYFILE` | Maintainers: signs the authors in `DIR/index.json` with the gallery root key. |
+| `pimpo gallery verify INDEX` | | Verifies a gallery index (file or URL), its authors' signature included. Fails on any problem. |
 | `pimpo protect suggest` | `--domain D` or `--pattern REGEX`, `--capability NAME`, `--reason TEXT` | Prints a protection-list entry to propose by pull request. |
 | `pimpo protect sign DIR` | `--key KEYFILE` | Maintainers: signs `DIR/entries.json` into `DIR/list.json`. |
+| `pimpo release sign FILE` | `--key KEYFILE` or `--key-env NAME`, `--out SIGFILE` | Maintainers: writes `FILE.sig`, the Ed25519 signature the release uses for `checksums.txt` ([RELEASES.md](RELEASES.md)). |
 | `pimpo protect verify FILE` | | Checks a signed protection list. |
 
 `serve` does a few things before it listens: it finishes an import started in the web app, applies a snapshot restore chosen in the web app, and takes a snapshot when the version changed since the last start. While it runs it takes a snapshot every 24 hours.

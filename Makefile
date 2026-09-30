@@ -57,4 +57,4 @@ dmg: desktop
 	cd desktop && npx tauri build --bundles dmg
 
 release-snapshot:
-	goreleaser release --snapshot --clean --skip=publish
+	goreleaser release --snapshot --clean --skip=publish,sign

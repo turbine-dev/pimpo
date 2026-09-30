@@ -3,9 +3,12 @@
 // signed by its author's Ed25519 key. The index is a static file in a
 // public git repository; nothing here needs a server.
 //
-// Installing checks, in order: the author is listed, the signature covers
-// exactly this content, the entry is not revoked, its tests pass, and an
-// audit run shows it calls only what its manifest declares.
+// The index's list of authors is signed by a gallery root key built into
+// Pimpo, so whoever serves the index cannot add an author or change one's
+// key. Installing then checks, in order: the author is listed, the
+// signature covers exactly this content, the entry is not revoked, its
+// tests pass, and an audit run shows it calls only what its manifest
+// declares.
 package gallery
 
 import (
@@ -52,9 +55,17 @@ type Author struct {
 	URL string `json:"url,omitempty"`
 }
 
+// RootKeys are the gallery maintainers' public keys (base64 Ed25519); an
+// index's authors must be signed with one of them. More than one allows a
+// new key to ship before the old one retires.
+var RootKeys = []string{"ccseMghOpOnxNHoAbJ/Er7gbD9dT7543muZgchevaQY="}
+
 type Index struct {
 	Authors map[string]Author `json:"authors"`
-	Entries []Entry           `json:"entries"`
+	// AuthorsSignature is a root key's signature of the authors list
+	// (authorsSigned).
+	AuthorsSignature string  `json:"authors_signature,omitempty"`
+	Entries          []Entry `json:"entries"`
 	// Revoked lists hashes removed after a confirmed report.
 	Revoked []string `json:"revoked,omitempty"`
 }
@@ -95,6 +106,54 @@ func (e Entry) legacySigned() string { return signedAs("zodim-gallery-v1", e) }
 
 func signedAs(label string, e Entry) string {
 	return label + "\n" + e.ID + "\n" + e.Author + "\n" + e.Hash
+}
+
+// authorsSigned is what the root signature covers: every author's id,
+// name, key and address, in id order.
+func authorsSigned(authors map[string]Author) []byte {
+	ids := make([]string, 0, len(authors))
+	for id := range authors {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	var b strings.Builder
+	b.WriteString("pimpo-gallery-authors-v1\n")
+	for _, id := range ids {
+		a := authors[id]
+		line, _ := json.Marshal([]string{id, a.Name, a.Key, a.URL})
+		b.Write(line)
+		b.WriteByte('\n')
+	}
+	return []byte(b.String())
+}
+
+// SignAuthors signs the index's authors with a root private key.
+func SignAuthors(ix Index, private string) (Index, error) {
+	key, err := base64.StdEncoding.DecodeString(private)
+	if err != nil || len(key) != ed25519.PrivateKeySize {
+		return ix, errors.New("not an Ed25519 private key")
+	}
+	ix.AuthorsSignature = base64.StdEncoding.EncodeToString(ed25519.Sign(ed25519.PrivateKey(key), authorsSigned(ix.Authors)))
+	return ix, nil
+}
+
+// CheckAuthors returns an error unless the authors are signed with one of
+// keys.
+func (ix Index) CheckAuthors(keys []string) error {
+	if ix.AuthorsSignature == "" {
+		return errors.New("the gallery's authors are not signed by a gallery maintainer")
+	}
+	sig, err := base64.StdEncoding.DecodeString(ix.AuthorsSignature)
+	if err == nil && len(sig) == ed25519.SignatureSize {
+		payload := authorsSigned(ix.Authors)
+		for _, k := range keys {
+			pub, err := base64.StdEncoding.DecodeString(k)
+			if err == nil && len(pub) == ed25519.PublicKeySize && ed25519.Verify(ed25519.PublicKey(pub), payload, sig) {
+				return nil
+			}
+		}
+	}
+	return errors.New("the gallery's authors are not signed by a gallery root key; the index may have been changed")
 }
 
 // Report is what verification found out about one entry.
@@ -221,9 +280,18 @@ func Load(ctx context.Context, src string) (Index, error) {
 	if err != nil {
 		return Index{}, err
 	}
+	return Parse(raw)
+}
+
+// Parse reads an index and refuses it unless its authors are signed by a
+// root key.
+func Parse(raw []byte) (Index, error) {
 	var ix Index
 	if err := json.Unmarshal(raw, &ix); err != nil {
 		return Index{}, fmt.Errorf("gallery index: %w", err)
+	}
+	if err := ix.CheckAuthors(RootKeys); err != nil {
+		return Index{}, err
 	}
 	return ix, nil
 }

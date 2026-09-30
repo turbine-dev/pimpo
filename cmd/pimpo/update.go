@@ -23,7 +23,7 @@ import (
 )
 
 // `pimpo update` replaces this binary with the latest release (or the one
-// named), after checking it against the release's checksums, and keeps the
+// named), after checking it against the release's signed checksums, and keeps the
 // one it replaces next to it as pimpo.previous; `pimpo update --rollback`
 // puts that one back. The data is not touched here: the new version takes
 // a snapshot the first time it starts, and `pimpo restore` goes back to it.
@@ -121,13 +121,24 @@ func archiveName() string {
 	return fmt.Sprintf("pimpo_%s_%s.tar.gz", runtime.GOOS, arch)
 }
 
-// fetchRelease downloads this system's archive, checks it against the
-// release's checksums and returns the binary inside.
+// fetchRelease downloads this system's archive, checks the release's
+// checksums against the signature made with a release key built into this
+// binary, checks the archive against them and returns the binary inside.
 func fetchRelease(ctx context.Context, tag string) ([]byte, error) {
 	name := archiveName()
 	sums, err := get(ctx, releasesBase+"/"+tag+"/checksums.txt", 1<<20)
 	if err != nil {
 		return nil, fmt.Errorf("could not read the checksums of %s: %w", tag, err)
+	}
+	// The checksums come from the same place as the archive, so on their
+	// own they only catch a broken download: the signature is what says
+	// the maintainers made this release.
+	sig, err := get(ctx, releasesBase+"/"+tag+"/checksums.txt.sig", 4<<10)
+	if err != nil {
+		return nil, fmt.Errorf("%s has no signature for its checksums (%v); not installing. Install it by hand from the releases page if you trust it", tag, err)
+	}
+	if !signedByOneOf(releaseKeys, sums, string(sig)) {
+		return nil, fmt.Errorf("the signature of %s's checksums does not match Pimpo's release key; not installing", tag)
 	}
 	want := ""
 	for _, line := range strings.Split(string(sums), "\n") {

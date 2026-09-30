@@ -55,7 +55,7 @@ func (a *App) galleryIndex(ctx context.Context, fresh bool) (gallery.Index, erro
 	if err != nil && src == gallery.DefaultIndex {
 		// Offline, or the community index moved: the starter set that came
 		// with this version still verifies on its own.
-		err = json.Unmarshal(starter.Index, &ix)
+		ix, err = gallery.Parse(starter.Index)
 	}
 	if err != nil {
 		return gallery.Index{}, err
