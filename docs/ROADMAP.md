@@ -272,7 +272,7 @@ Telegram and WhatsApp already put a notice's choices on buttons of that message.
 
 ### 8.2 Conversation search · S
 
-Search earlier conversations by words or an exact phrase, each person only in their own.
+Search earlier conversations by words or an exact phrase, each person only in their own. *Done.*
 
 ### 8.3 Approvals bound to the operation · M
 

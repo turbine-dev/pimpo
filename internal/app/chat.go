@@ -28,6 +28,7 @@ import (
 func (a *App) chatRoutes() {
 	s := a.Server
 	s.Handle("GET /api/chats", a.listChats)
+	s.Handle("GET /api/chats/search", a.searchChats)
 	s.Handle("POST /api/chats", a.newChat)
 	s.Handle("GET /api/chats/{id}", a.getChat)
 	s.Handle("DELETE /api/chats/{id}", a.deleteChat)
@@ -139,6 +140,22 @@ func (a *App) listChats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	server.WriteJSON(w, 200, list)
+}
+
+// searchChats finds words or a "quoted phrase" in the caller's own
+// conversations, and nobody else's.
+func (a *App) searchChats(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	if len([]rune(q)) > 200 {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "the search is too long"})
+		return
+	}
+	hits, err := a.Store.SearchChats(r.Context(), chatPerson(people.From(r.Context())), q, 50)
+	if err != nil {
+		server.WriteError(w, err)
+		return
+	}
+	server.WriteJSON(w, 200, hits)
 }
 
 func (a *App) getChat(w http.ResponseWriter, r *http.Request) {

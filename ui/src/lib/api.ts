@@ -46,6 +46,7 @@ export type RecentRun = { id: number; routine: string; name: string; version: nu
 export type Organized = { at?: string; checked: number; merged: { kept: string; dropped: string }[]; error?: string }
 
 export type Chat = { id: string; title: string; assistant?: string; created_at: string; updated_at: string; turns: number }
+export type ChatHit = { chat: string; title: string; turn: string; snippet: string; at: string }
 export type ChatAction = { capability: string; text: string; risk: CapRisk; args: unknown }
 export type Effort = 'low' | 'medium' | 'high' | 'max'
 export const EFFORTS: Effort[] = ['low', 'medium', 'high', 'max']
@@ -240,6 +241,7 @@ export const api = {
   organizeMemory: () => request<Organized>('POST', '/api/memory/organize'),
   memoryOrganized: () => request<Organized>('GET', '/api/memory/organized'),
   chats: () => request<Chat[]>('GET', '/api/chats'),
+  searchChats: (q: string) => request<ChatHit[]>('GET', `/api/chats/search?q=${encodeURIComponent(q)}`),
   chat: (id: string) => request<{ chat: Chat; turns: ChatTurn[]; model: string; effort?: string }>('GET', `/api/chats/${id}`),
   newChat: (text: string, assistant = '', model = '', effort = '') => request<{ chat: string; turn: string }>('POST', '/api/chats', { text, assistant, model, effort }),
   sendChat: (id: string, text: string, model = '', effort = '') => request<{ chat: string; turn: string }>('POST', `/api/chats/${id}/messages`, { text, model, effort }),
