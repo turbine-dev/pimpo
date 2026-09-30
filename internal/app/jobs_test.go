@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -123,17 +124,24 @@ func TestJobStopsAtItsBudget(t *testing.T) {
 	id := out["id"].(string)
 	ta.do(t, "POST", "/api/jobs/"+id+"/start", nil)
 	j := waitJob(t, ta, id, JobStopped, JobDone)
+	// Parts already running when it stopped finish; none starts after.
+	for i := 0; i < 200 && slices.ContainsFunc(j.Parts, func(p JobPart) bool { return p.State == PartRunning }); i++ {
+		time.Sleep(10 * time.Millisecond)
+		j, _ = ta.job(context.Background(), id)
+	}
 	if j.State != JobStopped || j.Report != "" {
 		t.Fatalf("%+v", j)
 	}
-	done := 0
+	// Each part may spend 0.048 of the 0.25; this model spends 0.10, so at
+	// most three parts can ever have started, whatever the timing.
+	started := 0
 	for _, p := range j.Parts {
-		if p.State == PartDone {
-			done++
+		if p.Attempts > 0 {
+			started++
 		}
 	}
-	if done == 5 {
-		t.Fatal("every part ran past the budget")
+	if started < 2 || started > 3 {
+		t.Fatalf("%d parts started: parts started past the budget (spent %.2f)", started, j.SpentUSD)
 	}
 }
 

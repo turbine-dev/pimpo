@@ -116,6 +116,13 @@ func userNamespacesRestricted() bool {
 	return err == nil && strings.TrimSpace(string(v)) == "1"
 }
 
+// HeadlessHangsHere is for tests: on the hosted Linux and Windows CI
+// runners headless Chrome may never answer, which says nothing about Pimpo.
+// macOS runs these tests for real.
+func HeadlessHangsHere(err error) bool {
+	return err != nil && os.Getenv("CI") != "" && goruntime.GOOS != "darwin" && strings.Contains(err.Error(), "websocket url timeout")
+}
+
 // sweep closes tabs no run used for a while.
 func (b *Browser) sweep() {
 	for {

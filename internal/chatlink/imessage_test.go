@@ -12,7 +12,7 @@ import (
 func messagesDB(t *testing.T) (string, *sql.DB) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "chat.db")
-	db, err := sql.Open("sqlite", "file:"+path)
+	db, err := sql.Open("sqlite", "file:"+path+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,9 +48,16 @@ func TestIMessageHandsOverNewMessagesOnly(t *testing.T) {
 	var got []Inbound
 	go m.Run(ctx, func(in Inbound) { mu.Lock(); got = append(got, in); mu.Unlock() })
 	time.Sleep(50 * time.Millisecond)
-	db.Exec(`INSERT INTO message (text, handle_id, is_from_me) VALUES ('o que tenho amanhã?', 1, 0)`)
-	db.Exec(`INSERT INTO message (text, handle_id, is_from_me) VALUES ('resposta do Pimpo', 1, 1)`)
-	db.Exec(`INSERT INTO message (text, attributedBody, handle_id, is_from_me) VALUES (NULL, ?, 1, 0)`, archived("pimpo 123456"))
+	// Messages keeps its database in WAL mode, as here.
+	for _, q := range [][]any{
+		{`INSERT INTO message (text, handle_id, is_from_me) VALUES ('o que tenho amanhã?', 1, 0)`},
+		{`INSERT INTO message (text, handle_id, is_from_me) VALUES ('resposta do Pimpo', 1, 1)`},
+		{`INSERT INTO message (text, attributedBody, handle_id, is_from_me) VALUES (NULL, ?, 1, 0)`, archived("pimpo 123456")},
+	} {
+		if _, err := db.Exec(q[0].(string), q[1:]...); err != nil {
+			t.Fatal(err)
+		}
+	}
 	for i := 0; i < 100; i++ {
 		mu.Lock()
 		n := len(got)

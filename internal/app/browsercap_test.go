@@ -42,7 +42,7 @@ func TestBrowserOnlyWhenTurnedOnAndOnlyWhereAllowed(t *testing.T) {
 		t.Fatal("opened a host other than its scope")
 	}
 	out, err := (browserCap{ta.App}).Call(ctx, "browser.open", "127.0.0.1", args)
-	if errors.Is(err, browser.ErrNoSandbox) {
+	if errors.Is(err, browser.ErrNoSandbox) || browser.HeadlessHangsHere(err) {
 		t.Skip(err)
 	}
 	if err != nil {
