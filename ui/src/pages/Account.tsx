@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { KeyRound, Loader2, Trash2 } from 'lucide-react'
+import { KeyRound, Loader2, LogOut, MonitorSmartphone, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { relative } from '../lib/format'
@@ -7,7 +7,8 @@ import { useT } from '../lib/i18n'
 import { addPasskey, canUsePasskeys } from '../lib/passkey'
 import { Button, Card } from '../components/ui'
 
-// Account is each person's own: the passkeys that sign them in.
+// Account is each person's own: the passkeys that sign them in, and the
+// devices and sessions open in their name.
 export function Account() {
   const t = useT()
   const qc = useQueryClient()
@@ -43,6 +44,38 @@ export function Account() {
         {add.error && <p className="text-[13px] text-danger">{add.error.message}</p>}
         <p className="text-[12.5px] text-ink-3">{t('acct.where')}</p>
       </Card>
+      <MyDevices />
     </div>
+  )
+}
+
+// MyDevices lists what opens this person's account, so a device they did
+// not add stands out, and signs any of it out.
+function MyDevices() {
+  const t = useT()
+  const qc = useQueryClient()
+  const list = useQuery({ queryKey: ['my-devices'], queryFn: api.myDevices })
+  const out = useMutation({ mutationFn: api.signOutDevice, onSuccess: () => qc.invalidateQueries({ queryKey: ['my-devices'] }) })
+  return (
+    <Card className="space-y-3 p-4">
+      <div>
+        <h2 className="flex items-center gap-2 text-[15px] font-medium"><MonitorSmartphone size={16} /> {t('acct.devices')}</h2>
+        <p className="text-[13px] text-ink-3">{t('acct.devicesText')}</p>
+      </div>
+      {(list.data ?? []).length === 0 && !list.isLoading && <p className="text-[13px] text-ink-2">{t('acct.noDevices')}</p>}
+      <ul className="space-y-2" aria-label={t('acct.devices')}>
+        {(list.data ?? []).map((d) => (
+          <li key={d.id} className="flex items-center gap-3 text-[14px]">
+            <MonitorSmartphone size={14} className="text-ink-3" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{d.name}{d.current && <span className="ml-2 text-[12px] font-normal text-ink-3">{t('acct.thisDevice')}</span>}</span>
+              <span className="block text-[12px] text-ink-3">{d.pending ? t('acct.pending') : d.last_seen ? t('acct.seen', { when: relative(d.last_seen) }) : t('acct.unused')}</span>
+            </span>
+            <Button size="sm" variant="ghost" aria-label={t('acct.signOut', { name: d.name })} onClick={() => out.mutate(d.id)}><LogOut size={14} /></Button>
+          </li>
+        ))}
+      </ul>
+      {out.error && <p className="text-[13px] text-danger">{out.error.message}</p>}
+    </Card>
   )
 }

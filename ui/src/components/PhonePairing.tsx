@@ -111,7 +111,7 @@ export function PhonePairing() {
             <li key={d.id} className="flex items-center gap-3 px-3 py-2.5 text-[13px]">
               <Smartphone size={14} className="text-ink-3" />
               <span className="flex-1">{d.name} <span className="text-[12px] text-ink-3">· {nameOf(d.person)}</span></span>
-              <span className="text-[12px] text-ink-3">{d.last_seen ? t('phone.seen', { when: relative(d.last_seen) }) : t('phone.unused')}</span>
+              <span className="text-[12px] text-ink-3">{d.pending ? t('acct.pending') : d.last_seen ? t('phone.seen', { when: relative(d.last_seen) }) : t('phone.unused')}</span>
               <Button size="sm" variant="ghost" aria-label={t('phone.revoke', { name: d.name })} onClick={() => revoke.mutate(d.id)}><Trash2 size={14} /></Button>
             </li>
           ))}

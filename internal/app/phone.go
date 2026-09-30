@@ -90,7 +90,9 @@ func meters(lat1, lon1, lat2, lon2 float64) float64 {
 }
 
 // phoneOf is the paired phone a request comes from: by its login token,
-// or by its automation key when keys is true.
+// or by its automation key when keys is true. A phone signed out for
+// being unused, an invite nobody opened, or the phone of someone who left
+// is no phone at all.
 func (a *App) phoneOf(r *http.Request, keys bool) (Device, bool) {
 	tok := server.TokenOf(r)
 	if tok == "" {
@@ -99,6 +101,9 @@ func (a *App) phoneOf(r *http.Request, keys bool) (Device, bool) {
 	h := hashToken(tok)
 	for _, d := range a.devices(r.Context()) {
 		if subtle.ConstantTimeCompare([]byte(d.Hash), []byte(h)) == 1 || (keys && d.KeyHash != "" && subtle.ConstantTimeCompare([]byte(d.KeyHash), []byte(h)) == 1) {
+			if d.Invite || d.expired(time.Now()) || !a.inHouse(r.Context(), d.Person) {
+				return Device{}, false
+			}
 			return d, true
 		}
 	}
@@ -148,7 +153,7 @@ func (a *App) phoneRoutes() {
 			server.WriteError(w, err)
 			return
 		}
-		a.Events.Append(r.Context(), "phone.shares", "human:owner", map[string]any{"device": d.ID, "shares": shares})
+		a.Events.Append(r.Context(), "phone.shares", actor(r.Context()), map[string]any{"device": d.ID, "shares": shares})
 		server.WriteJSON(w, 200, map[string]any{"shares": shares})
 	})
 	a.Server.Handle("POST /api/phone/key", func(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +169,7 @@ func (a *App) phoneRoutes() {
 			server.WriteError(w, err)
 			return
 		}
-		a.Events.Append(r.Context(), "phone.key", "human:owner", map[string]string{"device": d.ID})
+		a.Events.Append(r.Context(), "phone.key", actor(r.Context()), map[string]string{"device": d.ID})
 		server.WriteJSON(w, 200, map[string]string{"key": key})
 	})
 	a.Server.Handle("POST /api/phone/places", func(w http.ResponseWriter, r *http.Request) {
@@ -249,6 +254,12 @@ func (a *App) phoneEvent(share string, h phoneHandler) http.HandlerFunc {
 		d, ok := a.phoneOf(r, true)
 		if !ok {
 			server.WriteJSON(w, 401, map[string]string{"error": "use a paired phone, or its key for automations"})
+			return
+		}
+		// The app on the phone reports with its cookie, which another page
+		// could make the browser send too.
+		if !a.Server.SameOrigin(r) {
+			server.WriteJSON(w, 403, map[string]string{"error": "this request did not come from Pimpo's own page"})
 			return
 		}
 		// A phone reports for the person it belongs to, and only them.

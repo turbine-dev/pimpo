@@ -5,6 +5,7 @@ package explore
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -435,7 +436,7 @@ func (s *Service) MCP(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	sess, ok := s.sessions[id]
 	s.mu.Unlock()
-	if !ok || r.URL.Query().Get("key") != sess.key {
+	if !ok || subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("key")), []byte(sess.key)) != 1 {
 		http.Error(w, "unknown exploration", http.StatusNotFound)
 		return
 	}

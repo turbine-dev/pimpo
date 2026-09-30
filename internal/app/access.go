@@ -34,6 +34,7 @@ var guestRoutes = routeSet(
 	"GET /api/assistants",
 	"GET /api/memory", "POST /api/memory", "DELETE /api/memory/{id}", "POST /api/memory/{id}/confirm", "GET /api/memory/search",
 	"GET /api/passkeys", "POST /api/passkeys/begin", "POST /api/passkeys/finish", "DELETE /api/passkeys/{id}",
+	"GET /api/me/devices", "DELETE /api/me/devices/{id}",
 )
 
 // memberRoutes add to a guest's what a member manages for themselves.

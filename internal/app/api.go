@@ -361,15 +361,15 @@ func (a *App) explorationAction(w http.ResponseWriter, r *http.Request) {
 			server.WriteError(w, server.StatusError{Status: 404, Msg: "no imported task with that id"})
 			return
 		}
-		started, err := a.Explore.Start(context.WithoutCancel(ctx), e.Request, "human:owner")
+		started, err := a.Explore.Start(context.WithoutCancel(ctx), e.Request, actor(ctx))
 		if err != nil {
 			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 			return
 		}
-		a.Explore.Discard(ctx, id, "human:owner")
+		a.Explore.Discard(ctx, id, actor(ctx))
 		server.WriteJSON(w, 202, map[string]string{"id": started})
 	case "discard":
-		if err := a.Explore.Discard(ctx, id, "human:owner"); err != nil {
+		if err := a.Explore.Discard(ctx, id, actor(ctx)); err != nil {
 			server.WriteError(w, notFound(err))
 			return
 		}

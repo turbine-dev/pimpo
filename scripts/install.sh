@@ -80,7 +80,7 @@ UNIT
   systemctl --user daemon-reload
   systemctl --user enable --now pimpo
   loginctl enable-linger "$(id -un)" 2>/dev/null || true
-  echo "Pimpo runs at boot. Open link: journalctl --user -u pimpo | grep auth"
+  echo "Pimpo runs at boot. Login link: pimpo token"
 else
   echo "Start it with: pimpo serve"
 fi

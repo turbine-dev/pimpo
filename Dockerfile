@@ -3,7 +3,7 @@
 # /data volume; the web app and the API listen on port 7788.
 #
 #   docker run -d --name pimpo -p 127.0.0.1:7788:7788 -v pimpo:/data ghcr.io/turbine-dev/pimpo
-#   docker logs pimpo | grep auth      # the login link
+#   docker exec pimpo pimpo token      # the login link (`pimpo token rotate` replaces it)
 #
 # See docs/SELF_HOSTING.md.
 #
