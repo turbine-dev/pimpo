@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, BellOff, Headphones, Lightbulb, MessageCircleQuestion, ShieldQuestion, Sparkles } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api } from '../lib/api'
@@ -15,7 +16,11 @@ export function Inbox() {
   const repair = useMutation({ mutationFn: (id: string) => api.routineAction(id, 'repair'), onSuccess: (r) => r.exploration && nav(`/explorations/${r.exploration}`) })
   const run = useMutation({ mutationFn: (id: string) => api.routineAction(id, 'run'), onSettled: () => qc.invalidateQueries({ queryKey: ['routines'] }) })
   const approvals = useQuery({ queryKey: ['approvals'], queryFn: api.approvals, refetchInterval: 10_000 })
-  const answer = useMutation({ mutationFn: ({ id, a }: { id: string; a: 'once' | 'run' | 'always' | 'deny' }) => api.answer(id, a), onSettled: () => qc.invalidateQueries({ queryKey: ['approvals'] }) })
+  const answer = useMutation({
+    mutationFn: ({ id, a, limit }: { id: string; a: 'once' | 'run' | 'routine' | 'always' | 'deny'; limit?: number }) => api.answer(id, a, limit),
+    onSettled: () => { qc.invalidateQueries({ queryKey: ['approvals'] }); qc.invalidateQueries({ queryKey: ['grants'] }) },
+  })
+  const [limits, setLimits] = useState<Record<string, string>>({})
   const media = useQuery({ queryKey: ['media'], queryFn: api.media, refetchInterval: 60_000 })
   const questions = useQuery({ queryKey: ['questions'], queryFn: api.questions, refetchInterval: 15_000 })
   const reply = useMutation({ mutationFn: ({ id, i }: { id: string; i: number }) => api.answerQuestion(id, i), onSettled: () => qc.invalidateQueries({ queryKey: ['questions'] }) })
@@ -85,10 +90,21 @@ export function Inbox() {
             <div className="min-w-0 flex-1">
               <div className="text-[14px] font-medium">{ap.text}</div>
               <div className="text-[12.5px] text-ink-3">{t('inbox.rule', { reason: ap.reason })}</div>
+              {ap.grantable && amountOf(ap.action.args) !== undefined && (
+                <label className="mt-2 flex items-center gap-2 text-[12.5px] text-ink-3">
+                  {t('inbox.routineLimit')}
+                  <input type="number" min={amountOf(ap.action.args)} step="any" inputMode="decimal" value={limits[ap.id] ?? String(amountOf(ap.action.args))}
+                    onChange={(e) => setLimits({ ...limits, [ap.id]: e.target.value })} className="h-7 w-24 rounded-lg border border-line bg-bg px-2 text-[12.5px] text-ink outline-none focus:border-accent" />
+                </label>
+              )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="ghost" onClick={() => answer.mutate({ id: ap.id, a: 'deny' })}>{t('inbox.deny')}</Button>
               <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'run' })} title={t('inbox.allRunHint')}>{t('inbox.allRun')}</Button>
+              {ap.grantable && (
+                <Button size="sm" title={t('inbox.forRoutineHint')}
+                  onClick={() => answer.mutate({ id: ap.id, a: 'routine', limit: limits[ap.id] ? Number(limits[ap.id]) : undefined })}>{t('inbox.forRoutine')}</Button>
+              )}
               <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'always' })}>{t('inbox.always')}</Button>
               <Button size="sm" variant="primary" onClick={() => answer.mutate({ id: ap.id, a: 'once' })}>{t('inbox.allow')}</Button>
             </div>
@@ -124,4 +140,14 @@ export function Inbox() {
       </div>
     </div>
   )
+}
+
+// amountOf is the amount an action moves, when it has one; approving it
+// for the routine allows up to that much, or the limit the person sets.
+function amountOf(args: unknown): number | undefined {
+  if (!args || typeof args !== 'object') return undefined
+  for (const [k, v] of Object.entries(args as Record<string, unknown>)) {
+    if (['amount', 'total', 'price', 'sum'].includes(k.toLowerCase()) && typeof v === 'number') return v
+  }
+  return undefined
 }

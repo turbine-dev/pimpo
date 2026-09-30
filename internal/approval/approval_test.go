@@ -127,11 +127,13 @@ func TestSuggestsAlwaysAfterThreeApprovals(t *testing.T) {
 // not use them up, and a request whose run ended cannot be answered.
 func TestWaitingForTheOwnerStopsTheRunClock(t *testing.T) {
 	m, n := manager(t, time.Minute)
-	ctx, cancel := pause.WithTimeout(context.Background(), 60*time.Millisecond)
+	// Generous times: a slow machine (Windows CI) must not use up the
+	// run's limit before Ask has paused its clock.
+	ctx, cancel := pause.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 	go func() {
 		<-n.got
-		time.Sleep(150 * time.Millisecond) // longer than the run's own limit
+		time.Sleep(1200 * time.Millisecond) // longer than the run's own limit
 		m.Resolve(context.Background(), idOf(n.list[0]), Once, "human:owner")
 	}()
 	if _, err := m.Ask(ctx, policy.Action{Capability: "gmail.send", Risk: 3}, "r"); err != nil {

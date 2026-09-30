@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- **For this routine** on approvals: a routine repeats exactly the approved action (same recipients, hosts, amounts up to the limit) without asking, until its code changes; each person revokes theirs in **Routines**.
 - Dashboards in tabs with widgets of seven kinds (numbers, goals, status, lists, tables, and line, area, bar and donut charts), ready-made widgets, and sharing with the house.
 - Floating widgets in the desktop app: any widget in a small always-on-top window that keeps its place and hides while the app is locked.
 - **Turn into a widget** on a routine's page, and requests to see or track something end in a widget.

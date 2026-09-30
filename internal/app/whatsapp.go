@@ -8,6 +8,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/owner"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -207,7 +208,9 @@ func (a *App) whatsappPair(ctx context.Context, m whatsapp.Inbound, code string,
 }
 
 // mirrorWhatsApp sends a notice to the person on WhatsApp too. WhatsApp
-// shows three buttons at most: the less common "rest of this run" goes.
+// shows three buttons at most: the less common "rest of this run" goes,
+// and so does "always" when "for this routine", the narrower lasting
+// answer, takes its place.
 func (a *App) mirrorWhatsApp(ctx context.Context, n explore.Notice) {
 	c := a.wa(ctx)
 	if c == nil {
@@ -217,9 +220,10 @@ func (a *App) mirrorWhatsApp(ctx context.Context, n explore.Notice) {
 	if err != nil || p.WhatsApp == "" {
 		return
 	}
+	grant := slices.ContainsFunc(n.Actions, func(act explore.Action) bool { return strings.HasPrefix(act.Data, "grant:") })
 	var buttons []whatsapp.Button
 	for _, act := range n.Actions {
-		if strings.HasPrefix(act.Data, "batch:") {
+		if strings.HasPrefix(act.Data, "batch:") || (grant && strings.HasPrefix(act.Data, "always:")) {
 			continue
 		}
 		buttons = append(buttons, whatsapp.Button{ID: act.Data, Title: act.Label})
