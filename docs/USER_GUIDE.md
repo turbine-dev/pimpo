@@ -77,6 +77,29 @@ For work too big for one answer ("compare these 20 suppliers on price, delivery 
 
 **Routines › Runs** lists every run of every routine, newest first, with its cost, how many calls it made and how long it took. **Failed** shows only what went wrong, with the error. A routine can run as often as every 5 minutes (**Every few minutes** in its schedule).
 
+## Dashboards
+
+**Painéis** (Dashboards) shows widgets in tabs: one tab per dashboard, as many as you like (home, work, the shop). The first one, **Home**, starts with the ready-made widgets. **+** makes a new tab with a name and an emoji.
+
+- **Editing.** **Edit** lets you drag a widget by its handle, resize it from its corner, remove it, rename the tab or delete it. **Add widget** lists everything you can put on it, drawn as it will look. On the phone, and in a narrow window, the widgets stack.
+- **Kinds.** A widget is one of seven kinds:
+  - a number, with its trend and a sparkline of its history;
+  - progress towards a goal;
+  - a status (OK, attention or alert);
+  - a list;
+  - a table;
+  - a chart (line, area, bar or donut);
+  - a few lines of text.
+- **Ready-made widgets.** They need no routine: what needs you, today's runs, your reminders, spent this month, and today's limit.
+- **Routines as widgets.**
+  - Ask for one in the chat: "show me the dollar every hour", "keep a widget with today's orders". The routine then updates its widget each time it runs.
+  - Any routine can also go on a dashboard as its **health**: its last run, success rate and next run.
+- **Refreshing.** Widgets update live as routines run, and say when they are out of date. **Refresh now** in a widget's menu runs its routine once. When the routine uses a model and its last run cost a cent or more, it asks first.
+- **Sharing.**
+  - **Share with the house**, in edit mode, shows a dashboard to everyone in the house.
+  - They see only the widgets you marked **Share with the house** in the widget's menu, and their own ready-made widgets. Everything else shows as not shared with them.
+  - Nobody else can change your dashboard.
+
 ## Approvals and rules
 
 - **Needs you** lists what is waiting for you: approvals, finished explorations, problems. On the phone it is the first tab.
