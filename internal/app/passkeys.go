@@ -159,6 +159,11 @@ func isLoopback(host string) bool {
 	return host == "localhost" || (ip != nil && ip.IsLoopback())
 }
 
+// passkeyError answers with a code the app shows in the person's language.
+func passkeyError(w http.ResponseWriter, status int, code, msg string) {
+	server.WriteJSON(w, status, map[string]string{"error": msg, "code": "passkey." + code})
+}
+
 // ceremonies hold what the browser must answer, for a few minutes.
 type ceremony struct {
 	session webauthn.SessionData
@@ -236,7 +241,7 @@ func (a *App) passkeyRoutes() {
 		server.Decode(r, &req)
 		wa, rpID, err := a.relyingParty(r)
 		if err != nil {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+			passkeyError(w, 400, "address", err.Error())
 			return
 		}
 		person := people.Norm(people.From(ctx))
@@ -267,17 +272,17 @@ func (a *App) passkeyRoutes() {
 		ctx := r.Context()
 		c, ok := takeCeremony(r.URL.Query().Get("key"))
 		if !ok || c.person != people.Norm(people.From(ctx)) {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: "that took too long; try again"})
+			passkeyError(w, 400, "expired", "that took too long; try again")
 			return
 		}
 		wa, rpID, err := a.relyingParty(r)
 		if err != nil || rpID != c.rpID {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: errPasskeyAddress.Error()})
+			passkeyError(w, 400, "address", errPasskeyAddress.Error())
 			return
 		}
 		cred, err := wa.FinishRegistration(a.passkeyUser(ctx, c.person, rpID), c.session, r)
 		if err != nil {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: "the passkey was not accepted: " + err.Error()})
+			passkeyError(w, 400, "rejected", "the passkey was not accepted: "+err.Error())
 			return
 		}
 		k := storedPasskey{ID: base64.RawURLEncoding.EncodeToString(cred.ID), Person: c.person, Name: c.name, RPID: rpID, Created: time.Now().UTC(), Credential: *cred}
@@ -329,7 +334,7 @@ func (a *App) passkeyRoutes() {
 		}
 		wa, rpID, err := a.relyingParty(r)
 		if err != nil {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+			passkeyError(w, 400, "address", err.Error())
 			return
 		}
 		opts, session, err := wa.BeginDiscoverableLogin()
@@ -348,12 +353,12 @@ func (a *App) passkeyRoutes() {
 		ctx := r.Context()
 		c, ok := takeCeremony(r.URL.Query().Get("key"))
 		if !ok || c.person != "" {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: "that took too long; try again"})
+			passkeyError(w, 400, "expired", "that took too long; try again")
 			return
 		}
 		wa, rpID, err := a.relyingParty(r)
 		if err != nil || rpID != c.rpID {
-			server.WriteError(w, server.StatusError{Status: 400, Msg: errPasskeyAddress.Error()})
+			passkeyError(w, 400, "address", errPasskeyAddress.Error())
 			return
 		}
 		var who string
@@ -371,7 +376,7 @@ func (a *App) passkeyRoutes() {
 			return a.passkeyUser(ctx, p, rpID), nil
 		}, c.session, r)
 		if err != nil || user == nil {
-			server.WriteJSON(w, 401, map[string]string{"error": "that passkey does not open this Pimpo"})
+			passkeyError(w, 401, "unknown", "that passkey does not open this Pimpo")
 			return
 		}
 		id := base64.RawURLEncoding.EncodeToString(cred.ID)

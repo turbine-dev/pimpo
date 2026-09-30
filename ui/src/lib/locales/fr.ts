@@ -615,6 +615,12 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'shell.role.owner': "Administrateur",
   'shell.role.member': "Membre",
   'shell.role.guest': "Invité",
+  'passkey.address': "Les clés d’accès marchent là où Pimpo est ouvert par son nom : localhost sur cet ordinateur, ou une adresse https. Ici, utilisez le lien de connexion.",
+  'passkey.expired': "C’était trop long. Réessayez.",
+  'passkey.rejected': "Cette clé d’accès n’a pas été acceptée. Réessayez ou ajoutez-en une autre.",
+  'passkey.unknown': "Cette clé d’accès n’ouvre pas ce Pimpo.",
+  'passkey.cancelled': "Annulé. Rien n’a changé.",
+  'passkey.exists': "Cet appareil a déjà une clé d’accès à vous ici.",
   'memory.confirm': 'Confirmer',
   'memory.forget': 'Oublier : {text}',
 

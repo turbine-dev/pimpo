@@ -9,12 +9,43 @@ const toText = (b: ArrayBuffer | null) => (b ? btoa(String.fromCharCode(...new U
 
 type Descriptor = { id: string; type: string; transports?: string[] }
 
-export const canUsePasskeys = () => typeof window !== 'undefined' && !!window.PublicKeyCredential && window.isSecureContext
+const isAddress = (host: string) => /^[\d.]+$/.test(host) || host.includes(':') || host.startsWith('[')
+
+// canUsePasskeys says whether a passkey can work here: a browser that has
+// them, at localhost or an https address with a name. Not at a bare IP
+// address, which browsers refuse, and not in the desktop app's window,
+// whose system view has no passkeys.
+export const canUsePasskeys = () => {
+  if (typeof window === 'undefined' || !window.PublicKeyCredential || !window.isSecureContext) return false
+  if ('__PIMPO_DESKTOP__' in window) return false
+  const { hostname, protocol } = window.location
+  return hostname === 'localhost' || (protocol === 'https:' && !isAddress(hostname))
+}
+
+// PasskeyError carries a code the page shows in the person's language.
+export class PasskeyError extends Error {
+  code: string
+  constructor(code: string, message: string) {
+    super(message)
+    this.code = code
+  }
+}
+
+// passkeyMessage turns a failure into words for the screen.
+export function passkeyMessage(e: unknown, t: (k: never) => string): string {
+  const tt = t as unknown as (k: string) => string
+  if (e instanceof PasskeyError && e.code) return tt(e.code)
+  // The browser's own: the person closed the prompt, or it timed out.
+  if (e instanceof DOMException && (e.name === 'NotAllowedError' || e.name === 'AbortError')) return tt('passkey.cancelled')
+  if (e instanceof DOMException && e.name === 'InvalidStateError') return tt('passkey.exists')
+  if (e instanceof Error && e.message === 'cancelled') return tt('passkey.cancelled')
+  return e instanceof Error ? e.message : String(e)
+}
 
 async function post(path: string, body?: unknown) {
   const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'same-origin' })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.error ?? res.statusText)
+  if (!res.ok) throw new PasskeyError(data.code ?? '', data.error ?? res.statusText)
   return data
 }
 

@@ -606,6 +606,12 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'shell.role.owner': "관리자",
   'shell.role.member': "구성원",
   'shell.role.guest': "게스트",
+  'passkey.address': "패스키는 Pimpo를 이름으로 연 곳에서 작동해요. 이 컴퓨터의 localhost나 https 주소예요. 여기서는 로그인 링크를 쓰세요.",
+  'passkey.expired': "시간이 너무 오래 걸렸어요. 다시 시도하세요.",
+  'passkey.rejected': "이 패스키가 받아들여지지 않았어요. 다시 시도하거나 새로 추가하세요.",
+  'passkey.unknown': "이 패스키로는 이 Pimpo를 열 수 없어요.",
+  'passkey.cancelled': "취소했어요. 바뀐 것은 없어요.",
+  'passkey.exists': "이 기기에는 여기서 쓰는 패스키가 이미 있어요.",
   'memory.confirm': '확인',
   'memory.forget': '잊기: {text}',
 

@@ -606,6 +606,12 @@ export const pt = {
   'shell.role.owner': "Administrador",
   'shell.role.member': "Membro",
   'shell.role.guest': "Convidado",
+  'passkey.address': "Chaves de acesso funcionam onde o Pimpo é aberto por nome: em localhost neste computador, ou num endereço https. Aqui, use o link de entrada.",
+  'passkey.expired': "Demorou demais. Tente de novo.",
+  'passkey.rejected': "Esta chave de acesso não foi aceita. Tente de novo, ou adicione outra.",
+  'passkey.unknown': "Esta chave de acesso não abre este Pimpo.",
+  'passkey.cancelled': "Cancelado. Nada mudou.",
+  'passkey.exists': "Este aparelho já tem uma chave de acesso sua aqui.",
   'memory.confirm': 'Confirmar',
   'memory.forget': 'Esquecer: {text}',
 

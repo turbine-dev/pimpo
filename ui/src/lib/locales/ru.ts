@@ -626,6 +626,12 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'shell.role.owner': "Администратор",
   'shell.role.member': "Участник",
   'shell.role.guest': "Гость",
+  'passkey.address': "Ключи доступа работают там, где Pimpo открыт по имени: localhost на этом компьютере или адрес https. Здесь используйте ссылку для входа.",
+  'passkey.expired': "Это заняло слишком много времени. Попробуйте ещё раз.",
+  'passkey.rejected': "Этот ключ доступа не принят. Попробуйте ещё раз или добавьте новый.",
+  'passkey.unknown': "Этот ключ доступа не открывает этот Pimpo.",
+  'passkey.cancelled': "Отменено. Ничего не изменилось.",
+  'passkey.exists': "На этом устройстве уже есть ваш ключ доступа здесь.",
   'memory.confirm': 'Подтвердить',
   'memory.forget': 'Забыть: {text}',
 

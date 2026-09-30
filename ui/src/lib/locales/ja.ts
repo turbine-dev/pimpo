@@ -606,6 +606,12 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'shell.role.owner': "管理者",
   'shell.role.member': "メンバー",
   'shell.role.guest': "ゲスト",
+  'passkey.address': "パスキーは Pimpo を名前で開いた場所で使えます。このコンピュータの localhost か https アドレスです。ここではサインインリンクを使ってください。",
+  'passkey.expired': "時間がかかりすぎました。もう一度お試しください。",
+  'passkey.rejected': "このパスキーは受け付けられませんでした。もう一度試すか、新しく追加してください。",
+  'passkey.unknown': "このパスキーではこの Pimpo を開けません。",
+  'passkey.cancelled': "キャンセルしました。何も変わっていません。",
+  'passkey.exists': "この端末にはここであなたのパスキーがすでにあります。",
   'memory.confirm': '確認',
   'memory.forget': '忘れる：{text}',
 
