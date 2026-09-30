@@ -60,6 +60,7 @@
   "msg.link.unknownNotice": "这里已经没有该通知了。请在应用中回复，或回复较新的通知。",
   "msg.link.noSuchChoice": "该通知没有这个编号的选项。",
   "msg.model.back": "✅ {model} 已恢复响应，重新投入使用。",
+  "msg.model.retired": "⚠️ 提供方已不再提供 {model}。请在 设置 › 模型 中选择其他模型。",
   "msg.model.current": "🧠 这段对话的模型：{model}。可选：{options}。用 /model <名称> 更换，或 /model auto 让 Pimpo 选择。",
   "msg.model.fallback": "⚠️ {model} 没有响应（{why}）。暂时改用 {backup}；恢复后会通知你。",
   "msg.model.set": "✅ 从现在起，这段对话使用 {model}。",

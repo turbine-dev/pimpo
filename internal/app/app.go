@@ -121,6 +121,22 @@ type Settings struct {
 	AutoOff    bool   `json:"auto_off,omitempty"`
 	AutoLight  string `json:"auto_light,omitempty"`
 	AutoStrong string `json:"auto_strong,omitempty"`
+	// CompactOff stops Anthropic's server-side compaction of long
+	// conversations; CompactAt is the size in tokens where it starts
+	// (0 is 150000; the API's minimum is 50000).
+	CompactOff bool `json:"compact_off,omitempty"`
+	CompactAt  int  `json:"compact_at,omitempty"`
+}
+
+// compactAt is when Anthropic models summarize a long conversation, 0 off.
+func (s Settings) compactAt() int {
+	switch {
+	case s.CompactOff:
+		return 0
+	case s.CompactAt == 0:
+		return 150000
+	}
+	return s.CompactAt
 }
 
 func (s Settings) fallbacks(job string) []string { return s.Fallbacks[job] }
@@ -375,6 +391,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.background(func() { a.aliveLoop(ctx, time.Minute) })
 	a.background(func() { a.suggestLoop(ctx, 30*time.Minute) })
 	a.background(func() { a.learnLoop(ctx, time.Hour) })
+	a.background(func() { a.catalogLoop(ctx, time.Hour) })
 	a.resumeJobs(ctx)
 	go func() {
 		<-ctx.Done()
@@ -461,6 +478,9 @@ func (a *App) SaveSettings(ctx context.Context, s Settings, actor string) error 
 			return server.StatusError{Status: 400, Msg: "prices are USD per million tokens, from 0 to 1000"}
 		}
 		known[m.ID] = true
+	}
+	if s.CompactAt != 0 && (s.CompactAt < 50000 || s.CompactAt > 1000000) {
+		return server.StatusError{Status: 400, Msg: "compaction starts between 50000 and 1000000 tokens"}
 	}
 	for _, v := range []voiceChoice{s.routineVoice(), {s.ChatVoice, s.ChatVoiceModel, s.ChatVoiceName}} {
 		switch v.Engine {
@@ -841,6 +861,9 @@ func (a *App) apiModel(ctx context.Context, model string) (llm.API, bool, error)
 // apiFor reaches one provider's model with its price, key and address.
 func (a *App) apiFor(ctx context.Context, provider, name string, in, out float64) (llm.API, bool, error) {
 	api := llm.API{Provider: provider, Model: name, PriceIn: in, PriceOut: out, Base: modelBase[provider]}
+	if provider == "anthropic" {
+		api.CompactAt = a.Settings(ctx).compactAt()
+	}
 	base, err := a.modelEndpoint(ctx, provider)
 	if err != nil {
 		return api, true, err

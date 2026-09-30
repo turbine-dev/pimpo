@@ -60,6 +60,7 @@
   "msg.link.unknownNotice": "그 알림은 더 이상 여기 없습니다. 앱에서 답하거나 더 최근 알림에 답해 주세요.",
   "msg.link.noSuchChoice": "그 알림에는 그 번호의 선택지가 없습니다.",
   "msg.model.back": "✅ {model}이(가) 다시 응답해서 다시 사용해요.",
+  "msg.model.retired": "⚠️ {model} 모델은 더 이상 제공되지 않습니다. 설정 › 모델에서 다른 모델을 선택하세요.",
   "msg.model.current": "🧠 이 대화의 모델: {model}. 선택지: {options}. /model <이름>으로 바꾸거나 /model auto로 Pimpo가 고르게 하세요.",
   "msg.model.fallback": "⚠️ {model}이(가) 응답하지 않았어요({why}). 당분간 {backup}을(를) 사용해요. 돌아오면 알려 드릴게요.",
   "msg.model.set": "✅ 이제부터 이 대화는 {model}을(를) 사용해요.",

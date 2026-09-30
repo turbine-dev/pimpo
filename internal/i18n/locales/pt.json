@@ -60,6 +60,7 @@
   "msg.link.unknownNotice": "Já não tenho esse aviso aqui. Responda no app ou a um aviso mais recente.",
   "msg.link.noSuchChoice": "Esse aviso não tem uma opção com esse número.",
   "msg.model.back": "✅ {model} voltou a responder e está em uso de novo.",
+  "msg.model.retired": "⚠️ {model} deixou de ser oferecido pelo fornecedor. Escolha outro modelo em Ajustes › Modelos.",
   "msg.model.current": "🧠 Modelo desta conversa: {model}. Opções: {options}. Troque com /modelo <nome>, ou /modelo auto para o Pimpo escolher.",
   "msg.model.fallback": "⚠️ {model} não respondeu ({why}). Usando {backup} por enquanto; aviso quando ele voltar.",
   "msg.model.set": "✅ A partir de agora, esta conversa usa {model}.",

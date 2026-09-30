@@ -60,24 +60,30 @@ func (a *App) modelRoutes() {
 		s := a.Settings(r.Context())
 		server.WriteJSON(w, 200, a.modelClient().Detect(r.Context(), s.OllamaURL, s.LMStudioURL))
 	})
-	// catalog lists what a provider offers, priced where OpenRouter knows.
+	// catalog lists what a provider offers, from the provider itself (kept
+	// a day; ?fresh=1 asks again), priced where OpenRouter knows, with the
+	// owner's own models and prices, new and retired ones marked.
 	a.Server.Handle("GET /api/models/catalog/{provider}", func(w http.ResponseWriter, r *http.Request) {
 		p := r.PathValue("provider")
 		if _, ok := models.Get(p); !ok {
 			server.WriteError(w, server.StatusError{Status: 404, Msg: "unknown provider"})
 			return
 		}
-		e, err := a.modelEndpoint(r.Context(), p)
-		if err != nil {
+		if _, err := a.modelEndpoint(r.Context(), p); err != nil {
 			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 			return
 		}
-		list, err := a.modelClient().List(r.Context(), e)
+		list, err := a.catalog(r.Context(), p, r.URL.Query().Get("fresh") == "1")
 		if err != nil {
 			server.WriteJSON(w, 502, map[string]string{"error": err.Error(), "problem": models.Problem(err)})
 			return
 		}
 		server.WriteJSON(w, 200, list)
+	})
+	// retired lists the house's models their providers stopped offering,
+	// so a chat or routine using one can suggest another. Model names only.
+	a.Server.Handle("GET /api/models/retired", func(w http.ResponseWriter, r *http.Request) {
+		server.WriteJSON(w, 200, map[string][]string{"retired": a.retiredModels(r.Context())})
 	})
 	a.Server.Handle("PUT /api/models/keys/{provider}", func(w http.ResponseWriter, r *http.Request) {
 		if !ownerOnly(w, r) {
