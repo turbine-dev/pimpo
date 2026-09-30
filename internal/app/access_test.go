@@ -106,7 +106,7 @@ func newHouse(t *testing.T) *house {
 		run, _ := ta.Store.StartRun(ctx, rid, 1)
 		ta.Store.FinishRun(ctx, run, "failed", mark+" falhou", 0.01, 1)
 		ta.Events.Append(ctx, "memory.changed", "human:"+person, map[string]string{"note": mark})
-		ta.Budget.Record(ctx, budget.Cost{USD: 0.01, Source: "routine", Ref: "routine:" + rid + "#1"})
+		ta.Budget.Record(ctx, budget.Cost{USD: 0.01, Source: "routine", Ref: "routine:" + rid + "#1", Person: person})
 	}
 	ta.Explore.Wait()
 	return h

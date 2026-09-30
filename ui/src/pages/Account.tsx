@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { KeyRound, Loader2, LogOut, MonitorSmartphone, Trash2 } from 'lucide-react'
+import { Gauge, KeyRound, Loader2, LogOut, MonitorSmartphone, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../lib/api'
-import { relative } from '../lib/format'
+import { relative, usd } from '../lib/format'
 import { useT } from '../lib/i18n'
 import { addPasskey, canUsePasskeys, passkeyMessage } from '../lib/passkey'
+import { label } from '../components/ModelSetup'
 import { Button, Card } from '../components/ui'
 
 // Account is each person's own: the passkeys that sign them in, and the
@@ -45,7 +46,28 @@ export function Account() {
         {canUsePasskeys() && <p className="text-[12.5px] text-ink-3">{t('acct.where')}</p>}
       </Card>
       <MyDevices />
+      <MyLimits />
     </div>
+  )
+}
+
+// MyLimits shows the models the administrator lets this person use, their
+// own daily limit and what they spent today: theirs, no one else's.
+function MyLimits() {
+  const t = useT()
+  const q = useQuery({ queryKey: ['my-limits'], queryFn: api.myLimits })
+  const l = q.data
+  if (!l) return null
+  const spent = usd(l.spent_today)
+  return (
+    <Card className="space-y-2 p-4">
+      <h2 className="flex items-center gap-2 text-[15px] font-medium"><Gauge size={16} /> {t('lim.button')}</h2>
+      <p className="text-[13px] text-ink-2">{l.all_models ? t('lim.allModels') : l.models.length ? t('lim.only', { list: l.models.map(label).join(', ') }) : t('lim.noneForYou')}</p>
+      <p className="text-[13px] text-ink-2">
+        {l.daily_usd > 0 ? t('lim.yours', { limit: usd(l.daily_usd), spent }) : l.house_usd > 0 ? t('lim.house', { limit: usd(l.house_usd), spent }) : t('lim.unlimited', { spent })}
+      </p>
+      {l.reached && <p className="text-[13px] text-danger" role="status">{t('lim.youReached')}</p>}
+    </Card>
   )
 }
 

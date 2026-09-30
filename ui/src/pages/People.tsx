@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, Check, Copy, Crown, Mail, MessageCircle, Plus, Trash2, UserRound, Users } from 'lucide-react'
+import { CalendarDays, Check, Copy, Crown, Gauge, Mail, MessageCircle, Plus, Trash2, UserRound, Users } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
+import { ModelChoice } from '../components/ModelChoice'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api, type Person, type Role } from '../lib/api'
 import { cn } from '../lib/cn'
+import { usd } from '../lib/format'
 import { fill, useT } from '../lib/i18n'
 
 const roles = [
@@ -142,7 +144,7 @@ function PersonCard({ p, people }: { p: Person; people: Person[] }) {
   const refresh = () => qc.invalidateQueries({ queryKey: ['people'] })
   const update = useMutation({ mutationFn: (v: { role: Role; responsible: string }) => api.updatePerson(p.id, v.role, v.responsible), onSuccess: refresh })
   const remove = useMutation({ mutationFn: () => api.removePerson(p.id), onSuccess: refresh })
-  const [open, setOpen] = useState<'mail' | 'calendar' | null>(null)
+  const [open, setOpen] = useState<'mail' | 'calendar' | 'limits' | null>(null)
   const [confirming, setConfirming] = useState(false)
   const responsible = people.find((x) => x.id === (p.responsible || 'owner'))
 
@@ -158,6 +160,12 @@ function PersonCard({ p, people }: { p: Person; people: Person[] }) {
         </div>
         <Telegram p={p} />
       </div>
+      {!!p.daily_limit && (
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-ink-2">
+          <Gauge size={13} className="text-ink-3" /> {t('lim.perDay', { limit: usd(p.daily_limit) })}
+          {p.limit_reached && <span className="rounded-full bg-danger-soft px-2 py-0.5 text-[11.5px] font-medium text-danger">{t('lim.reached')}</span>}
+        </p>
+      )}
       {!p.chat && p.invite && <p className="mt-3 rounded-lg bg-sunken px-3 py-2 text-[12.5px] text-ink-2">{fill(t('people.pending'), { code: <span className="font-mono">/start {p.invite}</span> })}</p>}
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3">
         <select aria-label={t('people.roleOf', { name: p.name })} value={p.role} onChange={(e) => update.mutate({ role: e.target.value as Role, responsible: e.target.value === 'guest' ? p.responsible || 'owner' : '' })} className="h-8 rounded-lg border border-line bg-bg px-2 text-[13px]">
@@ -171,6 +179,7 @@ function PersonCard({ p, people }: { p: Person; people: Person[] }) {
         )}
         <Button size="sm" variant="ghost" onClick={() => setOpen(open === 'mail' ? null : 'mail')}><Mail size={14} /> {t('people.mail')}{p.mail && ' ✓'}</Button>
         <Button size="sm" variant="ghost" onClick={() => setOpen(open === 'calendar' ? null : 'calendar')}><CalendarDays size={14} /> {t('people.calendar')}{p.calendar && ' ✓'}</Button>
+        <Button size="sm" variant="ghost" aria-expanded={open === 'limits'} onClick={() => setOpen(open === 'limits' ? null : 'limits')}><Gauge size={14} /> {t('lim.button')}</Button>
         <div className="flex-1" />
         {confirming ? (
           <span className="flex items-center gap-2 text-[13px]">{t('people.confirmRemove', { name: p.name })}
@@ -181,7 +190,8 @@ function PersonCard({ p, people }: { p: Person; people: Person[] }) {
           <Button size="sm" variant="ghost" aria-label={t('people.remove', { name: p.name })} onClick={() => setConfirming(true)}><Trash2 size={14} /></Button>
         )}
       </div>
-      {open && <Accounts p={p} kind={open} onDone={() => { setOpen(null); refresh() }} />}
+      {open === 'limits' && <Limits p={p} onDone={() => { setOpen(null); refresh() }} />}
+      {(open === 'mail' || open === 'calendar') && <Accounts p={p} kind={open} onDone={() => { setOpen(null); refresh() }} />}
     </Card>
   )
 }
@@ -203,6 +213,30 @@ function Accounts({ p, kind, onDone }: { p: Person; kind: 'mail' | 'calendar'; o
       )}
       {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
       <div className="flex justify-end"><Button size="sm" variant="primary" type="submit" disabled={save.isPending}>{t('common.save')}</Button></div>
+    </form>
+  )
+}
+
+// Limits is the owner choosing which models a person may use and what they
+// may spend a day, inside the house's limit. The owner learns whether the
+// limit was reached, never how much the person spent.
+function Limits({ p, onDone }: { p: Person; onDone: () => void }) {
+  const t = useT()
+  const [models, setModels] = useState<string[] | null>(p.models?.length ? p.models : null)
+  const [daily, setDaily] = useState(p.daily_usd ? String(p.daily_usd) : '')
+  const amount = daily.trim() === '' ? 0 : Number(daily.replace(',', '.'))
+  const bad = Number.isNaN(amount) || amount < 0
+  const save = useMutation({ mutationFn: () => api.setPersonLimits(p.id, models ?? [], amount), onSuccess: onDone })
+  return (
+    <form className="mt-3 space-y-3 rounded-xl bg-sunken p-3" onSubmit={(e) => { e.preventDefault(); save.mutate() }}>
+      <ModelChoice value={models} onChange={setModels} legend={t('lim.modelsOf', { name: p.name })} />
+      <label className="block text-[13px] text-ink-2">{t('lim.daily')}
+        <input inputMode="decimal" value={daily} onChange={(e) => setDaily(e.target.value)} className={cn(input, 'mt-1.5 max-w-40')}
+          placeholder={p.role === 'guest' ? usd(0.25) : t('lim.noLimit')} />
+      </label>
+      <p className="text-[12.5px] text-ink-3">{p.role === 'guest' ? t('lim.guestHint', { limit: usd(0.25) }) : t('lim.memberHint')} {t('lim.privacy')}</p>
+      {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
+      <div className="flex justify-end"><Button size="sm" variant="primary" type="submit" disabled={bad || (models !== null && models.length === 0) || save.isPending}>{t('common.save')}</Button></div>
     </form>
   )
 }

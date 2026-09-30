@@ -50,11 +50,11 @@ export type ChatHit = { chat: string; title: string; turn: string; snippet: stri
 export type ChatAction = { capability: string; text: string; risk: CapRisk; args: unknown }
 export type Effort = 'low' | 'medium' | 'high' | 'max'
 export const EFFORTS: Effort[] = ['low', 'medium', 'high', 'max']
-export type Routed = { model: string; tier?: 'simple' | 'normal' | 'hard'; by: 'jev' | 'rules' | 'fixed' | 'default'; effort?: Effort; effort_by?: 'fixed' | 'auto' | 'default' }
+export type Routed = { model: string; tier?: 'simple' | 'normal' | 'hard'; by: 'jev' | 'rules' | 'fixed' | 'default' | 'allowed'; effort?: Effort; effort_by?: 'fixed' | 'auto' | 'default' }
 export type ChatTurn = { model?: Routed; id: string; request: string; state: 'running' | 'ready' | 'compiling' | 'done' | 'failed' | 'discarded'; summary?: string; error?: string; cost_usd: number; routine?: string; created_at: string
   actions: ChatAction[]; done?: { state: 'running' | 'done' | 'failed'; at: string; results: { capability: string; ok: boolean; error?: string }[] } }
 
-export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[] }
+export type Assistant = { id: string; name: string; emoji: string; instructions: string; capabilities: string[]; models?: string[] }
 export type InstalledSkill = { id: string; name: string; description: string; source: string; capabilities: string[]; scripts: string[]; unsupported: string[]; installed: string }
 export type SkillPreview = { token: string; exists: boolean; skill: { id: string; name: string; description: string; body: string; files: string[]; scripts: string[]; suggested: string[]; unsupported: string[]; secrets: string[] } }
 export type CapabilitySpec = { name: string; risk: CapRisk; signature: string; returns: string }
@@ -94,7 +94,9 @@ export type Run = { id: number; version: number; started_at: string; ended_at?: 
 export type Version = { version: number; routine: Routine; reason: string; approved_by: string; created_at: string }
 
 export type Role = 'owner' | 'member' | 'guest'
-export type Person = { id: string; name: string; role: Role; chat?: number; responsible?: string; invite?: string; created: string; mail: boolean; calendar: boolean }
+export type Person = { id: string; name: string; role: Role; chat?: number; responsible?: string; invite?: string; created: string; mail: boolean; calendar: boolean; models?: string[]; daily_usd?: number; daily_limit?: number; limit_reached?: boolean }
+// MyLimits is what the person asking may use and has spent today.
+export type MyLimits = { models: string[]; all_models: boolean; daily_usd: number; house_usd: number; spent_today: number; reached: boolean }
 
 export type GalleryItem = {
   id: string
@@ -259,6 +261,7 @@ export const api = {
   passkeys: () => request<{ id: string; name: string; address: string; created: string; last_used?: string }[]>('GET', '/api/passkeys'),
   deletePasskey: (id: string) => request<{ removed: string }>('DELETE', `/api/passkeys/${encodeURIComponent(id)}`),
   myDevices: () => request<MyDevice[]>('GET', '/api/me/devices'),
+  myLimits: () => request<MyLimits>('GET', '/api/me/limits'),
   signOutDevice: (id: string) => request<{ revoked: string }>('DELETE', `/api/me/devices/${encodeURIComponent(id)}`),
   phone: () => request<PhoneState>('GET', '/api/phone'),
   phoneShares: (shares: PhoneShare[]) => request<{ shares: PhoneShare[] }>('POST', '/api/phone/shares', { shares }),
@@ -382,6 +385,7 @@ export const api = {
   addPerson: (name: string, role: Role, responsible: string) => request<Person>('POST', '/api/people', { name, role, responsible }),
   updatePerson: (id: string, role: Role, responsible: string) => request<Person>('PUT', `/api/people/${id}`, { role, responsible }),
   removePerson: (id: string) => request<void>('DELETE', `/api/people/${id}`),
+  setPersonLimits: (id: string, models: string[], daily_usd: number) => request<Person>('PUT', `/api/people/${id}/limits`, { models, daily_usd }),
   personConnection: (id: string, kind: 'mail' | 'calendar', body: Record<string, string>) => request<void>('PUT', `/api/people/${id}/connections/${kind}`, body),
   gallery: (fresh = false) => request<GalleryItem[]>('GET', `/api/gallery${fresh ? '?fresh=1' : ''}`),
   installFromGallery: (id: string, confirm = false) => request<RoutineSummary>('POST', `/api/gallery/${id}/install`, confirm ? { confirm } : undefined),

@@ -35,6 +35,7 @@ var guestRoutes = routeSet(
 	"GET /api/memory", "POST /api/memory", "DELETE /api/memory/{id}", "POST /api/memory/{id}/confirm", "GET /api/memory/search",
 	"GET /api/passkeys", "POST /api/passkeys/begin", "POST /api/passkeys/finish", "DELETE /api/passkeys/{id}",
 	"GET /api/me/devices", "DELETE /api/me/devices/{id}",
+	"GET /api/me/limits",
 )
 
 // memberRoutes add to a guest's what a member manages for themselves.
@@ -88,6 +89,7 @@ var ownerOnlyRoutes = routeSet(
 	"PUT /api/assistants/{id}", "DELETE /api/assistants/{id}",
 	"POST /api/browser/login",
 	"PUT /api/account",
+	"PUT /api/people/{id}/limits",
 )
 
 func routeSet(patterns ...string) map[string]bool {

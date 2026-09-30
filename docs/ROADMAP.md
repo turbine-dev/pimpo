@@ -322,7 +322,7 @@ When Pimpo notices something worth keeping (a preference, a routine it could com
 
 ### 9.5 Models and spending per person · S
 
-The owner chooses which models each person and each assistant may use, and a daily limit per person inside the house's.
+The owner chooses which models each person and each assistant may use, and a daily limit per person inside the house's. *Done.*
 
 ### 9.6 A live model catalog · S
 

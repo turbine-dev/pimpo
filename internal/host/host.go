@@ -247,6 +247,8 @@ func (h *Host) record(ctx context.Context, rec ActionRecord, result any) {
 const JudgeEstimate = 0.01
 
 func (h *Host) Judge(ctx context.Context, name, question string, item any) (float64, error) {
+	// The judgment is for the run's person: their models and their budget.
+	ctx = people.With(ctx, people.Norm(h.Person))
 	if h.Budget != nil {
 		if err := h.Budget.CheckFor(ctx, JudgeEstimate); err != nil {
 			return 0, err
@@ -274,6 +276,7 @@ const WriteEvent = "text.written"
 
 // Write lets a routine have a small model compose text, within budget.
 func (h *Host) Write(ctx context.Context, name, instruction string, input any) (string, error) {
+	ctx = people.With(ctx, people.Norm(h.Person))
 	if h.Budget != nil {
 		if err := h.Budget.CheckFor(ctx, WriteEstimate); err != nil {
 			return "", err
@@ -314,7 +317,7 @@ func (h *Host) addCost(ctx context.Context, usd float64, source string) {
 	h.costUSD += usd
 	h.mu.Unlock()
 	if h.Budget != nil {
-		h.Budget.Record(ctx, budget.Cost{USD: usd, Source: source, Ref: h.Source})
+		h.Budget.Record(ctx, budget.Cost{USD: usd, Source: source, Ref: h.Source, Person: people.Norm(h.Person)})
 	}
 }
 

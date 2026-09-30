@@ -39,12 +39,17 @@ const price = (t: ReturnType<typeof useT>, m: { price_in: number; price_out: num
 
 // useModelOptions lists the models the owner can choose from: Claude Code
 // when installed, Codex when signed in, and their own tested models.
+// For someone the owner limited, only the models they may use are listed.
 export function useModelOptions() {
   const s = useQuery({ queryKey: ['settings'], queryFn: api.settings })
   const info = useQuery({ queryKey: ['models'], queryFn: api.models })
   const found = useQuery({ queryKey: ['models', 'detect'], queryFn: api.detectModels, staleTime: 60_000 })
-  const options = [...(found.data?.claude_code || info.data?.claude_code ? claudeCode : []), ...(found.data?.codex_login ? ['codex'] : []), ...(s.data?.models ?? []).map((m) => m.id)]
-  return { options, auto: info.data?.auto, settings: s.data }
+  const mine = useQuery({ queryKey: ['my-limits'], queryFn: api.myLimits })
+  const house = [...(found.data?.claude_code || info.data?.claude_code ? claudeCode : []), ...(found.data?.codex_login ? ['codex'] : []), ...(s.data?.models ?? []).map((m) => m.id)]
+  const limits = mine.data
+  // A member cannot read the house's settings; their own list says what they have.
+  const options = !limits ? house : limits.all_models ? (house.length ? house : limits.models) : limits.models
+  return { options, house, auto: info.data?.auto, settings: s.data }
 }
 
 // useSettings saves each change at once, on top of the latest saved settings.

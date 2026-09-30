@@ -159,6 +159,16 @@ Settings are stored in the database and changed in **Settings** in the app. Almo
 
 The limit is stored apart from the other settings and changed with `PUT /api/budget {"daily_usd": 5}`. The day follows `zone`. Calls paid by a subscription (below) do not count. After 80% of the limit, the automatic choice stops using the strong model and the high thinking level.
 
+### Models and spending per person
+
+| Setting | Default | Where | What it does |
+|---|---|---|---|
+| A person's models | all of the house's | **People › Models and spending** | The models the person may use. Every call for them (chat, routine, job, judgment, written text) uses only a model that the house, the person and the assistant answering all allow; the automatic choice falls back to the cheapest of them, and a model chosen by hand outside them is refused. |
+| A person's daily limit, in US dollars | none; `0.25` for a guest | **People › Models and spending** | Checked before every paid call made for that person, together with the house's limit. It must be at most the house's. `0` (empty) means none of their own; for a guest it means the guest default. |
+| An assistant's models | all of them | **Assistants › Models it may use** | Narrows further what a conversation with that assistant may use. |
+
+They are stored with the person (`people` in the key-value table) and the assistant (`assistants`), and changed with `PUT /api/people/{id}/limits {"models": ["haiku"], "daily_usd": 0.5}` (owner only) and the assistant's `models`. `GET /api/me/limits` gives each person their own: models, limit and today's spending. Every `cost.recorded` event names the person it was for; costs from before people existed are the owner's. The owner's limits are the house's.
+
 ### Models per job
 
 The welcome screen sets all three at once (**Which model thinks for Pimpo**): it offers what this computer already has (Claude Code, Codex, opencode, Ollama or LM Studio models) or one API key. With a key, Pimpo lists the provider's models, picks its current main model for exploring and compiling and a light one for judgments, requires a known price for both, tests the main one with a single word, and only then saves. The same happens with `POST /api/setup/model` and `{"kind": "provider", "provider": "openai", "key": "…"}` (or `kind` `claude_code`, `codex`, `opencode`, `ollama`, `lmstudio` with a `model`). A job left on Claude Code on a computer without it says so and points to **Settings › Models**.

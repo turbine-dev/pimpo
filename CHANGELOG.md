@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- Models and spending per person: the owner chooses which models each person and each assistant may use and a daily limit per person inside the house's (guests start at $0.25 a day); each person sees their own in **Account**.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.
 - On Discord, Slack and Signal, replying to a notice with a number answers that notice, even after newer ones.
 - JSON connectors: a `connector.json` that describes HTTP requests, with no program, installable as a single file.

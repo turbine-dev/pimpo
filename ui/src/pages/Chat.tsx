@@ -121,7 +121,7 @@ export function Chat() {
       </div>
       {send.error && <p className="mb-2 text-center text-[13px] text-danger">{send.error.message}</p>}
       {conversation.supported && <ConversationBar c={conversation} />}
-      <Composer disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} model={model} onModel={(m) => { setModel(m); setPicked(true) }} effort={effort} onEffort={(e) => { setEffort(e); setPicked(true) }} />
+      <Composer allowed={(current ?? assistants.data?.find((x) => x.id === who))?.models} disabled={busy || send.isPending} onSend={(text, spoken) => send.mutate({ text, spoken })} model={model} onModel={(m) => { setModel(m); setPicked(true) }} effort={effort} onEffort={(e) => { setEffort(e); setPicked(true) }} />
     </div>
   )
 }
@@ -177,7 +177,7 @@ export function Suggestions({ onPick, disabled, className }: { onPick: (text: st
   )
 }
 
-export function Composer({ disabled, onSend, model, onModel, effort, onEffort }: { disabled: boolean; onSend: (text: string, spoken: boolean) => void; model?: string; onModel?: (model: string) => void; effort?: string; onEffort?: (effort: string) => void }) {
+export function Composer({ disabled, onSend, model, onModel, effort, onEffort, allowed }: { disabled: boolean; onSend: (text: string, spoken: boolean) => void; model?: string; onModel?: (model: string) => void; effort?: string; onEffort?: (effort: string) => void; allowed?: string[] }) {
   const t = useT()
   const [text, setText] = useState('')
   const [spoken, setSpoken] = useState(false)
@@ -215,7 +215,7 @@ export function Composer({ disabled, onSend, model, onModel, effort, onEffort }:
             {dictation.listening ? <Square size={14} /> : <Mic size={16} />}
           </button>
         )}
-        {onModel && <ModelPicker value={model ?? 'auto'} onChange={onModel} effort={effort} onEffort={onEffort} />}
+        {onModel && <ModelPicker value={model ?? 'auto'} onChange={onModel} effort={effort} onEffort={onEffort} allowed={allowed} />}
         <div className="flex-1" />
         <button type="submit" aria-label={t('chat.send')} disabled={!text.trim() || disabled}
           className="grid size-8 shrink-0 place-items-center rounded-xl bg-ink text-bg transition disabled:opacity-30">

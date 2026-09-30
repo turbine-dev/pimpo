@@ -9,11 +9,14 @@ const levelKey = (e: string) => `effort.${e}` as TKey
 
 // ModelPicker chooses which model answers a conversation and how hard it
 // thinks: automatic, where Pimpo weighs each request, or fixed.
-export function ModelPicker({ value, effort = 'auto', onChange, onEffort, className }: {
-  value: string; effort?: string; onChange: (model: string) => void; onEffort?: (effort: string) => void; className?: string
+// allowed narrows the list further, to what the conversation's assistant
+// may use.
+export function ModelPicker({ value, effort = 'auto', onChange, onEffort, className, allowed }: {
+  value: string; effort?: string; onChange: (model: string) => void; onEffort?: (effort: string) => void; className?: string; allowed?: string[]
 }) {
   const t = useT()
-  const { options, auto } = useModelOptions()
+  const { options: mine, auto } = useModelOptions()
+  const options = allowed?.length ? mine.filter((m) => allowed.includes(m)) : mine
   const current = !value || value === 'auto' ? 'auto' : value
   const level = !effort || effort === 'auto' ? 'auto' : effort
   const all = options.includes(current) || current === 'auto' ? options : [current, ...options]
@@ -94,6 +97,7 @@ export function useRoutedText() {
     if (!r?.model) return ''
     const name = label(r.model)
     const model = r.by === 'fixed' ? t('mp.byFixed', { model: name })
+      : r.by === 'allowed' ? t('mp.byAllowed', { model: name })
       : r.by === 'default' || !r.tier ? name
       : t(r.tier === 'simple' ? 'mp.bySimple' : r.tier === 'hard' ? 'mp.byHard' : 'mp.byNormal', { model: name })
     return r.effort ? `${model} · ${t('mp.thinks', { level: t(levelKey(r.effort)) })}` : model

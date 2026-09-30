@@ -2,6 +2,8 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bot, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
+import { ModelChoice } from '../components/ModelChoice'
+import { label } from '../components/ModelSetup'
 import { capabilityLabel } from '../components/RoutineCard'
 import { Button, Card, EmptyState, RiskBadge } from '../components/ui'
 import { api, type Assistant } from '../lib/api'
@@ -40,6 +42,7 @@ export function Assistants() {
                 <div className="text-[14.5px] font-medium">{as.name}</div>
                 <p className="line-clamp-2 text-[12.5px] text-ink-3">{as.instructions}</p>
                 <p className="mt-1 text-[12px] text-ink-2">{as.capabilities.length ? t('as.count', { count: as.capabilities.length }) : t('as.everything')}</p>
+                {!!as.models?.length && <p className="text-[12px] text-ink-3">{t('lim.only', { list: as.models.map(label).join(', ') })}</p>}
               </div>
               <Button size="sm" variant="ghost" aria-label={t('as.edit', { name: as.name })} onClick={() => setEditing(as)}><Pencil size={14} /></Button>
               <Button size="sm" variant="ghost" aria-label={t('as.delete', { name: as.name })} onClick={() => remove.mutate(as.id)}><Trash2 size={14} /></Button>
@@ -58,8 +61,9 @@ function Editor({ start, onClose }: { start: Assistant; onClose: () => void }) {
   const caps = useQuery({ queryKey: ['capabilities'], queryFn: api.capabilities })
   const [as, setAs] = useState(start)
   const [all, setAll] = useState(start.id !== '' && start.capabilities.length === 0)
+  const [models, setModels] = useState<string[] | null>(start.models?.length ? start.models : null)
   const save = useMutation({
-    mutationFn: () => api.saveAssistant({ ...as, id: as.id || slug(as.name), capabilities: all ? [] : as.capabilities }),
+    mutationFn: () => api.saveAssistant({ ...as, id: as.id || slug(as.name), capabilities: all ? [] : as.capabilities, models: models ?? undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['assistants'] }); onClose() },
   })
   const groups = new Map<string, NonNullable<typeof caps.data>>()
@@ -69,6 +73,7 @@ function Editor({ start, onClose }: { start: Assistant; onClose: () => void }) {
   }
   const toggle = (name: string) => setAs({ ...as, capabilities: as.capabilities.includes(name) ? as.capabilities.filter((x) => x !== name) : [...as.capabilities, name] })
   const empty = !all && as.capabilities.length === 0
+  const noModel = models !== null && models.length === 0
 
   return (
     <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
@@ -110,8 +115,9 @@ function Editor({ start, onClose }: { start: Assistant; onClose: () => void }) {
               )}
               {empty && <p className="text-[12.5px] text-ink-3">{t('as.none')}</p>}
             </fieldset>
+            <ModelChoice value={models} onChange={setModels} legend={t('as.models')} />
             {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
-            <Button type="submit" variant="primary" disabled={!as.name.trim() || empty || save.isPending}>{t('as.save')}</Button>
+            <Button type="submit" variant="primary" disabled={!as.name.trim() || empty || noModel || save.isPending}>{t('as.save')}</Button>
           </form>
         </Dialog.Content>
       </Dialog.Portal>
