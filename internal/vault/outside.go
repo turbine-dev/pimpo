@@ -108,7 +108,7 @@ type RefError struct {
 }
 
 func (e *RefError) Error() string {
-	return fmt.Sprintf("the password manager reference %s could not be read: %s", e.Ref, e.Reason)
+	return fmt.Sprintf("the secret reference %s could not be read: %s", e.Ref, e.Reason)
 }
 
 // ErrBadReference is text that looks like a reference but is not one.

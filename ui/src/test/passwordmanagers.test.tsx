@@ -31,7 +31,7 @@ describe('Password managers', () => {
 
   it('shows why a reference was not found', async () => {
     vi.stubGlobal('fetch', vi.fn(async (url: string) => url === '/api/secrets/check'
-      ? new Response(JSON.stringify({ error: 'the password manager reference op://Casa/Nada/x could not be read: 1Password is not set up for the house' }), { status: 400 })
+      ? new Response(JSON.stringify({ error: 'the secret reference op://Casa/Nada/x could not be read: 1Password is not set up for the house' }), { status: 400 })
       : new Response('[]', { status: 200 })))
     wrap(<TelegramBots />)
     await userEvent.click(await screen.findByRole('switch', { name: 'Usar uma referência' }))
