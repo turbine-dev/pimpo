@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- **For this routine** on approvals: a routine repeats exactly the approved action (same recipients, hosts, amounts up to the limit) without asking, until its code changes; each person revokes theirs in **Routines**.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.
 - On Discord, Slack and Signal, replying to a notice with a number answers that notice, even after newer ones.
 - JSON connectors: a `connector.json` that describes HTTP requests, with no program, installable as a single file.

@@ -46,6 +46,8 @@ type Request struct {
 	// Responsible is the person who may answer; empty is the owner.
 	Responsible string    `json:"responsible,omitempty"`
 	Created     time.Time `json:"created"`
+	// Grantable says "approve for this routine" may answer it.
+	Grantable bool `json:"grantable,omitempty"`
 }
 
 type Manager struct {
@@ -107,6 +109,7 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 			req.Responsible = ""
 		}
 	}
+	req.Grantable = Grantable(a, req.Responsible)
 	ch := make(chan Answer, 1)
 	m.mu.Lock()
 	if m.pending == nil {
@@ -132,12 +135,12 @@ func (m *Manager) Ask(ctx context.Context, a policy.Action, reason string) (Answ
 	if suggest {
 		body += "\n\n" + i18n.T(ctx, "approval.suggest")
 	}
-	m.Notify.Notify(ctx, explore.Notice{
-		Text: body,
-		Actions: []explore.Action{{Label: i18n.T(ctx, "btn.approve"), Data: "approve:" + id}, {Label: i18n.T(ctx, "btn.batch"), Data: "batch:" + id},
-			{Label: i18n.T(ctx, "btn.always"), Data: "always:" + id}, {Label: i18n.T(ctx, "btn.deny"), Data: "deny:" + id}},
-		To: req.Responsible,
-	})
+	actions := []explore.Action{{Label: i18n.T(ctx, "btn.approve"), Data: "approve:" + id}, {Label: i18n.T(ctx, "btn.batch"), Data: "batch:" + id}}
+	if req.Grantable {
+		actions = append(actions, explore.Action{Label: i18n.T(ctx, "btn.grant"), Data: "grant:" + id})
+	}
+	actions = append(actions, explore.Action{Label: i18n.T(ctx, "btn.always"), Data: "always:" + id}, explore.Action{Label: i18n.T(ctx, "btn.deny"), Data: "deny:" + id})
+	m.Notify.Notify(ctx, explore.Notice{Text: body, Actions: actions, To: req.Responsible})
 	timeout := m.Timeout
 	if timeout == 0 {
 		timeout = 30 * time.Minute
@@ -190,6 +193,17 @@ func (m *Manager) Resolve(ctx context.Context, id string, ans Answer, actor stri
 	m.Events.Append(ctx, EventResolved, actor, map[string]string{"id": id, "answer": string(ans)})
 	ch <- ans
 	return true
+}
+
+// Get is a request still waiting.
+func (m *Manager) Get(id string) (Request, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	r, ok := m.open[id]
+	if _, waiting := m.pending[id]; !waiting {
+		return Request{}, false
+	}
+	return r, ok
 }
 
 // MayAnswer reports whether a person may answer a waiting request: only
