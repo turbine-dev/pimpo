@@ -110,7 +110,7 @@ func serve(args []string) error {
 		return err
 	}
 	if pendingImport(home) {
-		keep, err := applyImport(home)
+		keep, err := applyImport(home, vault.OSKey(home))
 		if err != nil {
 			return fmt.Errorf("finishing the import: %w", err)
 		}

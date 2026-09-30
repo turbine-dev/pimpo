@@ -102,7 +102,9 @@ func TestOlderDataOpens(t *testing.T) {
 			}
 			defer f.Close()
 			out := filepath.Join(t.TempDir(), "restored")
-			_, sec, err := backup.Unpack(f, out, pass)
+			// Fixtures of format 1 are not sealed as a whole; they open
+			// with pimpo import --unsealed.
+			_, sec, err := backup.UnpackUnsealed(f, out, pass)
 			if err != nil {
 				t.Fatalf("the backup does not open: %v", err)
 			}

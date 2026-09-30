@@ -32,8 +32,9 @@ func (a *App) exportBackup(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	if len(req.Passphrase) < 8 {
-		server.WriteError(w, server.StatusError{Status: 400, Msg: "choose a passphrase of at least 8 characters"})
+	// The file is always sealed as a whole: it holds everyone's chats.
+	if len(req.Passphrase) < backup.MinPassphrase {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: fmt.Sprintf("choose a passphrase of at least %d characters", backup.MinPassphrase)})
 		return
 	}
 	name := "pimpo-" + time.Now().Format("2006-01-02") + ".pimpo"

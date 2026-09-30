@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/zalando/go-keyring"
 )
@@ -29,24 +30,46 @@ type Vault struct {
 
 const table = `CREATE TABLE IF NOT EXISTS secrets (name TEXT PRIMARY KEY, nonce BLOB NOT NULL, value BLOB NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')))`
 
-// KeySource returns the 32-byte data key, creating it on first use.
-type KeySource func() ([]byte, error)
+// KeySource returns the 32-byte data key. It may create one only when
+// create is true, which Open sets when the vault holds no secrets yet: a
+// new key over existing secrets would lose them all.
+type KeySource func(create bool) ([]byte, error)
+
+// ErrKeyMissing means the vault holds secrets but their key is not here.
+var ErrKeyMissing = errors.New("the vault has secrets but its key is not on this computer (keychain item or vault.key): restore it, or import a backup")
 
 // OSKey stores the key in the OS keychain, falling back to a file in dir
-// when no keychain is available (headless Linux, CI).
+// when no keychain is available (headless Linux, CI). A vault.key file,
+// when present, wins: it is where the key went when the keychain failed.
 func OSKey(dir string) KeySource {
-	return func() ([]byte, error) {
+	return func(create bool) ([]byte, error) {
 		const service, user = "pimpo", "data-key"
-		if s, err := keyring.Get(service, user); err == nil {
-			return base64.StdEncoding.DecodeString(s)
+		file := filepath.Join(dir, "vault.key")
+		if _, err := os.Stat(file); err == nil {
+			return FileKey(file)(false)
+		}
+		s, err := keyring.Get(service, user)
+		if err == nil {
+			return decodeKey(s)
+		}
+		if !errors.Is(err, keyring.ErrNotFound) {
+			// The keychain did not answer (none here, locked, denied):
+			// that does not mean the key is gone.
+			if !create {
+				return nil, fmt.Errorf("the OS keychain did not give the vault key: %w", err)
+			}
+			return FileKey(file)(true)
 		}
 		// Before the renames the key lived under "zodim", and "vigia"
 		// before that; carry it over.
 		for _, old := range []string{"zodim", "vigia"} {
 			if s, err := keyring.Get(old, user); err == nil {
 				keyring.Set(service, user, s)
-				return base64.StdEncoding.DecodeString(s)
+				return decodeKey(s)
 			}
+		}
+		if !create {
+			return nil, ErrKeyMissing
 		}
 		key := make([]byte, 32)
 		if _, err := rand.Read(key); err != nil {
@@ -55,31 +78,60 @@ func OSKey(dir string) KeySource {
 		if err := keyring.Set(service, user, base64.StdEncoding.EncodeToString(key)); err == nil {
 			return key, nil
 		}
-		return FileKey(filepath.Join(dir, "vault.key"))()
+		return FileKey(file)(true)
 	}
 }
 
+// FileKey keeps the key in a 0600 file. It never replaces a file that is
+// there, even one it cannot read.
 func FileKey(path string) KeySource {
-	return func() ([]byte, error) {
-		if b, err := os.ReadFile(path); err == nil {
-			return base64.StdEncoding.DecodeString(string(b))
+	return func(create bool) ([]byte, error) {
+		b, err := os.ReadFile(path)
+		if err == nil {
+			return decodeKey(string(b))
+		}
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		if !create {
+			return nil, ErrKeyMissing
 		}
 		key := make([]byte, 32)
 		if _, err := rand.Read(key); err != nil {
 			return nil, err
 		}
-		if err := os.WriteFile(path, []byte(base64.StdEncoding.EncodeToString(key)), 0o600); err != nil {
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err != nil {
+			return nil, err
+		}
+		_, err = f.WriteString(base64.StdEncoding.EncodeToString(key))
+		if cerr := f.Close(); err == nil {
+			err = cerr
+		}
+		if err != nil {
 			return nil, err
 		}
 		return key, nil
 	}
 }
 
+func decodeKey(s string) ([]byte, error) {
+	k, err := base64.StdEncoding.DecodeString(strings.TrimSpace(s))
+	if err != nil || len(k) != 32 {
+		return nil, errors.New("the vault key is damaged")
+	}
+	return k, nil
+}
+
 func Open(db *sql.DB, key KeySource) (*Vault, error) {
 	if _, err := db.Exec(table); err != nil {
 		return nil, err
 	}
-	k, err := key()
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM secrets`).Scan(&n); err != nil {
+		return nil, err
+	}
+	k, err := key(n == 0)
 	if err != nil {
 		return nil, fmt.Errorf("vault key: %w", err)
 	}
@@ -92,6 +144,30 @@ func Open(db *sql.DB, key KeySource) (*Vault, error) {
 		return nil, err
 	}
 	return &Vault{db: db, aead: aead}, nil
+}
+
+// Wrap encrypts data that must wait on disk outside the database, such as
+// the secrets of a staged import, with the vault key. The label binds it
+// to its use.
+func (v *Vault) Wrap(label string, plain []byte) ([]byte, error) {
+	nonce := make([]byte, v.aead.NonceSize())
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, err
+	}
+	return v.aead.Seal(nonce, nonce, plain, []byte("wrap:"+label)), nil
+}
+
+// Unwrap opens what Wrap sealed under the same label.
+func (v *Vault) Unwrap(label string, sealed []byte) ([]byte, error) {
+	n := v.aead.NonceSize()
+	if len(sealed) < n {
+		return nil, errors.New("sealed data is too short")
+	}
+	plain, err := v.aead.Open(nil, sealed[:n], sealed[n:], []byte("wrap:"+label))
+	if err != nil {
+		return nil, errors.New("sealed data cannot be decrypted with this key")
+	}
+	return plain, nil
 }
 
 func (v *Vault) Set(ctx context.Context, name, value string) error {

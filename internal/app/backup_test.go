@@ -1,8 +1,10 @@
 package app
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -62,9 +64,35 @@ func TestBackupFromTheWebApp(t *testing.T) {
 	if code != 200 || out["restart"] != true {
 		t.Fatalf("import %d %v", code, out)
 	}
-	if _, err := os.Stat(filepath.Join(ta.Home, "import-pending", "secrets.json")); err != nil {
-		t.Fatal("import not staged")
+	if !bytes.HasPrefix(archive, []byte("PIMPO-SEALED-2")) || bytes.Contains(archive, []byte("pimpo.db")) {
+		t.Fatal("the web export is not sealed as a whole")
 	}
+	staged, err := os.ReadFile(filepath.Join(ta.Home, "import-pending", "secrets.sealed"))
+	if err != nil || bytes.Contains(staged, []byte("1:secret")) {
+		t.Fatalf("import not staged, or staged in plain text: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(ta.Home, "import-pending", "secrets.json")); err == nil {
+		t.Fatal("secrets staged in plain text")
+	}
+	code, out = upload(t, ta, "/api/backup/import", unsealedArchive(), map[string]string{"passphrase": "long enough pass"})
+	if code != 400 || !strings.Contains(fmt.Sprint(out["error"]), "not sealed") {
+		t.Fatalf("an unsealed backup was staged: %d %v", code, out)
+	}
+}
+
+// unsealedArchive is a backup as the web export made it before: anyone
+// could have edited its database.
+func unsealedArchive() []byte {
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+	for name, b := range map[string][]byte{"manifest.json": []byte(`{"format":"pimpo-backup-1"}`), "pimpo.db": []byte("x")} {
+		tw.WriteHeader(&tar.Header{Name: name, Mode: 0o600, Size: int64(len(b)), Typeflag: tar.TypeReg})
+		tw.Write(b)
+	}
+	tw.Close()
+	gw.Close()
+	return buf.Bytes()
 }
 
 func TestInstallConnectorWithoutRestart(t *testing.T) {

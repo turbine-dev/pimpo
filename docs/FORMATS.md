@@ -10,7 +10,7 @@ The promise is tested: `internal/compat` keeps, for each frozen format, data wri
 | Routine | `routine_versions.body`, gallery and repository files | 1 (no field) | JSON `{name, description, manifest, code, tests}`. New fields are optional and older Pimpos ignore them. Gallery signatures cover the bytes, so a routine is never rewritten to add a field. |
 | Connector | `connectors/<name>/connector.json` | 1 (no field) | JSON manifest with `capabilities` (name, risk, signature) and `contract`. Risks keep their meaning; new fields are optional. |
 | Memory | `memory/*.md` | 1 | One fact per line, with its trust (high, low, learned) and source. |
-| Backup | `.pimpo` file | `manifest.format` = `pimpo-backup-1` | gzip tar with the database copy, memory, connectors and the secrets sealed with the passphrase (scrypt + AES-GCM). Backups named `zodim-backup-1` and `vigia-backup-1` also open. |
+| Backup | `.pimpo` file | `PIMPO-SEALED-2` header, `manifest.format` = `pimpo-backup-2` | The header (with the scrypt cost) and then a gzip tar with a manifest listing the SHA-256 of every file, the database copy, memory, connectors and the secrets, all sealed with the passphrase (scrypt + AES-GCM). Cloud backups sealed as `PIMPO-SEALED-1` or `ZODIM-SEALED-1` still open; `pimpo-backup-1` files not sealed as a whole (and `zodim-backup-1`, `vigia-backup-1`) open only with `pimpo import --unsealed`. |
 
 ## Long-term support
 

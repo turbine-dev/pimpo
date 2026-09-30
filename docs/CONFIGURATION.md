@@ -24,8 +24,8 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 | `pimpo serve` | `--addr` (default `127.0.0.1:7788`), `--data DIR`, `--demo` | Runs the server, the web app and the channels. Prints the login link. |
 | `pimpo update` | `--check`, `--beta`, `--version vX.Y.Z`, `--rollback` | Replaces this binary with the latest release after checking it against the release's checksums, keeping the old one as `pimpo.previous`; `--rollback` puts it back. Restart Pimpo afterwards: its first start keeps a snapshot of the data (`before-VERSION`). The desktop app updates itself instead. |
 | `pimpo version` | | Prints the version. |
-| `pimpo export FILE.pimpo` | `--data DIR` | Writes everything to one file, secrets sealed with a passphrase. Refuses to overwrite an existing file. |
-| `pimpo import FILE.pimpo` | `--data DIR` | Replaces the data with a backup. Pimpo must be stopped. What was there is kept aside. |
+| `pimpo export FILE.pimpo` | `--data DIR` | Writes everything to one file, sealed as a whole with a passphrase. Refuses to overwrite an existing file. |
+| `pimpo import FILE.pimpo` | `--data DIR`, `--unsealed` | Replaces the data with a backup. Pimpo must be stopped. What was there is kept aside. `--unsealed` also takes a file exported before format 2, whose contents cannot be checked. |
 | `pimpo snapshots` | `--data DIR` | Lists the local snapshots, with date and size. |
 | `pimpo snapshot [LABEL…]` | `--data DIR` | Takes a snapshot now. |
 | `pimpo restore NAME` | `--data DIR` | Goes back to a snapshot. Pimpo must be stopped. The current state is snapshotted first. |
@@ -92,7 +92,7 @@ Pimpo reads only these. None of them is needed for normal use.
 |---|---|---|
 | `PIMPO_HOME` | every command | The data folder, when `--data` is not given. |
 | `ZODIM_HOME` | every command | Same as `PIMPO_HOME`, from when Pimpo was called Zodim. `PIMPO_HOME` wins. |
-| `PIMPO_BACKUP_PASSPHRASE` | `export`, `import` | The backup passphrase, instead of asking on the terminal. At least 8 characters. |
+| `PIMPO_BACKUP_PASSPHRASE` | `export`, `import` | The backup passphrase, instead of asking on the terminal. At least 12 characters for a new export. |
 | `PIMPO_TOKEN` | `serve` | Fixes the login token instead of the stored one, and stores it. The desktop app and browser tests use it. |
 | `PIMPO_TELEGRAM_API` | `serve` | The address of a self-hosted Telegram Bot API server. Empty uses Telegram's. |
 | `PIMPO_DESKTOP_NOTIFY` | `serve` | Any value: show notices as system notifications, and complete `PATH` from the usual install folders and the login shell (so the `claude`, `codex` and `opencode` CLIs are found when started from the Finder). Set by the desktop app. |
@@ -337,7 +337,7 @@ Without a local speech-to-text model, voice notes use whisper.cpp (`whisper-cli`
 There are three kinds of copies. The [user guide](USER_GUIDE.md#moving-and-backups) has the details.
 
 - **Local snapshots** (**Settings › Backup › Local copies**, `pimpo snapshots`, `pimpo restore`): the database and memory, every day, before each update, before an import and before a migration. The last 10 are kept in `~/.pimpo/snapshots`. A restore chosen in the app takes effect at the next start. A snapshot brings back data, not the old version of the app.
-- **Export and import** (**Settings › Backup › Export and import everything**, `pimpo export`, `pimpo import`): one `.pimpo` file with the database, memory, installed connectors and the vault's secrets. The secrets are sealed with a passphrase of at least 8 characters; the rest of the file is not encrypted, so keep it somewhere private. Importing keeps what was there in `before-import-<date>/`.
+- **Export and import** (**Settings › Backup › Export and import everything**, `pimpo export`, `pimpo import`): one `.pimpo` file with the database, memory, installed connectors and the vault's secrets. The whole file is encrypted and authenticated with a passphrase of at least 12 characters, and an import checks every file and the event history before placing anything. Files exported before format 2 (only their secrets sealed) open only with `pimpo import --unsealed`. Importing keeps what was there in `before-import-<date>/`.
 - **Cloud backup** (**Settings › Backup › Automatic cloud backup**): the same export, encrypted as a whole on this computer (database and memory included), sent daily (default) or weekly to Amazon S3 or a compatible service (R2, B2, MinIO, Wasabi) or to Google Drive. It keeps the newest copies, 7 by default, from 1 to 90. S3 needs the bucket, region, service address (empty for Amazon), an optional folder, and an access key that can read, write, list and delete there. Drive needs Google connected with Drive allowed.
 
 Keep the passphrase outside Pimpo: without it no one can open a backup.
