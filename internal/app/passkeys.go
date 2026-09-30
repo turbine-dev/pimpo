@@ -350,7 +350,7 @@ func (a *App) passkeyRoutes() {
 		a.savePasskeys(ctx, list)
 		passkeysMu.Unlock()
 		token := a.newSession(ctx, who, "Passkey · "+name)
-		server.SetSession(w, token)
+		server.SetSession(w, r, token)
 		a.Events.Append(ctx, "passkey.signed_in", "human:"+who, map[string]string{"id": id, "person": who})
 		server.WriteJSON(w, 200, map[string]string{"state": "signed_in"})
 	})

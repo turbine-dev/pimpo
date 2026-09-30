@@ -152,3 +152,23 @@ func TestDevicesActForTheirPerson(t *testing.T) {
 		t.Fatal("a stranger got in")
 	}
 }
+
+// The session cookie is Secure over https and only left without it on
+// plain http, where browsers would drop a Secure cookie.
+func TestSessionCookieIsSecureOverHTTPS(t *testing.T) {
+	for _, c := range []struct {
+		proto  string
+		secure bool
+	}{{"https", true}, {"", false}} {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest("GET", "/auth?token=tok", nil)
+		if c.proto != "" {
+			r.Header.Set("X-Forwarded-Proto", c.proto)
+		}
+		SetSession(w, r, "tok")
+		got := w.Result().Cookies()
+		if len(got) != 1 || got[0].Secure != c.secure || !got[0].HttpOnly {
+			t.Fatalf("proto %q: %+v", c.proto, got)
+		}
+	}
+}

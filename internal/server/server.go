@@ -144,7 +144,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		s.refuse(w, r, r.URL.Query().Get("token"), "invalid or expired link")
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: cookie, Value: r.URL.Query().Get("token"), Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
+	SetSession(w, r, r.URL.Query().Get("token"))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -185,10 +185,16 @@ func (s *Server) auth(pattern string, h http.HandlerFunc) http.Handler {
 	})
 }
 
-// SetSession signs the browser in with a session token, as the login link
-// does.
-func SetSession(w http.ResponseWriter, token string) {
-	http.SetCookie(w, &http.Cookie{Name: cookie, Value: token, Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
+// SetSession signs the browser in with a session token. The cookie is
+// Secure whenever the page came over https, directly or through a proxy
+// such as Tailscale's; only plain http on this computer or the home
+// network goes without, where browsers would otherwise drop it.
+func SetSession(w http.ResponseWriter, r *http.Request, token string) {
+	http.SetCookie(w, &http.Cookie{Name: cookie, Value: token, Path: "/", HttpOnly: true, Secure: overHTTPS(r), SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
+}
+
+func overHTTPS(r *http.Request) bool {
+	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") || strings.HasPrefix(strings.ToLower(r.Header.Get("Origin")), "https://")
 }
 
 // TokenOf is the credential a request carries: a bearer token, or the
