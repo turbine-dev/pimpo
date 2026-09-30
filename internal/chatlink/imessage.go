@@ -74,7 +74,8 @@ func (m *IMessage) Check(ctx context.Context) error {
 }
 
 // Run looks for messages that arrive after it starts; older ones are never
-// answered.
+// answered. Only iMessage counts: an SMS sender's number is easy to fake,
+// so texts relayed from the iPhone are ignored.
 func (m *IMessage) Run(ctx context.Context, on func(Inbound)) error {
 	db, err := m.open()
 	if err != nil {
@@ -99,7 +100,7 @@ func (m *IMessage) Run(ctx context.Context, on func(Inbound)) error {
 		}
 		rows, err := db.QueryContext(ctx, `SELECT m.ROWID, coalesce(h.id, ''), coalesce(m.text, ''), m.attributedBody
 			FROM message m LEFT JOIN handle h ON h.ROWID = m.handle_id
-			WHERE m.ROWID > ? AND m.is_from_me = 0 ORDER BY m.ROWID`, last)
+			WHERE m.ROWID > ? AND m.is_from_me = 0 AND m.service = 'iMessage' ORDER BY m.ROWID`, last)
 		if err != nil {
 			return err
 		}

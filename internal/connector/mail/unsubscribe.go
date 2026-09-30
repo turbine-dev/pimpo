@@ -45,6 +45,16 @@ func listUnsubscribe(raw []byte) (target string, oneClick bool) {
 	return https, false
 }
 
+// authResults reads the Authentication-Results headers (RFC 8601) in
+// the order they appear.
+func authResults(raw []byte) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	h, _ := textproto.NewReader(bufio.NewReader(strings.NewReader(string(raw)))).ReadMIMEHeader()
+	return h.Values("Authentication-Results")
+}
+
 // unsubscribeClient posts one-click unsubscribes: the link comes from a
 // stranger's email, so it follows no redirect and never reaches this
 // computer or a private network. Tests replace it.

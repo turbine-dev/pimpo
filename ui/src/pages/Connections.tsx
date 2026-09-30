@@ -11,7 +11,7 @@ import { fill, useT } from '../lib/i18n'
 
 export function Connections() {
   const t = useT()
-  const q = useQuery({ queryKey: ['connections'], queryFn: api.connections, refetchInterval: (d) => (d.state.data?.some((c) => c.kind === 'telegram' && c.configured && !c.paired) ? 3000 : false) })
+  const q = useQuery({ queryKey: ['connections'], queryFn: api.connections, refetchInterval: (d) => (d.state.data?.some((c) => (c.kind === 'telegram' || c.kind === 'whatsapp') && c.configured && !c.paired) ? 3000 : false) })
   const by = (k: Connection['kind']) => q.data?.find((c) => c.kind === k)
   return (
     <div className="mx-auto max-w-4xl space-y-10">

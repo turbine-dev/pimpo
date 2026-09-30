@@ -26,6 +26,8 @@ type personView struct {
 
 func (a *App) listPeople(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	// An invite that ran out is replaced, so the code shown always works.
+	a.People.RenewInvites(ctx)
 	list, err := a.People.List(ctx)
 	if err != nil {
 		server.WriteError(w, err)

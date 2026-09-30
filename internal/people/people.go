@@ -4,11 +4,9 @@ package people
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"github.com/turbine-dev/pimpo/internal/i18n"
-	"math/big"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,9 +42,11 @@ type Person struct {
 	WhatsApp string `json:"whatsapp,omitempty"`
 	// Responsible answers approvals for this person's requests.
 	Responsible string `json:"responsible,omitempty"`
-	// Invite is the code they send to the bot to pair; cleared on use.
-	Invite  string    `json:"invite,omitempty"`
-	Created time.Time `json:"created"`
+	// Invite is the code they send to the bot to pair; cleared on use,
+	// and it works until InviteUntil.
+	Invite      string    `json:"invite,omitempty"`
+	InviteUntil time.Time `json:"invite_until,omitzero"`
+	Created     time.Time `json:"created"`
 }
 
 const key = "people"
@@ -151,7 +151,7 @@ func (d *Directory) PairWhatsApp(ctx context.Context, invite, id string) (Person
 		return Person{}, err
 	}
 	for i, p := range list {
-		if invite != "" && p.Invite == invite {
+		if inviteMatches(p, invite, time.Now()) {
 			list[i].WhatsApp, list[i].Invite = id, ""
 			return list[i], d.save(ctx, list)
 		}
@@ -184,11 +184,6 @@ func (d *Directory) Responsible(ctx context.Context, id string) Person {
 	}
 	owner, _ := d.Get(ctx, OwnerID)
 	return owner
-}
-
-func code() string {
-	n, _ := rand.Int(rand.Reader, big.NewInt(90000000))
-	return strconv.FormatInt(n.Int64()+10000000, 10)
 }
 
 func slug(name string) string {
@@ -230,7 +225,7 @@ func (d *Directory) Add(ctx context.Context, name string, role Role, responsible
 		}
 		id = slug(name) + strconv.Itoa(n)
 	}
-	p := Person{ID: id, Name: name, Role: role, Responsible: Norm(responsible), Invite: code(), Created: time.Now()}
+	p := Person{ID: id, Name: name, Role: role, Responsible: Norm(responsible), Invite: NewCode(), InviteUntil: time.Now().Add(InviteLife), Created: time.Now()}
 	list = append(list, p)
 	return p, d.save(ctx, list)
 }
@@ -249,7 +244,7 @@ func (d *Directory) Pair(ctx context.Context, invite string, chat int64) (Person
 		}
 	}
 	for i, p := range list {
-		if invite != "" && p.Invite == invite {
+		if inviteMatches(p, invite, time.Now()) {
 			for _, q := range list {
 				if q.Chat == chat {
 					return Person{}, errors.New("this chat already belongs to someone")
@@ -260,6 +255,28 @@ func (d *Directory) Pair(ctx context.Context, invite string, chat int64) (Person
 		}
 	}
 	return Person{}, ErrUnknown
+}
+
+// RenewInvites gives everyone still unpaired whose invite ran out a new
+// one, so the People page never shows a code that no longer works.
+func (d *Directory) RenewInvites(ctx context.Context) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	list, err := d.load(ctx)
+	if err != nil {
+		return err
+	}
+	changed := false
+	for i, p := range list {
+		if p.Chat == 0 && p.WhatsApp == "" && !time.Now().Before(p.InviteUntil) {
+			list[i].Invite, list[i].InviteUntil = NewCode(), time.Now().Add(InviteLife)
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	return d.save(ctx, list)
 }
 
 // Update changes a person's role or responsible.

@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -91,6 +92,10 @@ func (c Client) Send(ctx context.Context, to, text string, buttons ...Button) er
 
 // Inbound is one message someone sent to the business number.
 type Inbound struct {
+	// ID is Meta's message id (wamid…), the same on a retry or replay.
+	ID string
+	// Time is when the person sent it.
+	Time time.Time
 	From string
 	Name string
 	Text string
@@ -132,9 +137,11 @@ func Parse(body []byte) ([]Inbound, error) {
 						} `json:"profile"`
 					} `json:"contacts"`
 					Messages []struct {
-						From string `json:"from"`
-						Type string `json:"type"`
-						Text struct {
+						ID        string `json:"id"`
+						Timestamp string `json:"timestamp"`
+						From      string `json:"from"`
+						Type      string `json:"type"`
+						Text      struct {
 							Body string `json:"body"`
 						} `json:"text"`
 						Interactive struct {
@@ -161,7 +168,10 @@ func Parse(body []byte) ([]Inbound, error) {
 				names[c.WaID] = c.Profile.Name
 			}
 			for _, m := range ch.Value.Messages {
-				in := Inbound{From: m.From, Name: names[m.From]}
+				in := Inbound{ID: m.ID, From: m.From, Name: names[m.From]}
+				if sec, err := strconv.ParseInt(m.Timestamp, 10, 64); err == nil {
+					in.Time = time.Unix(sec, 0)
+				}
 				switch m.Type {
 				case "text":
 					in.Text = m.Text.Body

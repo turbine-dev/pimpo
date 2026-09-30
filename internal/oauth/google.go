@@ -46,6 +46,9 @@ type Google struct {
 	expires time.Time
 }
 
+// stateLife is how long a started sign-in may take.
+const stateLife = 15 * time.Minute
+
 type pending struct {
 	verifier string
 	redirect string
@@ -86,6 +89,12 @@ func (g *Google) Begin(ctx context.Context, clientID, secret, redirect string) (
 	if g.pending == nil {
 		g.pending = map[string]pending{}
 	}
+	// Sign-ins that were started and never finished are dropped.
+	for s, p := range g.pending {
+		if time.Since(p.created) > stateLife {
+			delete(g.pending, s)
+		}
+	}
 	g.pending[state] = pending{verifier: verifier, redirect: redirect, created: time.Now()}
 	g.mu.Unlock()
 	auth, _ := g.urls()
@@ -114,7 +123,7 @@ func (g *Google) Finish(ctx context.Context, state, code string) (string, error)
 	p, ok := g.pending[state]
 	delete(g.pending, state)
 	g.mu.Unlock()
-	if !ok || time.Since(p.created) > 15*time.Minute {
+	if !ok || time.Since(p.created) > stateLife {
 		return "", errors.New("this sign-in link expired; start again from Connections")
 	}
 	id, _ := g.Store.Get(ctx, "google.client_id")
