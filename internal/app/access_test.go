@@ -218,3 +218,32 @@ func TestMembersCannotAdministerTheHouse(t *testing.T) {
 		t.Fatalf("a removed person's device still opens Pimpo: %d", code)
 	}
 }
+
+// A device left unused for months no longer opens Pimpo.
+func TestIdleDevicesAreSignedOut(t *testing.T) {
+	h := newHouse(t)
+	ctx := context.Background()
+	list := h.devices(ctx)
+	for i := range list {
+		list[i].LastSeen = time.Now().Add(-deviceIdle - time.Hour)
+	}
+	h.saveDevices(ctx, list)
+	if code, _ := h.raw(t, h.ana, "GET", "/api/memory", nil); code != 401 {
+		t.Fatalf("an idle device still opens Pimpo: %d", code)
+	}
+}
+
+// Past the limit, wrong sign-ins get "too many" and the right one still works.
+func TestWrongSignInsAreLimited(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	last := 0
+	for i := 0; i < 25; i++ {
+		last, _ = ta.raw(t, "wrong", "GET", "/api/state", nil)
+	}
+	if last != 429 {
+		t.Fatalf("after many wrong sign-ins: %d", last)
+	}
+	if code, _ := ta.raw(t, "tok", "GET", "/api/state", nil); code != 200 {
+		t.Fatalf("the owner was locked out: %d", code)
+	}
+}

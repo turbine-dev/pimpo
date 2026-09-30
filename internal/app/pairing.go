@@ -42,6 +42,10 @@ type Device struct {
 
 const devicesKey = "devices"
 
+// deviceIdle is how long a paired device may go unused before it has to
+// be paired again.
+const deviceIdle = 180 * 24 * time.Hour
+
 var devicesMu sync.Mutex
 
 func hashToken(t string) string { s := sha256.Sum256([]byte(t)); return hex.EncodeToString(s[:]) }
@@ -68,6 +72,15 @@ func (a *App) deviceValid(token string) (string, bool) {
 	list := a.devices(ctx)
 	for i, d := range list {
 		if subtle.ConstantTimeCompare([]byte(d.Hash), []byte(h)) == 1 {
+			// A device unused for months is signed out: a phone left in a
+			// drawer should not open Pimpo forever.
+			last := d.LastSeen
+			if last.IsZero() {
+				last = d.Created
+			}
+			if time.Since(last) > deviceIdle {
+				return "", false
+			}
 			person := people.Norm(d.Person)
 			if person != people.OwnerID && a.People != nil {
 				if _, err := a.People.Get(ctx, person); err != nil {

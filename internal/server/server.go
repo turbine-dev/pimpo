@@ -10,9 +10,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/coder/websocket"
@@ -38,6 +40,56 @@ type Server struct {
 	Allow    func(pattern, person string) bool
 	mux      *http.ServeMux
 	patterns []string
+	failures limiter
+}
+
+// limiter counts failed sign-ins by address. Tokens are random 192-bit
+// values nobody can guess, so this is about not letting anyone hammer the
+// login: past the limit, wrong attempts wait and get "too many".
+type limiter struct {
+	mu   sync.Mutex
+	seen map[string][]time.Time
+}
+
+const (
+	failWindow = 10 * time.Minute
+	failLimit  = 20
+)
+
+func clientOf(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
+
+// fail records a failed attempt and says whether the address is over the
+// limit.
+func (l *limiter) fail(addr string, now time.Time) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.seen == nil || len(l.seen) > 10000 {
+		l.seen = map[string][]time.Time{}
+	}
+	kept := l.seen[addr][:0]
+	for _, t := range l.seen[addr] {
+		if now.Sub(t) < failWindow {
+			kept = append(kept, t)
+		}
+	}
+	kept = append(kept, now)
+	l.seen[addr] = kept
+	return len(kept) > failLimit
+}
+
+func (s *Server) refuse(w http.ResponseWriter, r *http.Request, msg string) {
+	if s.failures.fail(clientOf(r), time.Now()) {
+		time.Sleep(time.Second)
+		WriteJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many wrong sign-ins from here; wait a few minutes"})
+		return
+	}
+	WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": msg})
 }
 
 const cookie = "pimpo_session"
@@ -86,7 +138,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	if !s.valid(r.URL.Query().Get("token")) {
-		http.Error(w, "invalid or expired link", http.StatusUnauthorized)
+		s.refuse(w, r, "invalid or expired link")
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: cookie, Value: r.URL.Query().Get("token"), Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 60 * 60 * 24 * 365})
@@ -116,7 +168,7 @@ func (s *Server) auth(pattern string, h http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		person, ok := s.who(TokenOf(r))
 		if !ok {
-			WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "open the login link Pimpo printed at startup"})
+			s.refuse(w, r, "open the login link Pimpo printed at startup")
 			return
 		}
 		// Every request acts for the person its token belongs to, and
