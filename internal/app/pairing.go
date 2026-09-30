@@ -41,6 +41,10 @@ type Device struct {
 	// KeyHash is the phone's key for automations (iOS Shortcuts, Tasker):
 	// it can only report phone events, never open the app.
 	KeyHash string `json:"key_hash,omitempty"`
+	// WidgetKeyHash is the phone's key for its home-screen widgets: it
+	// reads only the widgets in Pins, never anything else.
+	WidgetKeyHash string   `json:"widget_key_hash,omitempty"`
+	Pins          []string `json:"pins,omitempty"`
 	// Passkey is the passkey that opened this session; removing the
 	// passkey signs it out.
 	Passkey string `json:"passkey,omitempty"`

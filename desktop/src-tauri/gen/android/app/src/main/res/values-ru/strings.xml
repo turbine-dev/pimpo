@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Виджет с панелей Pimpo</string>
+    <string name="widget_choose">Выберите виджет</string>
+    <string name="widget_loading">Загрузка…</string>
+    <string name="widget_none">На этом телефоне пока нет виджетов. Откройте Pimpo и в меню виджета выберите «Добавить на главный экран».</string>
+    <string name="widget_missing">Этого виджета больше нет на телефоне. Откройте Pimpo, чтобы выбрать другой.</string>
+    <string name="status_ok">OK</string>
+    <string name="status_warn">Внимание</string>
+    <string name="status_alert">Тревога</string>
+    <string name="builtin_needs">Нужно ваше решение</string>
+    <string name="builtin_today">Сегодня</string>
+    <string name="builtin_spent">Потрачено за месяц</string>
+    <string name="builtin_budget">Лимит на сегодня</string>
+    <string name="builtin_reminders">Напоминания</string>
+</resources>

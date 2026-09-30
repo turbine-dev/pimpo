@@ -627,6 +627,7 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'makeWidget.kind.progress': "目标",
   'makeWidget.kind.status': "状态",
   'makeWidget.kind.text': "文本",
+  'widget.pinHome': "添加到主屏幕",
   'dash.title': "仪表板",
   'dash.add': "添加小组件",
   'dash.done': "完成",

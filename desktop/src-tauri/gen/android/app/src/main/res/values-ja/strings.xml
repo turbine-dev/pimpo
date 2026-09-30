@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Pimpo のダッシュボードのウィジェット</string>
+    <string name="widget_choose">ウィジェットを選ぶ</string>
+    <string name="widget_loading">読み込み中…</string>
+    <string name="widget_none">このスマートフォンにはまだウィジェットがありません。Pimpo を開き、ウィジェットのメニューで「ホーム画面に追加」を選んでください。</string>
+    <string name="widget_missing">このウィジェットはもうこのスマートフォンにありません。Pimpo を開いて別のものを選んでください。</string>
+    <string name="status_ok">OK</string>
+    <string name="status_warn">注意</string>
+    <string name="status_alert">警告</string>
+    <string name="builtin_needs">対応が必要</string>
+    <string name="builtin_today">今日</string>
+    <string name="builtin_spent">今月の支出</string>
+    <string name="builtin_budget">今日の上限</string>
+    <string name="builtin_reminders">リマインダー</string>
+</resources>

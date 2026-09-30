@@ -627,6 +627,7 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'makeWidget.kind.progress': "目標",
   'makeWidget.kind.status': "状態",
   'makeWidget.kind.text': "テキスト",
+  'widget.pinHome': "ホーム画面に追加",
   'dash.title': "ダッシュボード",
   'dash.add': "ウィジェットを追加",
   'dash.done': "完了",

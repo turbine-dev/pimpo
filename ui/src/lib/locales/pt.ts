@@ -627,6 +627,7 @@ export const pt = {
   'makeWidget.kind.progress': "Meta",
   'makeWidget.kind.status': "Situação",
   'makeWidget.kind.text': "Texto",
+  'widget.pinHome': "Adicionar à tela inicial",
   'dash.title': "Painéis",
   'dash.add': "Adicionar widget",
   'dash.done': "Pronto",

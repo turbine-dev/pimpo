@@ -7,6 +7,7 @@ import { cn } from '../lib/cn'
 import { useT, type TKey } from '../lib/i18n'
 import { Button } from '../components/ui'
 import { DragHandle, WidgetBody, WidgetCard } from '../components/widgets/Widget'
+import { canPinToHome, pinToHome } from '../components/widgets/homescreen'
 
 const COLS = 12
 const ROW = 72 // px per grid row on a computer
@@ -257,7 +258,8 @@ function Board({ board, editing, onLayout, onAdd }: { board: Dashboard; editing:
                 drag={editing && wide ? <DragHandle onPointerDown={(e) => start(e, it, 'move')} aria-label={t('dash.move')} /> : undefined}
                 onRemove={editing ? () => commit(layout.filter((l) => l.id !== it.id)) : undefined}
                 onRefresh={'hidden' in w || w.source === 'builtin' ? undefined : () => refresh(it.id)}
-                onShare={'hidden' in w || w.source !== 'routine' || !w.mine ? undefined : (s) => share(it.id, s)}>
+                onShare={'hidden' in w || w.source !== 'routine' || !w.mine ? undefined : (s) => share(it.id, s)}
+                onPinHome={'hidden' in w || !canPinToHome() ? undefined : () => { pinToHome(it.id).catch(() => {}) }}>
                 {!('hidden' in w) && <WidgetBody w={w} size={size} />}
               </WidgetCard>
             )}

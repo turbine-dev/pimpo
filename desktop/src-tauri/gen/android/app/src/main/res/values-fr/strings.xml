@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Un widget de vos tableaux de bord Pimpo</string>
+    <string name="widget_choose">Choisissez un widget</string>
+    <string name="widget_loading">Chargement…</string>
+    <string name="widget_none">Pas encore de widgets sur ce téléphone. Ouvrez Pimpo et, dans le menu d\'un widget, choisissez Ajouter à l\'écran d\'accueil.</string>
+    <string name="widget_missing">Ce widget n\'est plus sur ce téléphone. Ouvrez Pimpo pour en choisir un autre.</string>
+    <string name="status_ok">OK</string>
+    <string name="status_warn">Attention</string>
+    <string name="status_alert">Alerte</string>
+    <string name="builtin_needs">Vous attend</string>
+    <string name="builtin_today">Aujourd\'hui</string>
+    <string name="builtin_spent">Dépensé ce mois-ci</string>
+    <string name="builtin_budget">Limite du jour</string>
+    <string name="builtin_reminders">Rappels</string>
+</resources>

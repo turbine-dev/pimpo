@@ -186,3 +186,50 @@ func TestARoutineTurnsIntoAWidgetThroughANewExploration(t *testing.T) {
 		t.Fatalf("unknown routine: %d", code)
 	}
 }
+
+// A phone's widget key reads only the widgets pinned to that phone, in its
+// person's name, and nothing else; it dies with the device.
+func TestTheWidgetKeyReadsOnlyThePhonesPins(t *testing.T) {
+	h := newHouse(t)
+	if code, _ := h.raw(t, "tok", "POST", "/api/phone/widgets", js(map[string]string{"pin": "w_owner"})); code != 403 {
+		t.Fatalf("pinned from something that is not a phone: %d", code)
+	}
+	// Ana cannot pin the owner's widget, only hers.
+	if code, _ := h.raw(t, h.ana, "POST", "/api/phone/widgets", js(map[string]string{"pin": h.owner["widget"]})); code != 404 {
+		t.Fatalf("Ana pinned the owner's widget: %d", code)
+	}
+	h.raw(t, h.ana, "POST", "/api/phone/widgets", js(map[string]string{"pin": "builtin:today"}))
+	_, body := h.raw(t, h.ana, "POST", "/api/phone/widgets", js(map[string]string{"pin": h.anas["widget"]}))
+	key := field(body, "key")
+	if !strings.HasPrefix(key, "wk_") {
+		t.Fatalf("no widget key: %s", body)
+	}
+	code, feed := h.raw(t, key, "GET", "/api/widgets/feed", nil)
+	if code != 200 || !strings.Contains(feed, h.anaMark) || !strings.Contains(feed, "builtin:today") || strings.Contains(feed, h.ownerMark) {
+		t.Fatalf("feed %d %s", code, feed)
+	}
+	// The key opens nothing else, and only the newest key works.
+	for _, path := range []string{"/api/widgets", "/api/state", "/api/widgets/" + h.anas["widget"], "/api/routines"} {
+		if code, _ := h.raw(t, key, "GET", path, nil); code != 401 {
+			t.Fatalf("the widget key opened %s: %d", path, code)
+		}
+	}
+	if code, _ := h.raw(t, h.ana, "GET", "/api/widgets/feed", nil); code != 401 {
+		t.Fatalf("the phone's own login read the feed: %d", code)
+	}
+	_, body = h.raw(t, h.ana, "POST", "/api/phone/widgets", js(map[string]string{"unpin": "builtin:today"}))
+	if code, _ := h.raw(t, key, "GET", "/api/widgets/feed", nil); code != 401 {
+		t.Fatalf("an old widget key still reads: %d", code)
+	}
+	key = field(body, "key")
+	if _, feed := h.raw(t, key, "GET", "/api/widgets/feed", nil); strings.Contains(feed, "builtin:today") {
+		t.Fatalf("an unpinned widget is still in the feed: %s", feed)
+	}
+	// Removing Ana revokes her phone, and its widget key with it.
+	if code, _ := h.raw(t, "tok", "DELETE", "/api/people/"+h.anaID, nil); code != 200 {
+		t.Fatalf("remove Ana: %d", code)
+	}
+	if code, _ := h.raw(t, key, "GET", "/api/widgets/feed", nil); code != 401 {
+		t.Fatalf("a removed person's widget key still reads: %d", code)
+	}
+}

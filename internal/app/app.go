@@ -327,6 +327,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.passkeyRoutes()
 	a.accountRoutes()
 	a.widgetRoutes()
+	a.widgetFeedRoutes()
 	a.organizeRoutes()
 	a.chatRoutes()
 	a.assistantRoutes()

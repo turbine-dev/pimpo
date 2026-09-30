@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Um widget dos seus painéis do Pimpo</string>
+    <string name="widget_choose">Escolha um widget</string>
+    <string name="widget_loading">Carregando…</string>
+    <string name="widget_none">Ainda não há widgets neste celular. Abra o Pimpo e, no menu de um widget, escolha Adicionar à tela inicial.</string>
+    <string name="widget_missing">Este widget não está mais neste celular. Abra o Pimpo para escolher outro.</string>
+    <string name="status_ok">OK</string>
+    <string name="status_warn">Atenção</string>
+    <string name="status_alert">Alerta</string>
+    <string name="builtin_needs">Precisa de você</string>
+    <string name="builtin_today">Hoje</string>
+    <string name="builtin_spent">Gasto no mês</string>
+    <string name="builtin_budget">Limite de hoje</string>
+    <string name="builtin_reminders">Lembretes</string>
+</resources>

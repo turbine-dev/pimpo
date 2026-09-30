@@ -636,6 +636,7 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'makeWidget.kind.progress': "Objectif",
   'makeWidget.kind.status': "État",
   'makeWidget.kind.text': "Texte",
+  'widget.pinHome': "Ajouter à l'écran d'accueil",
   'dash.title': "Tableaux de bord",
   'dash.add': "Ajouter un widget",
   'dash.done': "Terminé",

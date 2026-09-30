@@ -627,6 +627,7 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'makeWidget.kind.progress': "목표",
   'makeWidget.kind.status': "상태",
   'makeWidget.kind.text': "텍스트",
+  'widget.pinHome': "홈 화면에 추가",
   'dash.title': "대시보드",
   'dash.add': "위젯 추가",
   'dash.done': "완료",

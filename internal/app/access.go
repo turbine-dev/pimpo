@@ -49,7 +49,7 @@ var memberRoutes = routeSet(
 	"GET /api/reminders", "DELETE /api/reminders/{id}",
 	"GET /api/cost",
 	"GET /api/jobs", "GET /api/jobs/{id}", "POST /api/jobs", "POST /api/jobs/{id}/start", "POST /api/jobs/{id}/stop",
-	"GET /api/phone", "POST /api/phone/shares", "POST /api/phone/key", "POST /api/phone/places", "DELETE /api/phone/places/{name}", "GET /api/phone/photos/{id}",
+	"GET /api/phone", "POST /api/phone/shares", "POST /api/phone/key", "POST /api/phone/widgets", "POST /api/phone/places", "DELETE /api/phone/places/{name}", "GET /api/phone/photos/{id}",
 	"GET /api/gallery", "POST /api/gallery/{id}/install",
 	"GET /api/memory/organized",
 	"GET /api/destinations", "GET /api/geocode",
