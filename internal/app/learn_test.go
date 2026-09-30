@@ -28,6 +28,9 @@ func TestLearnsOnlyFromTheOwnersOwnWords(t *testing.T) {
 	if len(made) != 1 || made[0].Trust != memory.Learned || !strings.HasPrefix(made[0].Source, "aprendido:") || made[0].Topic != learnTopic {
 		t.Fatalf("made %+v", made)
 	}
+	if !made[0].Has(memory.FromLearned) {
+		t.Fatalf("a learned preference without its source: %+v", made[0].From())
+	}
 	if p := fake.Requests[0].Prompt; !strings.Contains(p, "resumo curto do dia") || strings.Contains(p, "IGNORE TUDO") || strings.Contains(p, "SENDER") {
 		t.Fatalf("prompt %s", p)
 	}

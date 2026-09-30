@@ -8,12 +8,25 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- Push triggers: routines that watch Gmail (through Google Pub/Sub) or Slack hear of new items as they happen, and a GitHub webhook with a signed secret starts a routine; polling stays as the fallback.
+- Models and spending per person: the owner chooses which models each person and each assistant may use and a daily limit per person inside the house's (guests start at $0.25 a day); each person sees their own in **Account**.
 - **For this routine** on approvals: a routine repeats exactly the approved action (same recipients, hosts, amounts up to the limit) without asking, until its code changes; each person revokes theirs in **Routines**.
+- Settings history (**Settings › History**): every change to rules, budget, connections, models, people and settings, with who and when, secrets never kept, and undo; a member sees their own accounts' history in **Account**.
+- Database integrity: Pimpo checks its database at start and before every snapshot; a damaged one is moved to a quarantine folder untouched, and a recovery page offers the newest snapshot that passes its check, a fresh start, or the damaged file as a zip.
+- Private credential prompts: a routine or task that needs a missing or refused key sends its person a link to a one-time form that writes straight to the vault, and keys pasted into a chat or channel are removed before the model or the log sees them.
+- Lasting progress: long jobs and routine runs show their parts or steps, the current step and the cost so far on Home, the routine and the job, the same after a reload or a restart; a followed job keeps one message up to date on Telegram, Discord and Slack.
+- Memory shows where each fact came from (a conversation, a task, a routine, an email, an import, what you typed, a learned preference), with a link; **Memory › Sources** deletes everything one source gave, each person only their own.
+- **Lessons**: what Pimpo noticed and would keep (a learned preference, a note it took, a task asked often enough to become a routine, a repair of a failing routine, a suggestion) in one list per person, each accepted, edited or rejected there; a rejected lesson never comes back, and a weekly notice links to the list.
+- A live model catalog: each provider's model list comes from the provider (kept a day, refreshed on demand), new models are marked, retired ones are flagged with a suggestion to switch, and long Anthropic conversations are compacted on Anthropic's servers (on by default, cost counted).
+- Outside password managers: any secret field can hold a reference to 1Password (`op://…`, with the op CLI or a Connect server) or HashiCorp Vault (`vault://…#field`), read when a connection needs it; the house's are set up in Connections and each person's own in Account.
+- **Needs you** is one list of everything waiting for you (approvals with For this routine, keys asked for privately, questions with typed answers, stopped routines, jobs with problems, plans and tasks ready, lessons to review), the most urgent first, with filters by kind, answered in place on the page, in the bell and on Home.
 - Dashboards in tabs with widgets of seven kinds (numbers, goals, status, lists, tables, and line, area, bar and donut charts), ready-made widgets, and sharing with the house.
 - Floating widgets in the desktop app: any widget in a small always-on-top window that keeps its place and hides while the app is locked.
+- A Telegram Mini App: **Dashboard** in the bot's menu opens what needs you, your routines, spending and your widgets inside Telegram, signed in as you (needs a public https address, such as Tailscale Funnel).
 - **Turn into a widget** on a routine's page, and requests to see or track something end in a widget.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.
 - On Discord, Slack and Signal, replying to a notice with a number answers that notice, even after newer ones.
+- A routine's question can be answered in words, in the app or on any channel: the answer is checked against its options (number, name or the start of one), and one that is none of them gets the options again. On WhatsApp, more than three options come as a list.
 - JSON connectors: a `connector.json` that describes HTTP requests, with no program, installable as a single file.
 - OpenAPI import (**Connections › From OpenAPI** and `pimpo connector openapi`): turns a REST API's description into a JSON connector.
 - Desktop builds for macOS (Apple Silicon and Intel), Windows and Linux (x64 and arm64) on every release, and on demand.

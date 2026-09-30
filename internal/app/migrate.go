@@ -43,9 +43,10 @@ func (a *App) Import(ctx context.Context, p migrate.Plan, o ImportOptions, actor
 		return n, errors.New("memory is not available")
 	}
 	source := "import:" + p.From
+	from := memory.Origin{Kind: memory.FromImport, Ref: p.From, Label: p.From}
 	if o.Memories {
 		for _, m := range p.Memories {
-			if _, err := a.Memory.Add(m.Text, m.Topic, source, trust); err != nil {
+			if _, err := a.Memory.AddFrom(m.Text, m.Topic, source, trust, "", from); err != nil {
 				return n, err
 			}
 			n.Memories++
@@ -53,7 +54,7 @@ func (a *App) Import(ctx context.Context, p migrate.Plan, o ImportOptions, actor
 	}
 	if o.Rules {
 		for _, r := range p.Rules {
-			if _, err := a.Memory.Add(r.Text, "regras ("+r.File+")", source, trust); err != nil {
+			if _, err := a.Memory.AddFrom(r.Text, "regras ("+r.File+")", source, trust, "", from); err != nil {
 				return n, err
 			}
 			n.Rules++

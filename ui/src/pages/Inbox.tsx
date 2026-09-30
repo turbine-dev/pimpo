@@ -1,153 +1,59 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BellOff, Headphones, Lightbulb, MessageCircleQuestion, ShieldQuestion, Sparkles } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { BellOff, Headphones } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Button, Card, EmptyState } from '../components/ui'
+import { KindFilter, NeedRow, useNeedAction, useNeeds } from '../components/Needs'
+import { Card, EmptyState } from '../components/ui'
 import { api } from '../lib/api'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
 
+// Inbox is the one list of what needs you, the most urgent first, with a
+// filter by kind; the bell opens the same list.
 export function Inbox() {
   const t = useT()
-  const nav = useNavigate()
-  const qc = useQueryClient()
-  const ready = useQuery({ queryKey: ['explorations', 'ready'], queryFn: () => api.explorations('ready') })
-  const routines = useQuery({ queryKey: ['routines'], queryFn: api.routines })
-  const repair = useMutation({ mutationFn: (id: string) => api.routineAction(id, 'repair'), onSuccess: (r) => r.exploration && nav(`/explorations/${r.exploration}`) })
-  const run = useMutation({ mutationFn: (id: string) => api.routineAction(id, 'run'), onSettled: () => qc.invalidateQueries({ queryKey: ['routines'] }) })
-  const approvals = useQuery({ queryKey: ['approvals'], queryFn: api.approvals, refetchInterval: 10_000 })
-  const answer = useMutation({
-    mutationFn: ({ id, a, limit }: { id: string; a: 'once' | 'run' | 'routine' | 'always' | 'deny'; limit?: number }) => api.answer(id, a, limit),
-    onSettled: () => { qc.invalidateQueries({ queryKey: ['approvals'] }); qc.invalidateQueries({ queryKey: ['grants'] }) },
-  })
-  const [limits, setLimits] = useState<Record<string, string>>({})
+  const [kind, setKind] = useState('all')
+  const needs = useNeeds()
+  const act = useNeedAction()
   const media = useQuery({ queryKey: ['media'], queryFn: api.media, refetchInterval: 60_000 })
-  const questions = useQuery({ queryKey: ['questions'], queryFn: api.questions, refetchInterval: 15_000 })
-  const reply = useMutation({ mutationFn: ({ id, i }: { id: string; i: number }) => api.answerQuestion(id, i), onSettled: () => qc.invalidateQueries({ queryKey: ['questions'] }) })
-  const suggestions = useQuery({ queryKey: ['suggestions'], queryFn: api.suggestions, refetchInterval: 60_000 })
-  const suggest = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: 'accept' | 'dismiss' }) => api.suggestion(id, action),
-    onSuccess: (r) => r.exploration && nav(`/explorations/${r.exploration}`),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['suggestions'] }),
-  })
-  const broken = (routines.data ?? []).filter((r) => r.state === 'broken')
-  const items = (ready.data?.length ?? 0) + broken.length + (approvals.data?.length ?? 0) + (media.data?.length ?? 0) + (questions.data?.length ?? 0) + (suggestions.data?.length ?? 0)
+  const items = needs.data?.items ?? []
+  const shown = items.filter((n) => kind === 'all' || n.kind === kind)
+  const audio = media.data ?? []
 
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="mb-1 text-[22px] font-semibold tracking-tight">{t('inbox.title')}</h1>
-      <p className="mb-6 text-sm text-ink-2">{t('inbox.subtitle')}</p>
-      {items === 0 && (
+      <p className="mb-5 text-sm text-ink-2">{t('inbox.subtitle')}</p>
+      {needs.data && items.length > 0 && <KindFilter counts={needs.data.counts} total={needs.data.total} value={kind} onChange={setKind} className="mb-4" />}
+      {act.error && <p role="alert" className="mb-3 text-[13px] text-danger">{act.error.message}</p>}
+      {needs.data && items.length === 0 && audio.length === 0 && (
         <EmptyState icon={<BellOff size={22} />} title={t('inbox.emptyTitle')}>
           {t('inbox.emptyText')}
         </EmptyState>
       )}
-      <div className="space-y-3">
-        {(questions.data ?? []).map((q) => (
-          <Card key={q.id} className="flex flex-wrap items-center gap-4 border-explore/40 p-4">
-            <div className="grid size-10 place-items-center rounded-xl bg-explore-soft text-explore"><MessageCircleQuestion size={18} /></div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-medium">{q.question}</div>
-              <div className="text-[12.5px] text-ink-3">{t('inbox.asked', { when: relative(q.asked) })}</div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {q.options.map((o, i) => <Button key={o} size="sm" variant={i === 0 ? 'primary' : 'secondary'} disabled={reply.isPending} onClick={() => reply.mutate({ id: q.id, i })}>{o}</Button>)}
-            </div>
-          </Card>
-        ))}
-        {(suggestions.data ?? []).map((s) => (
-          <Card key={s.id} className="flex flex-wrap items-start gap-4 p-4">
-            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-sunken text-ink-2"><Lightbulb size={18} /></div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-medium">{s.title}</div>
-              <div className="text-[13px] text-ink-2">{s.why}</div>
-              <div className="mt-1 text-[12.5px] text-ink-3">{t('inbox.suggestionWould', { request: s.request })}</div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="primary" disabled={suggest.isPending} onClick={() => suggest.mutate({ id: s.id, action: 'accept' })}>{t('inbox.suggestionYes')}</Button>
-              <Button size="sm" variant="ghost" disabled={suggest.isPending} onClick={() => suggest.mutate({ id: s.id, action: 'dismiss' })}>{t('inbox.suggestionNo')}</Button>
-            </div>
-          </Card>
-        ))}
-        {(media.data ?? []).length > 0 && (
-          <Card className="p-4">
-            <div className="mb-2 flex items-center gap-2 text-[14px] font-medium"><Headphones size={15} /> {t('inbox.audio')}</div>
-            <ul className="space-y-3">
-              {media.data!.map((m) => (
-                <li key={m.id}>
-                  <div className="mb-1 flex items-baseline justify-between gap-3 text-[13px]"><span className="min-w-0 truncate">{m.title}</span><span className="shrink-0 text-[12px] text-ink-3">{relative(m.at)}</span></div>
-                  <audio controls preload="none" src={`/api/media/${m.id}`} className="w-full" aria-label={m.title} />
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-        {(approvals.data ?? []).map((ap) => (
-          <Card key={ap.id} className={`flex flex-wrap items-center gap-4 p-4 ${ap.action.risk >= 3 ? 'border-danger/40' : 'border-change/40'}`}>
-            <div className={`grid size-10 place-items-center rounded-xl ${ap.action.risk >= 3 ? 'bg-danger-soft text-danger' : 'bg-change-soft text-change'}`}>
-              <ShieldQuestion size={18} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-medium">{ap.text}</div>
-              <div className="text-[12.5px] text-ink-3">{t('inbox.rule', { reason: ap.reason })}</div>
-              {ap.grantable && amountOf(ap.action.args) !== undefined && (
-                <label className="mt-2 flex items-center gap-2 text-[12.5px] text-ink-3">
-                  {t('inbox.routineLimit')}
-                  <input type="number" min={amountOf(ap.action.args)} step="any" inputMode="decimal" value={limits[ap.id] ?? String(amountOf(ap.action.args))}
-                    onChange={(e) => setLimits({ ...limits, [ap.id]: e.target.value })} className="h-7 w-24 rounded-lg border border-line bg-bg px-2 text-[12.5px] text-ink outline-none focus:border-accent" />
-                </label>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="ghost" onClick={() => answer.mutate({ id: ap.id, a: 'deny' })}>{t('inbox.deny')}</Button>
-              <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'run' })} title={t('inbox.allRunHint')}>{t('inbox.allRun')}</Button>
-              {ap.grantable && (
-                <Button size="sm" title={t('inbox.forRoutineHint')}
-                  onClick={() => answer.mutate({ id: ap.id, a: 'routine', limit: limits[ap.id] ? Number(limits[ap.id]) : undefined })}>{t('inbox.forRoutine')}</Button>
-              )}
-              <Button size="sm" onClick={() => answer.mutate({ id: ap.id, a: 'always' })}>{t('inbox.always')}</Button>
-              <Button size="sm" variant="primary" onClick={() => answer.mutate({ id: ap.id, a: 'once' })}>{t('inbox.allow')}</Button>
-            </div>
-          </Card>
-        ))}
-        {broken.map((r) => (
-          <Card key={r.id} className="flex flex-wrap items-center gap-4 border-danger/40 p-4">
-            <div className="grid size-10 place-items-center rounded-xl bg-danger-soft text-danger">
-              <AlertTriangle size={18} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[14px] font-medium">{t('inbox.didntRun', { name: r.name })}</div>
-              <div className="text-[12.5px] text-ink-3">{t('inbox.paused')}</div>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={() => run.mutate(r.id)}>{t('inbox.runAgain')}</Button>
-              <Button size="sm" variant="primary" onClick={() => repair.mutate(r.id)}>{t('inbox.redo')}</Button>
-            </div>
-          </Card>
-        ))}
-        {(ready.data ?? []).map((e) => (
-          <Card key={e.id} className="flex flex-wrap items-center gap-4 p-4">
-            <div className="grid size-10 place-items-center rounded-xl bg-accent/12 text-accent">
-              <Sparkles size={18} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[14px] font-medium">{e.request}</div>
-              <div className="text-[12.5px] text-ink-3">{t('routines.ready', { when: relative(e.updated_at) })}</div>
-            </div>
-            <Button size="sm" variant="primary" onClick={() => nav(`/explorations/${e.id}`)}>{t('inbox.review')}</Button>
-          </Card>
-        ))}
-      </div>
+      {shown.length > 0 && (
+        <Card className="overflow-hidden">
+          <ul aria-label={t('inbox.title')}>
+            {shown.map((n) => (
+              <li key={`${n.kind}:${n.id}`} className="border-line [&:not(:first-child)]:border-t">
+                <NeedRow need={n} busy={act.isPending} onAct={(a) => act.mutate(a)} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {audio.length > 0 && kind === 'all' && (
+        <Card className="mt-3 p-4">
+          <div className="mb-2 flex items-center gap-2 text-[14px] font-medium"><Headphones size={15} /> {t('inbox.audio')}</div>
+          <ul className="space-y-3">
+            {audio.map((m) => (
+              <li key={m.id}>
+                <div className="mb-1 flex items-baseline justify-between gap-3 text-[13px]"><span className="min-w-0 truncate">{m.title}</span><span className="shrink-0 text-[12px] text-ink-3">{relative(m.at)}</span></div>
+                <audio controls preload="none" src={`/api/media/${m.id}`} className="w-full" aria-label={m.title} />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   )
-}
-
-// amountOf is the amount an action moves, when it has one; approving it
-// for the routine allows up to that much, or the limit the person sets.
-function amountOf(args: unknown): number | undefined {
-  if (!args || typeof args !== 'object') return undefined
-  for (const [k, v] of Object.entries(args as Record<string, unknown>)) {
-    if (['amount', 'total', 'price', 'sum'].includes(k.toLowerCase()) && typeof v === 'number') return v
-  }
-  return undefined
 }

@@ -182,7 +182,7 @@ func (a *App) probeServer(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
-	tools, err := external.Probe(r.Context(), e)
+	tools, err := a.probe(r.Context(), e)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 422, Msg: err.Error()})
 		return
@@ -231,7 +231,7 @@ func (a *App) addServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Probe again: what gets installed is what the server offers now.
-	tools, err := external.Probe(ctx, e)
+	tools, err := a.probe(ctx, e)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 422, Msg: err.Error()})
 		return

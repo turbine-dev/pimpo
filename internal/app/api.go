@@ -15,6 +15,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/runtime"
+	"github.com/turbine-dev/pimpo/internal/secretscan"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/store"
 	"github.com/turbine-dev/pimpo/internal/telegram"
@@ -185,7 +186,7 @@ func (a *App) state(w http.ResponseWriter, r *http.Request) {
 	intact, _ := a.Events.Verify(ctx)
 	server.WriteJSON(w, 200, map[string]any{
 		"budget":          map[string]float64{"spent": spent, "limit": a.Budget.Limit(ctx)},
-		"healthy":         broken == 0,
+		"healthy":         broken == 0 && a.damage() == "",
 		"broken":          broken,
 		"awaiting":        len(ready),
 		"approvals":       len(a.myApprovals(ctx)),
@@ -349,12 +350,21 @@ func (a *App) startExploration(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
-	id, err := a.Explore.Start(r.Context(), req.Request, actor(r.Context()))
+	text, warning := a.guardPasted(r.Context(), req.Request)
+	if warning != "" && secretscan.Only(text) {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: warning})
+		return
+	}
+	id, err := a.Explore.Start(r.Context(), text, actor(r.Context()))
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
-	server.WriteJSON(w, 202, map[string]string{"id": id})
+	out := map[string]string{"id": id}
+	if warning != "" {
+		out["warning"] = warning
+	}
+	server.WriteJSON(w, 202, out)
 }
 
 func (a *App) explorationAction(w http.ResponseWriter, r *http.Request) {
@@ -384,6 +394,19 @@ func (a *App) explorationAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a.Explore.Discard(ctx, id, actor(ctx))
+		server.WriteJSON(w, 202, map[string]string{"id": started})
+	case "retry":
+		// Asked again after what it lacked was given, such as a key.
+		e, _ := a.myExploration(ctx, id)
+		if e.State == store.ExplorationRunning || e.State == store.ExplorationImported {
+			server.WriteError(w, server.StatusError{Status: 409, Msg: "that task is not finished"})
+			return
+		}
+		started, err := a.Explore.Start(context.WithoutCancel(ctx), e.Request, actor(ctx))
+		if err != nil {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+			return
+		}
 		server.WriteJSON(w, 202, map[string]string{"id": started})
 	case "discard":
 		if err := a.Explore.Discard(ctx, id, actor(ctx)); err != nil {
@@ -418,10 +441,12 @@ func (a *App) putBudget(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	done := a.track(r.Context(), kvEntry("budget", "", people.OwnerID, []string{"budget.daily_usd"}))
 	if err := a.Budget.SetLimit(r.Context(), req.DailyUSD, "human:owner"); err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
+	done()
 	server.WriteJSON(w, 200, map[string]float64{"daily_usd": req.DailyUSD})
 }
 
@@ -438,7 +463,7 @@ type connection struct {
 
 func (a *App) connections(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	has := func(name string) bool { _, err := a.Vault.Get(ctx, name); return err == nil }
+	has := func(name string) bool { return a.Vault.Has(ctx, name) }
 	out := []connection{}
 	tg := connection{Kind: "telegram", Configured: has("telegram.token")}
 	if tg.Configured {
@@ -503,10 +528,17 @@ func (a *App) putConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	var err error
 	kind := r.PathValue("kind")
+	values, secrets := connectionKeys(kind)
+	done := a.track(ctx, kvEntry("connections", kind, people.OwnerID, values, secrets...))
 	switch kind {
 	case "telegram":
 		tok := strings.TrimSpace(req["token"])
-		if _, merr := (telegram.Bot{Token: tok}).Me(ctx); merr != nil {
+		plain, perr := a.plainSecret(ctx, "telegram.token", tok)
+		if perr != nil {
+			server.WriteError(w, server.StatusError{Status: 400, Msg: perr.Error()})
+			return
+		}
+		if _, merr := (telegram.Bot{Token: plain}).Me(ctx); merr != nil {
 			server.WriteError(w, server.StatusError{Status: 400, Msg: "Telegram did not accept this token"})
 			return
 		}
@@ -531,7 +563,7 @@ func (a *App) putConnection(w http.ResponseWriter, r *http.Request) {
 		}
 		a.Events.Put(ctx, "mail.addr", addr)
 		a.Events.Put(ctx, "mail.user", strings.TrimSpace(req["user"]))
-		err = a.Vault.Set(ctx, "mail.password", strings.ReplaceAll(req["password"], " ", ""))
+		err = a.Vault.Set(ctx, "mail.password", appPassword(req["password"]))
 	case "calendar":
 		var urls []string
 		for _, l := range strings.Split(req["feeds"], "\n") {
@@ -556,6 +588,7 @@ func (a *App) putConnection(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	done()
 	a.Events.Append(ctx, "connection.changed", "human:owner", map[string]string{"kind": kind})
 	server.WriteJSON(w, 200, map[string]string{"kind": kind, "state": "configured"})
 }
@@ -568,6 +601,8 @@ func (a *App) deleteConnection(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 404, Msg: "unknown connection"})
 		return
 	}
+	values, secrets := connectionKeys(kind)
+	done := a.track(ctx, kvEntry("connections", kind, people.OwnerID, values, secrets...))
 	for _, n := range names {
 		a.Vault.Delete(ctx, n)
 	}
@@ -577,6 +612,7 @@ func (a *App) deleteConnection(w http.ResponseWriter, r *http.Request) {
 	if kind == "whatsapp" {
 		a.Events.Put(ctx, "whatsapp.owner", "")
 	}
+	done()
 	a.Events.Append(ctx, "connection.removed", "human:owner", map[string]string{"kind": kind})
 	server.WriteJSON(w, 200, map[string]string{"kind": kind, "state": "removed"})
 }

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/snapshot"
 )
 
 // The owner's login link carries the master token. It is printed when it
@@ -36,6 +37,10 @@ func tokenCmd(args []string, out io.Writer) error {
 	}
 	if fs.NArg() > 0 {
 		return fmt.Errorf("usage: pimpo token [rotate]")
+	}
+	if rec, ok := snapshot.Recovering(dataDir(*dir)); ok {
+		fmt.Fprintf(out, "Pimpo is in recovery. Open: %s\n", loginLink("", rec.Token))
+		return nil
 	}
 	s, err := event.Open(filepath.Join(dataDir(*dir), "pimpo.db"))
 	if err != nil {

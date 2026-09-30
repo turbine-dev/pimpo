@@ -6,7 +6,7 @@ Pimpo was called Zodim, and Vigia before that. An existing install moves over on
 
 ## Getting around
 
-**Home** is where the day starts: ask for anything, and see what needs you, what ran and what is next today, what you spent, and your recent chats. The side menu keeps what you use daily on top (Home, Routines, Activity, Assistants) and the rest under **More**; your conversations are listed below it. At the bottom, the bell opens what waits for you (approvals, stopped routines, tasks ready, parts with errors) so you can answer in place, and the Pimpo menu has Settings, cost, **System status** (⌘⇧D: how busy the computer and Pimpo are, what is running now and the state of every channel, account and service), pairing a phone, the theme and help.
+**Home** is where the day starts: ask for anything, and see what needs you, what ran and what is next today, what you spent, and your recent chats. The side menu keeps what you use daily on top (Home, Routines, Activity, Assistants) and the rest under **More**; your conversations are listed below it. At the bottom, the bell opens **Needs you**, the one list of what waits for you, so you can answer in place, and the Pimpo menu has Settings, cost, **System status** (⌘⇧D: how busy the computer and Pimpo are, what is running now and the state of every channel, account and service), pairing a phone, the theme and help.
 
 ## First steps
 
@@ -35,7 +35,7 @@ Pimpo speaks Português, English, Español, Français, Deutsch, Italiano, 日本
 
 **Talk** is a conversation with Pimpo in the app, with every past conversation on the side. Each message remembers the ones before it. Pimpo reads for real (your calendar, your email), but any change it would make is only rehearsed and listed under the answer, with its risk. **Confirm and do it** does exactly those changes, once, each still under your rules and approvals; **Turn into a routine** makes the task repeat on its own. The search box above the list of chats finds words in your past conversations, in any order and ignoring accents ("reuniao" finds "reunião"); put a phrase in double quotes to find it exactly as written. It looks only in your own conversations.
 
-**Assistants** (from the chat's side panel) are roles for the agent: a name, what its job is, and the tools it may use. Pick one when starting a conversation. Tap the microphone to speak instead of typing: the computer's own dictation is used when there is one, otherwise the audio is transcribed on this machine with whisper.cpp; a question you spoke is answered aloud, and **Listen** reads any answer. The limit is enforced by Pimpo itself: the assistant only sees its tools, and any other call is blocked, whatever the text says. A routine made from that conversation uses only those tools too.
+**Assistants** (from the chat's side panel) are roles for the agent: a name, what its job is, the tools it may use and, if you like, the models it may answer with (inside what the person asking may use). Pick one when starting a conversation. Tap the microphone to speak instead of typing: the computer's own dictation is used when there is one, otherwise the audio is transcribed on this machine with whisper.cpp; a question you spoke is answered aloud, and **Listen** reads any answer. The limit is enforced by Pimpo itself: the assistant only sees its tools, and any other call is blocked, whatever the text says. A routine made from that conversation uses only those tools too.
 
 ## How a task becomes a routine
 
@@ -46,6 +46,8 @@ Pimpo speaks Português, English, Español, Français, Deutsch, Italiano, 日本
 ## Routines that react to something new
 
 Ask for a reaction instead of a time ("tell me when an email from Ana arrives", "when this site publishes something new") and the routine watches instead of running on a clock. Pimpo checks the source every few minutes without any model, so the checks cost nothing, and runs the routine only with what it has not seen before; the first check only learns what is already there. Change how often it checks in the routine's settings. The empty checks stay out of **Activity**; what was found and what the routine did show up as usual. The gallery's **Email from someone important** is one.
+
+Routines that watch Gmail or Slack can also hear of new things as they happen: in the routine's settings, turn on **Hear of it as it happens**. Gmail then tells Pimpo about new mail at once (the administrator sets up Google Cloud once; see [Push triggers](CONFIGURATION.md#push-triggers)), and the settings show until when the push is active; Slack messages in the channels Pimpo's app is in, and mentions of it, arrive as they are sent (ask for "when someone mentions Pimpo in #support, tell me"). What arrives reaches the routine as data, never as orders. Each person's push wakes only their own routines. If the push stops (Pimpo was off, Google sign-in expired), the routine simply goes back to checking every few minutes.
 
 A routine can also write a little: "and tell me in one sentence what she is asking for", "suggest a reply". The part that must be composed is written by a small model (the one set for judgments) for each item, about a fraction of a cent each; everything that can be copied (sender, subject, date) stays plain code. Each text is checked against the daily limit first, shows up in **Activity**, and treats the email as data, never as orders. What the routine then does with the text still passes your rules and approvals.
 
@@ -72,6 +74,8 @@ To add more Telegram bots, go to **Connections › Extra Telegram bots**. Create
 ## Long jobs
 
 For work too big for one answer ("compare these 20 suppliers on price, delivery and reviews and prepare a proposal"), open **Jobs**, describe it and give it a budget (up to $20). Pimpo first shows a plan: up to eight parts, each with only the tools it needs. Nothing runs until you tap **Start**. The parts then run in the background, three at a time, for as long as they need (up to 90 minutes each); like the chat, they read for real and only propose changes. **Jobs** shows each part's progress and cost against the budget; when the budget runs out, the job stops and says so. If Pimpo restarts, finished parts stay finished and interrupted ones start again. At the end a report puts the parts together, and you are told on your usual channel.
+
+Progress is kept, not just shown: **Home** lists what is running now, and each job and each routine shows its parts or steps, the step it is on (by the part's or the tool's name), the cost so far and when it last moved. A reload, the phone or a restart shows the same thing; a job picked up after a restart says so, and a routine run a restart cut short says it was interrupted. Turn on **Follow on my channels** on a job (before starting it or while it runs) to get one message about it on your channels: on Telegram, Discord and Slack that message is edited in place as the job goes, at most every 10 seconds, and ends with the result; on channels that cannot edit a message (Signal, WhatsApp, iMessage) you get only the start, and the notice at the end. Each person sees only their own progress.
 
 ## Run history
 
@@ -104,7 +108,11 @@ For work too big for one answer ("compare these 20 suppliers on price, delivery 
 
 ## Approvals and rules
 
-- **Needs you** lists what is waiting for you: approvals, finished explorations, problems. On the phone it is the first tab.
+- **Needs you** is one list of everything waiting for you: approvals (with **For this routine** where it applies), keys Pimpo asked you for privately (each opens its own form), questions from routines (tap an option or type the answer), routines stopped after a failure, jobs that ran into a problem (for a week) or whose plan waits to be started, tasks ready to review, how many lessons wait for you and, for the administrator, suggestions and parts of the house that stopped working.
+  - The most urgent comes first: an approval about to expire (it says when), then approvals, questions, what broke, and the rest; within each, the newest first.
+  - Filter by kind with the tabs on top. Answer in place: allow or deny, pick an answer, run a routine again or redo it with the agent, or open a job or task.
+  - The bell (in the header on the phone, at the bottom of the menu on the computer) shows how many things wait and opens the same list; Home shows the first three.
+  - It only ever shows your own things, the administrator included, and it updates by itself as things change.
 - Approval buttons: **Allow** (this time), **All this run** (the rest of this run), **Always** (this routine, from now on), **Deny**.
 - **For this routine** lets a routine repeat exactly this action without asking again: the same kind of action to the same recipients, on the same site, with an amount up to the one you approved (you can raise the limit in **Needs you**). A different recipient, site or larger amount asks again, and so does a new version of the routine. The email's words can change every day; who it goes to cannot. **Routines › Approved for routines** lists these approvals and takes any back. It is safer than **Always**, which allows the whole capability for that routine. Members use it for their own routines; WhatsApp to other people, locks and alarms still always ask. On WhatsApp it takes the place of **Always**, which stays in the app.
 - **Rules**: write rules in plain words ("never delete emails from my boss"). You see exactly what the rule will enforce, and a test against last week, before saving.
@@ -114,15 +122,32 @@ For work too big for one answer ("compare these 20 suppliers on price, delivery 
 
 Every action has a receipt: what was done, with which arguments, under which rule. Reversible actions can be undone from the receipt. Deletes go to the trash, and sent emails wait 10 minutes before leaving.
 
+## Settings history
+
+**Settings › History** lists every change to rules and the safety level, the budget, connections, models, people and the other settings, newest first, with who made it and when; filter it by area. **Undo** (after a confirmation) puts the earlier values back. Undo starts from the newest change: a setting changed again since must have that newer change undone first. Passwords, keys and tokens are never kept in the history, not even encrypted: it only says one was added, replaced or removed, and to change one back you type it again. Adding or removing a person is not undone here. A member finds the history of their own mail and calendar in **Account**; nobody else sees it, the administrator included.
+
 ## Memory
 
 Pimpo remembers what you tell it. Facts it read somewhere are marked "not confirmed" and never guide it until you confirm them. Every change is versioned: **History › Go back to this** undoes any change.
+
+Each fact shows where it came from: a conversation, a task, a routine or a job (a link opens it), an email and its sender, an import, something you typed, or a preference Pimpo learned. Facts saved before Pimpo kept sources say "Unknown source". **Sources** groups your facts by where they came from; **Delete everything from this source** lists the facts that go and, once you confirm, deletes them all, for example everything read in emails from one sender or noted in one conversation. A fact found in two places goes with either. It is one change in **History**, so it can be undone. You see and delete only your own facts' sources, and of the household's facts only the ones you shared.
 
 Search memory in plain words ("what can't I eat?"): with Jev set up, Pimpo finds facts by meaning, not only by the words they share, and the agent uses the same search. Every night Pimpo merges facts that say the same thing, never trading one you confirmed for one it read somewhere, and never merging facts that differ in a date, place or name. **Organize** does it now, and **History** undoes it.
 
 ### Preferences Pimpo learns
 
-Once a week Pimpo looks at what you asked and decided yourself (the requests you made, the approvals you denied or made permanent, the suggestions you took or declined) and may note up to five preferences, such as "answers in Portuguese" or "nothing before 8". It never learns from an email, a page or anything else it read. Each one shows up in **Memory** marked *learned*, with what showed it: **Confirm** makes it a fact like any other, and removing it means it is not learned again. Turn it off in **Settings › Notifications**.
+Once a week Pimpo looks at what you asked and decided yourself (the requests you made, the approvals you denied or made permanent, the suggestions you took or declined) and may note up to five preferences, such as "answers in Portuguese" or "nothing before 8". It never learns from an email, a page or anything else it read. Each one shows up in **Memory** marked *learned*, with what showed it: **Confirm** makes it a fact like any other, and removing it means it is not learned again. Turn it off in **Settings › Notifications**. Each one is also a lesson in **Lessons**.
+
+### Lessons
+
+**Lessons** (with a count in the menu, and a line in **Needs you**) is where everything Pimpo noticed and would keep waits for you, and only for you: nobody else in the house, the administrator included, sees your lessons. There are four kinds:
+
+- **Preference**: one it learned from your own requests (above), with links to the requests it came from.
+- **Fact**: a note the agent took during a task ("your boss is Carlos"), with a link to that task. It may have read it in an email, so it counts as unconfirmed until you accept it.
+- **Routine**: a task you asked more than once that worked and is not a routine yet, or a suggestion (below). It shows the request the routine would do and links to each time you asked.
+- **Fix**: a routine failed and the agent redid it (**Redo with the agent**). It shows the error and what the new version did.
+
+**Accept** does what you would do by hand: it confirms the fact or preference, or turns the task into a routine (or keeps the repaired version) through the usual compiler, with its checks, so an older version stays in the routine's history. **Edit** lets you change the words first: the fact is kept in your words, and a routine or fix with new words is done once more for you to watch and approve. **Reject** removes the note or discards the repair, and the same lesson is never proposed again, even worded a little differently. Nothing on this page applies until you choose, and the Memory page and **Needs you** show the same things, so deciding in either place counts. Once a week, if lessons are waiting, Pimpo tells you on your channel with a link (turn it off in **Settings › Notifications › Weekly lessons digest**); you decide on the page, never by replying.
 
 ## People
 
@@ -133,6 +158,8 @@ Everything is private to its person: routines, conversations, memory, activity, 
 **Signing in.** Besides the link, each person can add a **passkey** in **Account** (the menu under your name): afterwards Pimpo opens with Touch ID, Face ID, Windows Hello or a security key, as them. A passkey works at the address where it was made, `localhost` on the computer or an https address; on the home-network address, and in the desktop app's own window, use the link (Pimpo offers a passkey only where one can work). Sessions and devices left unused expire (30 and 180 days).
 
 A member manages their own routines and answers their own approvals; a guest can only ask, and a guest's changes wait for the person responsible for them. A lasting "always allow" is a rule for the whole house, so only the owner makes those. Removing a person revokes their devices at once.
+
+**Models and spending.** Under each person, **Models and spending** chooses which of the house's models they may use (all of them, or some) and a daily limit of their own, in dollars, at most the house's. A guest starts with $0.25 a day until you set another. Every cost counts for the person it was for, whether it came from a chat, a routine, a job or a judgment, and a call is refused when it could pass their limit or the house's. The automatic choice picks only among their models (the cheapest of them when its own pick is not allowed), a model chosen by hand outside them is refused with the reason, and their routines and jobs keep to them too. You see only whether someone reached their limit today, never how much they spent: costs are shared as a house total. Each person sees their own models, limit and today's spending in **Account**.
 
 ## On the phone
 
@@ -152,6 +179,17 @@ Open **Phone** on the paired phone and choose what it shares: **location** (arri
 - **Photos.** **Take a photo** sends a photo of a bill, a receipt or a document; the text is read on your computer (Tesseract) and the photo stays there, under `phone/photos/`.
 - **Routines.** Ask for them as usual: "when I get home, tell me what's on tomorrow's calendar", "when I photograph a bill, remind me two days before it's due". They watch `phone.arrivals`, `phone.photos` or `phone.shortcuts` and run as soon as the phone reports, with the same rules, approvals and receipts as any other routine.
 
+## Dashboards in Telegram
+
+When Pimpo has a public https address (**From anywhere** with Tailscale Funnel, or your own https address under **Use another address**, in **Settings › Open on your phone**), the bot adds a **Dashboard** button next to the message box of everyone who paired Telegram, and notices that wait for an answer get an **Open dashboard** button. It opens a small Pimpo inside Telegram, on the phone, the desktop app or Telegram Web:
+
+- **Needs you**: approvals (allow once or deny) and the questions routines asked, with their options.
+- **Routines**: your routines, with **Run now** and **Pause** or **Resume**.
+- **Spending**: what the house spent today against its daily limit, this month, and what your routines cost this month.
+- **Widgets**: your widgets, all of them or one dashboard at a time.
+
+It signs you in as the person who paired that Telegram account, with nothing to type, and shows only your things; guests see what guests may use. The session lasts an hour; after that, close it and open it again from the bot. Telegram opens only https pages, so without a public https address the button does not appear (and goes away if the address does). A Telegram account nobody paired gets nothing.
+
 ## A Pimpo on another computer or server
 
 **Locking the desktop app.** The desktop app opens as the administrator without asking. To keep it behind your fingerprint or face, turn on **Lock with Touch ID or Windows Hello** in the Pimpo menu in the menu bar (or the system tray on Windows). It asks once to confirm, then again when the app opens and after its window has been closed for five minutes; on a Mac without Touch ID it asks for your password. The floating Pimpo and floating widgets wait for the unlock too, and close when the app locks again. Linux has no such check, so the item is off there. On Windows the app opens Pimpo at `localhost`, so you can also add a passkey there in **Account**; on a Mac, add one from a browser at `http://localhost:7788`.
@@ -170,6 +208,8 @@ In **Chats**, tap **Talk** and talk: on the computer or on the phone. With **Wak
 
 Any routine can be started by another service calling a secret address: on its page, turn on **Start by webhook**. Use it from an iPhone Shortcut ("when I leave home, send me the day's brief"), IFTTT, Zapier, GitHub or a form. What is sent (JSON, form fields or text) reaches the routine as `event.webhook` with `method`, `query` and `body`, so a routine can act on it ("when a new order arrives, tell me who bought what"). Ask for such a routine in a chat and Pimpo makes it start by webhook. Addresses work on this computer and on the home network; for internet services, turn on Tailscale with Funnel. Anyone with the address starts the routine, so treat it like a password; **New address** replaces it at once. A paused routine does not start, a call carries at most 256 KB, and a routine starts at most 30 times a minute this way.
 
+For GitHub, turn on **Start from GitHub** instead ("when a pull request is opened in my repository, tell me its title"): copy the address and the secret, shown only once, into the repository's **Settings › Webhooks**. GitHub signs every delivery with the secret, so nobody else can start the routine, and a delivery GitHub sends again starts it only once. The routine gets `event.github` with the event type, the action and the payload.
+
 ## Google Sheets
 
 With Google connected, tasks and routines can read a range of a spreadsheet and add rows to it (`sheets.read`, `sheets.append`): log expenses, habits or orders, or read a list to act on. Name the spreadsheet by its address. Turn on the Google Sheets API in your Google Cloud project; if you connected Google before this, sign in again to allow spreadsheets. Added rows can be undone in **Activity**.
@@ -184,7 +224,13 @@ On a Mac, **Connections › Apple Reminders, Notes and Calendar** lets tasks and
 
 ## Routines that ask you
 
-A routine can ask you something and act on your answer: "every night ask me if I worked out and count the week's workouts", "ask before archiving". The question arrives with its options as buttons on Telegram, numbered on the other channels, and in **Needs you**; your answer runs the routine again, which records it or does what you chose. A new question replaces the same one still unanswered, and a question expires after 24 hours.
+A routine can ask you something and act on your answer: "every night ask me if I worked out and count the week's workouts", "ask before archiving". The question arrives with its options as buttons in **Needs you** and on Telegram, as buttons on WhatsApp (a list when there are more than three), and numbered on Discord, Slack and Signal; your answer runs the routine again, which records it or does what you chose. You can also answer in words: type it in **Needs you**, or reply to the question on a channel, with the option's number, its name or just the start of it ("swim" for "Swimming" works when no other option starts that way; case and accents do not matter). An answer that is none of the options is not taken: Pimpo shows the options again. Sending an option's exact name without replying also answers the question you were just asked, as long as you have not written anything else on that channel since; otherwise it is an ordinary message. A new question replaces the same one still unanswered, and a question expires after 24 hours.
+
+## Keys Pimpo asks for
+
+When a routine or a task needs a password or key you have not given (a GitHub token, a Notion integration token, your email's app password), or the service stops accepting the one you gave, Pimpo asks for it privately. You get a notice, "GitHub needs your token", with a link to a form in the app; the request also waits in **Needs you**. The form writes the key straight to Pimpo's vault, under your name: a member's keys are theirs and the administrator never sees or answers their requests. After saving, **Run the routine again** or **Try the task again** picks up where it stopped. The link works once and expires after a week.
+
+Never send a key in a chat or a channel message. If you do, Pimpo takes it out before the message goes anywhere (the model, the conversation, the activity log) and does not keep it; it tells you so and points you to the form. It recognizes common formats (API keys of the big providers, GitHub, Slack and Telegram tokens, private keys) and values written after "password:" or "token=". It removes only what looks like a key, so the rest of your message still goes through.
 
 ## Reminders
 
@@ -209,6 +255,22 @@ If a channel keeps failing for three minutes (Telegram, Discord, Slack or Signal
 **Connections › Explore** searches the official MCP registry: hundreds of servers for files, GitHub, databases, notes, maps and more. Choose one, fill in what it asks for, and **See the tools** shows what it offers. Check which tools Pimpo may use and how risky each one is (irreversible ones always ask you first), then install. **Add by hand** takes a command or an https address you already have. See [CONNECTORS.md](CONNECTORS.md) to write your own.
 
 **A service with a REST API** needs no program and no recompiling: describe its requests in a `connector.json` (the address, the key it needs, and for each capability the method, path and what to keep from the answer) and send it in **Connections › Install connector (.json · .zip)**. Pimpo checks it, runs its contract and asks for the key. [CONNECTORS.md](CONNECTORS.md#json-connectors) explains the format; `examples/connectors/hnsearch` is a complete one. If the service publishes an OpenAPI (Swagger) description, **Connections › From OpenAPI** writes the file for you: give its address, choose the operations and how risky each one is, fill in the key and install.
+
+## Secrets in 1Password or HashiCorp Vault
+
+Any secret field (a model key, a bot token, a connector's key, an app password, the backup passphrase) can hold a reference instead of the secret: choose the link icon, **Use a reference**, and type where the secret is:
+
+- 1Password: `op://Vault/Item/field` (or `op://Vault/Item/section/field`), the same reference 1Password's "Copy secret reference" gives.
+- HashiCorp Vault: `vault://secret/data/path#field`, a KV version 2 path (the mount, `data`, then the path) and the field.
+
+**Check** reads it once and says only "Found" or why not; the value is never shown. Pimpo keeps only the reference and reads the value when a connection needs it, keeping it in memory for up to five minutes. If the reference cannot be read later, the connection fails with a message that names the reference.
+
+Set up the password managers first. The administrator sets up the house's in **Connections › Password managers**; they read the house's references. Each person can add their own in **Account › Password managers**, and only their own connections use them: nobody else sees them or reads with them, not even the administrator, and a person's references never read with the house's credentials.
+
+- **1Password:** a service account token (the `op` command line must be installed), the 1Password app on this computer (house only; turn on Settings › Developer › Integrate with 1Password CLI) or a 1Password Connect server with its token.
+- **HashiCorp Vault:** its https address, a token or an AppRole (role id and secret id), and a namespace if you use them.
+
+**Test** checks that the password manager answers. Backups and exports keep the references as references, so a restored copy reads from the same place.
 
 ## Gallery
 
@@ -254,6 +316,8 @@ The desktop app updates itself: when a new version is ready it says so at the to
 - `pimpo routines import FOLDER` installs routines from a folder in the repository's layout (`routines/<id>/`), after the same checks as the repository: manifest, their own tests and an audit. They arrive paused; review their settings and resume each one. `--active` installs them running.
 - Coming from OpenClaw or Hermes? Use **Settings › Bring over from OpenClaw or Hermes**, or `pimpo migrate openclaw`.
 
+**When the database is damaged**: Pimpo checks its database every time it starts (SQLite's own check and the newest part of the history chain) and before every copy. A copy of a damaged database is refused, so it never pushes a good copy out; the check-up shows it and you are told once. At start, a damaged database is moved, untouched, into `quarantine/` in the data folder, and Pimpo opens only a recovery page, for the administrator alone (your login link, a browser or device of yours that was signed in, or the recovery link Pimpo prints at start and `pimpo token` shows). There you can go back to the newest copy that passes its check (damaged copies are never offered), start fresh, or download the damaged file as a zip for a repair elsewhere. Either way the damaged file stays in `quarantine/`, and Pimpo then starts as usual. On the command line, `pimpo restore NAME` does the same while Pimpo is stopped.
+
 **Local copies** (Settings › Backup): Pimpo copies everything on this computer every day, before each update and before an import, and keeps the last ten. Pick one and choose **Go back to this**; it takes effect when Pimpo is closed and reopened, and the current state is copied first, so it can be undone. After an update Pimpo tells you once that the copy from before is there. Going back to a copy restores data, not the previous version of the app.
 
 ## Check-up
@@ -280,7 +344,9 @@ In **System status** (the Pimpo menu, or ⌘⇧D), **Check everything** tests ev
 - **Channels:** on Telegram, WhatsApp and the others, send `/model` to see the model in use, `/model opus` (or any model of your list) to fix one, and `/model auto` to go back to the automatic choice. `/think` does the same for the thinking level: `/think high`, `/think auto`.
 - **Routines** run without a model, except for their yes-or-no questions and short texts. A routine that has them shows **Model for judgments and texts** in its settings; leave it on the default (the model for judgments) or pick another for that routine alone, and its thinking level beside it.
 
-Rules and approvals do not change with the model: every tool call still goes through Pimpo. With Anthropic, the instructions, tool list and conversation so far are kept in the provider's prompt cache between turns, so a long task pays about a tenth for what it already sent; the cost shown includes the cache's own prices.
+Rules and approvals do not change with the model: every tool call still goes through Pimpo. With Anthropic, the instructions, tool list and conversation so far are kept in the provider's prompt cache between turns, so a long task pays about a tenth for what it already sent; the cost shown includes the cache's own prices. When a conversation or job with an Anthropic model grows very long, Anthropic summarizes its older parts on its servers so it can go on (**Settings › Models › Summarize long conversations**, on by default, with the size where it starts); the summary is counted in the cost.
+
+The providers' lists are live: each provider's models come from the provider itself, kept for a day, and **Look again** asks at once. A model a provider has just started offering is marked **New** (**New · price unknown** until you type its price). One of your models the provider no longer offers is marked **Retired**, and the jobs, chats and routines that use it suggest choosing another.
 
 ## Downloading models
 

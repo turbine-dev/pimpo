@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { api, type QuickChoice } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT } from '../lib/i18n'
+import { SecretInput } from './SecretInput'
 import { Button } from './ui'
 
 const field = 'h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -103,7 +104,7 @@ export function QuickModel({ onDone }: { onDone?: () => void }) {
           </label>
           <label className="block space-y-1">
             <span className="text-[12.5px]">{t('qs.key')}</span>
-            <input className={field} type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} spellCheck={false} />
+            <SecretInput className={field} autoComplete="off" value={key} onValue={setKey} />
           </label>
           {current?.key_url && (
             <a className="inline-flex items-center gap-1 text-[12.5px] text-ink-3 underline" href={current.key_url} target="_blank" rel="noreferrer">

@@ -6,9 +6,11 @@ import { Code } from '../components/Code'
 import { capRisk, capabilityLabel } from '../components/RoutineCard'
 import { Button, Card, PageSkeleton, RiskBadge, RunDots } from '../components/ui'
 import { Diff } from '../components/Diff'
+import { RunningNow } from '../components/ProgressCard'
 import { MakeWidget } from '../components/MakeWidget'
 import { Publish } from '../components/Publish'
 import { RoutineSettings } from '../components/RoutineSettings'
+import { GitHubCard } from '../components/GitHubCard'
 import { WebhookCard } from '../components/WebhookCard'
 import { api } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -70,6 +72,7 @@ export function RoutinePage() {
         </div>
       </div>
 
+      <RunningNow only={(p) => p.kind === 'run' && p.routine === id} title={false} className="mb-6" />
       {s.state === 'broken' && (
         <Card className="mb-6 flex flex-wrap items-center justify-between gap-4 border-danger/40 bg-danger-soft/50 p-4">
           <div className="min-w-0">
@@ -85,6 +88,7 @@ export function RoutinePage() {
 
       <RoutineSettings s={s} onRedo={() => act.mutate('repair')} />
       <WebhookCard id={s.id} />
+      <GitHubCard id={s.id} />
 
       <Tabs.Root defaultValue={params.get('tab') ?? 'overview'}>
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('routine.details')}>

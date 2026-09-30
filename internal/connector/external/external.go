@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/turbine-dev/pimpo/internal/capability"
+	"github.com/turbine-dev/pimpo/internal/connector"
 )
 
 type Manifest struct {
@@ -275,8 +276,21 @@ func (c *Connector) Close() {
 	c.stop()
 }
 
-// Call runs one capability, starting the process if needed.
-func (c *Connector) Call(ctx context.Context, name, _ string, args any) (any, error) {
+// Call runs one capability, starting the process if needed. When it
+// fails while a declared key has no value, it says which one to ask for.
+func (c *Connector) Call(ctx context.Context, name, scope string, args any) (any, error) {
+	out, err := c.call(ctx, name, args)
+	if err != nil {
+		for _, n := range append(append([]string{}, c.Env...), c.Headers...) {
+			if c.values(ctx, []string{n})[n] == "" {
+				return nil, &connector.MissingCredential{Connector: c.Name, Field: n, Err: err}
+			}
+		}
+	}
+	return out, err
+}
+
+func (c *Connector) call(ctx context.Context, name string, args any) (any, error) {
 	if c.Manifest.HTTP != nil {
 		return c.callHTTP(ctx, name, args)
 	}

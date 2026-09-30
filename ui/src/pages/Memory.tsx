@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Brain, Check, History, Loader2, Plus, Search, Sparkles, Trash2 } from 'lucide-react'
+import { Brain, Check, History, Layers, Loader2, Plus, Search, Sparkles, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
-import { api, type Fact } from '../lib/api'
+import { api, type Fact, type FactOrigin, type MemorySource } from '../lib/api'
 import { cn } from '../lib/cn'
 import { relative } from '../lib/format'
 import { tr, useT } from '../lib/i18n'
@@ -13,6 +14,72 @@ function sourceText(f: Fact) {
   if (f.source.startsWith('email:')) return tr('memory.fromEmail')
   if (f.source.startsWith('import:')) return tr('memory.fromImport', { from: f.source.slice(7) })
   return f.source
+}
+
+// originText names where a fact came from: the kind, then its label.
+function originText(o: FactOrigin) {
+  if (o.kind === 'email') return o.sender ? tr('memory.src.emailFrom', { sender: o.sender }) : tr('memory.src.email')
+  const kinds = { conversation: 'memory.src.conversation', exploration: 'memory.src.exploration', routine: 'memory.src.routine', job: 'memory.src.job', import: 'memory.src.import', typed: 'memory.src.typed', learned: 'memory.src.learned', unknown: 'memory.src.unknown' } as const
+  const kind = tr(kinds[o.kind as keyof typeof kinds] ?? 'memory.src.unknown')
+  const label = o.kind === 'learned' ? '' : o.label
+  return label ? `${kind}: ${label}` : kind
+}
+
+// originLink is the page a source can be opened on, when it has one.
+function originLink(o: FactOrigin) {
+  if (!o.ref) return undefined
+  const at = { conversation: '/chat/', exploration: '/explorations/', routine: '/routines/', job: '/jobs/' }[o.kind as string]
+  return at && at + encodeURIComponent(o.ref)
+}
+
+function Origin({ o }: { o: FactOrigin }) {
+  const to = originLink(o)
+  return to ? <Link to={to} className="underline decoration-line-strong underline-offset-2 hover:text-ink">{originText(o)}</Link> : <>{originText(o)}</>
+}
+
+function Sources({ onChange }: { onChange: () => void }) {
+  const t = useT()
+  const q = useQuery({ queryKey: ['memory-sources'], queryFn: api.memorySources })
+  const [asking, setAsking] = useState('')
+  const forget = useMutation({ mutationFn: api.forgetSource, onSuccess: () => { setAsking(''); q.refetch(); onChange() } })
+  const list = q.data?.sources ?? []
+  const card = (s: MemorySource) => (
+    <Card key={s.key} className="p-4">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[14px] font-medium"><Origin o={s.origin} /></h3>
+          <p className="mt-0.5 text-[12px] text-ink-3">{t('memory.sourceFacts', { count: s.facts.length })} · {s.topics.join(', ')}</p>
+        </div>
+        {asking !== s.key && (
+          <Button size="sm" variant="ghost" onClick={() => setAsking(s.key)}>
+            <Trash2 size={14} /> {t('memory.forgetSource')}
+          </Button>
+        )}
+      </div>
+      {asking === s.key && (
+        <div role="alertdialog" aria-labelledby={`forget-${s.key}`} className="mt-3 rounded-xl border border-danger/30 bg-danger-soft p-3">
+          <p id={`forget-${s.key}`} className="text-[13px] font-medium">{t('memory.forgetConfirm', { count: s.facts.length })}</p>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-[13px] text-ink-2">
+            {s.facts.map((f) => <li key={f.id}>{f.text}</li>)}
+          </ul>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" variant="danger" disabled={forget.isPending} onClick={() => forget.mutate(s.key)}>
+              {forget.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} {t('memory.forgetDo', { count: s.facts.length })}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setAsking('')}>{t('common.cancel')}</Button>
+          </div>
+        </div>
+      )}
+    </Card>
+  )
+  return (
+    <section aria-label={t('memory.sources')} className="space-y-3">
+      <p className="text-[13px] text-ink-2">{t('memory.sourcesHint')}</p>
+      {forget.error && <p className="text-[13px] text-danger">{forget.error.message}</p>}
+      {q.data && list.length === 0 && <p className="text-[13px] text-ink-3">{t('memory.noSources')}</p>}
+      {list.map(card)}
+    </section>
+  )
 }
 
 export function Memory() {
@@ -26,7 +93,8 @@ export function Memory() {
   const [filter, setFilter] = useState('all')
   const isHouse = (f: Fact) => f.person === 'casa'
   const [showHistory, setShowHistory] = useState(false)
-  const done = () => qc.invalidateQueries({ queryKey: ['memory'] })
+  const [bySource, setBySource] = useState(false)
+  const done = () => { qc.invalidateQueries({ queryKey: ['memory'] }); qc.invalidateQueries({ queryKey: ['memory-sources'] }) }
   const add = useMutation({ mutationFn: () => api.addFact(text, topic, shared), onSuccess: () => { setText(''); done() } })
   const remove = useMutation({ mutationFn: api.removeFact, onSuccess: done })
   const confirm = useMutation({ mutationFn: api.confirmFact, onSuccess: done })
@@ -56,7 +124,7 @@ export function Memory() {
         <div className="mt-0.5 text-[12px] text-ink-3">
           {meaning && <span className="mr-1.5 inline-flex items-center gap-1 rounded-full bg-explore-soft px-1.5 py-px text-[11px] font-medium text-explore"><Sparkles size={10} /> {t('memory.byMeaning')}</span>}
           {isHouse(f) && <span className="mr-1.5 rounded-full bg-explore-soft px-1.5 py-px text-[11px] font-medium text-explore">{t('memory.house')}</span>}
-          {sourceText(f)} · {relative(f.created)}
+          {f.origins?.length ? f.origins.map((o, i) => <span key={i}>{i > 0 && ' · '}<span><Origin o={o} /></span></span>) : sourceText(f)} · {relative(f.created)}
           {f.trust === 'low' && <span className="ml-1.5 font-medium text-change">{t('memory.notConfirmed')}</span>}
           {f.trust === 'learned' && <span className="ml-1.5 font-medium text-explore" title={t('memory.learnedHint')}>{t('memory.learned')}</span>}
         </div>
@@ -80,9 +148,14 @@ export function Memory() {
           <h1 className="mb-1 text-[22px] font-semibold tracking-tight">{t('memory.title')}</h1>
           <p className="text-sm text-ink-2">{t('memory.subtitle')}</p>
         </div>
-        <Button variant="ghost" onClick={() => setShowHistory(!showHistory)}>
-          <History size={15} /> {t('memory.history')}
-        </Button>
+        <div className="flex gap-1">
+          <Button variant="ghost" aria-pressed={bySource} onClick={() => setBySource(!bySource)}>
+            <Layers size={15} /> {t('memory.sources')}
+          </Button>
+          <Button variant="ghost" onClick={() => setShowHistory(!showHistory)}>
+            <History size={15} /> {t('memory.history')}
+          </Button>
+        </div>
       </div>
 
       <Card className="mb-5 p-4">
@@ -161,7 +234,7 @@ export function Memory() {
           {t('memory.emptyText')}
         </EmptyState>
       )}
-      {query !== '' ? (
+      {bySource ? <Sources onChange={done} /> : query !== '' ? (
         <section aria-label={t('memory.search')}>
           {results.isPending ? <Loader2 size={16} className="animate-spin text-ink-3" /> : (results.data?.facts.length ?? 0) === 0 ? (
             <p className="text-[13px] text-ink-3">{t('memory.noResults')}{results.data && !results.data.meaning && ' ' + t('memory.meaningNeedsJev')}</p>

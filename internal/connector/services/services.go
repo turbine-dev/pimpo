@@ -83,7 +83,26 @@ func (a adapter) Capabilities() []string {
 }
 
 func (a adapter) Call(ctx context.Context, name, scope string, args any) (any, error) {
-	return a.k.Call(ctx, a.cfg(a.k.ID), name, scope, args)
+	out, err := a.k.Call(ctx, a.cfg(a.k.ID), name, scope, args)
+	// A service that says who is asking is unknown refused the saved
+	// key: the person is asked for a new one.
+	var se *statusError
+	if errors.As(err, &se) && se.code == http.StatusUnauthorized {
+		if f := a.k.secretField(); f != "" {
+			return nil, &connector.MissingCredential{Connector: a.k.ID, Field: f, Invalid: true, Err: err}
+		}
+	}
+	return out, err
+}
+
+// secretField is the key a kind cannot work without, when it has one.
+func (k Kind) secretField() string {
+	for _, f := range k.Fields {
+		if f.Secret && !f.Optional {
+			return f.Name
+		}
+	}
+	return ""
 }
 
 // need reads required fields, with an error that says where to fix it.
@@ -92,7 +111,12 @@ func need(ctx context.Context, cfg Config, title string, fields ...string) ([]st
 	for i, f := range fields {
 		v, err := cfg(ctx, f)
 		if err != nil || strings.TrimSpace(v) == "" {
-			return nil, fmt.Errorf("%s is not set up; open Connections", title)
+			msg := fmt.Errorf("%s is not set up; open Connections", title)
+			var mc *connector.MissingCredential
+			if errors.As(err, &mc) {
+				return nil, &connector.MissingCredential{Connector: mc.Connector, Field: mc.Field, Err: msg}
+			}
+			return nil, msg
 		}
 		out[i] = strings.TrimSpace(v)
 	}
@@ -139,13 +163,21 @@ func doJSON(ctx context.Context, method, url string, headers map[string]string, 
 		if len(msg) > 200 {
 			msg = msg[:200]
 		}
-		return fmt.Errorf("%s answered %s: %s", req.URL.Host, resp.Status, msg)
+		return &statusError{resp.StatusCode, fmt.Sprintf("%s answered %s: %s", req.URL.Host, resp.Status, msg)}
 	}
 	if out == nil || len(raw) == 0 {
 		return nil
 	}
 	return json.Unmarshal(raw, out)
 }
+
+// statusError is a service's refusal, with its HTTP status.
+type statusError struct {
+	code int
+	msg  string
+}
+
+func (e *statusError) Error() string { return e.msg }
 
 var errEmpty = errors.New("text is empty")
 

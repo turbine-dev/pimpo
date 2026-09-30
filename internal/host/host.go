@@ -44,6 +44,10 @@ type Env struct {
 	// RoleOf names a person's role in the house; nil treats everyone as
 	// the owner.
 	RoleOf func(ctx context.Context, person string) string
+	// Missing is told when a connector lacks a password or key; it asks
+	// the person privately and returns the error the run sees instead,
+	// which never holds a value.
+	Missing func(ctx context.Context, source string, m *connector.MissingCredential) error
 }
 
 type Approver interface {
@@ -82,6 +86,9 @@ type Host struct {
 	// QuietReads leaves successful reads out of the event log; a watch
 	// polling every few minutes would otherwise bury the receipts.
 	QuietReads bool
+	// OnStep hears each step as it starts: the capability called, or a
+	// judgment or a text being written, for the run's progress.
+	OnStep func(label string)
 
 	mu        sync.Mutex
 	calls     []trace.Call
@@ -152,7 +159,15 @@ func DestinationsFrom(ctx context.Context) []string {
 	return d
 }
 
+// step tells OnStep a step is starting.
+func (h *Host) step(label string) {
+	if h.OnStep != nil {
+		h.OnStep(label)
+	}
+}
+
 func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, error) {
+	h.step(name)
 	spec := capability.Catalog[name]
 	person := people.Norm(h.Person)
 	ctx = people.With(ctx, person)
@@ -218,6 +233,10 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 		result, err = h.Router.Call(ctx, name, scope, args)
 	}
 	rec.Millis = time.Since(start).Milliseconds()
+	var missing *connector.MissingCredential
+	if errors.As(err, &missing) && h.Missing != nil {
+		err = h.Missing(ctx, h.Source, missing)
+	}
 	if err != nil {
 		rec.Error = err.Error()
 	}
@@ -247,6 +266,9 @@ func (h *Host) record(ctx context.Context, rec ActionRecord, result any) {
 const JudgeEstimate = 0.01
 
 func (h *Host) Judge(ctx context.Context, name, question string, item any) (float64, error) {
+	h.step("judge " + name)
+	// The judgment is for the run's person: their models and their budget.
+	ctx = people.With(ctx, people.Norm(h.Person))
 	if h.Budget != nil {
 		if err := h.Budget.CheckFor(ctx, JudgeEstimate); err != nil {
 			return 0, err
@@ -274,6 +296,8 @@ const WriteEvent = "text.written"
 
 // Write lets a routine have a small model compose text, within budget.
 func (h *Host) Write(ctx context.Context, name, instruction string, input any) (string, error) {
+	h.step("write " + name)
+	ctx = people.With(ctx, people.Norm(h.Person))
 	if h.Budget != nil {
 		if err := h.Budget.CheckFor(ctx, WriteEstimate); err != nil {
 			return "", err
@@ -314,7 +338,7 @@ func (h *Host) addCost(ctx context.Context, usd float64, source string) {
 	h.costUSD += usd
 	h.mu.Unlock()
 	if h.Budget != nil {
-		h.Budget.Record(ctx, budget.Cost{USD: usd, Source: source, Ref: h.Source})
+		h.Budget.Record(ctx, budget.Cost{USD: usd, Source: source, Ref: h.Source, Person: people.Norm(h.Person)})
 	}
 }
 

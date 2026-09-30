@@ -11,12 +11,12 @@ const now = new Date().toISOString()
 describe('Approve for this routine', () => {
   it('is offered only where it applies and sends the limit the person set', async () => {
     const calls = mockFetch({
-      '/api/approvals': [
-        { id: 'ab12', action: { capability: 'shop.pay', risk: 3, source: 'routine:contas#2', args: { amount: 80, url: 'https://pay.example/1' } }, text: 'contas quer pagar 80', reason: 'Sempre me pergunte', created: now, grantable: true },
-        { id: 'cd34', action: { capability: 'whatsapp.send_to', risk: 3, source: 'routine:contas#2', args: { to: '+5511' } }, text: 'contas quer mandar WhatsApp', reason: 'sempre pergunta', created: now },
-      ],
-      '/api/explorations?state=ready': [],
-      '/api/routines': [],
+      '/api/media': [],
+      '/api/needs': { total: 2, counts: { approval: 2 }, items: [
+        { kind: 'approval', id: 'ab12', title: 'contas quer pagar 80', detail: 'Sempre me pergunte', created: now, urgency: 3, risk: 3, amount: 80, actions: ['once', 'run', 'always', 'deny', 'routine'] },
+        { kind: 'approval', id: 'cd34', title: 'contas quer mandar WhatsApp', detail: 'sempre pergunta', created: now, urgency: 3, risk: 3, actions: ['once', 'run', 'always', 'deny'] },
+      ] },
+      'POST /api/approvals/ab12/routine': {},
     })
     wrap(<Inbox />)
     expect(await screen.findByText('contas quer pagar 80')).toBeInTheDocument()

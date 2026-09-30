@@ -25,6 +25,24 @@ type personView struct {
 	people.Person
 	Mail     bool `json:"mail"`
 	Calendar bool `json:"calendar"`
+	// DailyLimit is the person's own limit in effect (a guest's default
+	// included), and LimitReached whether today's spending reached it. The
+	// owner sees only that, never how much each person spent: costs are
+	// shared as a total.
+	DailyLimit   float64 `json:"daily_limit"`
+	LimitReached bool    `json:"limit_reached"`
+}
+
+func (a *App) viewPerson(ctx context.Context, p people.Person) personView {
+	pctx := people.With(ctx, p.ID)
+	addr, _ := a.Events.Get(pctx, personal(pctx, "mail.addr"))
+	_, cal := a.Vault.Get(pctx, personal(pctx, "calendar.feeds"))
+	v := personView{Person: p, Mail: addr != "", Calendar: cal == nil, DailyLimit: a.Budget.LimitFor(ctx, p.ID)}
+	if v.DailyLimit > 0 {
+		spent, _ := a.Budget.TodayFor(ctx, p.ID)
+		v.LimitReached = spent >= v.DailyLimit
+	}
+	return v
 }
 
 func (a *App) listPeople(w http.ResponseWriter, r *http.Request) {
@@ -38,10 +56,7 @@ func (a *App) listPeople(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]personView, 0, len(list))
 	for _, p := range list {
-		pctx := people.With(ctx, p.ID)
-		addr, _ := a.Events.Get(pctx, personal(pctx, "mail.addr"))
-		_, cal := a.Vault.Get(pctx, personal(pctx, "calendar.feeds"))
-		out = append(out, personView{Person: p, Mail: addr != "", Calendar: cal == nil})
+		out = append(out, a.viewPerson(ctx, p))
 	}
 	server.WriteJSON(w, 200, out)
 }
@@ -63,6 +78,7 @@ func (a *App) addPerson(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
 		return
 	}
+	a.record(r.Context(), personEntry(p.ID), snap{})
 	a.Events.Append(r.Context(), "person.added", "human:owner", map[string]any{"id": p.ID, "role": p.Role})
 	server.WriteJSON(w, 200, p)
 }
@@ -73,11 +89,13 @@ func (a *App) updatePerson(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	done := a.track(r.Context(), personEntry(r.PathValue("id")))
 	p, err := a.People.Update(r.Context(), r.PathValue("id"), req.Role, req.Responsible)
 	if err != nil {
 		server.WriteError(w, peopleError(err))
 		return
 	}
+	done()
 	a.Events.Append(r.Context(), "person.changed", "human:owner", map[string]any{"id": p.ID, "role": p.Role, "responsible": p.Responsible})
 	// The person changed learns of it in their own activity: the owner
 	// administers roles, but never quietly.
@@ -88,10 +106,12 @@ func (a *App) updatePerson(w http.ResponseWriter, r *http.Request) {
 func (a *App) removePerson(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := r.PathValue("id")
+	done := a.track(ctx, personEntry(id))
 	if err := a.People.Remove(ctx, id); err != nil {
 		server.WriteError(w, peopleError(err))
 		return
 	}
+	done()
 	a.forgetDevicesOf(ctx, id)
 	a.forgetPerson(ctx, id)
 	a.Events.Append(ctx, "person.removed", "human:owner", map[string]any{"id": id})
@@ -193,6 +213,9 @@ func (a *App) personConnection(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	// The history of a person's own accounts is theirs alone.
+	done := a.track(ctx, kvEntry("connections", r.PathValue("kind"), p.ID, []string{personal(pctx, "mail.addr"), personal(pctx, "mail.user")},
+		personal(pctx, "mail.password"), personal(pctx, "calendar.feeds")))
 	switch r.PathValue("kind") {
 	case "mail":
 		if req["user"] == "" || req["password"] == "" {
@@ -205,7 +228,7 @@ func (a *App) personConnection(w http.ResponseWriter, r *http.Request) {
 		}
 		a.Events.Put(ctx, personal(pctx, "mail.addr"), addr)
 		a.Events.Put(ctx, personal(pctx, "mail.user"), strings.TrimSpace(req["user"]))
-		err = a.Vault.Set(ctx, personal(pctx, "mail.password"), strings.ReplaceAll(req["password"], " ", ""))
+		err = a.Vault.Set(ctx, personal(pctx, "mail.password"), appPassword(req["password"]))
 	case "calendar":
 		var urls []string
 		for _, l := range strings.Split(req["feeds"], "\n") {
@@ -227,6 +250,7 @@ func (a *App) personConnection(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, err)
 		return
 	}
+	done()
 	if me != people.OwnerID {
 		a.Events.Put(ctx, personal(pctx, "accounts.own"), "1")
 	}
@@ -257,4 +281,9 @@ func peopleError(err error) error {
 		return server.StatusError{Status: 404, Msg: err.Error()}
 	}
 	return server.StatusError{Status: 400, Msg: err.Error()}
+}
+
+// personEntry is a change to a person of the house, in the owner's history.
+func personEntry(id string) histEntry {
+	return histEntry{Area: "people", Target: id, Store: histPerson, Person: people.OwnerID}
 }

@@ -27,7 +27,15 @@ type API struct {
 	// from them and the call stops at MaxCostUSD.
 	PriceIn, PriceOut float64
 	HTTP              *http.Client
+	// CompactAt turns on Anthropic's server-side compaction: once a
+	// conversation's input reaches this many tokens, Anthropic summarizes
+	// the older turns itself. 0 leaves it off; the API's minimum is 50000.
+	CompactAt int
 }
+
+// compactBeta is the Anthropic beta that summarizes long conversations on
+// the server (context_management with a compact_20260112 edit).
+const compactBeta = "compact-2026-01-12"
 
 // Providers are the API backends Pimpo knows.
 var Providers = []string{"anthropic", "openai", "openrouter", "google", "dashscope", "deepseek", "groq", "mistral", "xai", "ollama", "lmstudio", "custom"}
@@ -67,11 +75,17 @@ func (a API) cost(in, out int) float64 {
 
 // turnCost prices a turn; Anthropic bills writing the prompt cache at 1.25
 // times the input price and reading it at a tenth.
+// Server-side compaction is billed apart from the answer: the summary's
+// own input and output tokens are counted at the model's prices.
 func (a API) turnCost(t turn) float64 {
-	return a.cost(t.In, t.Out) + (float64(t.CacheWrite)*1.25+float64(t.CacheRead)*0.1)*a.PriceIn/1e6
+	return a.cost(t.In+t.CompactIn, t.Out+t.CompactOut) + (float64(t.CacheWrite)*1.25+float64(t.CacheRead)*0.1)*a.PriceIn/1e6
 }
 
 func (a API) post(ctx context.Context, path string, body, out any) error {
+	return a.postWith(ctx, path, nil, body, out)
+}
+
+func (a API) postWith(ctx context.Context, path string, header map[string]string, body, out any) error {
 	b, _ := json.Marshal(body)
 	req, err := http.NewRequestWithContext(ctx, "POST", a.base()+path, bytes.NewReader(b))
 	if err != nil {
@@ -83,6 +97,9 @@ func (a API) post(ctx context.Context, path string, body, out any) error {
 		req.Header.Set("anthropic-version", "2023-06-01")
 	} else if a.Key != "" {
 		req.Header.Set("Authorization", "Bearer "+a.Key)
+	}
+	for k, v := range header {
+		req.Header.Set(k, v)
 	}
 	client := a.HTTP
 	if client == nil {
@@ -135,6 +152,11 @@ type turn struct {
 	// CacheWrite and CacheRead are input tokens written to and read from
 	// the provider's prompt cache, apart from In.
 	CacheWrite, CacheRead int
+	// CompactIn and CompactOut are the tokens Anthropic spent summarizing
+	// the conversation on the server, apart from In and Out.
+	CompactIn, CompactOut int
+	// Compacted says the older turns were replaced by a summary.
+	Compacted bool
 }
 
 // chat keeps a conversation in the provider's own message format.
@@ -148,6 +170,14 @@ type chat struct {
 	// noEffort is set once the model refused the effort setting, so the
 	// rest of the conversation goes without it.
 	noEffort bool
+	// context is the input size of the last turn, which decides when the
+	// conversation is long enough to ask for server-side compaction;
+	// noCompact is set once the model refused it.
+	context   int
+	noCompact bool
+	// compacted keeps the beta on once a summary is in the conversation,
+	// since only the beta reads it back.
+	compacted bool
 }
 
 func (c *chat) user(text string) {
@@ -160,13 +190,48 @@ func (c *chat) send(ctx context.Context) (turn, error) {
 		do = c.sendAnthropic
 	}
 	t, err := do(ctx)
+	// A model without server-side compaction still answers; the
+	// conversation just stays whole.
+	if err != nil && c.compacting() && compactRefused(err) {
+		c.noCompact = true
+		t, err = do(ctx)
+	}
 	// A model that cannot be told how hard to think still answers without
 	// it; the level is a preference, not a condition.
 	if err != nil && c.effort != "" && !c.noEffort && effortRefused(err) {
 		c.noEffort = true
-		return do(ctx)
+		t, err = do(ctx)
+	}
+	if err == nil {
+		c.context = t.In + t.CacheWrite + t.CacheRead
 	}
 	return t, err
+}
+
+// compacting says whether this turn asks Anthropic to compact: only when
+// it is on, and once the conversation has grown to half the trigger, so
+// short calls never carry the beta.
+func (c *chat) compacting() bool {
+	if c.compacted {
+		return true
+	}
+	return c.a.Provider == "anthropic" && c.a.CompactAt > 0 && !c.noCompact && c.context >= c.a.CompactAt/2
+}
+
+// guessTokens estimates a first turn's size before any usage is known,
+// at about four characters a token, so a long chat sent in one prompt can
+// be compacted too.
+func guessTokens(texts ...string) int {
+	n := 0
+	for _, t := range texts {
+		n += len(t)
+	}
+	return n / 4
+}
+
+func compactRefused(err error) bool {
+	m := strings.ToLower(err.Error())
+	return strings.Contains(m, "answered 400") && (strings.Contains(m, "compact") || strings.Contains(m, "context_management") || strings.Contains(m, "beta"))
 }
 
 func effortRefused(err error) bool {
@@ -227,6 +292,12 @@ func (c *chat) sendAnthropic(ctx context.Context) (turn, error) {
 			body["tool_choice"] = map[string]string{"type": "tool", "name": c.force}
 		}
 	}
+	var header map[string]string
+	if c.compacting() {
+		at := max(c.a.CompactAt, 50000)
+		body["context_management"] = map[string]any{"edits": []map[string]any{{"type": "compact_20260112", "trigger": map[string]any{"type": "input_tokens", "value": at}}}}
+		header = map[string]string{"anthropic-beta": compactBeta}
+	}
 	var r struct {
 		Content []json.RawMessage `json:"content"`
 		Usage   struct {
@@ -234,12 +305,25 @@ func (c *chat) sendAnthropic(ctx context.Context) (turn, error) {
 			Out        int `json:"output_tokens"`
 			CacheWrite int `json:"cache_creation_input_tokens"`
 			CacheRead  int `json:"cache_read_input_tokens"`
+			// Iterations are the steps of a turn with compaction on; the
+			// top-level counts leave out the compaction step.
+			Iterations []struct {
+				Type string `json:"type"`
+				In   int    `json:"input_tokens"`
+				Out  int    `json:"output_tokens"`
+			} `json:"iterations"`
 		} `json:"usage"`
 	}
-	if err := c.a.post(ctx, "/messages", body, &r); err != nil {
+	if err := c.a.postWith(ctx, "/messages", header, body, &r); err != nil {
 		return turn{}, err
 	}
 	t := turn{In: r.Usage.In, Out: r.Usage.Out, CacheWrite: r.Usage.CacheWrite, CacheRead: r.Usage.CacheRead}
+	for _, it := range r.Usage.Iterations {
+		if it.Type == "compaction" {
+			t.CompactIn += it.In
+			t.CompactOut += it.Out
+		}
+	}
 	var content []map[string]any
 	for _, raw := range r.Content {
 		var b struct {
@@ -253,6 +337,11 @@ func (c *chat) sendAnthropic(ctx context.Context) (turn, error) {
 			continue
 		}
 		switch b.Type {
+		case "compaction":
+			// The summary goes back as it came; Anthropic then ignores
+			// everything before it.
+			t.Compacted, c.compacted = true, true
+			fallthrough
 		case "thinking", "redacted_thinking":
 			// Thinking goes back unchanged, signature included, or the
 			// model cannot continue after a tool call.
@@ -389,7 +478,7 @@ func (c *chat) results(calls []toolCall, outputs []string, failed []bool) {
 // Generate answers one prompt; with a schema the answer is a forced tool
 // call whose input is the structured output.
 func (a API) Generate(ctx context.Context, r Request) (Response, error) {
-	c := &chat{a: a, system: r.System, effort: r.Effort}
+	c := &chat{a: a, system: r.System, effort: r.Effort, context: guessTokens(r.System, r.Prompt)}
 	c.user(r.Prompt)
 	if len(r.Schema) > 0 {
 		c.tools = []tool{{Name: "answer", Description: "Give the answer in this exact shape.", Schema: r.Schema}}
@@ -460,7 +549,7 @@ func (a API) Run(ctx context.Context, r AgentRequest) (Response, error) {
 	if err := m.call(ctx, "tools/list", map[string]any{}, &list); err != nil {
 		return Response{}, fmt.Errorf("could not list Pimpo's tools: %w", err)
 	}
-	c := &chat{a: a, system: r.System, effort: r.Effort}
+	c := &chat{a: a, system: r.System, effort: r.Effort, context: guessTokens(r.System, r.Prompt)}
 	for _, t := range list.Tools {
 		c.tools = append(c.tools, tool{t.Name, t.Description, t.InputSchema})
 	}

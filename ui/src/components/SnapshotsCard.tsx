@@ -46,8 +46,9 @@ export function SnapshotsCard() {
             <li key={s.name} className="flex items-center gap-3 px-3 py-2 text-[13px]">
               <span className="w-28 shrink-0 tabular-nums text-ink-2">{when(s)}</span>
               <span className="flex-1 truncate">{label(s)}</span>
+              {s.damaged && <span className="shrink-0 text-[11.5px] text-danger">{t('snap.damaged')}</span>}
               <span className="hidden text-[11.5px] tabular-nums text-ink-3 sm:inline">{(s.bytes / 1e6).toFixed(1)} MB</span>
-              <Button size="sm" variant="ghost" aria-label={`${t('snap.restore')} — ${when(s)}`} disabled={s.name === staged?.name || stage.isPending}
+              <Button size="sm" variant="ghost" aria-label={`${t('snap.restore')} — ${when(s)}`} disabled={s.damaged || s.name === staged?.name || stage.isPending}
                 onClick={() => window.confirm(t('snap.confirm', { when: when(s) })) && stage.mutate(s.name)}>
                 <RotateCcw size={14} /> <span className="hidden sm:inline">{t('snap.restore')}</span>
               </Button>

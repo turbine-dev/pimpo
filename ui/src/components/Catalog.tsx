@@ -8,6 +8,7 @@ import { cn } from '../lib/cn'
 import { useT } from '../lib/i18n'
 import { McpExplore, McpManual } from './McpServers'
 import { OpenApiImport } from './OpenApiImport'
+import { SecretInput } from './SecretInput'
 import { Button, Card, RiskBadge } from './ui'
 
 export const channelKinds = ['discordchat', 'slackchat', 'signal']
@@ -130,9 +131,12 @@ function KindCard({ k }: { k: CatalogKind }) {
                   {k.fields.map((f) => (
                     <label key={f.name} className="block">
                       <span className="mb-1 block text-[12px] font-medium text-ink-2">{f.label}{f.optional && ` (${t('common.optional')})`}</span>
-                      <input type={f.secret ? 'password' : 'text'} value={values[f.name] ?? ''} placeholder={f.secret && k.configured ? t('catalog.stored') : (k.values[f.name] ?? f.placeholder)}
-                        onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
-                        className="h-9 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+                      {f.secret
+                        ? <SecretInput value={values[f.name] ?? ''} placeholder={k.configured ? t('catalog.stored') : f.placeholder} onValue={(v) => setValues({ ...values, [f.name]: v })}
+                          className="h-9 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />
+                        : <input type="text" value={values[f.name] ?? ''} placeholder={k.values[f.name] ?? f.placeholder}
+                          onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
+                          className="h-9 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent" />}
                     </label>
                   ))}
                   {save.error && <p className="text-[12.5px] text-danger">{save.error.message}</p>}

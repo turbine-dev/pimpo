@@ -45,3 +45,38 @@ func TestUpgradeIsAnnouncedOnce(t *testing.T) {
 		t.Fatalf("notices %d", len(evs))
 	}
 }
+
+func TestDamagedDatabaseIsNotSnapshotted(t *testing.T) {
+	ta := newApp(t, nil, nil)
+	ta.Home = t.TempDir()
+	ctx := context.Background()
+	for i := 0; i < 3; i++ {
+		ta.Events.Append(ctx, "note", "system", map[string]int{"n": i})
+	}
+	ta.Events.DB().Exec(`UPDATE events SET data = '{"n":99}' WHERE id = (SELECT MAX(id) FROM events) - 1`)
+	if code, _ := ta.do(t, "POST", "/api/snapshots", nil); code != 409 {
+		t.Fatalf("snapshot of a damaged database: %d", code)
+	}
+	if code, _ := ta.do(t, "POST", "/api/snapshots", nil); code != 409 {
+		t.Fatalf("second snapshot: %d", code)
+	}
+	if list, _ := snapshot.List(ta.Home); len(list) != 0 {
+		t.Fatalf("copied: %+v", list)
+	}
+	evs, _ := ta.Events.List(ctx, event.Query{Types: []string{owner.EventNotice}})
+	if len(evs) != 1 {
+		t.Fatalf("the owner was told %d times", len(evs))
+	}
+	var db finding
+	for _, f := range ta.localFindings(ctx) {
+		if f.ID == "database" {
+			db = f
+		}
+	}
+	if db.State != "fail" || db.Fix != "doc.fix.database" {
+		t.Fatalf("check-up %+v", db)
+	}
+	if _, st := ta.do(t, "GET", "/api/state", nil); st["healthy"] != false {
+		t.Fatalf("state %v", st)
+	}
+}

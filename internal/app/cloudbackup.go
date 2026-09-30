@@ -254,7 +254,12 @@ func (a *App) putCloud(w http.ResponseWriter, r *http.Request) {
 	} else {
 		c.Endpoint, c.Region, c.Bucket, c.Prefix = "", "", "", ""
 	}
-	if req.Passphrase != "" && len(req.Passphrase) < backup.MinPassphrase {
+	pass, perr := a.plainSecret(ctx, "backup.passphrase", req.Passphrase)
+	if perr != nil {
+		bad(perr.Error())
+		return
+	}
+	if req.Passphrase != "" && len(pass) < backup.MinPassphrase {
 		bad(fmt.Sprintf("choose a passphrase of at least %d characters", backup.MinPassphrase))
 		return
 	}
@@ -266,6 +271,11 @@ func (a *App) putCloud(w http.ResponseWriter, r *http.Request) {
 	store, err := a.cloudStore(ctx, c)
 	if s3, ok := store.(*cloud.S3); ok && req.AccessKey != "" {
 		s3.AccessKey, s3.SecretKey = strings.TrimSpace(req.AccessKey), strings.TrimSpace(req.SecretKey)
+		for _, k := range []*string{&s3.AccessKey, &s3.SecretKey} {
+			if *k, err = a.plainSecret(ctx, "backup.s3", *k); err != nil {
+				break
+			}
+		}
 	}
 	if err == nil {
 		_, err = store.List(ctx)

@@ -208,7 +208,12 @@ func (a *App) addBot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tok := strings.TrimSpace(req.Token)
-	user, err := (telegram.Bot{Token: tok, BaseURL: a.TelegramAPI}).Me(ctx)
+	plain, err := a.plainSecret(ctx, "telegram.bot", tok)
+	if err != nil {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: err.Error()})
+		return
+	}
+	user, err := (telegram.Bot{Token: plain, BaseURL: a.TelegramAPI}).Me(ctx)
 	if err != nil {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "Telegram did not accept this token"})
 		return
@@ -370,8 +375,8 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 	if req.Model == Auto {
 		req.Model = ""
 	}
-	if !a.usableModel(ctx, req.Model) {
-		server.WriteError(w, server.StatusError{Status: 400, Msg: req.Model + " is not among your models"})
+	if err := a.modelRefusal(ctx, req.Model); err != nil {
+		server.WriteError(w, err)
 		return
 	}
 	if req.Effort == Auto {
@@ -381,7 +386,7 @@ func (a *App) putRoutineSettings(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 400, Msg: "effort is low, medium, high or max"})
 		return
 	}
-	settings := store.Settings{Schedule: req.Schedule, Params: req.Params, WatchEvery: req.WatchEvery, Model: req.Model, Effort: req.Effort}
+	settings := store.Settings{Schedule: req.Schedule, Params: req.Params, WatchEvery: req.WatchEvery, Model: req.Model, Effort: req.Effort, Push: rt.Settings.Push}
 	if err := a.Store.SetRoutineSettings(ctx, rt.ID, settings); err != nil {
 		server.WriteError(w, err)
 		return

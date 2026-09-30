@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownToLine, Bell, ChevronRight, Cpu, FlaskConical, HardDriveDownload, ShieldCheck, SlidersHorizontal, Smartphone } from 'lucide-react'
+import { ArrowDownToLine, Bell, ChevronRight, Cpu, FlaskConical, HardDriveDownload, History, ShieldCheck, SlidersHorizontal, Smartphone } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { BackupCard } from '../components/BackupCard'
@@ -11,6 +11,7 @@ import { Head } from '../components/PimpoArt'
 import { ModelSetup } from '../components/ModelSetup'
 import { ProtectionCard } from '../components/ProtectionCard'
 import { PhonePairing } from '../components/PhonePairing'
+import { SettingsHistory } from '../components/SettingsHistory'
 import { Button, Card, Switch } from '../components/ui'
 import { api, type Settings as S } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -31,6 +32,7 @@ const sections: { id: string; label: TKey; icon: ReactNode }[] = [
   { id: 'privacidade', label: 'set.privacy', icon: <ShieldCheck size={16} /> },
   { id: 'laboratorio', label: 'set.labs', icon: <FlaskConical size={16} /> },
   { id: 'trazer', label: 'set.import', icon: <ArrowDownToLine size={16} /> },
+  { id: 'historico', label: 'set.history', icon: <History size={16} /> },
 ]
 
 const field = 'h-10 rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
@@ -150,6 +152,8 @@ export function Settings() {
               onToggle={(_, on) => setS({ ...s, suggest_off: !on })} />
             <Toggles title={t('settings.learnTitle')} text={t('settings.learnText')} items={[{ key: 'learn', label: t('settings.learnTitle'), on: !s.learn_off }]}
               onToggle={(_, on) => setS({ ...s, learn_off: !on })} />
+            <Toggles title={t('settings.lessonDigestTitle')} text={t('settings.lessonDigestText')} items={[{ key: 'lessonDigest', label: t('settings.lessonDigestTitle'), on: !s.lesson_digest_off }]}
+              onToggle={(_, on) => setS({ ...s, lesson_digest_off: !on })} />
           </>}
 
           {section === 'backup' && <>
@@ -169,6 +173,8 @@ export function Settings() {
             }))} onToggle={(k, on) => setS({ ...s, labs_on: on ? [...(s.labs_on ?? []), k] : (s.labs_on ?? []).filter((x) => x !== k) })} />
             {(s.labs_on ?? []).includes('browser') && <BrowserLogin />}
           </>)}
+
+          {section === 'historico' && <SettingsHistory />}
 
           {section === 'trazer' && (
             <Card role="link" tabIndex={0} onClick={() => nav('/import')} onKeyDown={(k) => k.key === 'Enter' && nav('/import')} className="flex cursor-pointer items-center gap-4 p-5 hover:border-line-strong">
