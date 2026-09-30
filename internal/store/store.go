@@ -452,6 +452,12 @@ func (s *Store) StartRun(ctx context.Context, routine string, version int) (int6
 	return res.LastInsertId()
 }
 
+// RunVersion is the routine and code version a run started with.
+func (s *Store) RunVersion(ctx context.Context, id int64) (routine string, version int, err error) {
+	err = s.db.QueryRowContext(ctx, `SELECT routine, version FROM runs WHERE id = ?`, id).Scan(&routine, &version)
+	return routine, version, err
+}
+
 func (s *Store) FinishRun(ctx context.Context, id int64, outcome, errText string, cost float64, calls int) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE runs SET ended_at = ?, outcome = ?, error = ?, cost_usd = ?, calls = ? WHERE id = ?`, ts(time.Now()), outcome, errText, cost, calls, id)
 	return err

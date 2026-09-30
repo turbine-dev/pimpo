@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"net/http"
@@ -179,9 +180,19 @@ func (a *App) undoAction(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) answerApproval(w http.ResponseWriter, r *http.Request) {
 	ans := approval.Answer(r.PathValue("answer"))
-	if ans != approval.Once && ans != approval.Always && ans != approval.Deny && ans != approval.Run {
-		server.WriteError(w, server.StatusError{Status: 400, Msg: "answer must be once, run, always or deny"})
+	if ans != approval.Once && ans != approval.Always && ans != approval.Deny && ans != approval.Run && ans != approval.Routine {
+		server.WriteError(w, server.StatusError{Status: 400, Msg: "answer must be once, run, routine, always or deny"})
 		return
+	}
+	// "For this routine" may carry the most a later amount may be.
+	var body struct {
+		Limit *float64 `json:"limit"`
+	}
+	if ans == approval.Routine && r.ContentLength > 0 {
+		if err := server.Decode(r, &body); err != nil {
+			server.WriteError(w, err)
+			return
+		}
 	}
 	ctx := r.Context()
 	if !slices.ContainsFunc(a.myApprovals(ctx), func(q approval.Request) bool { return q.ID == r.PathValue("id") }) {
@@ -193,8 +204,11 @@ func (a *App) answerApproval(w http.ResponseWriter, r *http.Request) {
 		server.WriteError(w, server.StatusError{Status: 403, Msg: "a lasting permission is a rule for the whole house; ask the owner, or answer once"})
 		return
 	}
-	if !a.Approvals.Resolve(ctx, r.PathValue("id"), ans, actor(ctx)) {
-		server.WriteError(w, server.StatusError{Status: 410, Msg: "this request is no longer waiting"})
+	if err := a.resolveApproval(ctx, r.PathValue("id"), ans, body.Limit); err != nil {
+		if errors.Is(err, errApprovalGone) {
+			err = server.StatusError{Status: 410, Msg: err.Error()}
+		}
+		server.WriteError(w, err)
 		return
 	}
 	server.WriteJSON(w, 200, map[string]string{"answer": string(ans)})

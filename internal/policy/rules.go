@@ -232,6 +232,10 @@ var alwaysAsk = map[string]string{
 	"ha.critical":      "locks, alarms, covers and valves always wait for approval",
 }
 
+// AlwaysAsks reports whether a capability asks every time, whatever rules
+// or earlier answers say.
+func AlwaysAsks(capability string) bool { return alwaysAsk[capability] != "" }
+
 // strength orders verdicts: when several rules match, the strictest wins.
 var strength = map[Verdict]int{Allow: 0, Reversible: 1, Ask: 2, Block: 3}
 

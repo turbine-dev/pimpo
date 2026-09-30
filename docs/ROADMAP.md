@@ -276,7 +276,7 @@ Search earlier conversations by words or an exact phrase, each person only in th
 
 ### 8.3 Approvals bound to the operation · M
 
-"Approve for this routine" lets a routine repeat one action without asking again, as long as the action is the same: the same capability, recipients, hosts and amounts within the approved limit. Anything different asks again, and the owner sees and revokes these approvals in one place. It replaces most uses of a broad "always" rule.
+"Approve for this routine" lets a routine repeat one action without asking again, as long as the action is the same: the same capability, recipients, hosts and amounts within the approved limit. Anything different asks again, and the owner sees and revokes these approvals in one place. It replaces most uses of a broad "always" rule. *Done.*
 
 ### 8.4 Questions as cards · M
 
