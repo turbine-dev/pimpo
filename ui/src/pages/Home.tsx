@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { CalendarClock, Check, ChevronRight, CircleAlert, Coins, MessageSquare, ShieldQuestion, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { RunningNow } from '../components/ProgressCard'
+import { NeedRow, useNeedAction, useNeeds } from '../components/Needs'
 import { Card } from '../components/ui'
 import { api, type RecentRun, type RoutineSummary } from '../lib/api'
 import { cn } from '../lib/cn'
@@ -37,7 +37,10 @@ export function Home() {
   const hour = now.getHours()
   const greeting = t(hour < 12 ? 'home.morning' : hour < 18 ? 'home.afternoon' : 'home.evening')
   const s = state.data
-  const waiting = (s?.approvals ?? 0) + (s?.awaiting ?? 0) + (s?.broken ?? 0)
+  const needs = useNeeds()
+  const act = useNeedAction()
+  const waiting = needs.data?.total ?? 0
+  const top = (needs.data?.items ?? []).slice(0, 3)
   const day: Entry[] = [
     ...(runs.data ?? []).filter((r: RecentRun) => sameDay(new Date(r.started_at), now)).map((r) => ({
       key: `r${r.id}`, at: new Date(r.started_at), name: r.name, routine: r.routine,
@@ -63,24 +66,19 @@ export function Home() {
       </div>
       <Suggestions onPick={(text) => start.mutate({ text, spoken: false })} disabled={start.isPending} className="mt-3 sm:grid-cols-4" />
 
-      <RunningNow className="mt-8" />
-
       <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <Link to="/inbox" className="block">
-          <Card className={cn('h-full p-5 transition hover:border-line-strong', waiting > 0 && 'border-change/40')}>
-            <div className="flex items-center gap-2 text-[13px] font-medium text-ink-2">
-              {waiting > 0 ? <ShieldQuestion size={16} className="text-change" /> : <Check size={16} className="text-read" />} {t('home.needsYou')}
-            </div>
-            <div className="mt-2 text-[28px] font-semibold tabular-nums">{waiting}</div>
-            <div className="text-[12.5px] text-ink-3">
-              {waiting === 0 ? t('home.nothingWaiting') : [
-                s?.approvals ? t('home.approvals', { count: s.approvals }) : '',
-                s?.awaiting ? t('home.ready', { count: s.awaiting }) : '',
-                s?.broken ? t('home.broken', { count: s.broken }) : '',
-              ].filter(Boolean).join(' · ')}
-            </div>
-          </Card>
-        </Link>
+        <Card className={cn('h-full p-5', waiting > 0 && 'border-change/40')}>
+          <Link to="/inbox" className="flex items-center gap-2 text-[13px] font-medium text-ink-2 hover:text-ink">
+            {waiting > 0 ? <ShieldQuestion size={16} className="text-change" /> : <Check size={16} className="text-read" />} <span className="flex-1">{t('home.needsYou')}</span>
+            <span className="text-[20px] font-semibold tabular-nums text-ink">{waiting}</span>
+          </Link>
+          {waiting === 0 ? <p className="mt-2 text-[12.5px] text-ink-3">{t('home.nothingWaiting')}</p> : (
+            <ul className="-mx-2 mt-2" aria-label={t('home.needsYou')}>
+              {top.map((n) => <li key={`${n.kind}:${n.id}`}><NeedRow need={n} compact busy={act.isPending} onAct={(a) => act.mutate(a)} /></li>)}
+            </ul>
+          )}
+          {waiting > top.length && <Link to="/inbox" className="mt-1 flex items-center gap-0.5 text-[12px] text-ink-3 hover:text-ink">{t('needs.more', { count: waiting - top.length })} <ChevronRight size={13} /></Link>}
+        </Card>
 
         <Card className="p-5 md:col-span-2">
           <div className="mb-3 flex items-center justify-between">

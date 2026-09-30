@@ -206,6 +206,12 @@ export type OpencodeModel = { id: string; provider: string; name: string; subscr
 export type ModelTest = { ok: boolean; text?: string; cost_usd?: number; ms?: number; error?: string; problem?: string }
 
 export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: string; approved?: string }; undoable: boolean; undo_until?: string; undone: boolean }
+// A Need is one thing waiting for the person signed in, from /api/needs.
+// The kinds the server may add later (credential requests, lessons) show
+// with their title and an open link until the UI learns their buttons.
+export type NeedKind = 'approval' | 'question' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system'
+export type Need = { kind: NeedKind; id: string; title: string; detail?: string; created?: string; urgency: number; expires?: string; link?: string; actions: string[]; options?: string[]; proposal?: string; risk?: number }
+export type Needs = { items: Need[]; counts: Partial<Record<NeedKind, number>>; total: number }
 export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string; grantable?: boolean }
 // Grant is an "approve for this routine" answer: that routine repeats that exact operation without asking.
 export type Grant = { id: string; routine: string; routine_name: string; version: number; capability: string; scope?: string; match: Record<string, string>; limits?: Record<string, number>; created: string }
@@ -392,6 +398,7 @@ export const api = {
   setGmailPush: (c: { topic: string; account: string; audience?: string }) => request<GmailPushSetup>('PUT', '/api/push/gmail', c),
   githubHook: (id: string) => request<GitHubHook>('GET', `/api/routines/${id}/github`),
   setGitHubHook: (id: string, action: 'on' | 'off' | 'rotate') => request<GitHubHook>('POST', `/api/routines/${id}/github/${action}`),
+  needs: () => request<Needs>('GET', '/api/needs'),
   questions: () => request<{ id: string; routine?: string; question: string; options: string[]; asked: string }[]>('GET', '/api/questions'),
   suggestions: () => request<{ id: string; title: string; why: string; request: string; made: string }[]>('GET', '/api/suggestions'),
   suggestion: (id: string, action: 'accept' | 'dismiss') => request<{ exploration?: string }>('POST', `/api/suggestions/${id}/${action}`),

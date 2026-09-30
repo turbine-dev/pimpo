@@ -28,6 +28,7 @@ var guestRoutes = routeSet(
 	"GET /api/chats", "GET /api/chats/search", "GET /api/chats/{id}", "POST /api/chats", "POST /api/chats/{id}/messages", "DELETE /api/chats/{id}",
 	"GET /api/explorations", "GET /api/explorations/{id}", "POST /api/explorations",
 	"GET /api/questions", "POST /api/questions/{id}/answer",
+	"GET /api/needs",
 	"GET /api/events", "GET /api/events/verify", "GET /api/ws",
 	"POST /api/voice/transcribe", "POST /api/speak",
 	"GET /api/media", "GET /api/media/{id}",

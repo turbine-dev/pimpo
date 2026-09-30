@@ -6,7 +6,7 @@ Pimpo was called Zodim, and Vigia before that. An existing install moves over on
 
 ## Getting around
 
-**Home** is where the day starts: ask for anything, and see what needs you, what ran and what is next today, what you spent, and your recent chats. The side menu keeps what you use daily on top (Home, Routines, Activity, Assistants) and the rest under **More**; your conversations are listed below it. At the bottom, the bell opens what waits for you (approvals, stopped routines, tasks ready, parts with errors) so you can answer in place, and the Pimpo menu has Settings, cost, **System status** (⌘⇧D: how busy the computer and Pimpo are, what is running now and the state of every channel, account and service), pairing a phone, the theme and help.
+**Home** is where the day starts: ask for anything, and see what needs you, what ran and what is next today, what you spent, and your recent chats. The side menu keeps what you use daily on top (Home, Routines, Activity, Assistants) and the rest under **More**; your conversations are listed below it. At the bottom, the bell opens **Needs you**, the one list of what waits for you, so you can answer in place, and the Pimpo menu has Settings, cost, **System status** (⌘⇧D: how busy the computer and Pimpo are, what is running now and the state of every channel, account and service), pairing a phone, the theme and help.
 
 ## First steps
 
@@ -107,7 +107,11 @@ Progress is kept, not just shown: **Home** lists what is running now, and each j
 
 ## Approvals and rules
 
-- **Needs you** lists what is waiting for you: approvals, finished explorations, problems. On the phone it is the first tab.
+- **Needs you** is one list of everything waiting for you: approvals, questions from routines, routines stopped after a failure, jobs that ran into a problem (for a week) or whose plan waits to be started, tasks ready to review and, for the administrator, suggestions and parts of the house that stopped working.
+  - The most urgent comes first: an approval about to expire (it says when), then approvals, questions, what broke, and the rest; within each, the newest first.
+  - Filter by kind with the tabs on top. Answer in place: allow or deny, pick an answer, run a routine again or redo it with the agent, or open a job or task.
+  - The bell (in the header on the phone, at the bottom of the menu on the computer) shows how many things wait and opens the same list; Home shows the first three.
+  - It only ever shows your own things, the administrator included, and it updates by itself as things change.
 - Approval buttons: **Allow** (this time), **All this run** (the rest of this run), **Always** (this routine, from now on), **Deny**.
 - **For this routine** lets a routine repeat exactly this action without asking again: the same kind of action to the same recipients, on the same site, with an amount up to the one you approved (you can raise the limit in **Needs you**). A different recipient, site or larger amount asks again, and so does a new version of the routine. The email's words can change every day; who it goes to cannot. **Routines › Approved for routines** lists these approvals and takes any back. It is safer than **Always**, which allows the whole capability for that routine. Members use it for their own routines; WhatsApp to other people, locks and alarms still always ask. On WhatsApp it takes the place of **Always**, which stays in the app.
 - **Rules**: write rules in plain words ("never delete emails from my boss"). You see exactly what the rule will enforce, and a test against last week, before saving.
