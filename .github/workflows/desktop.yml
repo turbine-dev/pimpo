@@ -22,7 +22,7 @@ on:
         required: true
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: desktop-${{ github.ref }}-${{ inputs.tag }}
@@ -42,19 +42,22 @@ jobs:
           - { name: Linux (arm64), os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, goos: linux, goarch: arm64, bundles: "deb,rpm,appimage" }
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    # The build only reads: the attach job uploads the installers.
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # A release builds exactly the tagged commit.
           ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || '' }}
 
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with: { go-version-file: go.mod }
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with: { node-version-file: .nvmrc, cache: npm, cache-dependency-path: "ui/package-lock.json" }
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with: { targets: "${{ matrix.target }}" }
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with: { workspaces: "desktop/src-tauri -> target", key: "${{ matrix.target }}" }
 
       - name: Linux libraries
@@ -66,8 +69,9 @@ jobs:
       - name: Version
         id: version
         shell: bash
+        env: { TAG: "${{ inputs.tag }}" }
         run: |
-          tag="${{ inputs.tag }}"
+          tag="$TAG"
           if [ -n "$tag" ]; then
             version="${tag#v}"
             # The app takes the tag's whole version, which updates compare;
@@ -81,13 +85,17 @@ jobs:
       - name: Web app
         run: cd ui && npm ci --no-audit --no-fund && npx vite build
 
+      # Installed before any signing secret is in the environment.
+      - name: Desktop dependencies
+        run: cd desktop && npm ci --no-audit --no-fund
+
       - name: Server sidecar
         shell: bash
-        env: { CGO_ENABLED: "0", GOOS: "${{ matrix.goos }}", GOARCH: "${{ matrix.goarch }}" }
+        env: { CGO_ENABLED: "0", GOOS: "${{ matrix.goos }}", GOARCH: "${{ matrix.goarch }}", VERSION: "${{ steps.version.outputs.version }}", TARGET: "${{ matrix.target }}", EXT: "${{ matrix.ext }}" }
         run: |
           mkdir -p desktop/src-tauri/binaries
-          go build -trimpath -ldflags "-s -w -X main.version=${{ steps.version.outputs.version }}" \
-            -o "desktop/src-tauri/binaries/pimpo-${{ matrix.target }}${{ matrix.ext }}" ./cmd/pimpo
+          go build -trimpath -ldflags "-s -w -X main.version=$VERSION" \
+            -o "desktop/src-tauri/binaries/pimpo-$TARGET$EXT" ./cmd/pimpo
 
       # Windows installers are signed when the repository has a code-signing
       # certificate (a .pfx, base64) and its password.
@@ -117,6 +125,8 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TARGET: ${{ matrix.target }}
+          BUNDLES: ${{ matrix.bundles }}
         run: |
           # Unset what is empty, so a fork without secrets still builds.
           for v in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD; do
@@ -126,7 +136,6 @@ jobs:
             export APPLE_SIGNING_IDENTITY=-   # ad hoc: Apple Silicon refuses unsigned apps
           fi
           cd desktop
-          npm ci --no-audit --no-fund
           # With the updater's key, the bundles the updater installs are
           # made and signed too.
           extra=()
@@ -136,17 +145,18 @@ jobs:
           if [ -n "${WINDOWS_THUMBPRINT:-}" ]; then
             extra+=(--config "{\"bundle\":{\"windows\":{\"certificateThumbprint\":\"$WINDOWS_THUMBPRINT\",\"digestAlgorithm\":\"sha256\",\"timestampUrl\":\"http://timestamp.digicert.com\"}}}")
           fi
-          npx tauri build --ci --target "${{ matrix.target }}" --bundles "${{ matrix.bundles }}" "${extra[@]}"
+          npx tauri build --ci --target "$TARGET" --bundles "$BUNDLES" "${extra[@]}"
 
       - name: Collect installers
         id: collect
         shell: bash
+        env: { TARGET: "${{ matrix.target }}", VERSION: "${{ steps.version.outputs.version }}", ARCH: "${{ matrix.goarch }}" }
         run: |
           out="$RUNNER_TEMP/installers"
           mkdir -p "$out"
-          bundle="desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
-          v="${{ steps.version.outputs.version }}"
-          arch="${{ matrix.goarch }}"
+          bundle="desktop/src-tauri/target/$TARGET/release/bundle"
+          v="$VERSION"
+          arch="$ARCH"
           shopt -s nullglob
           for f in "$bundle"/dmg/*.dmg; do cp "$f" "$out/Pimpo_${v}_macos_${arch}.dmg"; done
           # The updater's own archive of the app, signed, when it was made.
@@ -166,33 +176,47 @@ jobs:
           [ -n "$(ls -A "$out")" ] || { echo "no installers were built" >&2; exit 1; }
           echo "dir=$out" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pimpo-desktop-${{ matrix.goos }}-${{ matrix.goarch }}
           path: ${{ steps.collect.outputs.dir }}/*
           if-no-files-found: error
           retention-days: 14
 
+  # The installers that were built go to the draft release, even when
+  # another system's build failed.
+  attach:
+    needs: build
+    if: ${{ !cancelled() && inputs.tag != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { path: installers, merge-multiple: true }
       - name: Attach to the draft release
-        if: inputs.tag != ''
         shell: bash
-        env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh release upload "${{ inputs.tag }}" "${{ steps.collect.outputs.dir }}"/* --clobber --repo "${{ github.repository }}"
+        env: { GH_TOKEN: "${{ github.token }}", TAG: "${{ inputs.tag }}" }
+        run: gh release upload "$TAG" installers/* --clobber --repo "$GITHUB_REPOSITORY"
 
   # The updater's manifest, once every system is built: in the release, and
   # in channel-beta, which beta users follow (stable users follow the latest
   # published release).
   manifest:
-    needs: build
+    needs: [build, attach]
     if: inputs.tag != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Only whether the tokens exist is job-wide; each token reaches just the
+    # step that uses it.
     env:
-      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+      HAS_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+      HAS_WINGET_TOKEN: ${{ secrets.WINGET_TOKEN != '' }}
       FINAL: ${{ !contains(inputs.tag, '-') }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { path: installers, merge-multiple: true }
       - name: latest.json
         id: manifest
@@ -203,22 +227,22 @@ jobs:
             echo "::warning::no updater signatures: set the TAURI_SIGNING_PRIVATE_KEY secrets for automatic updates"
             exit 0
           fi
-          gh release view "$TAG" --repo "${{ github.repository }}" --json body -q .body > notes.md || true
-          python3 scripts/latest-json.py installers "${{ github.repository }}" "$TAG" notes.md > latest.json
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body -q .body > notes.md || true
+          python3 scripts/latest-json.py installers "$GITHUB_REPOSITORY" "$TAG" notes.md > latest.json
           cat latest.json
-          gh release upload "$TAG" latest.json --clobber --repo "${{ github.repository }}"
-          if ! gh release view channel-beta --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            gh release create channel-beta --repo "${{ github.repository }}" --prerelease --title "Beta channel" \
+          gh release upload "$TAG" latest.json --clobber --repo "$GITHUB_REPOSITORY"
+          if ! gh release view channel-beta --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create channel-beta --repo "$GITHUB_REPOSITORY" --prerelease --title "Beta channel" \
               --notes "The desktop app's beta channel reads latest.json here. Install Pimpo from the numbered releases."
           fi
-          gh release upload channel-beta latest.json --clobber --repo "${{ github.repository }}"
+          gh release upload channel-beta latest.json --clobber --repo "$GITHUB_REPOSITORY"
 
       # The desktop app's cask in turbine-dev/homebrew-tap, for final
       # releases, when the repository has a token that can push there.
       - name: Homebrew cask
-        if: env.HOMEBREW_TAP_TOKEN != '' && env.FINAL == 'true'
+        if: env.HAS_TAP_TOKEN == 'true' && env.FINAL == 'true'
         shell: bash
-        env: { TAG: "${{ inputs.tag }}" }
+        env: { TAG: "${{ inputs.tag }}", HOMEBREW_TAP_TOKEN: "${{ secrets.HOMEBREW_TAP_TOKEN }}" }
         run: |
           python3 scripts/cask.py packaging/homebrew/pimpo-app.rb.tmpl installers "$TAG" > pimpo-app.rb
           git clone --depth 1 "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/turbine-dev/homebrew-tap.git" tap
@@ -232,8 +256,8 @@ jobs:
       # winget, for final releases, once the package exists there (the first
       # version is submitted by hand: packaging/winget/README.md).
       - name: winget
-        if: env.WINGET_TOKEN != '' && env.FINAL == 'true'
-        uses: vedantmgoyal9/winget-releaser@main
+        if: env.HAS_WINGET_TOKEN == 'true' && env.FINAL == 'true'
+        uses: vedantmgoyal9/winget-releaser@a8fff44b123f115ce4c21543edf8b677376fc7e0 # main, 2026-09-20
         with:
           identifier: TurbineDev.Pimpo
           release-tag: ${{ inputs.tag }}

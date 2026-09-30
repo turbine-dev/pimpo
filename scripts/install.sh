@@ -32,13 +32,18 @@ else
   base="https://github.com/$repo/releases/download/$version"
 fi
 base="${PIMPO_BASE_URL:-$base}"
+# A mirror must be https: the checksums come from the same place as the archive.
+case "$base" in
+  https://*) ;;
+  *) echo "PIMPO_BASE_URL must start with https://, got $base" >&2; exit 1 ;;
+esac
 archive="pimpo_${os}_${arch}.tar.gz"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 echo "Downloading $archive…"
-curl -fsSL "$base/$archive" -o "$tmp/$archive"
-curl -fsSL "$base/checksums.txt" -o "$tmp/checksums.txt"
+curl --proto '=https' --proto-redir '=https' -fsSL "$base/$archive" -o "$tmp/$archive"
+curl --proto '=https' --proto-redir '=https' -fsSL "$base/checksums.txt" -o "$tmp/checksums.txt"
 expected=$(grep " $archive\$" "$tmp/checksums.txt" | cut -d' ' -f1)
 if command -v sha256sum >/dev/null; then actual=$(sha256sum "$tmp/$archive" | cut -d' ' -f1); else actual=$(shasum -a 256 "$tmp/$archive" | cut -d' ' -f1); fi
 if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then

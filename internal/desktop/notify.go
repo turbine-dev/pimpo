@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -15,25 +16,44 @@ import (
 
 // Run executes a command; tests replace it.
 var Run = func(ctx context.Context, name string, args ...string) error {
-	return exec.CommandContext(ctx, name, args...).Run()
+	return RunEnv(ctx, nil, name, args...)
+}
+
+// RunEnv executes a command with extra environment variables on top of
+// this process's own; tests replace it.
+var RunEnv = func(ctx context.Context, env []string, name string, args ...string) error {
+	cmd := exec.CommandContext(ctx, name, args...)
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
+	return cmd.Run()
 }
 
 // Notify shows a notification with a title and a body.
 func Notify(ctx context.Context, title, body string) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	title, body = clean(title, 80), clean(body, 240)
-	switch runtime.GOOS {
+	name, args, env := notifyCommand(runtime.GOOS, clean(title, 80), clean(body, 240))
+	return RunEnv(ctx, env, name, args...)
+}
+
+// The Windows toast reads its text from the environment, so nothing the
+// title or body holds ever becomes part of the PowerShell script.
+const toastScript = "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null;" +
+	"$t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02);" +
+	"$x = $t.GetElementsByTagName('text'); $x.Item(0).AppendChild($t.CreateTextNode($env:PIMPO_TITLE)) > $null; $x.Item(1).AppendChild($t.CreateTextNode($env:PIMPO_BODY)) > $null;" +
+	"[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Pimpo').Show([Windows.UI.Notifications.ToastNotification]::new($t))"
+
+// notifyCommand builds the command that shows a notification. The text is
+// always passed as data (arguments or environment), never inside a script.
+func notifyCommand(goos, title, body string) (name string, args, env []string) {
+	switch goos {
 	case "darwin":
-		return Run(ctx, "osascript", "-e", "display notification "+quote(body)+" with title "+quote(title))
+		return "osascript", []string{"-e", "on run argv", "-e", "display notification (item 2 of argv) with title (item 1 of argv)", "-e", "end run", "--", title, body}, nil
 	case "windows":
-		script := "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null;" +
-			"$t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02);" +
-			"$x = $t.GetElementsByTagName('text'); $x.Item(0).AppendChild($t.CreateTextNode(" + psQuote(title) + ")) > $null; $x.Item(1).AppendChild($t.CreateTextNode(" + psQuote(body) + ")) > $null;" +
-			"[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Pimpo').Show([Windows.UI.Notifications.ToastNotification]::new($t))"
-		return Run(ctx, "powershell", "-NoProfile", "-Command", script)
+		return "powershell", []string{"-NoProfile", "-NonInteractive", "-Command", toastScript}, []string{"PIMPO_TITLE=" + title, "PIMPO_BODY=" + body}
 	default:
-		return Run(ctx, "notify-send", "--app-name=Pimpo", title, body)
+		return "notify-send", []string{"--app-name=Pimpo", "--", title, body}, nil
 	}
 }
 
@@ -62,11 +82,3 @@ func clean(s string, n int) string {
 	}
 	return s
 }
-
-// quote makes an AppleScript string literal; nothing in it can end the
-// string or run code.
-func quote(s string) string {
-	return `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(s) + `"`
-}
-
-func psQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }
