@@ -21,12 +21,9 @@ const MaxText = 30000
 // structured data it publishes (JSON-LD, where shops put product prices),
 // and its links. Scripts, styles and hidden parts are left out.
 func (w *Web) read(ctx context.Context, raw, scope string) (any, error) {
-	u, err := url.Parse(raw)
-	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
-		return nil, fmt.Errorf("%q is not an http(s) URL", raw)
-	}
-	if !strings.EqualFold(u.Hostname(), scope) {
-		return nil, fmt.Errorf("%s is outside the allowed host %s", u.Hostname(), scope)
+	u, err := checkURL(raw, scope)
+	if err != nil {
+		return nil, err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {

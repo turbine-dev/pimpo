@@ -15,6 +15,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/browser"
 	"github.com/turbine-dev/pimpo/internal/connector"
 	"github.com/turbine-dev/pimpo/internal/host"
+	"github.com/turbine-dev/pimpo/internal/netguard"
 	"github.com/turbine-dev/pimpo/internal/server"
 )
 
@@ -86,13 +87,13 @@ func (c browserCap) Call(ctx context.Context, name, scope string, args any) (any
 	allowed := runAllows(run)
 	switch name {
 	case "browser.open":
-		u, err := url.Parse(in.URL)
-		if err != nil || u.Hostname() == "" {
-			return nil, errors.New("give the page's address")
+		u, err := netguard.ParseURL(in.URL)
+		if err != nil {
+			return nil, errors.New("give the page's full http(s) address, without a user name")
 		}
 		// The policy checked this host (the manifest's scope, or the
-		// owner's answer while exploring).
-		if scope != "" && !strings.EqualFold(scope, u.Hostname()) {
+		// owner's answer while exploring); only then may the run reach it.
+		if !netguard.SameHost(u, scope) {
 			return nil, errors.New(u.Hostname() + " is outside the sites this may reach")
 		}
 		allowOnRun(run, u.Hostname())

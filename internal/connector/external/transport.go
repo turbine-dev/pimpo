@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -54,7 +55,7 @@ func dial(ctx context.Context, e Endpoint, timeout time.Duration) (transport, er
 		if client == nil {
 			client = &http.Client{Timeout: timeout}
 		}
-		t = &httpConn{name: e.Name, url: e.URL, headers: e.Headers, timeout: timeout, client: client}
+		t = &httpConn{name: e.Name, url: e.URL, headers: e.Headers, timeout: timeout, client: sameHostOnly(client, e.URL)}
 	} else {
 		s, err := startProcess(e, timeout)
 		if err != nil {
@@ -252,6 +253,27 @@ func (s *stdioConn) rpc(ctx context.Context, method string, params any) (json.Ra
 		s.close()
 		return nil, ctx.Err()
 	}
+}
+
+// sameHostOnly copies a client so it follows redirects only on the
+// server's own host: Go keeps custom headers, such as an API key, on a
+// redirect to another host.
+func sameHostOnly(c *http.Client, raw string) *http.Client {
+	host := ""
+	if u, err := url.Parse(raw); err == nil {
+		host = u.Hostname()
+	}
+	cc := *c
+	cc.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if host == "" || req.URL.User != nil || !strings.EqualFold(req.URL.Hostname(), host) {
+			return fmt.Errorf("redirect to %s is outside %s", req.URL.Hostname(), host)
+		}
+		if len(via) > 5 {
+			return errors.New("too many redirects")
+		}
+		return nil
+	}
+	return &cc
 }
 
 // httpConn speaks MCP's streamable HTTP: one POST per message, answered

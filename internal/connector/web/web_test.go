@@ -28,7 +28,7 @@ func TestGetJSONWithinScope(t *testing.T) {
 	if err != nil || got.(map[string]any)["rate"] != 5.47 {
 		t.Fatalf("%v %v", got, err)
 	}
-	for name, u := range map[string]string{"not json": srv.URL + "/page", "redirect out": srv.URL + "/away", "other host": "http://example.org/x", "not a url": "ftp://x"} {
+	for name, u := range map[string]string{"not json": srv.URL + "/page", "redirect out": srv.URL + "/away", "other host": "http://example.org/x", "not a url": "ftp://x", "user info": "http://" + host + ":x@" + host + "/rate"} {
 		if _, err := w.Call(ctx, "http.getJSON", host, u); err == nil {
 			t.Errorf("%s: accepted", name)
 		}

