@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">来自 Pimpo 仪表板的小组件</string>
+    <string name="widget_choose">选择小组件</string>
+    <string name="widget_loading">正在加载…</string>
+    <string name="widget_none">这部手机上还没有小组件。打开 Pimpo，在小组件的菜单中选择“添加到主屏幕”。</string>
+    <string name="widget_missing">这个小组件已不在这部手机上。打开 Pimpo 选择另一个。</string>
+    <string name="status_ok">正常</string>
+    <string name="status_warn">注意</string>
+    <string name="status_alert">警报</string>
+    <string name="builtin_needs">需要你处理</string>
+    <string name="builtin_today">今天</string>
+    <string name="builtin_spent">本月支出</string>
+    <string name="builtin_budget">今日限额</string>
+    <string name="builtin_reminders">提醒</string>
+</resources>

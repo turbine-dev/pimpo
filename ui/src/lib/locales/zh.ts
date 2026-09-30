@@ -706,6 +706,7 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'float.open': "打开仪表板",
   'float.close': "关闭",
   'float.gone': "这个小组件已不存在。",
+  'widget.pinHome': "添加到主屏幕",
   'dash.title': "仪表板",
   'dash.add': "添加小组件",
   'dash.done': "完成",

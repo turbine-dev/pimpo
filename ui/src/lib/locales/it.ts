@@ -715,6 +715,7 @@ export const it: Record<Key, string> & Record<string, string> = {
   'float.open': "Apri le dashboard",
   'float.close': "Chiudi",
   'float.gone': "Questo widget non esiste più.",
+  'widget.pinHome': "Aggiungi alla schermata Home",
   'dash.title': "Dashboard",
   'dash.add': "Aggiungi widget",
   'dash.done': "Fatto",

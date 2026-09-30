@@ -706,6 +706,7 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'float.open': "대시보드 열기",
   'float.close': "닫기",
   'float.gone': "이 위젯은 더 이상 없어요.",
+  'widget.pinHome': "홈 화면에 추가",
   'dash.title': "대시보드",
   'dash.add': "위젯 추가",
   'dash.done': "완료",

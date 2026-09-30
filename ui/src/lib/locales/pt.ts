@@ -706,6 +706,7 @@ export const pt = {
   'float.open': "Abrir os painéis",
   'float.close': "Fechar",
   'float.gone': "Este widget não existe mais.",
+  'widget.pinHome': "Adicionar à tela inicial",
   'dash.title': "Painéis",
   'dash.add': "Adicionar widget",
   'dash.done': "Pronto",

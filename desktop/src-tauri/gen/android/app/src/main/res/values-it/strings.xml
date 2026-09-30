@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Un widget dalle tue dashboard di Pimpo</string>
+    <string name="widget_choose">Scegli un widget</string>
+    <string name="widget_loading">Caricamento…</string>
+    <string name="widget_none">Ancora nessun widget su questo telefono. Apri Pimpo e, nel menu di un widget, scegli Aggiungi alla schermata Home.</string>
+    <string name="widget_missing">Questo widget non è più su questo telefono. Apri Pimpo per sceglierne un altro.</string>
+    <string name="status_ok">OK</string>
+    <string name="status_warn">Attenzione</string>
+    <string name="status_alert">Allarme</string>
+    <string name="builtin_needs">Ha bisogno di te</string>
+    <string name="builtin_today">Oggi</string>
+    <string name="builtin_spent">Speso questo mese</string>
+    <string name="builtin_budget">Limite di oggi</string>
+    <string name="builtin_reminders">Promemoria</string>
+</resources>

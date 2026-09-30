@@ -728,6 +728,7 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'float.open': "Открыть панели",
   'float.close': "Закрыть",
   'float.gone': "Этого виджета больше нет.",
+  'widget.pinHome': "Добавить на главный экран",
   'dash.title': "Панели",
   'dash.add': "Добавить виджет",
   'dash.done': "Готово",

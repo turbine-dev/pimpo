@@ -23,6 +23,7 @@ No version has been tagged yet. The first release will include everything built 
 - Dashboards in tabs with widgets of seven kinds (numbers, goals, status, lists, tables, and line, area, bar and donut charts), ready-made widgets, and sharing with the house.
 - Floating widgets in the desktop app: any widget in a small always-on-top window that keeps its place and hides while the app is locked.
 - A Telegram Mini App: **Dashboard** in the bot's menu opens what needs you, your routines, spending and your widgets inside Telegram, signed in as you (needs a public https address, such as Tailscale Funnel).
+- Android home-screen widgets for any dashboard widget, read with a phone's own widget key that sees only the widgets pinned to it.
 - **Turn into a widget** on a routine's page, and requests to see or track something end in a widget.
 - Search your past conversations by words (ignoring case and accents) or an exact phrase in quotes, each person only in their own.
 - On Discord, Slack and Signal, replying to a notice with a number answers that notice, even after newer ones.

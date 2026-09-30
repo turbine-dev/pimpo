@@ -8,6 +8,7 @@ import { mockFetch, wrap } from './helpers'
 import { Dashboards } from '../pages/Dashboards'
 import { MakeWidget } from '../components/MakeWidget'
 import { FloatingWidget } from '../pages/FloatingWidget'
+import { canPinToHome, pinToHome } from '../components/widgets/homescreen'
 
 const view = (snapshot: WidgetSnap, extra: Partial<WidgetView> = {}): WidgetView => ({
   id: 'w_' + snapshot.kind, source: 'routine', kind: snapshot.kind, title: snapshot.title, snapshot, updated: new Date().toISOString(), mine: true, ...extra,
@@ -91,5 +92,27 @@ describe('widgets', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Opções do widget' }))
     await userEvent.click(screen.getByRole('menuitem', { name: /Flutuar na área de trabalho/ }))
     expect(onFloat).toHaveBeenCalledWith(true)
+  })
+
+  it('puts a widget on the Android home screen with the phone\'s widget key', async () => {
+    expect(canPinToHome()).toBe(false)
+    const bridge = { available: () => true, setup: vi.fn(() => true), pin: vi.fn(() => true) }
+    Object.assign(window, { PimpoWidgets: bridge })
+    const calls = mockFetch({ 'POST /api/phone/widgets': { key: 'wk_abc', pins: ['w_metric'] } })
+    expect(canPinToHome()).toBe(true)
+    expect(await pinToHome('w_metric')).toBe(true)
+    expect(calls[0].body).toEqual({ pin: 'w_metric' })
+    expect(bridge.setup).toHaveBeenCalledWith('wk_abc')
+    expect(bridge.pin).toHaveBeenCalledWith('w_metric')
+    delete (window as { PimpoWidgets?: unknown }).PimpoWidgets
+  })
+
+  it('offers the home screen in the widget menu when the phone can', async () => {
+    const w = view({ kind: 'metric', title: 'Saldo', value: 10, unit: 'BRL' })
+    const onPinHome = vi.fn()
+    wrap(<LocaleProvider locale="pt"><WidgetCard w={w} onPinHome={onPinHome}><WidgetBody w={w} size="small" /></WidgetCard></LocaleProvider>)
+    await userEvent.click(screen.getByRole('button', { name: 'Opções do widget' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /Adicionar à tela inicial/ }))
+    expect(onPinHome).toHaveBeenCalled()
   })
 })

@@ -706,6 +706,7 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'float.open': "ダッシュボードを開く",
   'float.close': "閉じる",
   'float.gone': "このウィジェットはもうありません。",
+  'widget.pinHome': "ホーム画面に追加",
   'dash.title': "ダッシュボード",
   'dash.add': "ウィジェットを追加",
   'dash.done': "完了",

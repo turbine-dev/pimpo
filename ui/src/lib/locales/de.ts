@@ -706,6 +706,7 @@ export const de: Record<Key, string> & Record<string, string> = {
   'float.open': "Dashboards öffnen",
   'float.close': "Schließen",
   'float.gone': "Dieses Widget gibt es nicht mehr.",
+  'widget.pinHome': "Zum Startbildschirm hinzufügen",
   'dash.title': "Dashboards",
   'dash.add': "Widget hinzufügen",
   'dash.done': "Fertig",

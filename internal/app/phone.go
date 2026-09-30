@@ -127,7 +127,7 @@ func (a *App) phoneRoutes() {
 	a.Server.Handle("GET /api/phone", func(w http.ResponseWriter, r *http.Request) {
 		out := map[string]any{"places": a.places(r.Context()), "shares": phoneShares}
 		if d, ok := a.phoneOf(r, false); ok {
-			out["device"] = map[string]any{"id": d.ID, "name": d.Name, "shares": nonNil(d.Shares), "has_key": d.KeyHash != ""}
+			out["device"] = map[string]any{"id": d.ID, "name": d.Name, "shares": nonNil(d.Shares), "has_key": d.KeyHash != "", "pins": nonNil(d.Pins)}
 		}
 		server.WriteJSON(w, 200, out)
 	})

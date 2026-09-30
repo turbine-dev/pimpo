@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Ein Widget aus deinen Pimpo-Dashboards</string>
+    <string name="widget_choose">Widget wählen</string>
+    <string name="widget_loading">Wird geladen…</string>
+    <string name="widget_none">Noch keine Widgets auf diesem Telefon. Öffne Pimpo und wähle im Menü eines Widgets Zum Startbildschirm hinzufügen.</string>
+    <string name="widget_missing">Dieses Widget ist nicht mehr auf diesem Telefon. Öffne Pimpo, um ein anderes zu wählen.</string>
+    <string name="status_ok">OK</string>
+    <string name="status_warn">Achtung</string>
+    <string name="status_alert">Alarm</string>
+    <string name="builtin_needs">Braucht dich</string>
+    <string name="builtin_today">Heute</string>
+    <string name="builtin_spent">Diesen Monat ausgegeben</string>
+    <string name="builtin_budget">Heutiges Limit</string>
+    <string name="builtin_reminders">Erinnerungen</string>
+</resources>

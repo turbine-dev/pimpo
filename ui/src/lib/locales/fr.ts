@@ -715,6 +715,7 @@ export const fr: Record<Key, string> & Record<string, string> = {
   'float.open': "Ouvrir les tableaux de bord",
   'float.close': "Fermer",
   'float.gone': "Ce widget n'existe plus.",
+  'widget.pinHome': "Ajouter à l'écran d'accueil",
   'dash.title': "Tableaux de bord",
   'dash.add': "Ajouter un widget",
   'dash.done': "Terminé",

@@ -1,4 +1,17 @@
 <resources>
     <string name="app_name">"Pimpo"</string>
     <string name="main_activity_title">"Pimpo"</string>
+    <string name="widget_description">A widget from your Pimpo dashboards</string>
+    <string name="widget_choose">Choose a widget</string>
+    <string name="widget_loading">Loading…</string>
+    <string name="widget_none">No widgets on this phone yet. Open Pimpo, and in a widget\'s menu choose Add to the home screen.</string>
+    <string name="widget_missing">This widget is no longer on this phone. Open Pimpo to choose another.</string>
+    <string name="status_ok">OK</string>
+    <string name="status_warn">Attention</string>
+    <string name="status_alert">Alert</string>
+    <string name="builtin_needs">Needs you</string>
+    <string name="builtin_today">Today</string>
+    <string name="builtin_spent">Spent this month</string>
+    <string name="builtin_budget">Today\'s limit</string>
+    <string name="builtin_reminders">Reminders</string>
 </resources>

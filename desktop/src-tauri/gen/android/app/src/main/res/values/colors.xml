@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="widget_surface">#FFFFFFFF</color>
+    <color name="widget_line">#1F101828</color>
+    <color name="widget_ink">#FF14161A</color>
+    <color name="widget_ink_2">#FF4A4F57</color>
+    <color name="widget_ink_3">#FF878C94</color>
 </resources>

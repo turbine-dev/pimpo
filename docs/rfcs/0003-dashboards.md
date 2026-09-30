@@ -91,7 +91,7 @@ Every surface reads the same **widget feed**. `GET /api/widgets/feed` returns th
 |---|---|---|---|
 | **Web app, phone app** | Dashboards pages, live over the event stream (`widget.updated`, which carries the person) | instant | nothing |
 | **Floating widgets on macOS, Windows, Linux** | Each widget its own small always-on-top window, like the floating Pimpo: its own size and place, remembered, shown on every desktop, hidden while the app is locked | instant | nothing |
-| **Android home screen** | A Glance app widget in the Android app, one per pinned widget, configured by choosing which one | WorkManager, every 15–30 min, plus on open | Kotlin in `gen/android` |
+| **Android home screen** | An app widget in the Android app, one per pinned widget, placed from the app or chosen from the launcher (built with Android's own `AppWidgetProvider` and `RemoteViews`, so no new libraries) | the system's update, every 30 min, plus on open | Kotlin in `gen/android` |
 | **iOS home and lock screen** | A WidgetKit extension with an App Group, and App Intents to choose the widget and, on iOS 17, to refresh or run it | the system's timeline budget, about every 15–60 min | Swift in `gen/apple`, and an **Apple Developer account** (App Groups, signing) |
 | **macOS Notification Center and desktop** | The same WidgetKit extension, in the desktop app's bundle | as iOS | the Apple account, and the desktop app **signed and notarized** (2.2) |
 | **Windows Widgets board** | A widget provider with Adaptive Cards | as Android | a packaged (MSIX) app; later, if people ask |

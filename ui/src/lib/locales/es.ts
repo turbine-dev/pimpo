@@ -715,6 +715,7 @@ export const es: Record<Key, string> & Record<string, string> = {
   'float.open': "Abrir los paneles",
   'float.close': "Cerrar",
   'float.gone': "Este widget ya no existe.",
+  'widget.pinHome': "Añadir a la pantalla de inicio",
   'dash.title': "Paneles",
   'dash.add': "Añadir widget",
   'dash.done': "Listo",
