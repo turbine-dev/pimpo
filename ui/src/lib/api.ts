@@ -357,6 +357,7 @@ export const api = {
   openLink: (url: string) => request<{ opened: boolean }>('POST', '/api/open', { url }),
   routines: () => request<RoutineSummary[]>('GET', '/api/routines'),
   routine: (id: string) => request<{ summary: RoutineSummary; routine: Routine; versions: Version[]; runs: Run[]; state: Record<string, unknown>; used_by: string[] }>('GET', `/api/routines/${id}`),
+  routineWidget: (id: string, kind: string) => request<{ exploration: string }>('POST', `/api/routines/${id}/widget`, { kind }),
   routineAction: (id: string, action: 'run' | 'pause' | 'resume' | 'repair' | 'forget') => request<{ run?: Run; error?: string; exploration?: string }>('POST', `/api/routines/${id}/${action}`),
   explorations: (state?: string) => request<Exploration[]>('GET', `/api/explorations${state ? `?state=${state}` : ''}`),
   exploration: (id: string) => request<{ exploration: Exploration; actions: VEvent<ActionRecord>[] }>('GET', `/api/explorations/${id}`),

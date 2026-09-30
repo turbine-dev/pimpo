@@ -169,3 +169,20 @@ func TestRefreshNowAsksBeforeSpending(t *testing.T) {
 		t.Fatalf("confirmed refresh: %d %v", code, out)
 	}
 }
+
+func TestARoutineTurnsIntoAWidgetThroughANewExploration(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ctx := context.Background()
+	ta.Store.SaveRoutine(ctx, "dolar", routine.Routine{Name: "Dólar", Description: "me avisa o dólar", Code: `async function run() {}`, Manifest: runtime.Manifest{Schedule: "0 * * * *", Capabilities: []string{"notify.send"}}}, "test", "owner")
+	code, out := ta.do(t, "POST", "/api/routines/dolar/widget", map[string]any{"kind": "chart"})
+	if code != 202 || out["exploration"] == "" {
+		t.Fatalf("%d %v", code, out)
+	}
+	e, err := ta.Store.Exploration(ctx, out["exploration"].(string))
+	if err != nil || e.Routine != "dolar" || !strings.Contains(e.Request, "widget.show") || !strings.Contains(e.Request, "chart kind") {
+		t.Fatalf("%v %+v", err, e)
+	}
+	if code, _ := ta.do(t, "POST", "/api/routines/nope/widget", map[string]any{}); code != 404 {
+		t.Fatalf("unknown routine: %d", code)
+	}
+}

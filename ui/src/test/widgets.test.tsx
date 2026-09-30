@@ -1,10 +1,12 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { WidgetSnap, WidgetView } from '../lib/api'
 import { LocaleProvider } from '../lib/i18n'
 import { formatValue, WidgetBody, WidgetCard } from '../components/widgets/Widget'
 import { mockFetch, wrap } from './helpers'
 import { Dashboards } from '../pages/Dashboards'
+import { MakeWidget } from '../components/MakeWidget'
 
 const view = (snapshot: WidgetSnap, extra: Partial<WidgetView> = {}): WidgetView => ({
   id: 'w_' + snapshot.kind, source: 'routine', kind: snapshot.kind, title: snapshot.title, snapshot, updated: new Date().toISOString(), mine: true, ...extra,
@@ -57,5 +59,19 @@ describe('widgets', () => {
     expect(screen.getByRole('tab', { name: /Loja/ })).toBeInTheDocument()
     expect(await screen.findByText('Saldo')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Editar/ })).toBeInTheDocument()
+  })
+
+  it('turns a routine into a widget of the chosen kind', async () => {
+    const calls = mockFetch({ 'POST /api/routines/dolar/widget': { exploration: 'e1' } })
+    wrap(<LocaleProvider locale="pt"><MakeWidget id="dolar" shows={false} /></LocaleProvider>)
+    await userEvent.click(screen.getByRole('button', { name: /Transformar em widget/ }))
+    await userEvent.click(screen.getByRole('radio', { name: /Gráfico/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Refazer com widget/ }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ kind: 'chart' }))
+  })
+
+  it('links to the dashboards when the routine already shows a widget', () => {
+    wrap(<LocaleProvider locale="pt"><MakeWidget id="dolar" shows /></LocaleProvider>)
+    expect(screen.getByRole('link', { name: /Ver nos painéis/ })).toHaveAttribute('href', '/dashboards')
   })
 })

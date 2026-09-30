@@ -265,6 +265,8 @@ await widget.show({key: "stock", kind: "table", title: "Low stock", columns: ["P
 
 Every kind takes a `title` and an optional `link`, which must be `https:`. A widget carries up to 20 items or rows, 8 columns, 5 series and 60 points. Everything is text: nothing a routine shows is rendered as markup. Metric and progress values are kept (the last 90) for the sparkline. In an exploration the call only previews the widget; the routine it becomes keeps the real one.
 
+When a request asks to see or track something ("as a widget", "on my dashboard", "show me X every hour"), the explorer and the compiler end the routine with `widget.show` in the kind that fits; a request to be told something still ends with a message, and a routine may do both. **Turn into a widget** on a routine's page (`POST /api/routines/{id}/widget` with an optional `kind`) re-explores the original request with that change, like a repair, and approving it saves a new version of the same routine.
+
 ### Judgments and texts
 
 | Call | Returns | Notes |
