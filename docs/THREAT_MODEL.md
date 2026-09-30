@@ -15,6 +15,7 @@ Pimpo acts for people: it reads their email, sends messages and changes things. 
 | A stranger who writes to you | put text in an email, page, calendar invite or photo that Pimpo reads |
 | A malicious routine or connector author | publish to the gallery, or offer a connector |
 | Someone on your network | reach ports on your machine |
+| Someone at an unlocked computer | The desktop app opens as the administrator without asking. When the owner turns on the lock, the window and the floating Pimpo stay hidden until Touch ID, the account password or Windows Hello confirms, at start and after five minutes closed; turning it on requires passing the check once, so nobody locks themselves out. It guards the app's window, not the data folder or a browser session. | `device_auth::tests`, manual on each system |
 | Another person in the house | use Pimpo with their own role |
 | A thief with your phone | open the paired app |
 

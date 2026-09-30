@@ -24,4 +24,13 @@ tauri-plugin-autostart = "2"
 tauri-plugin-updater = "2"
 serde_json = "1"
 
+# The lock asks the system for Touch ID (LocalAuthentication) or Windows
+# Hello; both crates are already in the tree through Tauri.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+block2 = "0.6"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Security_Credentials_UI", "Foundation"] }
+
 # No LTO or stripping: with them the iOS release build shows a blank page.

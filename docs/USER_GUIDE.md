@@ -128,6 +128,8 @@ Open **Phone** on the paired phone and choose what it shares: **location** (arri
 
 ## A Pimpo on another computer or server
 
+**Locking the desktop app.** The desktop app opens as the administrator without asking. To keep it behind your fingerprint or face, turn on **Lock with Touch ID or Windows Hello** in the Pimpo menu in the menu bar (or the system tray on Windows). It asks once to confirm, then again when the app opens and after its window has been closed for five minutes; on a Mac without Touch ID it asks for your password. The floating Pimpo waits for the unlock too. Linux has no such check, so the item is off there. On Windows the app opens Pimpo at `localhost`, so you can also add a passkey there in **Account**; on a Mac, add one from a browser at `http://localhost:7788`.
+
 Pimpo can run on a machine that is always on (a home server, a VPS) while the desktop app just opens it. On that machine, generate a link in **Settings › Open on your phone** as for a phone. On your computer, click the Pimpo icon in the menu bar, choose **Connect to another Pimpo…** and paste the link. The Pimpo on your computer then stops, so the same Telegram bot and the same routines never run twice; its data stays where it was. **Use this computer's Pimpo** in the same menu brings it back. While connected elsewhere, notifications come from that Pimpo's channels (Telegram and others), not from this computer.
 
 ## Audio

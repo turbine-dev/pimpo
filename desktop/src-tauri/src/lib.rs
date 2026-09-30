@@ -6,6 +6,91 @@
 //! routines never run twice. On mobile there is no sidecar: the shell page
 //! always pairs with a Pimpo running elsewhere.
 
+/// The system's own check of who is at the computer: Touch ID or the
+/// account password on a Mac, Windows Hello on Windows. Linux has none here.
+#[cfg(desktop)]
+mod device_auth {
+    #[cfg(target_os = "macos")]
+    mod imp {
+        use block2::RcBlock;
+        use objc2::rc::Retained;
+        use objc2::runtime::{AnyObject, Bool};
+        use objc2::{class, msg_send};
+        use std::ffi::CString;
+        use std::time::Duration;
+
+        #[link(name = "LocalAuthentication", kind = "framework")]
+        unsafe extern "C" {}
+
+        /// LAPolicyDeviceOwnerAuthentication: Touch ID, or the password
+        /// when there is no Touch ID.
+        const POLICY: isize = 2;
+
+        fn context() -> Retained<AnyObject> {
+            unsafe { msg_send![class!(LAContext), new] }
+        }
+
+        pub fn available() -> bool {
+            let ctx = context();
+            let ok: Bool = unsafe { msg_send![&ctx, canEvaluatePolicy: POLICY, error: std::ptr::null_mut::<*mut AnyObject>()] };
+            ok.as_bool()
+        }
+
+        /// verify blocks until the person answers; call it off the main thread.
+        pub fn verify(reason: &str) -> bool {
+            let ctx = context();
+            let Ok(reason) = CString::new(reason) else { return false };
+            let text: Retained<AnyObject> = unsafe { msg_send![class!(NSString), stringWithUTF8String: reason.as_ptr()] };
+            let (tx, rx) = std::sync::mpsc::channel();
+            let reply = RcBlock::new(move |ok: Bool, _err: *mut AnyObject| {
+                let _ = tx.send(ok.as_bool());
+            });
+            let _: () = unsafe { msg_send![&ctx, evaluatePolicy: POLICY, localizedReason: &*text, reply: &*reply] };
+            rx.recv_timeout(Duration::from_secs(180)).unwrap_or(false)
+        }
+    }
+
+    #[cfg(windows)]
+    mod imp {
+        use windows::core::HSTRING;
+        use windows::Security::Credentials::UI::{UserConsentVerificationResult, UserConsentVerifier, UserConsentVerifierAvailability};
+
+        pub fn available() -> bool {
+            UserConsentVerifier::CheckAvailabilityAsync().and_then(|op| op.get()).map(|a| a == UserConsentVerifierAvailability::Available).unwrap_or(false)
+        }
+
+        pub fn verify(reason: &str) -> bool {
+            UserConsentVerifier::RequestVerificationAsync(&HSTRING::from(reason)).and_then(|op| op.get()).map(|r| r == UserConsentVerificationResult::Verified).unwrap_or(false)
+        }
+    }
+
+    #[cfg(not(any(target_os = "macos", windows)))]
+    mod imp {
+        pub fn available() -> bool {
+            false
+        }
+        pub fn verify(_reason: &str) -> bool {
+            false
+        }
+    }
+
+    pub use imp::{available, verify};
+
+    #[cfg(test)]
+    mod tests {
+        // Asks only whether the check is possible, never prompts. On a Mac
+        // this runs the real LocalAuthentication call, with objc2 checking
+        // the message signatures in debug builds.
+        #[test]
+        fn the_system_answers_whether_it_can_check() {
+            let can = super::available();
+            if cfg!(not(any(target_os = "macos", windows))) {
+                assert!(!can);
+            }
+        }
+    }
+}
+
 #[cfg(desktop)]
 mod desktop {
     use std::net::{SocketAddr, TcpListener, TcpStream};
@@ -55,6 +140,8 @@ mod desktop {
         ("local", ["Usar o Pimpo deste computador", "Use this computer's Pimpo", "Usar el Pimpo de esta computadora", "Utiliser le Pimpo de cet ordinateur", "Pimpo auf diesem Computer verwenden", "Usa il Pimpo di questo computer", "このパソコンの Pimpo を使う", "使用这台电脑上的 Pimpo", "이 컴퓨터의 Pimpo 사용", "Использовать Pimpo на этом компьютере"]),
         ("login", ["Abrir ao iniciar o computador", "Open at login", "Abrir al iniciar sesión", "Ouvrir à l’ouverture de session", "Beim Anmelden öffnen", "Apri all’accesso", "ログイン時に開く", "登录时打开", "로그인 시 열기", "Открывать при входе"]),
         ("mascot", ["Pimpo na área de trabalho", "Pimpo on the desktop", "Pimpo en el escritorio", "Pimpo sur le bureau", "Pimpo auf dem Schreibtisch", "Pimpo sulla scrivania", "デスクトップの Pimpo", "桌面上的 Pimpo", "데스크톱의 Pimpo", "Pimpo на рабочем столе"]),
+        ("lock", ["Bloquear com Touch ID ou senha", "Lock with Touch ID or Windows Hello", "Bloquear con Touch ID o Windows Hello", "Verrouiller avec Touch ID ou Windows Hello", "Mit Touch ID oder Windows Hello sperren", "Blocca con Touch ID o Windows Hello", "Touch ID または Windows Hello でロック", "用 Touch ID 或 Windows Hello 锁定", "Touch ID 또는 Windows Hello로 잠그기", "Блокировать Touch ID или Windows Hello"]),
+        ("lockReason", ["abrir o Pimpo", "open Pimpo", "abrir Pimpo", "ouvrir Pimpo", "Pimpo öffnen", "aprire Pimpo", "Pimpo を開く", "打开 Pimpo", "Pimpo 열기", "открыть Pimpo"]),
         ("update", ["Procurar atualizações", "Check for updates", "Buscar actualizaciones", "Rechercher des mises à jour", "Nach Updates suchen", "Cerca aggiornamenti", "アップデートを確認", "检查更新", "업데이트 확인", "Проверить обновления"]),
         ("install", ["Instalar a versão {} e reiniciar", "Install version {} and restart", "Instalar la versión {} y reiniciar", "Installer la version {} et redémarrer", "Version {} installieren und neu starten", "Installa la versione {} e riavvia", "バージョン {} をインストールして再起動", "安装版本 {} 并重启", "버전 {} 설치 후 다시 시작", "Установить версию {} и перезапустить"]),
         ("quit", ["Sair do Pimpo", "Quit Pimpo", "Salir de Pimpo", "Quitter Pimpo", "Pimpo beenden", "Esci da Pimpo", "Pimpo を終了", "退出 Pimpo", "Pimpo 종료", "Выйти из Pimpo"]),
@@ -486,15 +573,118 @@ mod desktop {
         app.manage(Server(Mutex::new(None)));
         app.manage(Token(Mutex::new(None)));
         app.manage(Lang(Mutex::new(language(&system_locale()))));
+        app.manage(Lock::default());
         app.manage(Updates::default());
         Ok(())
     }
 
     pub fn show(app: &AppHandle) {
+        if !needs_unlock(app) {
+            reveal(app);
+            return;
+        }
+        // Asked once at a time; the system's prompt blocks, so off the main thread.
+        let lock = app.state::<Lock>();
+        if lock.asking.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
+        let app = app.clone();
+        std::thread::spawn(move || {
+            let ok = crate::device_auth::verify(tr(&app, "lockReason"));
+            let lock = app.state::<Lock>();
+            lock.asking.store(false, std::sync::atomic::Ordering::SeqCst);
+            if ok {
+                *lock.hidden_at.lock().unwrap() = None;
+                lock.unlocked.store(true, std::sync::atomic::Ordering::SeqCst);
+                let shown = app.clone();
+                let _ = app.run_on_main_thread(move || {
+                    reveal(&shown);
+                    // The floating Pimpo shows notices, so it waits for the unlock too.
+                    if mascot_wanted(&shown) {
+                        mascot(&shown, true);
+                    }
+                });
+            }
+        });
+    }
+
+    fn reveal(app: &AppHandle) {
         if let Some(w) = app.get_webview_window("main") {
             let _ = w.show();
             let _ = w.unminimize();
             let _ = w.set_focus();
+        }
+    }
+
+    /// Lock keeps Pimpo's window behind Touch ID or Windows Hello when the
+    /// owner turned it on: at start, and after the window has been closed
+    /// for a few minutes.
+    #[derive(Default)]
+    pub struct Lock {
+        unlocked: std::sync::atomic::AtomicBool,
+        asking: std::sync::atomic::AtomicBool,
+        hidden_at: Mutex<Option<Instant>>,
+    }
+
+    const RELOCK: Duration = Duration::from_secs(5 * 60);
+
+    fn lock_file(app: &AppHandle) -> Option<std::path::PathBuf> {
+        app.path().app_config_dir().ok().map(|d| d.join("lock-on"))
+    }
+
+    pub fn lock_wanted(app: &AppHandle) -> bool {
+        crate::device_auth::available() && lock_file(app).is_some_and(|f| f.exists())
+    }
+
+    pub fn needs_unlock(app: &AppHandle) -> bool {
+        if !lock_wanted(app) {
+            return false;
+        }
+        let lock = app.state::<Lock>();
+        if !lock.unlocked.load(std::sync::atomic::Ordering::SeqCst) {
+            return true;
+        }
+        let expired = lock.hidden_at.lock().unwrap().is_some_and(|t| t.elapsed() >= RELOCK);
+        if expired {
+            lock.unlocked.store(false, std::sync::atomic::Ordering::SeqCst);
+        }
+        expired
+    }
+
+    /// set_lock turns the lock on only after the person proves they can
+    /// open it, so nobody locks themselves out.
+    fn set_lock(app: &AppHandle, on: bool) {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            let ok = !on || crate::device_auth::verify(tr(&app, "lockReason"));
+            if ok {
+                if let Some(f) = lock_file(&app) {
+                    if on {
+                        if let Some(d) = f.parent() {
+                            let _ = std::fs::create_dir_all(d);
+                        }
+                        let _ = std::fs::write(&f, "");
+                        app.state::<Lock>().unlocked.store(true, std::sync::atomic::Ordering::SeqCst);
+                    } else {
+                        let _ = std::fs::remove_file(&f);
+                    }
+                }
+            }
+            if let Some(item) = app.try_state::<LockItem>() {
+                let _ = item.0.set_checked(lock_wanted(&app));
+            }
+        });
+    }
+
+    pub struct LockItem(pub CheckMenuItem<tauri::Wry>);
+
+    /// lock_at_start keeps the window hidden until the owner unlocks it.
+    pub fn lock_at_start(app: &AppHandle) {
+        if lock_wanted(app) {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.hide();
+            }
+            show(app);
         }
     }
 
@@ -577,13 +767,14 @@ mod desktop {
             let deadline = Instant::now() + Duration::from_secs(30);
             while Instant::now() < deadline {
                 if TcpStream::connect_timeout(&target, Duration::from_millis(300)).is_ok() {
-                    let url = Url::parse(&format!("http://{addr}/auth?token={token}")).unwrap();
+                    let page = page_address(&addr);
+                    let url = Url::parse(&format!("{page}/auth?token={token}")).unwrap();
                     if let Some(w) = handle.get_webview_window("main") {
                         let _ = w.navigate(url);
                     }
-                    *handle.state::<Local>().0.lock().unwrap() = Some(format!("http://{addr}"));
+                    *handle.state::<Local>().0.lock().unwrap() = Some(page);
                     follow_language(handle.clone());
-                    if mascot_wanted(&handle) {
+                    if mascot_wanted(&handle) && !needs_unlock(&handle) {
                         // After the main window has signed in, so the cat shares its session.
                         std::thread::sleep(Duration::from_millis(1500));
                         mascot(&handle, true);
@@ -595,6 +786,18 @@ mod desktop {
             status(&handle, "slow");
         });
         Ok(())
+    }
+
+    /// page_address is where the window opens this computer's Pimpo. On
+    /// Windows it is localhost, not 127.0.0.1, so the system's WebView2
+    /// can make passkeys (browsers refuse them at a bare IP address). The
+    /// server listens on 127.0.0.1 either way.
+    pub fn page_address(addr: &str) -> String {
+        if cfg!(windows) {
+            format!("http://{}", addr.replacen("127.0.0.1", "localhost", 1))
+        } else {
+            format!("http://{addr}")
+        }
     }
 
     pub fn stop(app: &AppHandle) {
@@ -613,6 +816,8 @@ mod desktop {
         let login = CheckMenuItem::with_id(app, "login", tr(app, "login"), true, at_login, None::<&str>)?;
         let cat = CheckMenuItem::with_id(app, "mascot", tr(app, "mascot"), true, mascot_wanted(app), None::<&str>)?;
         app.manage(MascotItem(cat.clone()));
+        let lock = CheckMenuItem::with_id(app, "lock", tr(app, "lock"), crate::device_auth::available(), lock_wanted(app), None::<&str>)?;
+        app.manage(LockItem(lock.clone()));
         let update = MenuItem::with_id(app, "update", tr(app, "update"), true, None::<&str>)?;
         app.manage(UpdateItem(update.clone()));
         let quit = MenuItem::with_id(app, "quit", tr(app, "quit"), true, Some("CmdOrCtrl+Q"))?;
@@ -622,9 +827,10 @@ mod desktop {
             ("local", MenuItemKind::Plain(local.clone())),
             ("login", MenuItemKind::Check(login.clone())),
             ("mascot", MenuItemKind::Check(cat.clone())),
+            ("lock", MenuItemKind::Check(lock.clone())),
             ("quit", MenuItemKind::Plain(quit.clone())),
         ]));
-        let menu = Menu::with_items(app, &[&open, &cat, &login, &PredefinedMenuItem::separator(app)?, &remote, &local, &PredefinedMenuItem::separator(app)?, &update, &quit])?;
+        let menu = Menu::with_items(app, &[&open, &cat, &login, &lock, &PredefinedMenuItem::separator(app)?, &remote, &local, &PredefinedMenuItem::separator(app)?, &update, &quit])?;
         TrayIconBuilder::with_id("pimpo")
             .icon(tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?)
             .icon_as_template(true)
@@ -635,6 +841,7 @@ mod desktop {
                 "open" => show(app),
                 "remote" => pair(app),
                 "mascot" => set_mascot(app, !mascot_wanted(app)),
+                "lock" => set_lock(app, !lock_wanted(app)),
                 "local" => {
                     if saved_remote(app).is_some() {
                         if let Some(url) = app.try_state::<Shell>().and_then(|s| s.0.lock().unwrap().clone()) {
@@ -897,7 +1104,8 @@ mod desktop {
         let base = app.state::<Local>().0.lock().unwrap().clone()?;
         let token = app.state::<Token>().0.lock().unwrap().clone()?;
         let addr = base.strip_prefix("http://")?.to_string();
-        let mut conn = TcpStream::connect_timeout(&addr.parse().ok()?, Duration::from_secs(3)).ok()?;
+        let ip = addr.replacen("localhost", "127.0.0.1", 1);
+        let mut conn = TcpStream::connect_timeout(&ip.parse().ok()?, Duration::from_secs(3)).ok()?;
         conn.set_read_timeout(Some(Duration::from_secs(30))).ok()?;
         let body = body.unwrap_or("");
         let req = format!("{method} {path} HTTP/1.0\r\nHost: {addr}\r\nAuthorization: Bearer {token}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}", body.len());
@@ -922,6 +1130,9 @@ mod desktop {
         if let WindowEvent::CloseRequested { api, .. } = ev {
             api.prevent_close();
             let _ = window.hide();
+            if let Some(lock) = window.app_handle().try_state::<Lock>() {
+                *lock.hidden_at.lock().unwrap() = Some(Instant::now());
+            }
         }
     }
 }
@@ -930,6 +1141,16 @@ mod desktop {
 mod tests {
     use super::desktop::{check_link, language, same_origin, update_endpoint, version_endpoint, word};
     use tauri::Url;
+
+    #[test]
+    fn the_window_opens_the_local_pimpo_by_name_on_windows() {
+        let page = super::desktop::page_address("127.0.0.1:7788");
+        if cfg!(windows) {
+            assert_eq!(page, "http://localhost:7788");
+        } else {
+            assert_eq!(page, "http://127.0.0.1:7788");
+        }
+    }
 
     #[test]
     fn menus_follow_the_language() {
@@ -943,7 +1164,7 @@ mod tests {
         assert_eq!(word("en", "quit"), "Quit Pimpo");
         assert_eq!(word("xx", "quit"), "Quit Pimpo");
         for lang in ["pt", "en", "es", "fr", "de", "it", "ja", "zh", "ko", "ru"] {
-            for key in ["open", "remote", "local", "login", "mascot", "update", "install", "quit", "notLink", "https", "noToken", "badHome", "homeLocal", "noConfig"] {
+            for key in ["open", "remote", "local", "login", "mascot", "lock", "lockReason", "update", "install", "quit", "notLink", "https", "noToken", "badHome", "homeLocal", "noConfig"] {
                 assert!(!word(lang, key).is_empty(), "{lang} {key}");
             }
             assert!(word(lang, "install").contains("{}"), "{lang} install needs the version");
@@ -999,6 +1220,7 @@ pub fn run() {
         .setup(|app| {
             desktop::window(app.handle())?;
             desktop::tray(app.handle())?;
+            desktop::lock_at_start(app.handle());
             desktop::start(app.handle())?;
             desktop::check_periodically(app.handle());
             Ok(())
