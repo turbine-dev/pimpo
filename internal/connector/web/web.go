@@ -8,11 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
-	"strings"
-	"time"
+
+	"github.com/turbine-dev/pimpo/internal/netguard"
 )
 
 type Web struct {
@@ -30,12 +29,9 @@ func (w *Web) Call(ctx context.Context, name, scope string, args any) (any, erro
 		return w.read(ctx, u, scope)
 	}
 	raw, _ := args.(string)
-	u, err := url.Parse(raw)
-	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
-		return nil, fmt.Errorf("%q is not an http(s) URL", raw)
-	}
-	if !strings.EqualFold(u.Hostname(), scope) {
-		return nil, fmt.Errorf("%s is outside the allowed host %s", u.Hostname(), scope)
+	u, err := checkURL(raw, scope)
+	if err != nil {
+		return nil, err
 	}
 	client := w.client(scope)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
@@ -59,31 +55,20 @@ func (w *Web) Call(ctx context.Context, name, scope string, args any) (any, erro
 	return v, nil
 }
 
+// checkURL accepts an http(s) URL on the allowed host, without user info.
+func checkURL(raw, scope string) (*url.URL, error) {
+	u, err := netguard.ParseURL(raw)
+	if err != nil {
+		return nil, err
+	}
+	if !netguard.SameHost(u, scope) {
+		return nil, fmt.Errorf("%s is outside the allowed host %s", u.Hostname(), scope)
+	}
+	return u, nil
+}
+
+// client follows redirects only on the allowed host and, unless
+// AllowPrivate, never reaches this computer or a private network.
 func (w *Web) client(scope string) *http.Client {
-	base := w.HTTP
-	if base == nil {
-		base = &http.Client{Timeout: 20 * time.Second}
-	}
-	c := *base
-	c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		if !strings.EqualFold(req.URL.Hostname(), scope) {
-			return fmt.Errorf("redirect to %s is outside the allowed host", req.URL.Hostname())
-		}
-		if len(via) > 5 {
-			return errors.New("too many redirects")
-		}
-		return nil
-	}
-	if !w.AllowPrivate {
-		dialer := &net.Dialer{Timeout: 10 * time.Second, Control: func(_, address string, _ syscallRawConn) error {
-			host, _, _ := net.SplitHostPort(address)
-			ip := net.ParseIP(host)
-			if ip == nil || ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
-				return fmt.Errorf("refusing to connect to private address %s", host)
-			}
-			return nil
-		}}
-		c.Transport = &http.Transport{DialContext: dialer.DialContext, TLSHandshakeTimeout: 10 * time.Second, ResponseHeaderTimeout: 15 * time.Second}
-	}
-	return &c
+	return netguard.Client(w.HTTP, scope, w.AllowPrivate)
 }

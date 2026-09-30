@@ -13,6 +13,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/capability"
 	"github.com/turbine-dev/pimpo/internal/connector"
+	"github.com/turbine-dev/pimpo/internal/netguard"
 )
 
 func init() {
@@ -66,7 +67,10 @@ func when(s string) string {
 	return strings.TrimSpace(s)
 }
 
-func readFeed(ctx context.Context, _ Config, _, _ string, args any) (any, error) {
+// feedPrivate lets tests read feeds from this computer.
+var feedPrivate = false
+
+func readFeed(ctx context.Context, _ Config, _, scope string, args any) (any, error) {
 	var a struct {
 		URL string `json:"url"`
 		Max int    `json:"max"`
@@ -74,18 +78,24 @@ func readFeed(ctx context.Context, _ Config, _, _ string, args any) (any, error)
 	if err := connector.Args(args, &a); err != nil {
 		return nil, err
 	}
-	if !strings.HasPrefix(a.URL, "https://") && !strings.HasPrefix(a.URL, "http://") {
-		return nil, fmt.Errorf("url must be http(s)")
+	u, err := netguard.ParseURL(a.URL)
+	if err != nil {
+		return nil, err
+	}
+	// The policy approved the scope; the feed must be on exactly that host,
+	// and so must every redirect.
+	if !netguard.SameHost(u, scope) {
+		return nil, fmt.Errorf("%s is outside the allowed host %s", u.Hostname(), scope)
 	}
 	if a.Max <= 0 || a.Max > 50 {
 		a.Max = 20
 	}
-	req, err := http.NewRequestWithContext(ctx, "GET", a.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", "Pimpo/1 (+https://github.com/turbine-dev/pimpo)")
-	resp, err := client.Do(req)
+	resp, err := netguard.Client(client, scope, feedPrivate).Do(req)
 	if err != nil {
 		return nil, err
 	}

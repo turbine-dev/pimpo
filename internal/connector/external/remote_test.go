@@ -165,3 +165,36 @@ func writeFile(t *testing.T, dir, name, body string) {
 		t.Fatal(err)
 	}
 }
+
+func TestRemoteURLNeedsHTTPSOrThisComputer(t *testing.T) {
+	for raw, want := range map[string]bool{
+		"https://mcp.example.com/mcp":         true,
+		"http://127.0.0.1:8080/mcp":           true,
+		"http://localhost:8080/mcp":           true,
+		"http://127.0.0.1@evil.example/mcp":   false,
+		"http://localhost.evil.example/mcp":   false,
+		"http://127.0.0.1.evil.example/mcp":   false,
+		"http://mcp.example.com/mcp":          false,
+		"https://user:pw@mcp.example.com/mcp": false,
+	} {
+		if got := remoteURLOK(raw); got != want {
+			t.Errorf("remoteURLOK(%q) = %v", raw, got)
+		}
+	}
+}
+
+// A remote server that redirects elsewhere must not take its API key along.
+func TestRemoteServerRedirectKeepsTheKeyHome(t *testing.T) {
+	var leaked string
+	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		leaked = r.Header.Get("X-Api-Key")
+	}))
+	defer other.Close()
+	elsewhere := strings.Replace(other.URL, "127.0.0.1", "localhost", 1)
+	srv := httptest.NewServer(http.RedirectHandler(elsewhere+"/mcp", http.StatusTemporaryRedirect))
+	defer srv.Close()
+	_, err := Probe(context.Background(), Endpoint{Name: "x", URL: srv.URL, Headers: map[string]string{"X-Api-Key": "k1"}})
+	if err == nil || leaked != "" {
+		t.Fatalf("followed the redirect: %v, key sent: %q", err, leaked)
+	}
+}

@@ -92,7 +92,7 @@ func Load(dir string) (Manifest, error) {
 	if kinds != 1 {
 		return man, errors.New("connector.json needs one of: a command, a url (an MCP server) or http (requests described here)")
 	}
-	if man.URL != "" && !strings.HasPrefix(man.URL, "https://") && !strings.HasPrefix(man.URL, "http://127.0.0.1") && !strings.HasPrefix(man.URL, "http://localhost") {
+	if man.URL != "" && !remoteURLOK(man.URL) {
 		return man, errors.New("a remote connector needs an https url")
 	}
 	if len(man.Capabilities) == 0 {

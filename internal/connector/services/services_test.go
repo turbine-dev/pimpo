@@ -80,17 +80,40 @@ func TestRSSAndAtom(t *testing.T) {
 		"GET /rss":  `<?xml version="1.0"?><rss><channel><item><title>Go 1.26 &amp; mais</title><link>https://go.dev/1</link><pubDate>Tue, 22 Sep 2026 10:00:00 +0000</pubDate><description>&lt;p&gt;Novidades &lt;b&gt;boas&lt;/b&gt;&lt;/p&gt;</description></item><item><title>B</title></item></channel></rss>`,
 		"GET /atom": `<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Release v2</title><link rel="alternate" href="https://x.dev/v2"/><updated>2026-09-20T12:00:00Z</updated><summary>Big one</summary></entry></feed>`,
 	})
-	out, err := call(t, "rss", nil, "rss.read", map[string]any{"url": srv.URL + "/rss", "max": 1})
+	feedPrivate = true
+	defer func() { feedPrivate = false }()
+	k, _ := Get("rss")
+	scope := "127.0.0.1"
+	read := func(u string) (any, error) {
+		return k.Call(context.Background(), nil, "rss.read", scope, map[string]any{"url": u})
+	}
+	out, err := k.Call(context.Background(), nil, "rss.read", scope, map[string]any{"url": srv.URL + "/rss", "max": 1})
 	items := out.([]map[string]any)
 	if err != nil || len(items) != 1 || items[0]["title"] != "Go 1.26 & mais" || items[0]["summary"] != "Novidades boas" || items[0]["published"] != "2026-09-22T10:00:00Z" {
 		t.Fatalf("rss %v %v", out, err)
 	}
-	out, _ = call(t, "rss", nil, "rss.read", map[string]any{"url": srv.URL + "/atom"})
+	out, _ = read(srv.URL + "/atom")
 	if items := out.([]map[string]any); items[0]["link"] != "https://x.dev/v2" || items[0]["summary"] != "Big one" {
 		t.Fatalf("atom %v", out)
 	}
-	if _, err := call(t, "rss", nil, "rss.read", map[string]any{"url": "file:///etc/passwd"}); err == nil {
+	if _, err := read("file:///etc/passwd"); err == nil {
 		t.Fatal("read a file URL")
+	}
+	// The host checked is the host reached: user info cannot hide another.
+	for _, u := range []string{"http://127.0.0.1:x@example.org/", "http://example.org/rss", strings.Replace(srv.URL, "127.0.0.1", "localhost", 1) + "/rss"} {
+		if _, err := read(u); err == nil || !strings.Contains(err.Error(), "outside") && !strings.Contains(err.Error(), "user name") {
+			t.Errorf("%s: %v", u, err)
+		}
+	}
+	away := httptest.NewServer(http.RedirectHandler(strings.Replace(srv.URL, "127.0.0.1", "localhost", 1)+"/rss", http.StatusFound))
+	defer away.Close()
+	if _, err := read(away.URL); err == nil || !strings.Contains(err.Error(), "outside the allowed host") {
+		t.Errorf("followed a redirect to another host: %v", err)
+	}
+	// Outside tests a feed never reaches this computer or a private network.
+	feedPrivate = false
+	if _, err := read(srv.URL + "/rss"); err == nil || !strings.Contains(err.Error(), "private address") {
+		t.Errorf("read a feed on a loopback address: %v", err)
 	}
 }
 
