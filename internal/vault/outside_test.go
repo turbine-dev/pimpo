@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,9 @@ import (
 // answers, and gives a vault whose clock the test moves.
 func fakeOP(t *testing.T, store string) (*Vault, string, *time.Time) {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("the stand-in for op is a shell script")
+	}
 	bin, _ := filepath.Abs("testdata/fakeop")
 	home := t.TempDir()
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -335,5 +339,19 @@ func TestOnePasswordConnectReferences(t *testing.T) {
 	}
 	if err := v.TestManager(ctx, "", "onepassword"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// On Windows op also gets what a program there needs to start; nothing
+// else of Pimpo's environment reaches it anywhere.
+func TestOPEnvironment(t *testing.T) {
+	env := map[string]string{"PATH": "/bin", "HOME": "/h", "SYSTEMROOT": `C:\Windows`, "USERPROFILE": `C:\Users\a`, "PIMPO_TOKEN": "secret"}
+	get := func(k string) string { return env[k] }
+	if got := strings.Join(opEnv("darwin", get), " "); got != "PATH=/bin HOME=/h" {
+		t.Fatalf("unix: %s", got)
+	}
+	got := strings.Join(opEnv("windows", get), " ")
+	if got != `PATH=/bin HOME=/h SYSTEMROOT=C:\Windows USERPROFILE=C:\Users\a` || strings.Contains(got, "PIMPO") {
+		t.Fatalf("windows: %s", got)
 	}
 }
