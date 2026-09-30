@@ -334,7 +334,7 @@ Secrets can live in 1Password or HashiCorp Vault; Pimpo keeps only a reference a
 
 ### 9.8 One list of what needs you · S
 
-Approvals, questions and failed routines in one list, newest and most urgent first, on the app and the phone.
+Approvals, questions and failed routines in one list, newest and most urgent first, on the app and the phone. *Done.*
 
 ### To study before planning
 

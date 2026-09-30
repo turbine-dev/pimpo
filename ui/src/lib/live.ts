@@ -41,6 +41,9 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
           qc.invalidateQueries({ queryKey: ['dashboard-widgets'] })
           qc.invalidateQueries({ queryKey: ['widgets'] })
         }
+        // What needs the person: approvals, questions, runs, jobs, and
+        // explorations or suggestions becoming ready.
+        if (/^(approval|question|routine|job|exploration|suggestion)/.test(e.type)) qc.invalidateQueries({ queryKey: ['needs'] })
         if (e.type === 'dashboard.changed') qc.invalidateQueries({ queryKey: ['dashboards'] })
         qc.invalidateQueries({ queryKey: ['events'] })
       }

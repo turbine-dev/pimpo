@@ -8,8 +8,8 @@ afterEach(() => vi.unstubAllGlobals())
 describe('Suggestions in the inbox', () => {
   it('shows what Pimpo would do and starts it only when accepted', async () => {
     const calls = mockFetch({
-      '/api/explorations?state=ready': [], '/api/routines': [], '/api/approvals': [], '/api/media': [], '/api/questions': [],
-      '/api/suggestions': [{ id: 's1', title: 'Conta de luz', why: 'Chega todo mês da Enel.', request: 'Todo mês, me avise o valor da conta da Enel.', made: '2026-09-29T09:00:00Z' }],
+      '/api/media': [],
+      '/api/needs': { total: 1, counts: { suggestion: 1 }, items: [{ kind: 'suggestion', id: 's1', title: 'Conta de luz', detail: 'Chega todo mês da Enel.', proposal: 'Todo mês, me avise o valor da conta da Enel.', created: '2026-09-29T09:00:00Z', urgency: 0, actions: ['accept', 'dismiss'] }] },
       'POST /api/suggestions/s1/dismiss': { state: 'dismissed' },
       'POST /api/suggestions/s1/accept': { exploration: 'e1' },
     })

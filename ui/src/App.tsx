@@ -15,6 +15,7 @@ import { NewTask } from './components/NewTask'
 import { Palette } from './components/Palette'
 import { Welcome } from './pages/Welcome'
 import { Shell } from './components/Shell'
+import { useNeeds } from './components/Needs'
 import { Home } from './pages/Home'
 import { Assistants } from './pages/Assistants'
 import { Chat } from './pages/Chat'
@@ -55,7 +56,9 @@ export default function App() {
   useLiveEvents()
   const state = useQuery({ queryKey: ['state'], queryFn: api.state, refetchInterval: 30_000 })
   const [creatingAdmin, setCreatingAdmin] = useState(false)
-  const attention = (state.data?.awaiting ?? 0) + (state.data?.broken ?? 0) + (state.data?.approvals ?? 0)
+  // The bell counts the same list the inbox shows.
+  const needs = useNeeds(!!state.data)
+  const attention = needs.data?.total ?? (state.data?.awaiting ?? 0) + (state.data?.broken ?? 0) + (state.data?.approvals ?? 0)
   if (location.pathname === '/mascot') {
     // The desktop app's floating window: only the cat, on a transparent page.
     // Links go through /open, which the app turns into its main window.
