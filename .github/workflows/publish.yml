@@ -1,0 +1,76 @@
+name: publish
+
+# When a numbered release is published (not while it is a draft, whose
+# files answer 404 to everyone else), point people at it: channel-beta's
+# latest.json for a prerelease, which beta users' apps follow; Homebrew and
+# winget for a final release. Stable users' apps follow the latest
+# published release on their own.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  channels:
+    if: startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # uploads to channel-beta
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+      PRERELEASE: ${{ github.event.release.prerelease }}
+      FINAL: ${{ !contains(github.event.release.tag_name, '-') }}
+      HAS_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+      HAS_WINGET_TOKEN: ${{ secrets.WINGET_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Beta channel
+        if: env.PRERELEASE == 'true'
+        shell: bash
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          if ! gh release download "$TAG" --repo "$GITHUB_REPOSITORY" -p latest.json -D manifest; then
+            echo "::warning::$TAG has no latest.json; the beta channel stays where it was"
+            exit 0
+          fi
+          if ! gh release view channel-beta --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create channel-beta --repo "$GITHUB_REPOSITORY" --prerelease --title "Beta channel" \
+              --notes "The desktop app's beta channel reads latest.json here. Install Pimpo from the numbered releases."
+          fi
+          gh release upload channel-beta manifest/latest.json --clobber --repo "$GITHUB_REPOSITORY"
+
+      # The desktop app's cask in turbine-dev/homebrew-tap, for final
+      # releases, when the repository has a token that can push there.
+      - name: Homebrew cask
+        if: env.HAS_TAP_TOKEN == 'true' && env.FINAL == 'true'
+        shell: bash
+        env: { GH_TOKEN: "${{ github.token }}", HOMEBREW_TAP_TOKEN: "${{ secrets.HOMEBREW_TAP_TOKEN }}" }
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" -p '*.dmg' -D installers
+          python3 scripts/cask.py packaging/homebrew/pimpo-app.rb.tmpl installers "$TAG" > pimpo-app.rb
+          git clone --depth 1 "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/turbine-dev/homebrew-tap.git" tap
+          mkdir -p tap/Casks && cp pimpo-app.rb tap/Casks/pimpo-app.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/pimpo-app.rb
+          git commit -m "pimpo-app ${TAG#v}" && git push
+
+      # winget, for final releases, once the package exists there (the first
+      # version is submitted by hand: packaging/winget/README.md).
+      - name: winget
+        if: env.HAS_WINGET_TOKEN == 'true' && env.FINAL == 'true'
+        uses: vedantmgoyal9/winget-releaser@a8fff44b123f115ce4c21543edf8b677376fc7e0 # main, 2026-09-20
+        with:
+          identifier: TurbineDev.Pimpo
+          release-tag: ${{ github.event.release.tag_name }}
+          installers-regex: '_windows_amd64_setup\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}

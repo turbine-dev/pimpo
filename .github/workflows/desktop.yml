@@ -201,27 +201,21 @@ jobs:
         env: { GH_TOKEN: "${{ github.token }}", TAG: "${{ inputs.tag }}" }
         run: gh release upload "$TAG" installers/* --clobber --repo "$GITHUB_REPOSITORY"
 
-  # The updater's manifest, once every system is built: in the release, and
-  # in channel-beta, which beta users follow (stable users follow the latest
-  # published release).
+  # The updater's manifest, once every system is built, attached to the
+  # draft release. Nothing points users at it yet: publish.yml moves
+  # channel-beta, Homebrew and winget when the release is published, so
+  # nobody is sent to files a draft still hides.
   manifest:
     needs: [build, attach]
     if: inputs.tag != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # Only whether the tokens exist is job-wide; each token reaches just the
-    # step that uses it.
-    env:
-      HAS_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
-      HAS_WINGET_TOKEN: ${{ secrets.WINGET_TOKEN != '' }}
-      FINAL: ${{ !contains(inputs.tag, '-') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { path: installers, pattern: "pimpo-desktop-*", merge-multiple: true }
       - name: latest.json
-        id: manifest
         shell: bash
         env: { GH_TOKEN: "${{ github.token }}", TAG: "${{ inputs.tag }}" }
         run: |
@@ -233,36 +227,3 @@ jobs:
           python3 scripts/latest-json.py installers "$GITHUB_REPOSITORY" "$TAG" notes.md > latest.json
           cat latest.json
           gh release upload "$TAG" latest.json --clobber --repo "$GITHUB_REPOSITORY"
-          if ! gh release view channel-beta --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create channel-beta --repo "$GITHUB_REPOSITORY" --prerelease --title "Beta channel" \
-              --notes "The desktop app's beta channel reads latest.json here. Install Pimpo from the numbered releases."
-          fi
-          gh release upload channel-beta latest.json --clobber --repo "$GITHUB_REPOSITORY"
-
-      # The desktop app's cask in turbine-dev/homebrew-tap, for final
-      # releases, when the repository has a token that can push there.
-      - name: Homebrew cask
-        if: env.HAS_TAP_TOKEN == 'true' && env.FINAL == 'true'
-        shell: bash
-        env: { TAG: "${{ inputs.tag }}", HOMEBREW_TAP_TOKEN: "${{ secrets.HOMEBREW_TAP_TOKEN }}" }
-        run: |
-          python3 scripts/cask.py packaging/homebrew/pimpo-app.rb.tmpl installers "$TAG" > pimpo-app.rb
-          git clone --depth 1 "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/turbine-dev/homebrew-tap.git" tap
-          mkdir -p tap/Casks && cp pimpo-app.rb tap/Casks/pimpo-app.rb
-          cd tap
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Casks/pimpo-app.rb
-          git commit -m "pimpo-app ${TAG#v}" && git push
-
-      # winget, for final releases, once the package exists there (the first
-      # version is submitted by hand: packaging/winget/README.md).
-      - name: winget
-        if: env.HAS_WINGET_TOKEN == 'true' && env.FINAL == 'true'
-        uses: vedantmgoyal9/winget-releaser@a8fff44b123f115ce4c21543edf8b677376fc7e0 # main, 2026-09-20
-        with:
-          identifier: TurbineDev.Pimpo
-          release-tag: ${{ inputs.tag }}
-          installers-regex: '_windows_amd64_setup\.exe$'
-          token: ${{ secrets.WINGET_TOKEN }}
-
