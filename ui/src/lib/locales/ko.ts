@@ -634,7 +634,7 @@ export const ko: Record<Key, string> & Record<string, string> = {
   'people.approves': '승인자: {who}',
   'people.mail': '이메일',
   'people.calendar': '캘린더',
-  'people.confirmRemove': '{name}과(와) 해당 계정을 삭제할까요?',
+  'people.confirmRemove': '{name}을(를) 삭제할까요? 계정, 메모리, 대화, 루틴, 작업이 영구히 삭제됩니다.',
   'people.no': '아니요',
   'people.remove': '{name} 삭제',
   'people.accountsNote': '{name}의 작업에만 사용돼요. 내 계정은 다른 사람이 절대 사용하지 않아요.',

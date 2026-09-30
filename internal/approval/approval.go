@@ -192,11 +192,13 @@ func (m *Manager) Resolve(ctx context.Context, id string, ans Answer, actor stri
 	return true
 }
 
-// MayAnswer reports whether a person may answer a waiting request: the
-// owner always, anyone else only for requests they are responsible for.
+// MayAnswer reports whether a person may answer a waiting request: only
+// the one responsible for it, the owner included. A member answers their
+// own requests; the owner answers only theirs and the guests' in their
+// care.
 func (m *Manager) MayAnswer(id, person string) bool {
-	if person == "" || person == "owner" {
-		return true
+	if person == "owner" {
+		person = ""
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()

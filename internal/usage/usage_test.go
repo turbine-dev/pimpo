@@ -115,3 +115,32 @@ func TestTimesWhilePimpoWasOffAndImportedPausedRoutines(t *testing.T) {
 		t.Fatalf("off %d expected %d silent %v", brief.WhileOff, brief.Expected, brief.Silent)
 	}
 }
+
+// Each person's report covers only their own routines.
+func TestReportIsOnlyTheirsOwn(t *testing.T) {
+	ctx := context.Background()
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "p.db"))
+	defer ev.Close()
+	st, _ := store.Open(ev.DB())
+	for _, id := range []string{"mine", "anas"} {
+		st.SaveRoutine(ctx, id, routine.Routine{Name: id, Code: "x", Manifest: runtime.Manifest{Schedule: "0 7 * * *", Capabilities: []string{"notify.send"}}}, "t", "owner")
+	}
+	st.SetRoutinePerson(ctx, "anas", "ana")
+	names := func(person string) string {
+		rep, err := BuildFor(ctx, ev, st, time.Now(), 7, time.UTC, person)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, u := range rep.Routines {
+			out = append(out, u.ID)
+		}
+		return strings.Join(out, ",")
+	}
+	if got := names("owner"); got != "mine" {
+		t.Fatalf("the owner's report: %s", got)
+	}
+	if got := names("ana"); got != "anas" {
+		t.Fatalf("ana's report: %s", got)
+	}
+}

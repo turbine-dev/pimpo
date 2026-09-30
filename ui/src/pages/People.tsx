@@ -83,7 +83,8 @@ function Invite({ people, onDone }: { people: Person[]; onDone: () => void }) {
   const [name, setName] = useState('')
   const [role, setRole] = useState<Exclude<Role, 'owner'>>('member')
   const [responsible, setResponsible] = useState('owner')
-  const add = useMutation({ mutationFn: () => api.addPerson(name, role, responsible) })
+  // A member answers for themselves; only a guest has a responsible.
+  const add = useMutation({ mutationFn: () => api.addPerson(name, role, role === 'guest' ? responsible : '') })
   const [copied, setCopied] = useState(false)
   const created = add.data
 
@@ -116,11 +117,13 @@ function Invite({ people, onDone }: { people: Person[]; onDone: () => void }) {
                 </button>
               ))}
             </div>
-            <label className="block text-[13px] text-ink-2">{t('people.approver')}
-              <select value={responsible} onChange={(e) => setResponsible(e.target.value)} className={cn(input, 'mt-1.5')}>
-                {people.filter((p) => p.role !== 'guest').map((p) => <option key={p.id} value={p.id}>{p.role === 'owner' ? t('people.you') : p.name}</option>)}
-              </select>
-            </label>
+            {role === 'guest' && (
+              <label className="block text-[13px] text-ink-2">{t('people.approver')}
+                <select value={responsible} onChange={(e) => setResponsible(e.target.value)} className={cn(input, 'mt-1.5')}>
+                  {people.filter((p) => p.role !== 'guest').map((p) => <option key={p.id} value={p.id}>{p.role === 'owner' ? t('people.you') : p.name}</option>)}
+                </select>
+              </label>
+            )}
             {add.error && <p className="text-[13px] text-danger">{add.error.message}</p>}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={onDone}>{t('common.cancel')}</Button>
@@ -157,13 +160,15 @@ function PersonCard({ p, people }: { p: Person; people: Person[] }) {
       </div>
       {!p.chat && p.invite && <p className="mt-3 rounded-lg bg-sunken px-3 py-2 text-[12.5px] text-ink-2">{fill(t('people.pending'), { code: <span className="font-mono">/start {p.invite}</span> })}</p>}
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-        <select aria-label={t('people.roleOf', { name: p.name })} value={p.role} onChange={(e) => update.mutate({ role: e.target.value as Role, responsible: p.responsible || 'owner' })} className="h-8 rounded-lg border border-line bg-bg px-2 text-[13px]">
+        <select aria-label={t('people.roleOf', { name: p.name })} value={p.role} onChange={(e) => update.mutate({ role: e.target.value as Role, responsible: e.target.value === 'guest' ? p.responsible || 'owner' : '' })} className="h-8 rounded-lg border border-line bg-bg px-2 text-[13px]">
           <option value="member">{t('people.member')}</option>
           <option value="guest">{t('people.guest')}</option>
         </select>
-        <select aria-label={t('people.approverOf', { name: p.name })} value={p.responsible || 'owner'} onChange={(e) => update.mutate({ role: p.role, responsible: e.target.value })} className="h-8 rounded-lg border border-line bg-bg px-2 text-[13px]">
-          {people.filter((x) => x.id !== p.id && x.role !== 'guest').map((x) => <option key={x.id} value={x.id}>{t('people.approves', { who: x.role === 'owner' ? t('people.youLower') : x.name })}</option>)}
-        </select>
+        {p.role === 'guest' && (
+          <select aria-label={t('people.approverOf', { name: p.name })} value={p.responsible || 'owner'} onChange={(e) => update.mutate({ role: p.role, responsible: e.target.value })} className="h-8 rounded-lg border border-line bg-bg px-2 text-[13px]">
+            {people.filter((x) => x.id !== p.id && x.role !== 'guest').map((x) => <option key={x.id} value={x.id}>{t('people.approves', { who: x.role === 'owner' ? t('people.youLower') : x.name })}</option>)}
+          </select>
+        )}
         <Button size="sm" variant="ghost" onClick={() => setOpen(open === 'mail' ? null : 'mail')}><Mail size={14} /> {t('people.mail')}{p.mail && ' ✓'}</Button>
         <Button size="sm" variant="ghost" onClick={() => setOpen(open === 'calendar' ? null : 'calendar')}><CalendarDays size={14} /> {t('people.calendar')}{p.calendar && ' ✓'}</Button>
         <div className="flex-1" />

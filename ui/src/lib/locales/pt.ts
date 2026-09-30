@@ -634,7 +634,7 @@ export const pt = {
   'people.approves': 'Aprova: {who}',
   'people.mail': 'E-mail',
   'people.calendar': 'Agenda',
-  'people.confirmRemove': 'Remover {name} e as contas dela?',
+  'people.confirmRemove': 'Remover {name}? As contas, a memória, as conversas, as rotinas e os trabalhos dela são apagados de vez.',
   'people.no': 'Não',
   'people.remove': 'Remover {name}',
   'people.accountsNote': 'Só as tarefas de {name} usam isto. As suas contas nunca são usadas por outra pessoa.',

@@ -634,7 +634,7 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'people.approves': '审批人：{who}',
   'people.mail': '邮件',
   'people.calendar': '日程',
-  'people.confirmRemove': '移除 {name} 及其账户？',
+  'people.confirmRemove': '移除 {name}？其账户、记忆、对话、例程和任务将被永久删除。',
   'people.no': '否',
   'people.remove': '移除 {name}',
   'people.accountsNote': '只有 {name} 的任务会用到这些。你的账户绝不会被其他人使用。',

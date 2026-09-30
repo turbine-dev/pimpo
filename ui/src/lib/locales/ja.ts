@@ -634,7 +634,7 @@ export const ja: Record<Key, string> & Record<string, string> = {
   'people.approves': '承認者：{who}',
   'people.mail': 'メール',
   'people.calendar': 'カレンダー',
-  'people.confirmRemove': '{name} とそのアカウントを削除しますか？',
+  'people.confirmRemove': '{name} を削除しますか？アカウント、メモリー、会話、ルーティン、ジョブは完全に削除されます。',
   'people.no': 'いいえ',
   'people.remove': '{name} を削除',
   'people.accountsNote': 'これを使うのは {name} のタスクだけです。自分のアカウントが他の人に使われることはありません。',

@@ -634,7 +634,7 @@ export const de: Record<Key, string> & Record<string, string> = {
   'people.approves': 'Freigegeben von {who}',
   'people.mail': 'E-Mail',
   'people.calendar': 'Kalender',
-  'people.confirmRemove': '{name} und die zugehörigen Konten entfernen?',
+  'people.confirmRemove': '{name} entfernen? Konten, Gedächtnis, Unterhaltungen, Routinen und Aufgaben werden endgültig gelöscht.',
   'people.no': 'Nein',
   'people.remove': '{name} entfernen',
   'people.accountsNote': 'Nur die Aufgaben von {name} nutzen das. Deine Konten werden nie von anderen genutzt.',

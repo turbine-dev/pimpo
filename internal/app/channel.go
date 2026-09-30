@@ -54,7 +54,11 @@ func (a *App) setChannelWebhook(w http.ResponseWriter, r *http.Request) {
 
 // mirrorWebhook posts a notice to the configured bridge, signed with
 // HMAC-SHA256 in X-Pimpo-Signature so the bridge can tell it is Pimpo.
+// The bridge is the owner's: notices for anyone else never reach it.
 func (a *App) mirrorWebhook(ctx context.Context, n explore.Notice) {
+	if people.Norm(n.To) != people.OwnerID {
+		return
+	}
 	target, _ := a.Events.Get(ctx, "channel.webhook")
 	secret, _ := a.Vault.Get(ctx, "channel.webhook_secret")
 	if target == "" || secret == "" {
@@ -87,14 +91,14 @@ type channelRequest struct {
 	Data string `json:"data"`
 }
 
+// channelPerson is who a bridge request acts for. The bridge was set up
+// by the owner with the owner's token, so it speaks only for the owner:
+// acting as someone else would reach their chats and approvals.
 func (a *App) channelPerson(ctx context.Context, id string) (context.Context, error) {
 	if id == "" || id == people.OwnerID {
 		return people.With(ctx, people.OwnerID), nil
 	}
-	if _, err := a.People.Get(ctx, id); err != nil {
-		return ctx, server.StatusError{Status: 404, Msg: "no such person"}
-	}
-	return people.With(ctx, id), nil
+	return ctx, server.StatusError{Status: 403, Msg: "the channel speaks only for the administrator"}
 }
 
 func (a *App) channelMessage(w http.ResponseWriter, r *http.Request) {

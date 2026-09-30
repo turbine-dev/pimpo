@@ -58,3 +58,42 @@ func TestLowTrustNeverDowngradesAndReopens(t *testing.T) {
 		t.Fatalf("reopened %d facts", len(got))
 	}
 }
+
+// Restoring a version brings back only the restorer's facts: a member's
+// facts stay as they are now.
+func TestRestoreForLeavesOthersFactsAlone(t *testing.T) {
+	m, _ := Open(t.TempDir())
+	m.Add("owner old", "geral", "owner", High)
+	m.AddFor("ana old", "geral", "ana", High, "ana")
+	v, _ := m.History(1)
+	m.Add("owner new", "geral", "owner", High)
+	anaNew, _ := m.AddFor("ana new", "geral", "ana", High, "ana")
+	if err := m.RestoreFor(v[0].Hash, "owner"); err != nil {
+		t.Fatal(err)
+	}
+	facts, _ := m.List()
+	var texts []string
+	for _, f := range facts {
+		texts = append(texts, f.Text)
+	}
+	got := strings.Join(texts, ",")
+	if strings.Contains(got, "owner new") || !strings.Contains(got, "owner old") || !strings.Contains(got, "ana new") || !strings.Contains(got, "ana old") {
+		t.Fatalf("after restore: %s", got)
+	}
+	if _, ok := m.Get(anaNew.ID); !ok {
+		t.Fatal("ana's newer fact was lost")
+	}
+}
+
+// A member's house fact is theirs to take back, and never the owner's word.
+func TestSharedByAMemberIsNotTheOwnersWord(t *testing.T) {
+	m, _ := Open(t.TempDir())
+	f, _ := m.AddFor("wifi is on the fridge", "casa", "ana", High, "casa")
+	o, _ := m.AddFor("dinner at 8", "casa", "owner", High, "casa")
+	if SharedBy(f) != "ana" || OwnersWord(f) || !Authored(f, "ana") || Authored(f, "bia") {
+		t.Fatalf("member's house fact: %+v", f)
+	}
+	if SharedBy(o) != "" || !OwnersWord(o) || Authored(o, "ana") {
+		t.Fatalf("owner's house fact: %+v", o)
+	}
+}

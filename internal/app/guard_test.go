@@ -15,8 +15,10 @@ import (
 	"time"
 
 	"github.com/turbine-dev/pimpo/internal/event"
+	"github.com/turbine-dev/pimpo/internal/explore"
 	"github.com/turbine-dev/pimpo/internal/host"
 	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/policy"
 )
 
@@ -139,8 +141,30 @@ func TestGenericChannel(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("no notice reached the bridge")
 	}
-	if code, _ := ta.do(t, "POST", "/api/channel/message", map[string]string{"person": "ghost", "text": "x"}); code != 404 {
-		t.Fatalf("unknown person: %d", code)
+	// The bridge is the owner's: it acts for nobody else, and nobody
+	// else's notices reach it.
+	ana, _ := ta.People.Add(context.Background(), "Ana", people.Member, "")
+	for _, who := range []string{"ghost", ana.ID} {
+		if code, _ := ta.do(t, "POST", "/api/channel/message", map[string]string{"person": who, "text": "x"}); code != 403 {
+			t.Fatalf("the bridge acted for %s: %d", who, code)
+		}
+		if code, _ := ta.do(t, "POST", "/api/channel/button", map[string]string{"person": who, "data": "approve:x"}); code != 403 {
+			t.Fatalf("the bridge pressed a button for %s: %d", who, code)
+		}
+	}
+	ta.mirrorWebhook(context.Background(), explore.Notice{To: ana.ID, Text: "ANA-NOTICE"})
+	ta.mirrorWebhook(context.Background(), explore.Notice{Text: "OWNER-NOTICE"})
+	for owner := false; !owner; {
+		select {
+		case body := <-bodies:
+			<-got
+			if strings.Contains(string(body), "ANA-NOTICE") {
+				t.Fatalf("someone else's notice reached the owner's bridge: %s", body)
+			}
+			owner = strings.Contains(string(body), "OWNER-NOTICE")
+		case <-time.After(3 * time.Second):
+			t.Fatal("the owner's notice did not reach the bridge")
+		}
 	}
 	if code, out := ta.do(t, "POST", "/api/channel/button", map[string]string{"data": "approve:nothing"}); code != 400 || !strings.Contains(out["error"].(string), "esperando") {
 		t.Fatalf("button %d %v", code, out)
