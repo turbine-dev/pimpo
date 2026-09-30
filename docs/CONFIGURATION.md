@@ -10,6 +10,7 @@ This page is the reference for configuring Pimpo, for people who run it themselv
 - [Settings](#settings)
 - [Models](#models)
 - [Channels](#channels)
+- [Push triggers](#push-triggers)
 - [Network and access](#network-and-access)
 - [Local models](#local-models)
 - [Backups and moving](#backups-and-moving)
@@ -292,6 +293,32 @@ Channels are set up in **Connections**; each card says what to create and what t
 | Your own bridge | the channel API | Notices go out as signed webhooks; requests and button taps come back through the API. See [SDK.md](SDK.md#channel-api). |
 
 Only the paired owner is answered on Slack, Discord and Signal; strangers get nothing. A channel that keeps failing for three minutes is reported on the others.
+
+## Push triggers
+
+A routine that watches Gmail or Slack can hear of new items as they happen instead of checking every few minutes (its trigger settings: **Hear of it as it happens**). A GitHub repository can start a routine through its own webhook. While a push is live the routine is still checked once an hour, in case a push was lost; when push is not set up, or a Gmail watch lapses, it goes back to checking at its own interval.
+
+### Gmail (Google Pub/Sub)
+
+Gmail push works for a mailbox signed in with Google in **Connections** (today, the administrator's; mailboxes connected with an IMAP password keep polling). Each person's watch is for their own mailbox and wakes only their routines. The administrator sets up Google Cloud once, in the same project as the OAuth client used to sign in:
+
+1. Enable the **Gmail API** and the **Cloud Pub/Sub API** in the project.
+2. Create a topic: `gcloud pubsub topics create pimpo-gmail`.
+3. Let Gmail publish to it: `gcloud pubsub topics add-iam-policy-binding pimpo-gmail --member=serviceAccount:gmail-api-push@system.gserviceaccount.com --role=roles/pubsub.publisher`.
+4. Create a service account for the push to sign as: `gcloud iam service-accounts create pimpo-push`.
+5. Give Pimpo a public https address: Tailscale with Funnel in **Settings › Phone**. The push address is that address followed by `/push/gmail` (shown in the routine's settings).
+6. Create the push subscription with authentication: `gcloud pubsub subscriptions create pimpo-gmail-push --topic=pimpo-gmail --push-endpoint=https://YOUR-NAME.ts.net/push/gmail --push-auth-service-account=pimpo-push@PROJECT.iam.gserviceaccount.com`. Leave the audience at its default (the push address).
+7. In Pimpo, on a routine that watches Gmail, turn on **Hear of it as it happens** and enter the topic (`projects/PROJECT/topics/pimpo-gmail`) and the service account (`pimpo-push@PROJECT.iam.gserviceaccount.com`).
+
+The setup is kept as `push.gmail` (topic, account and an optional audience, if the subscription uses a custom one) and changed with `PUT /api/push/gmail`, the administrator's only. Pimpo starts a watch for each person who has a routine with push on, renews it every day (Gmail's last 7 days) and stops it when no routine wants it. Every push must carry a Google-signed ID token for that audience and service account; the push only names a mailbox, and Pimpo asks Gmail itself (with that person's token) what reached the inbox.
+
+### Slack
+
+The Slack link is the administrator's (see [Channels](#channels)). For routines that react to Slack, also subscribe the app to `message.channels` (and `message.groups` for private channels) and `app_mention`, give the bot `channels:history` (`groups:history`) and `app_mentions:read`, and add the app to the channels. Messages arrive over the Socket Mode connection already open; they are kept (14 days) only while a routine watches `slack.messages`, and only the administrator's routines read them.
+
+### GitHub
+
+On the routine's page, turn on **Start from GitHub**: Pimpo shows the address (`/github-hook/<routine>` on the public address) and a secret, once. In the repository's **Settings › Webhooks**, add the address with content type `application/json` and the secret, and choose the events. **New secret** replaces it at once. Deliveries must be signed with the secret (`X-Hub-Signature-256`), carry at most 1 MB, and each delivery id starts the routine once.
 
 ## Network and access
 

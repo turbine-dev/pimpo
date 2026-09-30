@@ -159,7 +159,7 @@
   "svc.slackchat.description": "Slack 다이렉트 메시지로 Pimpo와 대화해요.",
   "svc.slackchat.field.app_token.label": "App token(xapp-)",
   "svc.slackchat.field.bot_token.label": "Bot token(xoxb-)",
-  "svc.slackchat.help": "api.slack.com/apps에서 앱을 만들고, Socket Mode를 켜고(connections:write가 포함된 xapp- token이 만들어져요), message.im 이벤트를 구독하고, 봇에 im:history, im:write, chat:write 권한을 준 뒤 워크스페이스에 설치하세요. 그런 다음 앱에 다이렉트 메시지로 pimpo과 “연결”의 페어링 코드를 보내세요.",
+  "svc.slackchat.help": "api.slack.com/apps에서 앱을 만들고, Socket Mode를 켜고(connections:write가 포함된 xapp- token이 만들어져요), message.im 이벤트를 구독하고, 봇에 im:history, im:write, chat:write 권한을 준 뒤 워크스페이스에 설치하세요. 그런 다음 앱에 다이렉트 메시지로 pimpo과 “연결”의 페어링 코드를 보내세요. Slack에 반응하는 루틴을 쓰려면 message.channels와 app_mention도 구독하고, 봇에 channels:history와 app_mentions:read를 주고, 앱을 채널에 추가하세요.",
   "svc.slackchat.title": "Slack",
   "svc.todoist.description": "내 할 일: 읽기, 만들기, 완료하기.",
   "svc.todoist.field.token.label": "API token",

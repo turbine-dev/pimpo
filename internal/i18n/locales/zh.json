@@ -159,7 +159,7 @@
   "svc.slackchat.description": "通过 Slack 私信与 Pimpo 对话。",
   "svc.slackchat.field.app_token.label": "App token（xapp-）",
   "svc.slackchat.field.bot_token.label": "Bot token（xoxb-）",
-  "svc.slackchat.help": "在 api.slack.com/apps 创建应用，开启 Socket Mode（会创建带有 connections:write 的 xapp- token），订阅 message.im 事件，给机器人授予 im:history、im:write 和 chat:write，并安装到工作区。然后私信发送给该应用：pimpo 加上“连接”中的配对码。",
+  "svc.slackchat.help": "在 api.slack.com/apps 创建应用，开启 Socket Mode（会创建带有 connections:write 的 xapp- token），订阅 message.im 事件，给机器人授予 im:history、im:write 和 chat:write，并安装到工作区。然后私信发送给该应用：pimpo 加上“连接”中的配对码。 若要让例程响应 Slack，还需订阅 message.channels 和 app_mention，授予机器人 channels:history 和 app_mentions:read，并把应用加入频道。",
   "svc.slackchat.title": "Slack",
   "svc.todoist.description": "你的任务：读取、创建和完成。",
   "svc.todoist.field.token.label": "API token",

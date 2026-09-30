@@ -124,7 +124,9 @@ func TestSlackSocketMode(t *testing.T) {
 			ctx := r.Context()
 			wsjson.Write(ctx, c, map[string]any{"type": "hello"})
 			for i, e := range []string{
-				`{"type":"message","channel_type":"channel","channel":"C1","user":"U1","text":"no canal"}`,
+				`{"type":"message","channel_type":"channel","channel":"C1","user":"U1","text":"no canal","ts":"1.0"}`,
+				`{"type":"app_mention","channel":"C1","user":"U2","text":"<@UB> resume","ts":"2.0"}`,
+				`{"type":"message","channel_type":"channel","channel":"C1","bot_id":"B1","text":"eu mesmo","ts":"3.0"}`,
 				`{"type":"message","channel_type":"im","channel":"D1","user":"U1","text":"editada","subtype":"message_changed"}`,
 				`{"type":"message","channel_type":"im","channel":"D1","user":"U1","text":"oi pimpo"}`,
 				`{"type":"message","channel_type":"im","channel":"D1","user":"U1","text":"2","thread_ts":"1700000000.000100"}`,
@@ -144,7 +146,14 @@ func TestSlackSocketMode(t *testing.T) {
 		t.Fatal(err)
 	}
 	var got []Inbound
+	var events []Event
+	s.OnEvent = func(e Event) { events = append(events, e) }
 	s.Run(context.Background(), func(in Inbound) { got = append(got, in) })
+	// Channel messages and mentions reach routines, never the conversation;
+	// the app's own messages reach neither.
+	if len(events) != 2 || events[0].Text != "no canal" || events[0].Mention || events[0].TS != "1.0" || !events[1].Mention || events[1].User != "U2" {
+		t.Fatalf("%+v", events)
+	}
 	if len(got) != 2 || got[0].Text != "oi pimpo" || got[0].From != "U1" || got[0].ReplyTo != "" || got[1].ReplyTo != "1700000000.000100" {
 		t.Fatalf("%+v", got)
 	}
@@ -152,7 +161,7 @@ func TestSlackSocketMode(t *testing.T) {
 	if ids, err := s.SendMessage(context.Background(), "U2", "oi"); err != nil || len(ids) != 1 || ids[0] != "1700000000.000100" {
 		t.Fatalf("%v %v", ids, err)
 	}
-	if rec.all() != "ack:e0|ack:e1|ack:e2|ack:e3|D1=olá|D2=oi" {
+	if rec.all() != "ack:e0|ack:e1|ack:e2|ack:e3|ack:e4|ack:e5|D1=olá|D2=oi" {
 		t.Fatal(rec.all())
 	}
 	if err := (&Slack{BotToken: "xoxb", AppToken: "bad", API: srv.URL}).Check(context.Background()); err == nil || !strings.Contains(err.Error(), "app token") {

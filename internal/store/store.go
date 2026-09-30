@@ -139,6 +139,9 @@ type Settings struct {
 	Model string `json:"model,omitempty"`
 	// Effort is how hard that model thinks; "" uses the default.
 	Effort string `json:"effort,omitempty"`
+	// Push has the watch hear of new items as they happen (Gmail, Slack)
+	// instead of checking every few minutes.
+	Push bool `json:"push,omitempty"`
 }
 
 // Watch is what the routine waits for, with the owner's interval, or nil.

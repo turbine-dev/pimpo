@@ -310,7 +310,7 @@ A Telegram Mini App with the person's approvals, routines, spending, questions a
 
 ### 9.2 Push triggers · M
 
-Gmail (through Google's push notifications), Slack and GitHub start routines as events happen, instead of Pimpo checking every few minutes. The events reach routines as data, like everything read from outside.
+Gmail (through Google's push notifications), Slack and GitHub start routines as events happen, instead of Pimpo checking every few minutes. The events reach routines as data, like everything read from outside. *Done.*
 
 ### 9.3 Who owns a memory · S
 

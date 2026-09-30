@@ -34,6 +34,9 @@ type Scheduler struct {
 	Zone   *time.Location
 	// Now is replaceable in tests.
 	Now func() time.Time
+	// Pushed says whether events reach a watching routine as they happen
+	// (Gmail or Slack push); its polls then become an hourly safety net.
+	Pushed func(ctx context.Context, r store.Routine) bool
 
 	mu      sync.Mutex
 	cron    *cron.Cron

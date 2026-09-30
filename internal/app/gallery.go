@@ -296,7 +296,7 @@ func (a *App) updateFromGallery(w http.ResponseWriter, r *http.Request) {
 	if _, err := e.Routine.Manifest.ResolveParams(kept); err != nil {
 		kept = map[string]any{}
 	}
-	a.Store.SetRoutineSettings(ctx, rt.ID, store.Settings{Schedule: rt.Settings.Schedule, Params: kept})
+	a.Store.SetRoutineSettings(ctx, rt.ID, store.Settings{Schedule: rt.Settings.Schedule, Params: kept, Push: rt.Settings.Push})
 	a.Events.Put(ctx, "gallery.origin."+rt.ID, e.ID)
 	a.rememberGalleryVersion(ctx, ix, rt.ID, e)
 	a.Events.Append(ctx, "gallery.updated", "human:owner", map[string]string{"routine": rt.ID, "hash": e.Hash})

@@ -168,6 +168,17 @@ export type ActionRecord = {
 }
 
 export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean; person?: string; role?: 'owner' | 'member' | 'guest'; name?: string; admin_account?: boolean }
+// PushStatus is how a watching routine hears of new things: by push
+// (Gmail through Google Pub/Sub, Slack over its socket) or by polling.
+export type PushStatus = {
+  kind: '' | 'gmail' | 'slack'
+  on: boolean
+  live: boolean
+  gmail?: { configured: boolean; signed_in: boolean; until?: string; error?: string }
+  slack?: { connected: boolean; owner_only: boolean }
+}
+export type GmailPushSetup = { topic: string; account: string; audience?: string; endpoint: string; ready: boolean }
+export type GitHubHook = { on: boolean; urls?: { local?: string; public?: string }; secret?: string }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
 export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string }
 export type ModelOption = { id: string; price_in: number; price_out: number }
@@ -304,6 +315,12 @@ export const api = {
   media: () => request<{ id: string; title: string; at: string }[]>('GET', '/api/media'),
   webhook: (id: string) => request<{ urls?: { local?: string; lan?: string; public?: string } }>('GET', `/api/routines/${id}/webhook`),
   setWebhook: (id: string, action: 'on' | 'off' | 'rotate') => request<{ urls?: { local?: string; lan?: string; public?: string } }>('POST', `/api/routines/${id}/webhook/${action}`),
+  routinePush: (id: string) => request<PushStatus>('GET', `/api/routines/${id}/push`),
+  setRoutinePush: (id: string, on: boolean) => request<PushStatus>('POST', `/api/routines/${id}/push/${on ? 'on' : 'off'}`),
+  gmailPush: () => request<GmailPushSetup>('GET', '/api/push/gmail'),
+  setGmailPush: (c: { topic: string; account: string; audience?: string }) => request<GmailPushSetup>('PUT', '/api/push/gmail', c),
+  githubHook: (id: string) => request<GitHubHook>('GET', `/api/routines/${id}/github`),
+  setGitHubHook: (id: string, action: 'on' | 'off' | 'rotate') => request<GitHubHook>('POST', `/api/routines/${id}/github/${action}`),
   questions: () => request<{ id: string; routine?: string; question: string; options: string[]; asked: string }[]>('GET', '/api/questions'),
   suggestions: () => request<{ id: string; title: string; why: string; request: string; made: string }[]>('GET', '/api/suggestions'),
   suggestion: (id: string, action: 'accept' | 'dismiss') => request<{ exploration?: string }>('POST', `/api/suggestions/${id}/${action}`),
