@@ -1,5 +1,5 @@
 // Package whatsapp talks to the official WhatsApp Business Cloud API:
-// sending text and reply buttons, and reading the signed webhook Meta
+// sending text, reply buttons and lists, and reading the signed webhook Meta
 // posts when someone writes to the business number.
 package whatsapp
 
@@ -47,6 +47,33 @@ func (c Client) base() string {
 // Send delivers text to a WhatsApp id (the phone number in international
 // form, digits only), with up to three reply buttons.
 func (c Client) Send(ctx context.Context, to, text string, buttons ...Button) error {
+	_, err := c.SendID(ctx, to, text, buttons...)
+	return err
+}
+
+// MaxRows is how many choices a list message holds.
+const MaxRows = 10
+
+// SendList delivers text with a button that opens a list of up to ten
+// choices, for when three reply buttons are not enough. It returns the
+// message's id.
+func (c Client) SendList(ctx context.Context, to, text, button string, rows []Button) (string, error) {
+	if len(rows) > MaxRows {
+		rows = rows[:MaxRows]
+	}
+	var rs []map[string]string
+	for _, b := range rows {
+		rs = append(rs, map[string]string{"id": b.ID, "title": cut(b.Title, 24)})
+	}
+	msg := map[string]any{"messaging_product": "whatsapp", "recipient_type": "individual", "to": digits(to), "type": "interactive",
+		"interactive": map[string]any{"type": "list", "body": map[string]string{"text": cut(text, 4096)},
+			"action": map[string]any{"button": cut(button, 20), "sections": []map[string]any{{"rows": rs}}}}}
+	return c.post(ctx, msg)
+}
+
+// SendID is Send that also returns the message's id, which a reply to it
+// names.
+func (c Client) SendID(ctx context.Context, to, text string, buttons ...Button) (string, error) {
 	msg := map[string]any{"messaging_product": "whatsapp", "recipient_type": "individual", "to": digits(to)}
 	if len(buttons) == 0 {
 		msg["type"] = "text"
@@ -62,10 +89,14 @@ func (c Client) Send(ctx context.Context, to, text string, buttons ...Button) er
 		msg["type"] = "interactive"
 		msg["interactive"] = map[string]any{"type": "button", "body": map[string]string{"text": cut(text, 1024)}, "action": map[string]any{"buttons": bs}}
 	}
+	return c.post(ctx, msg)
+}
+
+func (c Client) post(ctx context.Context, msg map[string]any) (string, error) {
 	body, _ := json.Marshal(msg)
 	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s/%s/messages", c.base(), c.PhoneID), bytes.NewReader(body))
 	if err != nil {
-		return err
+		return "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.Token)
 	req.Header.Set("Content-Type", "application/json")
@@ -75,19 +106,25 @@ func (c Client) Send(ctx context.Context, to, text string, buttons ...Button) er
 	}
 	resp, err := hc.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		var e struct {
-			Error struct {
-				Message string `json:"message"`
-			} `json:"error"`
-		}
-		json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&e)
-		return fmt.Errorf("whatsapp: %s", firstNonEmpty(e.Error.Message, resp.Status))
+	var out struct {
+		Messages []struct {
+			ID string `json:"id"`
+		} `json:"messages"`
+		Error struct {
+			Message string `json:"message"`
+		} `json:"error"`
 	}
-	return nil
+	json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&out)
+	if resp.StatusCode >= 300 {
+		return "", fmt.Errorf("whatsapp: %s", firstNonEmpty(out.Error.Message, resp.Status))
+	}
+	if len(out.Messages) > 0 {
+		return out.Messages[0].ID, nil
+	}
+	return "", nil
 }
 
 // Inbound is one message someone sent to the business number.
@@ -99,8 +136,10 @@ type Inbound struct {
 	From string
 	Name string
 	Text string
-	// Button is the id of a reply button they tapped.
+	// Button is the id of a reply button or list row they tapped.
 	Button string
+	// ReplyTo is the id of the message this one replies to.
+	ReplyTo string
 }
 
 var ErrSignature = errors.New("webhook signature does not match")
@@ -148,10 +187,16 @@ func Parse(body []byte) ([]Inbound, error) {
 							ButtonReply struct {
 								ID string `json:"id"`
 							} `json:"button_reply"`
+							ListReply struct {
+								ID string `json:"id"`
+							} `json:"list_reply"`
 						} `json:"interactive"`
 						Button struct {
 							Payload string `json:"payload"`
 						} `json:"button"`
+						Context struct {
+							ID string `json:"id"`
+						} `json:"context"`
 					} `json:"messages"`
 				} `json:"value"`
 			} `json:"changes"`
@@ -168,7 +213,7 @@ func Parse(body []byte) ([]Inbound, error) {
 				names[c.WaID] = c.Profile.Name
 			}
 			for _, m := range ch.Value.Messages {
-				in := Inbound{ID: m.ID, From: m.From, Name: names[m.From]}
+				in := Inbound{ID: m.ID, From: m.From, Name: names[m.From], ReplyTo: m.Context.ID}
 				if sec, err := strconv.ParseInt(m.Timestamp, 10, 64); err == nil {
 					in.Time = time.Unix(sec, 0)
 				}
@@ -176,7 +221,7 @@ func Parse(body []byte) ([]Inbound, error) {
 				case "text":
 					in.Text = m.Text.Body
 				case "interactive":
-					in.Button = m.Interactive.ButtonReply.ID
+					in.Button = firstNonEmpty(m.Interactive.ButtonReply.ID, m.Interactive.ListReply.ID)
 				case "button":
 					in.Button = m.Button.Payload
 				default:

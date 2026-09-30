@@ -158,7 +158,7 @@ On a Mac, **Connections › Apple Reminders, Notes and Calendar** lets tasks and
 
 ## Routines that ask you
 
-A routine can ask you something and act on your answer: "every night ask me if I worked out and count the week's workouts", "ask before archiving". The question arrives with its options as buttons on Telegram, numbered on the other channels, and in **Needs you**; your answer runs the routine again, which records it or does what you chose. A new question replaces the same one still unanswered, and a question expires after 24 hours.
+A routine can ask you something and act on your answer: "every night ask me if I worked out and count the week's workouts", "ask before archiving". The question arrives with its options as buttons in **Needs you** and on Telegram, as buttons on WhatsApp (a list when there are more than three), and numbered on Discord, Slack and Signal; your answer runs the routine again, which records it or does what you chose. You can also answer in words: type it in **Needs you**, or reply to the question on a channel, with the option's number, its name or just the start of it ("swim" for "Swimming" works when no other option starts that way; case and accents do not matter). An answer that is none of the options is not taken: Pimpo shows the options again. Sending an option's exact name without replying also answers the question you were just asked, as long as you have not written anything else on that channel since; otherwise it is an ordinary message. A new question replaces the same one still unanswered, and a question expires after 24 hours.
 
 ## Reminders
 

@@ -1517,6 +1517,8 @@ export const pt = {
   'wh.rotate': "Trocar endereço",
   'rs.byWebhook': "Começa quando o webhook desta rotina é chamado (veja abaixo).",
   'inbox.asked': "Perguntado {when}",
+  'inbox.answerType': "Ou digite sua resposta",
+  'inbox.answerSend': "Responder",
   'conn.spotifyText': "Ver o que está tocando, tocar uma música, playlist ou podcast, pausar e ajustar o volume. Controlar precisa do Spotify Premium.",
   'conn.spotifyRefused': "O Spotify recusou: {reason}",
   'conn.spotifyStep1': "Em {link}, crie um app (qualquer nome) e marque Web API.",

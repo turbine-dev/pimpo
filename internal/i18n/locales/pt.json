@@ -35,6 +35,8 @@
   "msg.answer.gone": "Essa pergunta já foi respondida ou expirou.",
   "msg.answer.noted": "✅ Anotado: {choice}",
   "msg.answer.paused": "Anotado: {choice}. {name} está pausada, então não vai agir sobre isso até você retomá-la.",
+  "msg.answer.pick": "“{question}”: essa não é uma das opções. Responda com uma delas: {options}",
+  "msg.answer.choose": "Escolher",
   "msg.approval.always": "Permitido. Isto não será perguntado de novo.",
   "msg.approval.approve": "Permitido.",
   "msg.approval.batch": "Permitido para o resto desta execução.",

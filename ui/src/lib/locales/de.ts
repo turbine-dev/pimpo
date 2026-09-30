@@ -1517,6 +1517,8 @@ export const de: Record<Key, string> & Record<string, string> = {
   'wh.rotate': "Neue Adresse",
   'rs.byWebhook': "Startet, wenn der Webhook dieser Routine aufgerufen wird (siehe unten).",
   'inbox.asked': "Gefragt {when}",
+  'inbox.answerType': "Oder tippe deine Antwort",
+  'inbox.answerSend': "Antworten",
   'conn.spotifyText': "Sehen, was läuft, einen Song, eine Playlist oder einen Podcast abspielen, pausieren und die Lautstärke setzen. Steuern braucht Spotify Premium.",
   'conn.spotifyRefused': "Spotify hat abgelehnt: {reason}",
   'conn.spotifyStep1': "Lege auf {link} eine App an (beliebiger Name) und wähle Web API.",

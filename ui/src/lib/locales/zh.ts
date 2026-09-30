@@ -1517,6 +1517,8 @@ export const zh: Record<Key, string> & Record<string, string> = {
   'wh.rotate': "更换地址",
   'rs.byWebhook': "调用此例程的 Webhook 时开始（见下方）。",
   'inbox.asked': "{when}提问",
+  'inbox.answerType': "或输入你的回答",
+  'inbox.answerSend': "回答",
   'conn.spotifyText': "查看正在播放的内容，播放歌曲、歌单或播客，暂停和调节音量。控制需要 Spotify Premium。",
   'conn.spotifyRefused': "Spotify 拒绝了：{reason}",
   'conn.spotifyStep1': "在 {link} 创建一个应用（名称随意），勾选 Web API。",

@@ -35,6 +35,8 @@
   "msg.answer.gone": "이미 답했거나 만료된 질문입니다.",
   "msg.answer.noted": "✅ 기록했습니다: {choice}",
   "msg.answer.paused": "기록했어요: {choice}. {name}이(가) 일시 중지되어 있어서 다시 시작할 때까지 아무것도 하지 않아요.",
+  "msg.answer.pick": "“{question}”: 선택지에 없는 답입니다. 다음 중 하나로 답해 주세요: {options}",
+  "msg.answer.choose": "선택",
   "msg.approval.always": "허용했어요. 다시 묻지 않아요.",
   "msg.approval.approve": "허용했어요.",
   "msg.approval.batch": "이번 실행이 끝날 때까지 허용했어요.",

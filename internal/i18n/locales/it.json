@@ -35,6 +35,8 @@
   "msg.answer.gone": "Questa domanda ha già avuto risposta o è scaduta.",
   "msg.answer.noted": "✅ Annotato: {choice}",
   "msg.answer.paused": "Annotato: {choice}. {name} è in pausa, quindi non agirà finché non la riprendi.",
+  "msg.answer.pick": "«{question}»: non è una delle opzioni. Rispondi con una di queste: {options}",
+  "msg.answer.choose": "Scegli",
   "msg.approval.always": "Consentito. Non verrà più chiesto.",
   "msg.approval.approve": "Consentito.",
   "msg.approval.batch": "Consentito per il resto di questa esecuzione.",

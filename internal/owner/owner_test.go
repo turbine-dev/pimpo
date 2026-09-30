@@ -266,3 +266,59 @@ func TestPairingCodeResistsGuessing(t *testing.T) {
 		t.Fatal("an old code still works")
 	}
 }
+
+// replyHandler also answers typed replies to notices with buttons.
+type replyHandler struct {
+	handler
+	replies []string
+}
+
+func (h *replyHandler) Reply(_ context.Context, choices []explore.Action, text string) (string, bool) {
+	if len(choices) == 0 || !strings.HasPrefix(choices[0].Data, "answer:") {
+		return "", false
+	}
+	h.replies = append(h.replies, choices[0].Data+"|"+text)
+	return "Anotado", true
+}
+
+// A reply in words to a question goes to the handler with the question's
+// buttons; a reply to anything else is an ordinary message. A question's
+// many options go three to a row.
+func TestTypedReplyToAQuestion(t *testing.T) {
+	ev, _ := event.Open(filepath.Join(t.TempDir(), "v.db"))
+	defer ev.Close()
+	bot := &fakeBot{}
+	h := &replyHandler{}
+	c := &Channel{Events: ev, Bot: func(context.Context) Bot { return bot }, Handler: h}
+	ctx := context.Background()
+	c.handle(ctx, bot, msg(42, "/start "+c.PairingCode()))
+
+	var opts []explore.Action
+	for i, o := range []string{"Corrida", "Bike", "Natação", "Descanso"} {
+		opts = append(opts, explore.Action{Label: o, Data: "answer:q1." + string(rune('0'+i))})
+	}
+	c.Notify(ctx, explore.Notice{Text: "❓ Que treino?", Actions: opts})
+	if len(bot.button) != 2 || len(bot.button[0]) != 3 || len(bot.button[1]) != 1 {
+		t.Fatalf("rows %v", bot.button)
+	}
+	bot.button = nil
+	c.Notify(ctx, explore.Notice{Text: "Posso?", Actions: []explore.Action{{Label: "Sim", Data: "approve:a"}, {Label: "Sempre", Data: "always:a"}, {Label: "Não", Data: "deny:a"}, {Label: "Todos", Data: "batch:a"}}})
+	if len(bot.button) != 1 {
+		t.Fatalf("an approval's choices left one row: %v", bot.button)
+	}
+
+	reply := func(text string, markup *telegram.Markup) telegram.Update {
+		u := msg(42, text)
+		u.Message.ReplyTo = &telegram.Message{ID: 7, Text: "❓ Que treino?", Markup: markup}
+		return u
+	}
+	c.handle(ctx, bot, reply("natacao", &telegram.Markup{Keyboard: keyboard(opts)}))
+	if len(h.replies) != 1 || h.replies[0] != "answer:q1.0|natacao" || bot.sent[len(bot.sent)-1] != "Anotado" {
+		t.Fatalf("replies %v sent %v", h.replies, bot.sent)
+	}
+	c.handle(ctx, bot, reply("e amanhã?", nil))
+	c.handle(ctx, bot, reply("ok", &telegram.Markup{Keyboard: [][]telegram.Button{{{Text: "Sim", Data: "compile:e1"}}}}))
+	if len(h.replies) != 1 || len(h.requests) != 2 {
+		t.Fatalf("replies %v requests %v", h.replies, h.requests)
+	}
+}

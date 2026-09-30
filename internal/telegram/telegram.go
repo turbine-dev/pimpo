@@ -40,6 +40,10 @@ type Message struct {
 		Width  int    `json:"width"`
 	} `json:"photo,omitempty"`
 	Caption string `json:"caption,omitempty"`
+	// ReplyTo is the message this one replies to; Telegram includes its
+	// inline buttons in Markup.
+	ReplyTo *Message `json:"reply_to_message,omitempty"`
+	Markup  *Markup  `json:"reply_markup,omitempty"`
 	// Voice is set for voice notes.
 	Voice *struct {
 		FileID   string `json:"file_id"`
@@ -57,6 +61,11 @@ type Message struct {
 		FirstName string `json:"first_name"`
 		Username  string `json:"username"`
 	} `json:"from"`
+}
+
+// Markup holds a message's inline buttons.
+type Markup struct {
+	Keyboard [][]Button `json:"inline_keyboard"`
 }
 
 type Callback struct {

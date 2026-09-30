@@ -1573,6 +1573,8 @@ export const ru: Record<Key, string> & Record<string, string> = {
   'wh.rotate': "Новый адрес",
   'rs.byWebhook': "Запускается, когда вызывают вебхук этого сценария (см. ниже).",
   'inbox.asked': "Спрошено {when}",
+  'inbox.answerType': "Или напишите ответ",
+  'inbox.answerSend': "Ответить",
   'conn.spotifyText': "Видеть, что играет, включать трек, плейлист или подкаст, ставить на паузу и менять громкость. Для управления нужен Spotify Premium.",
   'conn.spotifyRefused': "Spotify отказал: {reason}",
   'conn.spotifyStep1': "На {link} создайте приложение (любое имя) и отметьте Web API.",

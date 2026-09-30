@@ -35,6 +35,8 @@
   "msg.answer.gone": "その質問は回答済みか、期限切れです。",
   "msg.answer.noted": "✅ 記録しました: {choice}",
   "msg.answer.paused": "記録しました: {choice}。{name} は一時停止中のため、再開するまで何もしません。",
+  "msg.answer.pick": "「{question}」：それは選択肢にありません。次のいずれかで答えてください：{options}",
+  "msg.answer.choose": "選ぶ",
   "msg.approval.always": "許可しました。今後は確認しません。",
   "msg.approval.approve": "許可しました。",
   "msg.approval.batch": "今回の実行が終わるまで許可しました。",

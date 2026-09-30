@@ -31,6 +31,7 @@ import (
 // Where the service has replies (Discord, Slack, Signal), replying to a
 // notice answers that notice, however old and whatever came after it. A
 // reply names its notice exactly, so it needs none of the guesses above.
+// A reply in words to a question is checked against its options.
 
 const (
 	choiceLife   = 10 * time.Minute
@@ -104,6 +105,17 @@ func (r *linkRun) replyChoice(id string, n int) (act explore.Action, known, answ
 		r.pending = nil
 	}
 	return act, true, false
+}
+
+// replied are the choices of the notice a reply names, while it is still
+// known and unanswered.
+func (r *linkRun) replied(id string) []explore.Action {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if sn := r.sent[id]; sn != nil && !sn.answered {
+		return slices.Clone(sn.choices)
+	}
+	return nil
 }
 
 // offer makes a notice's choices the ones a number answers; a notice
@@ -233,6 +245,13 @@ func (a *App) linkMessage(ctx context.Context, kind string, run *linkRun, in cha
 	}
 	pctx := people.With(ctx, people.OwnerID)
 	h := handler{a}
+	if _, err := strconv.Atoi(text); err != nil && in.ReplyTo != "" && !noApprovals(run.link) {
+		// Words in reply to a question are checked against its options.
+		if out, ok := h.Reply(pctx, run.replied(in.ReplyTo), text); ok {
+			reply(out)
+			return
+		}
+	}
 	if n, err := strconv.Atoi(text); err == nil && in.ReplyTo != "" && !noApprovals(run.link) {
 		act, known, answered := run.replyChoice(in.ReplyTo, n)
 		switch {

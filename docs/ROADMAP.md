@@ -280,7 +280,7 @@ Search earlier conversations by words or an exact phrase, each person only in th
 
 ### 8.4 Questions as cards · M
 
-A routine's question offers its choices as buttons in the app and on every channel with buttons, and a typed answer is checked against them.
+A routine's question offers its choices as buttons in the app and on every channel with buttons, and a typed answer is checked against them. *Done.*
 
 ### 8.5 Settings history · S
 

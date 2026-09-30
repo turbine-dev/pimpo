@@ -138,7 +138,7 @@ What the routine receives:
 
 ### Questions and answers
 
-`ask.owner({question, options, key})` sends you a question. The options appear as buttons on Telegram and in **Needs you**, and numbered on channels without buttons. It returns `{asked: "<id>"}` at once, without waiting.
+`ask.owner({question, options, key})` sends you a question. The options appear as buttons in **Needs you**, on Telegram and on WhatsApp (a list when there are more than three), and numbered on channels without buttons. A typed answer is checked against the options, so `event.answer.choice` is always one of them. It returns `{asked: "<id>"}` at once, without waiting.
 
 - It needs a question and 2 to 6 options. Each option is cut to 40 characters.
 - `key` names the question. It defaults to the question text. A new question with the same key, from the same routine and for the same person, replaces the one still pending.

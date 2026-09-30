@@ -936,7 +936,17 @@ func (h handler) Request(ctx context.Context, text string) (string, error) {
 		}
 		return i18n.T(ctx, "msg.request.started"), nil
 	}
+	if out, ok := h.a.bareAnswer(ctx, via, text); ok {
+		return out, nil
+	}
 	return h.a.converse(ctx, via, text)
+}
+
+// Reply takes a typed reply to a notice with choices on a chat channel:
+// a question's options are matched; other notices are not answered in
+// words.
+func (h handler) Reply(ctx context.Context, choices []explore.Action, text string) (string, bool) {
+	return h.a.replyAnswer(ctx, choices, text)
 }
 
 // convQuiet is how long a chat-channel conversation waits for the next
