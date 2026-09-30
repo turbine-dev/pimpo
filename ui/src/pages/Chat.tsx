@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowUp, AudioLines, Check, Loader2, Mic, Repeat, Square, Trash2, Volume2, X } from 'lucide-react'
+import { ArrowUp, AudioLines, Check, Loader2, Mic, Repeat, Search, Square, Trash2, Volume2, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ModelPicker, useRoutedText } from '../components/ModelPicker'
@@ -94,6 +94,7 @@ export function Chat() {
                 <h1 className="text-[22px] font-semibold tracking-tight">{t('chat.list')}</h1>
                 <AssistantPicker value={who} onChange={setWho} />
               </div>
+              <ChatSearch />
               <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
                 {(chats.data ?? []).map((c) => (
                   <li key={c.id} className="group flex items-center gap-3 px-4 py-3">
@@ -301,6 +302,45 @@ function Turn({ chat, turn: x, onChange }: { chat: string; turn: ChatTurn; onCha
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ChatSearch finds words, or a "quoted phrase", in the person's own
+// conversations; while it has text, its results show above the list.
+function ChatSearch() {
+  const t = useT()
+  const [q, setQ] = useState('')
+  const [asked, setAsked] = useState('')
+  useEffect(() => {
+    const timer = setTimeout(() => setAsked(q.trim()), 250)
+    return () => clearTimeout(timer)
+  }, [q])
+  const hits = useQuery({ queryKey: ['chatSearch', asked], queryFn: () => api.searchChats(asked), enabled: asked !== '' })
+  return (
+    <div className="mb-4">
+      <label className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 focus-within:border-ink-3">
+        <Search size={15} className="text-ink-3" aria-hidden />
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('chat.search')} aria-label={t('chat.search')}
+          className="min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-ink-3" />
+      </label>
+      {asked !== '' && hits.data && (
+        hits.data.length === 0 ? (
+          <p className="mt-3 text-[13px] text-ink-3">{t('chat.searchNone')}</p>
+        ) : (
+          <ul aria-label={t('chat.searchResults')} className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
+            {hits.data.map((h) => (
+              <li key={h.turn}>
+                <Link to={`/chat/${h.chat}`} className="block px-4 py-3 hover:bg-sunken">
+                  <span className="block truncate text-[14px] font-medium">{h.title}</span>
+                  <span className="block text-[12.5px] text-ink-2">{h.snippet}</span>
+                  <span className="block text-[12px] text-ink-3">{relative(h.at)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
     </div>
   )
 }
