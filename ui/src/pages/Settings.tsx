@@ -139,7 +139,7 @@ export function Settings() {
                   <span className="mt-1 block text-[12px] text-ink-3">{fill(t('settings.localHint'), { cmd: <code className="rounded bg-sunken px-1">tools/judge/serve.py</code> })}</span>
                 </label>
               )}
-              {(s.judge_backend === 'local' || s.judge_backend === 'laya') && <LayaSetup value={s.laya_url ?? ''} required={s.judge_backend === 'laya'} onChange={(laya_url) => setS({ ...s, laya_url: laya_url || undefined })} />}
+              {(s.judge_backend === 'local' || s.judge_backend === 'laya') && <LayaSetup value={s.laya_url ?? ''} required={s.judge_backend === 'laya'} onChange={(laya_url) => setS({ ...s, laya_url: laya_url || undefined })} onSave={() => api.saveSettings(s)} />}
             </Card>
           </>}
 
@@ -269,13 +269,14 @@ function BrowserLogin() {
 }
 
 // LayaSetup points Pimpo at Laya on this computer and checks it answers.
-function LayaSetup({ value, required, onChange }: { value: string; required: boolean; onChange: (v: string) => void }) {
+function LayaSetup({ value, required, onChange, onSave }: { value: string; required: boolean; onChange: (v: string) => void; onSave: () => Promise<unknown> }) {
   const t = useT()
   const [check, setCheck] = useState<{ ok: boolean; p?: number; ms?: number; error?: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const test = async () => {
     setBusy(true)
-    try { setCheck(await api.testLaya(value || 'http://127.0.0.1:8000')) } catch (e) { setCheck({ ok: false, error: (e as Error).message }) } finally { setBusy(false) }
+    // The server tests the saved address, so what is on screen is saved first.
+    try { await onSave(); setCheck(await api.testLaya()) } catch (e) { setCheck({ ok: false, error: (e as Error).message }) } finally { setBusy(false) }
   }
   return (
     <div className="mt-4 space-y-2">

@@ -5,20 +5,17 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/turbine-dev/pimpo/internal/judge"
 	"github.com/turbine-dev/pimpo/internal/server"
 )
 
 // Laya, Jev's open decision model, runs on this computer with laya-serve
 // and answers judgments and company decisions with the same API as Jev.
 
-// layaCheck says whether the Laya server at base answers, and how a
-// simple judgment comes back.
-func (a *App) layaCheck(ctx context.Context, base string) map[string]any {
-	if base == "" {
-		base = layaDefault
-	}
-	l := judge.Laya(base, func(ctx context.Context) (string, error) { return a.secret(ctx, "laya.key") })
+// layaCheck says whether the Laya server in the settings answers, and how
+// a simple judgment comes back. It reaches only the saved address, never
+// one a request names.
+func (a *App) layaCheck(ctx context.Context) map[string]any {
+	l := a.laya(ctx)
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	if err := l.Healthy(ctx); err != nil {
@@ -34,13 +31,6 @@ func (a *App) layaCheck(ctx context.Context, base string) map[string]any {
 
 func (a *App) layaRoutes() {
 	a.Server.Handle("POST /api/judge/laya/test", func(w http.ResponseWriter, r *http.Request) {
-		var in struct {
-			URL string `json:"url"`
-		}
-		if err := server.Decode(r, &in); err != nil {
-			server.WriteError(w, err)
-			return
-		}
-		server.WriteJSON(w, 200, a.layaCheck(r.Context(), in.URL))
+		server.WriteJSON(w, 200, a.layaCheck(r.Context()))
 	})
 }

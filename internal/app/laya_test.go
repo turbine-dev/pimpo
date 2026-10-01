@@ -62,11 +62,13 @@ func TestLayaJudgesOnThisComputer(t *testing.T) {
 	if a, err := ta.judge(ctx, "Is this urgent?", "the server is down"); err != nil || a.Backend != "laya" || *asked != before+1 {
 		t.Fatalf("local with Laya: %+v %v", a, err)
 	}
-	_, out := ta.do(t, "POST", "/api/judge/laya/test", map[string]string{"url": srv.URL})
+	_, out := ta.do(t, "POST", "/api/judge/laya/test", nil)
 	if out["ok"] != true || out["p"] != 0.91 {
 		t.Fatalf("test: %v", out)
 	}
-	if _, out := ta.do(t, "POST", "/api/judge/laya/test", map[string]string{"url": "http://127.0.0.1:1"}); out["ok"] != false || !strings.Contains(out["error"].(string), "unreachable") {
+	// The test reaches the saved address only, whatever the request says.
+	ta.useJudge(t, "local", "http://127.0.0.1:1")
+	if _, out := ta.do(t, "POST", "/api/judge/laya/test", map[string]string{"url": srv.URL}); out["ok"] != false || !strings.Contains(out["error"].(string), "unreachable") {
 		t.Fatalf("a server that is not there: %v", out)
 	}
 	_, s := ta.do(t, "GET", "/api/settings", nil)
