@@ -202,6 +202,8 @@ Built in waves, each usable in Labs before the next. The pilot measures the most
 | 10.15 | Media, YouTube, LinkedIn and assisted publishing | L |
 | 10.16 | Earned autonomy | S |
 | 10.17 | Templates, creating a company by describing it, performance, company widgets and the public showcase | M |
+| 10.18 | Talking with members, and meetings with the CEO | M |
+| 10.19 | Memory per task, per agent and per company, automatic or by decision | M |
 
 ## Decisions (2026-09-30 and 2026-10-01)
 
@@ -217,3 +219,5 @@ Built in waves, each usable in Labs before the next. The pilot measures the most
 - Decision levels send the highest decisions to the CEO, a person.
 - The pilot's cost cap per accepted pull request is configurable, $5 by default; the number of approvals before suggesting autonomy is configurable, 10 by default; the public showcase exists, optional and only with what was approved.
 - A second company of another industry in the launch criteria is on hold.
+- The CEO talks with members and holds meetings with all or chosen agents (10.18).
+- Memory is kept per task, per agent and per company, written automatically or by decision (10.19).

@@ -106,7 +106,7 @@ Members work together, and stop to ask:
 The company remembers, meets and reports:
 
 - **Memory** holds what the company decided and learned: decisions, facts, lessons and the minutes of meetings. Every member receives the latest with its brief, and looks further back with `company.recall`. What a member keeps with `company.remember` is shown as that member's words, never as a rule; only you forget a note.
-- **Meetings** let two to eight agents talk an agenda through, for one to four rounds, with a cost cap of up to $2. They only talk, with no tools. The chair writes the minutes and the decisions, which go to the memory. Start one from **Memory**, or a member calls one with `company.meet`.
+- **Meetings** let agents talk an agenda through. With **I take part** on, the meeting is yours: you talk with all its agents or with the ones you pick under **Speak to** (or name one with @), and they answer in turn, each hearing the others and knowing its recent work. **Talk** in a member's window opens a conversation with that agent alone, and **Talk with** on a question it asked you discusses it before you answer. **Make it a task** under any answer gives that agent work, with the conversation as its context. **End with minutes** keeps the minutes and decisions in the memory. Without you, two to eight agents talk for one to four rounds and the chair writes the minutes; a member can call one with `company.meet`. Meetings only talk, with no tools, and stop at their cost cap (up to $2).
 - **This week**, at the top of **Work**, sums up what each member did and what it cost, the tasks closed and the questions waiting. On Mondays the same summary reaches you on your channels.
 
 You choose who decides:

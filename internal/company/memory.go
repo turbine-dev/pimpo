@@ -40,8 +40,10 @@ type Turn struct {
 	Text   string `json:"text"`
 }
 
-// Meeting states.
+// Meeting states. An open meeting has the CEO in it and goes on while
+// they talk.
 const (
+	MeetingOpen    = "open"
 	MeetingRunning = "running"
 	MeetingDone    = "done"
 	MeetingFailed  = "failed"
@@ -50,23 +52,28 @@ const (
 // A Meeting is a bounded conversation between members: an agenda, a few
 // rounds, a cost cap, and minutes with the decisions taken.
 type Meeting struct {
-	ID           string    `json:"id"`
-	Company      string    `json:"company"`
-	Title        string    `json:"title"`
-	Agenda       string    `json:"agenda"`
-	Chair        string    `json:"chair"`
-	Participants []string  `json:"participants"`
-	Rounds       int       `json:"rounds"`
-	MaxUSD       float64   `json:"max_usd"`
-	State        string    `json:"state"`
-	Transcript   []Turn    `json:"transcript"`
-	Minutes      string    `json:"minutes,omitempty"`
-	Decisions    []string  `json:"decisions,omitempty"`
-	Error        string    `json:"error,omitempty"`
-	CostUSD      float64   `json:"cost_usd"`
-	CalledBy     string    `json:"called_by"`
-	Created      time.Time `json:"created"`
-	Ended        time.Time `json:"ended,omitzero"`
+	ID           string   `json:"id"`
+	Company      string   `json:"company"`
+	Title        string   `json:"title"`
+	Agenda       string   `json:"agenda"`
+	Chair        string   `json:"chair"`
+	Participants []string `json:"participants"`
+	Rounds       int      `json:"rounds"`
+	MaxUSD       float64  `json:"max_usd"`
+	State        string   `json:"state"`
+	Transcript   []Turn   `json:"transcript"`
+	Minutes      string   `json:"minutes,omitempty"`
+	Decisions    []string `json:"decisions,omitempty"`
+	Error        string   `json:"error,omitempty"`
+	CostUSD      float64  `json:"cost_usd"`
+	CalledBy     string   `json:"called_by"`
+	// WithCEO is a meeting the CEO takes part in, live: the agents answer
+	// what they say, all of them or the ones named.
+	WithCEO bool `json:"with_ceo,omitempty"`
+	// Question is the question the meeting discusses, when it does.
+	Question string    `json:"question,omitempty"`
+	Created  time.Time `json:"created"`
+	Ended    time.Time `json:"ended,omitzero"`
 }
 
 // Meeting limits.
@@ -78,12 +85,16 @@ const (
 
 // CheckMeeting says what is wrong with a meeting before it starts.
 func (o Org) CheckMeeting(m Meeting) error {
+	least := 2
+	if m.WithCEO {
+		least = 1
+	}
 	switch {
-	case strings.TrimSpace(m.Title) == "" || strings.TrimSpace(m.Agenda) == "":
+	case strings.TrimSpace(m.Title) == "" || !m.WithCEO && strings.TrimSpace(m.Agenda) == "":
 		return fmt.Errorf("a meeting needs a title and an agenda")
-	case len(m.Participants) < 2 || len(m.Participants) > MaxParticipants:
-		return fmt.Errorf("a meeting has 2 to %d agents", MaxParticipants)
-	case m.Rounds < 1 || m.Rounds > MaxRounds:
+	case len(m.Participants) < least || len(m.Participants) > MaxParticipants:
+		return fmt.Errorf("a meeting has %d to %d agents", least, MaxParticipants)
+	case !m.WithCEO && (m.Rounds < 1 || m.Rounds > MaxRounds):
 		return fmt.Errorf("a meeting has 1 to %d rounds", MaxRounds)
 	case m.MaxUSD <= 0 || m.MaxUSD > MaxMeetingUSD:
 		return fmt.Errorf("a meeting spends at most $%.0f", MaxMeetingUSD)
@@ -95,7 +106,7 @@ func (o Org) CheckMeeting(m Meeting) error {
 		}
 		seen[p] = true
 	}
-	if !seen[m.Chair] {
+	if !m.WithCEO && !seen[m.Chair] {
 		return fmt.Errorf("the chair takes part in the meeting")
 	}
 	return nil

@@ -2162,6 +2162,23 @@ export const pt = {
   'co.grant2.none': "Nada",
   'co.grant2.read': "Ler",
   'co.grant2.act': "Agir",
+  'co.tab.meetings': "Reuniões",
+  'co.meetingsHint': "Converse com um agente ou com vários, como numa empresa de verdade. Eles respondem quando você fala com todos ou com quem você escolher.",
+  'co.endMeeting': "Encerrar com ata",
+  'co.makeTask': "Transformar em tarefa",
+  'co.answering': "Respondendo…",
+  'co.minutes': "Ata",
+  'co.speakTo': "Falar com",
+  'co.everyone': "Todos",
+  'co.yourMessage': "Sua mensagem",
+  'co.send': "Enviar",
+  'co.makeTaskFor': "Tarefa para {name}",
+  'co.whatToDo': "O que fazer",
+  'co.makeTaskHint': "A conversa vai junto, como contexto.",
+  'co.iTakePart': "Eu participo",
+  'co.talk': "Conversar",
+  'co.discuss': "Conversar com {name}",
+  'co.meeting.open': "Aberta",
 }
 
 export type Key = keyof typeof pt

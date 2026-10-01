@@ -216,12 +216,25 @@ describe('Company memory and meetings', () => {
     await userEvent.type(screen.getByLabelText('Texto'), 'Até 30 dias.')
     await userEvent.click(screen.getByRole('button', { name: /Guardar/ }))
     await waitFor(() => expect(calls.find((c) => c.url.endsWith('/notes') && c.method === 'POST')?.body).toEqual({ kind: 'decision', title: 'Trocas', body: 'Até 30 dias.' }))
+  })
+
+  it('opens a meeting with the CEO and talks to one agent in it', async () => {
+    const room = { id: 'm_1', company: 'co_1', title: 'Coleção', agenda: 'Quando lançar?', chair: 'ceo', participants: ['bia', 'clara'], rounds: 0, max_usd: 1, state: 'open', with_ceo: true,
+      transcript: [{ member: 'ceo', text: 'Bom dia' }, { member: 'bia', text: 'Bom dia! Sexta.' }], cost_usd: 0.01, called_by: 'human:owner', created: new Date().toISOString() }
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/meetings': [], 'POST /api/companies/co_1/meetings': room,
+      '/api/companies/co_1/meetings/m_1': room, 'POST /api/companies/co_1/meetings/m_1/say': room })
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Reuniões' }))
     await userEvent.click(screen.getByRole('button', { name: /Nova reunião/ }))
     const dialog = await screen.findByRole('dialog')
     await userEvent.type(within(dialog).getByLabelText('Assunto'), 'Coleção')
     await userEvent.type(within(dialog).getByLabelText('Pauta'), 'Quando lançar?')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Começar reunião' }))
-    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/meetings') && c.method === 'POST')?.body).toEqual({ title: 'Coleção', agenda: 'Quando lançar?', chair: 'bia', participants: ['bia', 'clara'], rounds: 2, max_usd: 1 }))
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/meetings') && c.method === 'POST')?.body).toEqual({ title: 'Coleção', agenda: 'Quando lançar?', participants: ['bia', 'clara'], max_usd: 1, with_ceo: true }))
+    expect(await screen.findByText('Bom dia! Sexta.')).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole('group', { name: 'Falar com' })).getByRole('button', { name: 'Clara' }))
+    await userEvent.type(screen.getByLabelText('Sua mensagem'), 'E as fotos?{Enter}')
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/say'))?.body).toEqual({ text: 'E as fotos?', to: ['clara'] }))
   })
 })
 

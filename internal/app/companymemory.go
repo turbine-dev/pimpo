@@ -353,6 +353,9 @@ func (a *App) companyMemoryRoutes() {
 		if err := server.Decode(r, &m); err != nil {
 			return nil, err
 		}
+		if m.WithCEO {
+			return a.openMeeting(r.Context(), o, company.Meeting{Title: m.Title, Agenda: m.Agenda, Participants: m.Participants, MaxUSD: m.MaxUSD, Question: m.Question, CalledBy: actor(r.Context())})
+		}
 		return a.meet(r.Context(), o, company.Meeting{Title: m.Title, Agenda: m.Agenda, Chair: m.Chair, Participants: m.Participants, Rounds: m.Rounds, MaxUSD: m.MaxUSD, CalledBy: actor(r.Context())})
 	}))
 	a.Server.Handle("GET /api/companies/{id}/digest", a.companyRoute(company.View, func(w http.ResponseWriter, r *http.Request, o company.Org) (any, error) {
