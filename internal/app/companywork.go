@@ -173,6 +173,11 @@ func (a *App) startWork(ctx context.Context, o company.Org, w company.Work) (str
 	}
 	request += w.Resume()
 	brief := o.Brief(m.ID)
+	if notes, err := a.Companies.Notes(ctx, o.ID, 50); err == nil {
+		if mem := company.Memory(notes, memoryInBrief); mem != "" {
+			brief += "\n\n" + mem
+		}
+	}
 	if boss, ok := o.Member(m.ReportsTo); ok {
 		brief += "\n\nYou report to " + boss.Name + "."
 	}

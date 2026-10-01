@@ -378,6 +378,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.companyRoutes()
 	a.companyWorkRoutes()
 	a.companyTeamRoutes()
+	a.companyMemoryRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()
@@ -442,6 +443,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.resumeJobs(ctx)
 	a.resumeWork(ctx)
 	a.background(func() { a.workLoop(ctx, workPumpEvery) })
+	a.background(func() { a.digestLoop(ctx, 30*time.Minute) })
 	go func() {
 		<-ctx.Done()
 		a.mu.Lock()
@@ -649,6 +651,7 @@ func (a *App) router() *connector.Router {
 		askCap{a},
 		wakeCap{a},
 		teamCap{a},
+		memoryCap{a},
 		a.spotify(),
 		&sheets.Sheets{Token: func(ctx context.Context) (string, error) { return a.Google.Token(ctx) }, Granted: func(ctx context.Context) bool { return a.Google.Granted(ctx, oauth.SheetsScope) }, API: a.SheetsAPI},
 	)
