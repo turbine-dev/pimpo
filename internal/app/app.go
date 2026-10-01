@@ -180,6 +180,7 @@ type App struct {
 	Vault     *vault.Vault
 	Store     *store.Store
 	Companies *company.Store
+	work      companyWork
 	Budget    *budget.Budget
 	Channel   *owner.Channel
 	Explore   *explore.Service
@@ -327,7 +328,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
 		RoleOf:  func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) },
 		Missing: a.missingCredential}
-	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone, Progress: a.runProgress, Pushed: a.pushLive}
+	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone, Progress: a.runProgress, Pushed: a.pushLive, Hold: a.holdRoutine}
 	a.Explore = &explore.Service{Guide: docs.Guide, Skills: a.exploreSkills, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 3, Installed: a.installedRoutines,
 		Helpers: func(ctx context.Context, id string) (runtime.Helper, error) { return a.Scheduler.Library(ctx, id) }},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
@@ -375,6 +376,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.phoneRoutes()
 	a.jobRoutes()
 	a.companyRoutes()
+	a.companyWorkRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()
@@ -437,6 +439,8 @@ func (a *App) Start(ctx context.Context) error {
 	a.background(func() { a.lessonDigestLoop(ctx, time.Hour) })
 	a.background(func() { a.catalogLoop(ctx, time.Hour) })
 	a.resumeJobs(ctx)
+	a.resumeWork(ctx)
+	a.background(func() { a.workLoop(ctx, workPumpEvery) })
 	go func() {
 		<-ctx.Done()
 		a.mu.Lock()
@@ -642,6 +646,7 @@ func (a *App) router() *connector.Router {
 		widgetCap{a},
 		audioCap{a},
 		askCap{a},
+		wakeCap{a},
 		a.spotify(),
 		&sheets.Sheets{Token: func(ctx context.Context) (string, error) { return a.Google.Token(ctx) }, Granted: func(ctx context.Context) bool { return a.Google.Granted(ctx, oauth.SheetsScope) }, API: a.SheetsAPI},
 	)

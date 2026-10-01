@@ -151,6 +151,15 @@ func WithSource(ctx context.Context, source string) context.Context {
 	return context.WithValue(ctx, sourceKey{}, source)
 }
 
+type memberKey struct{}
+
+// MemberOf is the company member a capability call is made for,
+// "company/member", or "".
+func MemberOf(ctx context.Context) string {
+	m, _ := ctx.Value(memberKey{}).(string)
+	return m
+}
+
 // SourceOf is who makes a call: routine:<id>#<run>, exploration:<id>…
 func SourceOf(ctx context.Context) string {
 	s, _ := ctx.Value(sourceKey{}).(string)
@@ -176,6 +185,7 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	ctx = people.With(ctx, person)
 	ctx = context.WithValue(ctx, destinationsKey{}, h.Destinations)
 	ctx = context.WithValue(ctx, sourceKey{}, h.Source)
+	ctx = context.WithValue(ctx, memberKey{}, h.Member)
 	rec := ActionRecord{Source: h.Source, Member: h.Member, Capability: name, Scope: scope, Risk: spec.Risk.String(), Args: args}
 	if person != people.OwnerID {
 		rec.Person = person

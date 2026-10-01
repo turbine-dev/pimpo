@@ -47,6 +47,8 @@ type Company struct {
 	Industry string    `json:"industry,omitempty"`
 	Mission  string    `json:"mission,omitempty"`
 	Zone     string    `json:"zone,omitempty"`
+	Hours    Hours     `json:"hours"`
+	Paused   bool      `json:"paused,omitempty"`
 	Partners []Partner `json:"partners,omitempty"`
 	Created  time.Time `json:"created"`
 	Updated  time.Time `json:"updated"`
@@ -58,9 +60,10 @@ type Partner struct {
 }
 
 type Department struct {
-	ID    string `json:"id" yaml:"id"`
-	Name  string `json:"name" yaml:"name"`
-	Color string `json:"color,omitempty" yaml:"color,omitempty"`
+	ID     string `json:"id" yaml:"id"`
+	Name   string `json:"name" yaml:"name"`
+	Color  string `json:"color,omitempty" yaml:"color,omitempty"`
+	Paused bool   `json:"paused,omitempty" yaml:"-"`
 }
 
 // A Role is a function in the company that members hold: what it is for,
@@ -79,31 +82,34 @@ type Role struct {
 // A Member is an agent holding a role, or a person holding a seat (the
 // CEO). An agent's empty Capabilities or Models mean its role's.
 type Member struct {
-	ID           string    `json:"id"`
-	Kind         string    `json:"kind"`
-	Person       string    `json:"person,omitempty"`
-	Title        string    `json:"title,omitempty"`
-	Role         string    `json:"role,omitempty"`
-	Department   string    `json:"department,omitempty"`
-	ReportsTo    string    `json:"reports_to,omitempty"`
-	Name         string    `json:"name"`
-	Avatar       string    `json:"avatar,omitempty"`
-	Persona      string    `json:"persona,omitempty"`
-	Capabilities []string  `json:"capabilities,omitempty"`
-	Models       []string  `json:"models,omitempty"`
-	State        string    `json:"state,omitempty"`
-	Created      time.Time `json:"created"`
-	Updated      time.Time `json:"updated"`
+	ID           string   `json:"id"`
+	Kind         string   `json:"kind"`
+	Person       string   `json:"person,omitempty"`
+	Title        string   `json:"title,omitempty"`
+	Role         string   `json:"role,omitempty"`
+	Department   string   `json:"department,omitempty"`
+	ReportsTo    string   `json:"reports_to,omitempty"`
+	Name         string   `json:"name"`
+	Avatar       string   `json:"avatar,omitempty"`
+	Persona      string   `json:"persona,omitempty"`
+	Capabilities []string `json:"capabilities,omitempty"`
+	Models       []string `json:"models,omitempty"`
+	State        string   `json:"state,omitempty"`
+	// Hours, when set, replace the company's for this member.
+	Hours   *Hours    `json:"hours,omitempty"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
 }
 
 // An Org is a company with everything in it.
 type Org struct {
 	Company
-	Departments []Department `json:"departments"`
-	Roles       []Role       `json:"roles"`
-	Members     []Member     `json:"members"`
-	Contexts    []Context    `json:"contexts"`
-	Rules       []Rule       `json:"rules"`
+	Departments   []Department   `json:"departments"`
+	Roles         []Role         `json:"roles"`
+	Members       []Member       `json:"members"`
+	Contexts      []Context      `json:"contexts"`
+	Rules         []Rule         `json:"rules"`
+	AgentRoutines []AgentRoutine `json:"agent_routines"`
 }
 
 var (
@@ -267,7 +273,10 @@ func (o Org) Check() error {
 			return fmt.Errorf("%s is in a loop of bosses", m.Name)
 		}
 	}
-	return o.checkLayers()
+	if err := o.checkLayers(); err != nil {
+		return err
+	}
+	return o.checkWork()
 }
 
 func (o Org) has(id string) bool { _, ok := o.Member(id); return ok }

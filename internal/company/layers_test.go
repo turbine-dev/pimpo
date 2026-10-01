@@ -142,7 +142,12 @@ func TestRulesAndContextsTravelInTheFile(t *testing.T) {
 	shop(t, s)
 	ctx := context.Background()
 	s.SaveRule(ctx, "c1", Rule{ID: "careful", Scope: ScopeCompany, Text: "Ask first", When: policy.When{MinRisk: "irreversible", Except: []string{"gmail.draft"}}, Then: policy.Ask})
-	o, _ := s.SaveContext(ctx, "c1", Context{ID: "voz", Scope: ScopeCompany, Title: "Voice", Body: "Kind."})
+	s.SaveContext(ctx, "c1", Context{ID: "voz", Scope: ScopeCompany, Title: "Voice", Body: "Kind."})
+	o, err := s.SaveAgentRoutine(ctx, "c1", AgentRoutine{ID: "morning", Member: "clara", Name: "Morning", Instructions: "Read the orders", Schedule: "0 8 * * 1-5", MaxUSD: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	o.Hours = Hours{Days: []int{1, 2, 3, 4, 5}, From: "09:00", To: "18:00"}
 	b, err := o.Export()
 	if err != nil {
 		t.Fatal(err)
@@ -150,6 +155,9 @@ func TestRulesAndContextsTravelInTheFile(t *testing.T) {
 	got, err := Import(b, "c2", "rui", "Rui", time.Now())
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(got.AgentRoutines) != 1 || got.AgentRoutines[0].Schedule != "0 8 * * 1-5" || len(got.Hours.Days) != 5 {
+		t.Fatalf("work = %+v %+v", got.AgentRoutines, got.Hours)
 	}
 	if len(got.Rules) != 1 || got.Rules[0].When.MinRisk != "irreversible" || got.Rules[0].When.Except[0] != "gmail.draft" || len(got.Contexts) != 1 || got.Contexts[0].Body != "Kind." {
 		t.Fatalf("imported = %+v %+v\n%s", got.Rules, got.Contexts, b)
