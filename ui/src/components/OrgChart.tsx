@@ -1,4 +1,4 @@
-import { CirclePause, User } from 'lucide-react'
+import { CirclePause, KeyRound, User } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import type { Member, Org } from '../lib/api'
 import { below, deptColor } from '../lib/org'
@@ -14,6 +14,7 @@ function MemberCard({ org, member, onOpen, drag }: { org: Org; member: Member; o
   const t = useT()
   const role = org.roles.find((r) => r.id === member.role)
   const color = deptColor(org, member.department)
+  const act = org.activity?.[member.id]
   return (
     <button type="button" onClick={() => onOpen(member)} draggable={!!drag && member.id !== 'ceo'}
       onDragStart={(e) => { e.dataTransfer.setData('text/plain', member.id); drag?.start(member.id) }} onDragEnd={() => drag?.end()}
@@ -29,6 +30,9 @@ function MemberCard({ org, member, onOpen, drag }: { org: Org; member: Member; o
         <span className="block truncate text-[12px] text-ink-3">{member.kind === 'person' ? (member.title || t('co.person')) : role?.title}</span>
       </span>
       {member.state === 'paused' && <CirclePause size={14} className="shrink-0 text-ink-3" aria-label={t('co.paused')} />}
+      {act?.state === 'working' && <span className="size-2 shrink-0 animate-pulse-soft rounded-full bg-explore" title={act.task} aria-label={t('co.workingOn', { task: act.task ?? '' })} />}
+      {act?.state === 'account_missing' && <KeyRound size={14} className="shrink-0 text-change" aria-label={t('co.missingAccounts', { list: (act.missing ?? []).join(', ') })} />}
+      {act?.state === 'queued' && <span className="shrink-0 rounded-full bg-sunken px-1.5 text-[11px] tabular-nums text-ink-2" aria-label={t('co.inQueue', { count: act.queue ?? 0 })}>{act.queue}</span>}
     </button>
   )
 }

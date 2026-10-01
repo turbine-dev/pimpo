@@ -60,6 +60,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/undo"
 	"github.com/turbine-dev/pimpo/internal/vault"
 	"github.com/turbine-dev/pimpo/internal/voice"
+	"github.com/turbine-dev/pimpo/internal/workspace"
 )
 
 type Settings struct {
@@ -180,6 +181,8 @@ type App struct {
 	Vault     *vault.Vault
 	Store     *store.Store
 	Companies *company.Store
+	work      companyWork
+	browsers  map[string]*browser.Browser
 	Budget    *budget.Budget
 	Channel   *owner.Channel
 	Explore   *explore.Service
@@ -214,6 +217,10 @@ type App struct {
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
 	Agent llm.Agent
+	// Coder runs company members' coding CLIs, and Workspaces keeps their
+	// worktrees; tests replace both.
+	Coder      llm.Coder
+	Workspaces workspace.Spaces
 	// TelegramAPI points at a self-hosted Bot API server; empty means Telegram's.
 	TelegramAPI string
 	// VoiceAPI replaces a cloud voice provider's address (openai,
@@ -280,6 +287,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Policy = a.Rules
 	a.LLM = claude{a}
 	a.Agent = claude{a}
+	a.Coder = llm.CodeCLI{}
 	set := a.Settings(ctx)
 	zone := loadZone(set.Zone)
 	a.Budget = &budget.Budget{Events: events, Zone: zone}
@@ -324,10 +332,10 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		return a.Router.Call(ctx, name, "", args)
 	}}
 	env := host.Env{Router: router, Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide),
-		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
+		Approver: approver{a.Approvals, a.deliveryAnswered}, Remember: a.remember, Write: a.write,
 		RoleOf:  func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) },
 		Missing: a.missingCredential}
-	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone, Progress: a.runProgress, Pushed: a.pushLive}
+	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone, Progress: a.runProgress, Pushed: a.pushLive, Hold: a.holdRoutine}
 	a.Explore = &explore.Service{Guide: docs.Guide, Skills: a.exploreSkills, Env: env, Store: st, Agent: agentFunc(a.runAgent), Compiler: compiler.Compiler{Model: modelFunc(a.generate), Attempts: 3, Installed: a.installedRoutines,
 		Helpers: func(ctx context.Context, id string) (runtime.Helper, error) { return a.Scheduler.Library(ctx, id) }},
 		Notify: a.Channel, Routines: a.Scheduler, BaseURL: baseURL, Zone: zone}
@@ -375,6 +383,18 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.phoneRoutes()
 	a.jobRoutes()
 	a.companyRoutes()
+	a.companyWorkRoutes()
+	a.companyTeamRoutes()
+	a.companyMemoryRoutes()
+	a.companyDecideRoutes()
+	a.companyLevelRoutes()
+	a.companyCostRoutes()
+	a.companyAccountRoutes()
+	a.companyMeetRoutes()
+	a.companyCodeRoutes()
+	a.companyProductRoutes()
+	a.companyEarnRoutes()
+	a.companyFinanceRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()
@@ -437,13 +457,20 @@ func (a *App) Start(ctx context.Context) error {
 	a.background(func() { a.lessonDigestLoop(ctx, time.Hour) })
 	a.background(func() { a.catalogLoop(ctx, time.Hour) })
 	a.resumeJobs(ctx)
+	a.resumeWork(ctx)
+	a.background(func() { a.workLoop(ctx, workPumpEvery) })
+	a.background(func() { a.digestLoop(ctx, 30*time.Minute) })
 	go func() {
 		<-ctx.Done()
 		a.mu.Lock()
 		b := a.browser
+		members := a.browsers
 		a.mu.Unlock()
 		if b != nil {
 			b.Close()
+		}
+		for _, mb := range members {
+			mb.Close()
 		}
 	}()
 	a.restartListener(ctx)
@@ -642,6 +669,12 @@ func (a *App) router() *connector.Router {
 		widgetCap{a},
 		audioCap{a},
 		askCap{a},
+		wakeCap{a},
+		codeWorkspace{a},
+		productCap{a},
+		financeCap{a},
+		teamCap{a},
+		memoryCap{a},
 		a.spotify(),
 		&sheets.Sheets{Token: func(ctx context.Context) (string, error) { return a.Google.Token(ctx) }, Granted: func(ctx context.Context) bool { return a.Google.Granted(ctx, oauth.SheetsScope) }, API: a.SheetsAPI},
 	)
@@ -660,9 +693,13 @@ func (a *App) personChat(ctx context.Context) (int64, error) {
 	return p.Chat, nil
 }
 
-// personal names a setting or secret of whoever ctx acts for. The owner's
-// keep the names they had before people existed.
+// personal names a setting or secret of whoever ctx acts for. A company
+// member has its own, never its person's; the owner's keep the names they
+// had before people existed.
 func personal(ctx context.Context, name string) string {
+	if m := host.MemberOf(ctx); m != "" {
+		return memberKey(m, name)
+	}
 	if p := people.From(ctx); p != people.OwnerID {
 		return "person." + p + "." + name
 	}
@@ -678,7 +715,7 @@ type zoned struct {
 func (z zoned) Capabilities() []string { return z.cal.Capabilities() }
 func (z zoned) Call(ctx context.Context, c, s string, args any) (any, error) {
 	zone := loadZone(z.a.Settings(ctx).Zone)
-	if src, _ := z.a.Events.Get(ctx, "calendar.source"); src == "google" && z.a.Google != nil && people.From(ctx) == people.OwnerID {
+	if src, _ := z.a.Events.Get(ctx, "calendar.source"); src == "google" && z.a.Google != nil && people.From(ctx) == people.OwnerID && host.MemberOf(ctx) == "" {
 		return (&calendar.Google{Token: z.a.Google.Token, Zone: zone}).Call(ctx, c, s, args)
 	}
 	z.cal.Zone = zone
@@ -706,7 +743,7 @@ func (m mailConn) Call(ctx context.Context, c, s string, args any) (any, error) 
 		}
 		return v, err
 	}}
-	if auth, _ := m.a.Events.Get(ctx, personal(ctx, "mail.auth")); auth == "oauth" && m.a.Google != nil && people.From(ctx) == people.OwnerID {
+	if auth, _ := m.a.Events.Get(ctx, personal(ctx, "mail.auth")); auth == "oauth" && m.a.Google != nil && people.From(ctx) == people.OwnerID && host.MemberOf(ctx) == "" {
 		acct.Token = m.a.Google.Token
 	}
 	return (&mail.Mail{Account: acct}).Call(ctx, c, s, args)
@@ -1291,6 +1328,8 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 			return "", err
 		}
 		return h.a.answer(ctx, qid, i)
+	case "coq":
+		return h.a.answerCompanyButton(ctx, id)
 	case "approve", "always", "deny", "batch", "grant":
 		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run, "grant": approval.Routine}[action]
 		if ans == approval.Always && people.From(ctx) != people.OwnerID {
@@ -1335,8 +1374,8 @@ func (h handler) allowed(ctx context.Context, action, id string) error {
 		return nil
 	}
 	switch action {
-	case "answer":
-		// answer checks that the question is theirs.
+	case "answer", "coq":
+		// Both check that the question is theirs to answer.
 		return nil
 	}
 	return errors.New(i18n.T(ctx, "msg.ownerOnly"))

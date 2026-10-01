@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -22,10 +23,17 @@ import (
 
 const companiesLab = "companies"
 
-// orgView is a company as the person asking sees it, with what they may do.
+// orgView is a company as the person asking sees it: what they may do,
+// what each member is doing now and the routines members have.
 type orgView struct {
 	company.Org
-	Grant string `json:"grant"`
+	Grant    string                    `json:"grant"`
+	Activity map[string]memberActivity `json:"activity"`
+	Routines []map[string]string       `json:"routines"`
+}
+
+func (a *App) view(ctx context.Context, o company.Org) orgView {
+	return orgView{o, o.Grant(people.From(ctx)), a.activity(ctx, o), a.memberRoutines(ctx, o)}
 }
 
 func (a *App) companyRoutes() {
@@ -43,6 +51,7 @@ func (a *App) companyRoutes() {
 		if err := a.Companies.Delete(r.Context(), o.ID); err != nil {
 			return nil, err
 		}
+		a.dropSpaces(o.ID)
 		return map[string]bool{"ok": true}, nil
 	}))
 	a.Server.Handle("GET /api/companies/{id}/export", a.exportCompany)
@@ -119,7 +128,7 @@ func (a *App) companyRoute(need string, f func(http.ResponseWriter, *http.Reques
 					if r.Method != "GET" {
 						a.companyChanged(ctx, changed)
 					}
-					out = orgView{changed, changed.Grant(people.From(ctx))}
+					out = a.view(ctx, changed)
 				}
 				server.WriteJSON(w, 200, out)
 				return
@@ -144,6 +153,9 @@ func companyError(err error) error {
 
 func (a *App) companyChanged(ctx context.Context, o company.Org) {
 	a.Events.Append(ctx, "company.changed", actor(ctx), map[string]string{"id": o.ID, "person": o.Person})
+	a.holdWork(ctx, o)
+	a.scheduleAgents(ctx)
+	go a.pumpWork(context.WithoutCancel(ctx))
 }
 
 func (a *App) listCompanies(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +208,7 @@ func (a *App) createCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.companyChanged(ctx, o)
-	server.WriteJSON(w, 201, orgView{o, company.Configure})
+	server.WriteJSON(w, 201, a.view(ctx, o))
 }
 
 func (a *App) putCompany(w http.ResponseWriter, r *http.Request, o company.Org) (any, error) {
@@ -217,6 +229,11 @@ func (a *App) putCompany(w http.ResponseWriter, r *http.Request, o company.Org) 
 		if _, err := a.People.Get(ctx, p.Person); err != nil && p.Person != people.OwnerID {
 			return nil, server.StatusError{Status: 400, Msg: "partners are people of the house"}
 		}
+	}
+	// A company never gets more than its person may spend; what it spends
+	// is also checked against that limit and the house's at every call.
+	if limit := a.Budget.LimitFor(ctx, o.Person); limit > 0 && (c.Budget.DayUSD > limit || c.Budget.MonthUSD > 31*limit) {
+		return nil, server.StatusError{Status: 400, Msg: fmt.Sprintf("the company may spend at most its person's own limit, $%.2f a day", limit)}
 	}
 	return a.Companies.Update(ctx, c)
 }
@@ -347,7 +364,7 @@ func (a *App) importCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.companyChanged(ctx, o)
-	server.WriteJSON(w, 201, orgView{o, company.Configure})
+	server.WriteJSON(w, 201, a.view(ctx, o))
 }
 
 func newCompanyID() string {
@@ -364,6 +381,7 @@ func (a *App) forgetCompaniesOf(ctx context.Context, person string) {
 		switch {
 		case c.Person == person:
 			a.Companies.Delete(ctx, c.ID)
+			a.dropSpaces(c.ID)
 		case c.Grant(person) != "":
 			o, err := a.Companies.Org(ctx, c.ID)
 			if err != nil {

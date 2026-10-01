@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -17,25 +16,6 @@ import (
 )
 
 func init() {
-	register(Kind{
-		ID: "github", Title: "GitHub", Description: "Issues e pull requests dos seus repositórios.",
-		Help:   "Crie um token fine-grained em github.com/settings/tokens com acesso só de leitura a issues, e escrita se quiser que eu comente.",
-		Fields: []Field{{Name: "token", Label: "Token", Placeholder: "github_pat_…", Secret: true}},
-		Specs: []capability.Spec{
-			{Name: "github.issues", Risk: capability.Read, Signature: "github.issues({repo, state, max})", Returns: "[{number, title, state, author, labels, url, updated, pull_request: bool}] repo is owner/name",
-				Schema: obj(`"repo":{"type":"string","description":"owner/name"},"state":{"type":"string","enum":["open","closed","all"]},"max":{"type":"integer"}`, "repo")},
-			{Name: "github.comment", Risk: capability.Irreversible, Signature: "github.comment({repo, number, body})", Returns: "{ok, url}; everyone watching the issue sees it",
-				Schema: obj(`"repo":{"type":"string"},"number":{"type":"integer"},"body":{"type":"string"}`, "repo", "number", "body")},
-		},
-		Call: callGitHub,
-		Probe: func(ctx context.Context, cfg Config) error {
-			v, err := need(ctx, cfg, "GitHub", "token")
-			if err != nil {
-				return err
-			}
-			return doJSON(ctx, "GET", base("github", "https://api.github.com")+"/user", map[string]string{"Authorization": "Bearer " + v[0]}, nil, nil)
-		},
-	})
 	register(Kind{
 		ID: "todoist", Title: "Todoist", Description: "Suas tarefas: ler, criar e concluir.",
 		Help:   "Em Todoist › Configurações › Integrações › Desenvolvedor, copie o token da API.",
@@ -86,78 +66,6 @@ func init() {
 			return err
 		},
 	})
-}
-
-var repoName = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
-
-func callGitHub(ctx context.Context, cfg Config, name, _ string, args any) (any, error) {
-	v, err := need(ctx, cfg, "GitHub", "token")
-	if err != nil {
-		return nil, err
-	}
-	h := map[string]string{"Authorization": "Bearer " + v[0], "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
-	api := base("github", "https://api.github.com")
-	var a struct {
-		Repo   string `json:"repo"`
-		State  string `json:"state"`
-		Max    int    `json:"max"`
-		Number int    `json:"number"`
-		Body   string `json:"body"`
-	}
-	if err := connector.Args(args, &a); err != nil {
-		return nil, err
-	}
-	if !repoName.MatchString(a.Repo) {
-		return nil, errors.New("repo must look like owner/name")
-	}
-	switch name {
-	case "github.issues":
-		if a.State == "" {
-			a.State = "open"
-		}
-		if a.Max <= 0 || a.Max > 100 {
-			a.Max = 30
-		}
-		var raw []struct {
-			Number    int    `json:"number"`
-			Title     string `json:"title"`
-			State     string `json:"state"`
-			HTMLURL   string `json:"html_url"`
-			UpdatedAt string `json:"updated_at"`
-			User      struct {
-				Login string `json:"login"`
-			} `json:"user"`
-			Labels []struct {
-				Name string `json:"name"`
-			} `json:"labels"`
-			PullRequest *struct{} `json:"pull_request"`
-		}
-		q := url.Values{"state": {a.State}, "per_page": {fmt.Sprint(a.Max)}, "sort": {"updated"}}
-		if err := doJSON(ctx, "GET", api+"/repos/"+a.Repo+"/issues?"+q.Encode(), h, nil, &raw); err != nil {
-			return nil, err
-		}
-		out := []map[string]any{}
-		for _, i := range raw {
-			labels := []string{}
-			for _, l := range i.Labels {
-				labels = append(labels, l.Name)
-			}
-			out = append(out, map[string]any{"number": i.Number, "title": i.Title, "state": i.State, "author": i.User.Login, "labels": labels, "url": i.HTMLURL, "updated": i.UpdatedAt, "pull_request": i.PullRequest != nil})
-		}
-		return out, nil
-	case "github.comment":
-		if strings.TrimSpace(a.Body) == "" || a.Number <= 0 {
-			return nil, errors.New("number and body are required")
-		}
-		var res struct {
-			HTMLURL string `json:"html_url"`
-		}
-		if err := doJSON(ctx, "POST", fmt.Sprintf("%s/repos/%s/issues/%d/comments", api, a.Repo, a.Number), h, map[string]string{"body": a.Body}, &res); err != nil {
-			return nil, err
-		}
-		return map[string]any{"ok": true, "url": res.HTMLURL}, nil
-	}
-	return nil, fmt.Errorf("unknown capability %s", name)
 }
 
 func callTodoist(ctx context.Context, cfg Config, name, _ string, args any) (any, error) {

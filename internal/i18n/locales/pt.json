@@ -147,10 +147,10 @@
   "svc.discordchat.field.token.label": "Token do bot",
   "svc.discordchat.help": "Em discord.com/developers/applications, crie um app, vá em Bot, gere o token e convide o bot para um servidor seu. Depois mande para ele, no privado: pimpo e o código de pareamento de Conexões.",
   "svc.discordchat.title": "Discord",
-  "svc.github.description": "Issues e pull requests dos seus repositórios.",
+  "svc.github.description": "Repositórios, issues, pull requests, revisões, checks e releases.",
   "svc.github.field.token.label": "Token",
   "svc.github.field.token.placeholder": "github_pat_…",
-  "svc.github.help": "Crie um token fine-grained em github.com/settings/tokens com acesso só de leitura a issues, e de escrita se quiser que o Pimpo comente.",
+  "svc.github.help": "Crie um token fine-grained em github.com/settings/tokens só para os repositórios que o Pimpo pode usar: leitura de issues e pull requests, e escrita no que ele deve fazer (Issues, Pull requests, e Contents para merges e releases).",
   "svc.github.title": "GitHub",
   "svc.homeassistant.description": "Estados da casa e ações em dispositivos.",
   "svc.homeassistant.field.token.label": "Token de longa duração",
@@ -232,5 +232,10 @@
   "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
   "svc.wapersonal.field.session.label": "Sessão",
   "svc.wapersonal.field.session.placeholder": "default",
-  "svc.wapersonal.field.api_key.label": "Chave da API do WAHA"
+  "svc.wapersonal.field.api_key.label": "Chave da API do WAHA",
+  "svc.stripe.description": "Saldo e cobranças da sua conta, só leitura.",
+  "svc.stripe.help": "Em Stripe › Desenvolvedores › Chaves de API, crie uma chave restrita só com leitura de Balance e Charges. Nada é cobrado nem movido por aqui.",
+  "svc.stripe.field.key.label": "Chave restrita",
+  "svc.stripe.field.key.placeholder": "rk_live_…",
+  "svc.stripe.title": "Stripe"
 }

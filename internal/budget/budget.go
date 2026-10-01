@@ -50,6 +50,27 @@ type Cost struct {
 	// Person the call was for; costs from before people existed, with
 	// none, are the owner's.
 	Person string `json:"person,omitempty"`
+	// Member is the company member it was for, "company/member", or
+	// "company/" for the company as a whole.
+	Member string `json:"member,omitempty"`
+}
+
+// Since are the costs booked since t, oldest first.
+func (b *Budget) Since(ctx context.Context, since time.Time) ([]Cost, []time.Time, error) {
+	evs, err := b.Events.List(ctx, event.Query{Types: []string{CostEvent}})
+	if err != nil {
+		return nil, nil, err
+	}
+	var out []Cost
+	var at []time.Time
+	for _, e := range evs {
+		var c Cost
+		if !e.Time.Before(since) && e.Decode(&c) == nil {
+			out = append(out, c)
+			at = append(at, e.Time)
+		}
+	}
+	return out, at, nil
 }
 
 func (b *Budget) now() time.Time {

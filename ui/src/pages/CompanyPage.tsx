@@ -1,8 +1,8 @@
 import * as Tabs from '@radix-ui/react-tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Download, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, CirclePause, Download, Pencil, Play, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { CapabilityPicker } from '../components/CapabilityPicker'
 import { Field, Modal } from '../components/Modal'
 import { ModelChoice } from '../components/ModelChoice'
@@ -13,6 +13,15 @@ import { useT } from '../lib/i18n'
 import { below, deptColor, slug, unique } from '../lib/org'
 import { area, field } from './Companies'
 import { LayersTab, MemberPreview } from './CompanyLayers'
+import { HoursEditor, MemberWork, WorkLog } from './CompanyWork'
+import { TaskBoard } from './CompanyTasks'
+import { Digest, MemoryTab } from './CompanyMemory'
+import { AutonomyEditor, LevelsTab } from './CompanyDecide'
+import { CostsTab } from './CompanyCosts'
+import { MemberAccounts, SharedAccounts } from './CompanyAccounts'
+import { MeetingsTab, NewMeeting } from './CompanyMeetings'
+import { hasProduct, ProductTab } from './CompanyProduct'
+import { CodeEnvField, CoderChoice, codes, envOf, envText } from './CompanyCode'
 
 // Deleting reads in the danger color on a plain button, which keeps its
 // contrast in both themes.
@@ -30,11 +39,17 @@ export function CompanyPage({ id }: { id: string }) {
   const [role, setRole] = useState<CompanyRole | null>(null)
   const [dept, setDept] = useState<Department | null>(null)
   const [editing, setEditing] = useState(false)
+  const [params] = useSearchParams()
+  const [tab, setTab] = useState(params.get('tab') ?? 'chart')
+  const [room, setRoom] = useState<string | null>(null)
+  const [talk, setTalk] = useState<{ with?: string[]; question?: string; title: string } | null>(null)
+  const openRoom = (id: string | null) => { setRoom(id); if (id) setTab('meetings') }
   const done = (o: Org) => qc.setQueryData(['company', id], o)
   const move = useMutation({
     mutationFn: ({ m, boss }: { m: Member; boss: string }) => api.saveMember(id, { ...m, reports_to: boss }),
     onSuccess: done,
   })
+  const pause = useMutation({ mutationFn: (paused: boolean) => api.saveCompany(id, { ...org.data, paused }), onSuccess: done })
   const remove = useMutation({
     mutationFn: () => api.deleteCompany(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['companies'] }); nav('/companies') },
@@ -52,17 +67,21 @@ export function CompanyPage({ id }: { id: string }) {
           <h1 className="text-[22px] font-semibold tracking-tight">{o.name}</h1>
           {o.industry && <p className="text-sm text-ink-2">{o.industry}</p>}
           {o.mission && <p className="mt-1 max-w-2xl text-[13px] text-ink-3">{o.mission}</p>}
+          {o.paused && <p className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-change-soft px-2 py-1 text-[12.5px] text-change"><CirclePause size={13} /> {t('co.pausedNote')}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           <a href={`/api/companies/${id}/export`} download className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 text-[13.5px] hover:border-line-strong"><Download size={15} /> {t('co.export')}</a>
+          {can && (o.paused
+            ? <Button onClick={() => pause.mutate(false)}><Play size={15} /> {t('co.resume')}</Button>
+            : <Button onClick={() => pause.mutate(true)}><CirclePause size={15} /> {t('co.pause')}</Button>)}
           {can && <Button onClick={() => setEditing(true)}><Pencil size={15} /> {t('co.edit')}</Button>}
           {o.person === me.data?.person && <Button variant="ghost" className={danger} onClick={() => window.confirm(t('co.deleteAsk', { name: o.name })) && remove.mutate()}><Trash2 size={15} /> {t('co.delete')}</Button>}
         </div>
       </div>
 
-      <Tabs.Root defaultValue="chart">
+      <Tabs.Root value={tab} onValueChange={setTab}>
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('co.sections')}>
-          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['layers', t('co.tab.layers')]].map(([v, l]) => (
+          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['meetings', t('co.tab.meetings')], ['layers', t('co.tab.layers')], ['memory', t('co.tab.memory')], ['levels', t('co.tab.levels')], ['work', t('co.tab.work')], ['costs', t('co.tab.costs')], ...(hasProduct(o) ? [['product', t('co.tab.product')]] : [])].map(([v, l]) => (
             <Tabs.Trigger key={v} value={v} className="-mb-px border-b-2 border-transparent px-3 py-2.5 text-[13.5px] text-ink-3 hover:text-ink data-[state=active]:border-ink data-[state=active]:font-medium data-[state=active]:text-ink">{l}</Tabs.Trigger>
           ))}
         </Tabs.List>
@@ -107,9 +126,33 @@ export function CompanyPage({ id }: { id: string }) {
         <Tabs.Content value="layers">
           <LayersTab org={o} can={can} onSaved={done} />
         </Tabs.Content>
+        <Tabs.Content value="tasks">
+          <TaskBoard org={o} can={can} onDiscuss={(q) => setTalk({ with: [q.from], question: q.id, title: q.text.slice(0, 60) })} />
+        </Tabs.Content>
+        <Tabs.Content value="meetings">
+          <MeetingsTab org={o} can={can} room={room} onRoom={openRoom} />
+        </Tabs.Content>
+        <Tabs.Content value="costs" className="space-y-8">
+          <CostsTab org={o} can={can} onSaved={done} />
+          <SharedAccounts org={o} can={can} onSaved={done} />
+        </Tabs.Content>
+        <Tabs.Content value="levels">
+          <LevelsTab org={o} can={can} onSaved={done} />
+        </Tabs.Content>
+        <Tabs.Content value="memory">
+          <MemoryTab org={o} can={can} onSaved={done} />
+        </Tabs.Content>
+        <Tabs.Content value="product">
+          <ProductTab org={o} can={o.grant !== 'view'} />
+        </Tabs.Content>
+        <Tabs.Content value="work" className="space-y-4">
+          <Digest org={o} />
+          <WorkLog org={o} can={can} />
+        </Tabs.Content>
       </Tabs.Root>
 
-      {member && <MemberDialog org={o} start={member} can={can} onClose={() => setMember(null)} onSaved={done} />}
+      {member && <MemberDialog org={o} start={member} can={can} onClose={() => setMember(null)} onSaved={done} onTalk={(m) => { setMember(null); setTalk({ with: [m.id], title: m.name }) }} />}
+      {talk && <NewMeeting org={o} with={talk.with} question={talk.question} onClose={() => setTalk(null)} onOpen={openRoom} />}
       {role && <RoleDialog org={o} start={role} onClose={() => setRole(null)} onSaved={done} />}
       {dept && <DepartmentDialog org={o} start={dept} onClose={() => setDept(null)} onSaved={done} />}
       {editing && <CompanyDialog org={o} onClose={() => setEditing(false)} onSaved={done} />}
@@ -119,17 +162,19 @@ export function CompanyPage({ id }: { id: string }) {
 
 const lines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean)
 
-function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: Member; can: boolean; onClose: () => void; onSaved: (o: Org) => void }) {
+function MemberDialog({ org, start, can, onClose, onSaved, onTalk }: { org: Org; start: Member; can: boolean; onClose: () => void; onSaved: (o: Org) => void; onTalk: (m: Member) => void }) {
   const t = useT()
   const [m, setM] = useState(start)
   const [models, setModels] = useState<string[] | null>(start.models?.length ? start.models : null)
   const isNew = start.id === ''
   const seat = m.kind === 'person'
   const save = useMutation({
-    mutationFn: () => api.saveMember(org.id, { ...m, id: m.id || unique(slug(m.name, 'membro'), org.members.map((x) => x.id)), models: models ?? undefined }),
+    mutationFn: () => api.saveMember(org.id, { ...m, id: m.id || unique(slug(m.name, 'membro'), org.members.map((x) => x.id)), models: models ?? undefined, autonomy: m.autonomy?.length ? m.autonomy : undefined }),
     onSuccess: (o) => { onSaved(o); onClose() },
   })
   const remove = useMutation({ mutationFn: () => api.deleteMember(org.id, m.id), onSuccess: (o) => { onSaved(o); onClose() } })
+  const costs = useQuery({ queryKey: ['company-costs', org.id], queryFn: () => api.companyCosts(org.id), enabled: isNew })
+  const estimate = m.role ? costs.data?.per_role[m.role] : undefined
   const under = below(org, m.id)
   const bosses = org.members.filter((x) => x.id !== m.id && !under.has(x.id))
   return (
@@ -156,6 +201,7 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
                 </select>
               </Field>
             </div>
+            {isNew && estimate !== undefined && estimate > 0 && <p className="text-[12.5px] text-ink-3">{t('co.hireEstimate', { usd: `$${estimate.toFixed(2)}` })}</p>}
             <Field label={t('co.reportsTo')}>
               <select className={field} value={m.reports_to ?? 'ceo'} onChange={(e) => setM({ ...m, reports_to: e.target.value })}>
                 {bosses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -163,24 +209,42 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
             </Field>
             <Field label={t('co.persona')}><textarea className={area} value={m.persona ?? ''} maxLength={2000} placeholder={t('co.personaHint')} onChange={(e) => setM({ ...m, persona: e.target.value })} /></Field>
             <ModelChoice value={models} onChange={setModels} legend={t('co.models')} />
+            {codes(org, m) && <CoderChoice org={org} m={m} onChange={setM} />}
+            <AutonomyEditor org={org} value={m.autonomy ?? []} onChange={(autonomy) => setM({ ...m, autonomy })}
+              capabilities={m.capabilities?.length ? m.capabilities : org.roles.find((r) => r.id === m.role)?.capabilities ?? []} />
             <Switch on={m.state !== 'paused'} onChange={(on) => setM({ ...m, state: on ? 'active' : 'paused' })} label={t('co.working')} />
           </>)}
         </fieldset>
+        {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
+        {remove.error && <p className="text-[13px] text-danger">{remove.error.message}</p>}
+        {can && (
+          <div className="flex gap-2">
+            <Button type="submit" variant="primary" disabled={!m.name.trim() || (!seat && !m.role) || models?.length === 0 || save.isPending}>{t('common.save')}</Button>
+            {!isNew && !seat && <Button type="button" onClick={() => onTalk(m)}>{t('co.talk')}</Button>}
+            {!isNew && !seat && <Button type="button" variant="ghost" className={danger} onClick={() => window.confirm(t('co.letGoAsk', { name: m.name })) && remove.mutate()}>{t('co.letGo')}</Button>}
+          </div>
+        )}
+      </form>
+      {!isNew && !seat && <div className="mt-4 space-y-3">
+        {!isNew && !seat && can && (
+          <details className="rounded-xl border border-line p-3">
+            <summary className="cursor-pointer text-[13px] font-medium">{t('co.ownAccounts')}</summary>
+            <div className="mt-3"><MemberAccounts org={org} member={m.id} /></div>
+          </details>
+        )}
+        {!isNew && !seat && can && (
+          <details className="rounded-xl border border-line p-3">
+            <summary className="cursor-pointer text-[13px] font-medium">{t('co.workAndRoutines')}</summary>
+            <div className="mt-3"><MemberWork org={org} member={m.id} onSaved={onSaved} /></div>
+          </details>
+        )}
         {!isNew && !seat && (
           <details className="rounded-xl border border-line p-3">
             <summary className="cursor-pointer text-[13px] font-medium">{t('co.receives')}</summary>
             <div className="mt-3"><MemberPreview org={org} member={m.id} /></div>
           </details>
         )}
-        {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
-        {remove.error && <p className="text-[13px] text-danger">{remove.error.message}</p>}
-        {can && (
-          <div className="flex gap-2">
-            <Button type="submit" variant="primary" disabled={!m.name.trim() || (!seat && !m.role) || models?.length === 0 || save.isPending}>{t('common.save')}</Button>
-            {!isNew && !seat && <Button type="button" variant="ghost" className={danger} onClick={() => window.confirm(t('co.letGoAsk', { name: m.name })) && remove.mutate()}>{t('co.letGo')}</Button>}
-          </div>
-        )}
-      </form>
+      </div>}
     </Modal>
   )
 }
@@ -195,7 +259,7 @@ function RoleDialog({ org, start, onClose, onSaved }: { org: Org; start: Company
   const save = useMutation({
     mutationFn: () => api.saveRole(org.id, {
       ...r, id: r.id || unique(slug(r.title, 'cargo'), org.roles.map((x) => x.id)), responsibilities: lines(duties), deliverables: lines(deliverables),
-      account_kinds: kinds.split(',').map((x) => x.trim()).filter(Boolean), models: models ?? undefined,
+      account_kinds: kinds.split(',').map((x) => x.trim()).filter(Boolean), models: models ?? undefined, autonomy: r.autonomy?.length ? r.autonomy : undefined,
     }),
     onSuccess: (o) => { onSaved(o); onClose() },
   })
@@ -213,6 +277,7 @@ function RoleDialog({ org, start, onClose, onSaved }: { org: Org; start: Company
           <CapabilityPicker value={r.capabilities ?? []} onChange={(capabilities) => setR({ ...r, capabilities })} />
         </fieldset>
         <ModelChoice value={models} onChange={setModels} legend={t('co.models')} />
+        <AutonomyEditor org={org} value={r.autonomy ?? []} onChange={(autonomy) => setR({ ...r, autonomy })} capabilities={r.capabilities ?? []} />
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         {remove.error && <p className="text-[13px] text-danger">{remove.error.message}</p>}
         <div className="flex gap-2">
@@ -245,6 +310,8 @@ function DepartmentDialog({ org, start, onClose, onSaved }: { org: Org; start: D
             ))}
           </div>
         </fieldset>
+        <Field label={t('co.monthLimit')}><input type="number" min={0} className={field} value={d.month_usd ?? ''} onChange={(e) => setD({ ...d, month_usd: e.target.value ? Number(e.target.value) : undefined })} /></Field>
+        {start.id && <Switch on={!d.paused} onChange={(on) => setD({ ...d, paused: !on })} label={t('co.departmentWorking')} />}
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         <div className="flex gap-2">
           <Button type="submit" variant="primary" disabled={!d.name.trim() || save.isPending}>{t('common.save')}</Button>
@@ -257,9 +324,10 @@ function DepartmentDialog({ org, start, onClose, onSaved }: { org: Org; start: D
 
 function CompanyDialog({ org, onClose, onSaved }: { org: Org; onClose: () => void; onSaved: (o: Org) => void }) {
   const t = useT()
-  const [c, setC] = useState({ name: org.name, industry: org.industry ?? '', mission: org.mission ?? '' })
+  const [c, setC] = useState({ name: org.name, industry: org.industry ?? '', mission: org.mission ?? '', hours: org.hours ?? {} })
+  const [env, setEnv] = useState(envText(org.code_env))
   const save = useMutation({
-    mutationFn: () => api.saveCompany(org.id, { ...c, zone: org.zone, partners: org.partners }),
+    mutationFn: () => api.saveCompany(org.id, { ...org, ...c, code_env: envOf(env) }),
     onSuccess: (o) => { onSaved(o); onClose() },
   })
   return (
@@ -268,6 +336,8 @@ function CompanyDialog({ org, onClose, onSaved }: { org: Org; onClose: () => voi
         <Field label={t('co.name')}><input className={field} value={c.name} maxLength={60} onChange={(e) => setC({ ...c, name: e.target.value })} /></Field>
         <Field label={t('co.industry')}><input className={field} value={c.industry} maxLength={120} onChange={(e) => setC({ ...c, industry: e.target.value })} /></Field>
         <Field label={t('co.mission')}><textarea className={area} value={c.mission} maxLength={2000} onChange={(e) => setC({ ...c, mission: e.target.value })} /></Field>
+        <HoursEditor value={c.hours} onChange={(hours) => setC({ ...c, hours })} />
+        <CodeEnvField value={env} onChange={setEnv} />
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         <Button type="submit" variant="primary" disabled={!c.name.trim() || save.isPending}>{t('common.save')}</Button>
       </form>

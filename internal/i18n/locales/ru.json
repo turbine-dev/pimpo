@@ -151,10 +151,10 @@
   "svc.discordchat.field.token.label": "Токен бота",
   "svc.discordchat.help": "На discord.com/developers/applications создайте приложение, откройте раздел Bot, сгенерируйте токен и пригласите бота на свой сервер. Затем отправьте ему в личном сообщении: pimpo и код привязки из «Подключений».",
   "svc.discordchat.title": "Discord",
-  "svc.github.description": "Issues и pull requests ваших репозиториев.",
+  "svc.github.description": "Репозитории, issues, pull requests, ревью, проверки и релизы.",
   "svc.github.field.token.label": "Токен",
   "svc.github.field.token.placeholder": "github_pat_…",
-  "svc.github.help": "Создайте fine-grained токен на github.com/settings/tokens с доступом к issues только на чтение — или и на запись, если Pimpo должен оставлять комментарии.",
+  "svc.github.help": "Создайте fine-grained токен на github.com/settings/tokens только для репозиториев, которыми может пользоваться Pimpo: чтение issues и pull requests и запись для того, что он должен делать (Issues, Pull requests, а для слияний и релизов — Contents).",
   "svc.github.title": "GitHub",
   "svc.homeassistant.description": "Состояние дома и действия с устройствами.",
   "svc.homeassistant.field.token.label": "Долгосрочный токен",
@@ -236,5 +236,10 @@
   "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
   "svc.wapersonal.field.session.label": "Сессия",
   "svc.wapersonal.field.session.placeholder": "default",
-  "svc.wapersonal.field.api_key.label": "Ключ API WAHA"
+  "svc.wapersonal.field.api_key.label": "Ключ API WAHA",
+  "svc.stripe.description": "Баланс и платежи вашего аккаунта, только чтение.",
+  "svc.stripe.help": "В Stripe › Разработчики › API-ключи создайте ограниченный ключ только с чтением Balance и Charges. Отсюда ничего не списывается и не переводится.",
+  "svc.stripe.field.key.label": "Ограниченный ключ",
+  "svc.stripe.field.key.placeholder": "rk_live_…",
+  "svc.stripe.title": "Stripe"
 }

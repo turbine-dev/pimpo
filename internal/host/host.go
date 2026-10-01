@@ -151,6 +151,34 @@ func WithSource(ctx context.Context, source string) context.Context {
 	return context.WithValue(ctx, sourceKey{}, source)
 }
 
+type memberKey struct{}
+
+type capabilityKey struct{}
+
+// WithCapability marks ctx as a call for a capability, as the host does.
+func WithCapability(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, capabilityKey{}, name)
+}
+
+// CapabilityOf is the capability a call is for, as connectors see it.
+func CapabilityOf(ctx context.Context) string {
+	c, _ := ctx.Value(capabilityKey{}).(string)
+	return c
+}
+
+// WithMember marks ctx as work of a company member, "company/member", so
+// what is spent on it is booked for the member.
+func WithMember(ctx context.Context, member string) context.Context {
+	return context.WithValue(ctx, memberKey{}, member)
+}
+
+// MemberOf is the company member a capability call is made for,
+// "company/member", or "".
+func MemberOf(ctx context.Context) string {
+	m, _ := ctx.Value(memberKey{}).(string)
+	return m
+}
+
 // SourceOf is who makes a call: routine:<id>#<run>, exploration:<id>…
 func SourceOf(ctx context.Context) string {
 	s, _ := ctx.Value(sourceKey{}).(string)
@@ -176,6 +204,8 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	ctx = people.With(ctx, person)
 	ctx = context.WithValue(ctx, destinationsKey{}, h.Destinations)
 	ctx = context.WithValue(ctx, sourceKey{}, h.Source)
+	ctx = context.WithValue(ctx, memberKey{}, h.Member)
+	ctx = context.WithValue(ctx, capabilityKey{}, name)
 	rec := ActionRecord{Source: h.Source, Member: h.Member, Capability: name, Scope: scope, Risk: spec.Risk.String(), Args: args}
 	if person != people.OwnerID {
 		rec.Person = person
@@ -184,19 +214,22 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	if pol == nil {
 		pol = policy.Open{}
 	}
-	act := policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source, Person: person, Role: string(people.Owner), Member: h.Member}
+	simulated := h.DryRun && spec.Risk >= capability.Reversible
+	act := policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source, Person: person, Role: string(people.Owner), Member: h.Member, Rehearsal: simulated}
 	if h.RoleOf != nil {
 		act.Role = h.RoleOf(ctx, person)
 	}
-	d := pol.Decide(ctx, act)
-	if h.Allowed != nil && !h.Allowed[name] {
+	var d policy.Decision
+	if ok, why := h.stillAllowed(name); h.Allowed != nil && !h.Allowed[name] {
 		d = policy.Decision{Verdict: policy.Block, Reason: "this assistant may not use " + name}
-	}
-	if ok, why := h.stillAllowed(name); !ok {
+	} else if !ok {
 		d = policy.Decision{Verdict: policy.Block, Reason: why}
+	} else {
+		// A call that is refused anyway is not decided, so nobody is
+		// asked about it and no decider spends anything on it.
+		d = pol.Decide(ctx, act)
 	}
 	rec.Verdict, rec.Reason, rec.Rule = d.Verdict, d.Reason, d.Rule
-	simulated := h.DryRun && spec.Risk >= capability.Reversible
 
 	if d.Verdict == policy.Block {
 		rec.Error = d.Reason
@@ -341,7 +374,7 @@ func (h *Host) addCost(ctx context.Context, usd float64, source string) {
 	h.costUSD += usd
 	h.mu.Unlock()
 	if h.Budget != nil {
-		h.Budget.Record(ctx, budget.Cost{USD: usd, Source: source, Ref: h.Source, Person: people.Norm(h.Person)})
+		h.Budget.Record(ctx, budget.Cost{USD: usd, Source: source, Ref: h.Source, Person: people.Norm(h.Person), Member: h.Member})
 	}
 }
 

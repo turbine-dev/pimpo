@@ -19,16 +19,25 @@ const FileFormat = 1
 // People's seats are written without their person; importing gives every
 // seat to whoever imports.
 type File struct {
-	Format      int           `yaml:"format"`
-	Name        string        `yaml:"name"`
-	Industry    string        `yaml:"industry,omitempty"`
-	Mission     string        `yaml:"mission,omitempty"`
-	Zone        string        `yaml:"zone,omitempty"`
-	Departments []Department  `yaml:"departments,omitempty"`
-	Roles       []Role        `yaml:"roles,omitempty"`
-	Members     []FileMember  `yaml:"members"`
-	Contexts    []FileContext `yaml:"contexts,omitempty"`
-	Rules       []FileRule    `yaml:"rules,omitempty"`
+	Format        int               `yaml:"format"`
+	Name          string            `yaml:"name"`
+	Industry      string            `yaml:"industry,omitempty"`
+	Mission       string            `yaml:"mission,omitempty"`
+	Zone          string            `yaml:"zone,omitempty"`
+	Hours         Hours             `yaml:"hours,omitempty"`
+	Decider       Decider           `yaml:"decider,omitempty"`
+	Levels        Levels            `yaml:"levels,omitempty"`
+	Budget        Budget            `yaml:"budget,omitempty"`
+	Memory        MemoryPolicy      `yaml:"memory,omitempty"`
+	CodeEnv       map[string]string `yaml:"code_env,omitempty"`
+	EarnAfter     int               `yaml:"earn_after,omitempty"`
+	EarnOff       bool              `yaml:"earn_off,omitempty"`
+	Departments   []Department      `yaml:"departments,omitempty"`
+	Roles         []Role            `yaml:"roles,omitempty"`
+	Members       []FileMember      `yaml:"members"`
+	Contexts      []FileContext     `yaml:"contexts,omitempty"`
+	Rules         []FileRule        `yaml:"rules,omitempty"`
+	AgentRoutines []AgentRoutine    `yaml:"agent_routines,omitempty"`
 }
 
 type FileContext struct {
@@ -52,25 +61,29 @@ type FileRule struct {
 }
 
 type FileMember struct {
-	ID           string   `yaml:"id"`
-	Kind         string   `yaml:"kind,omitempty"`
-	Title        string   `yaml:"title,omitempty"`
-	Role         string   `yaml:"role,omitempty"`
-	Department   string   `yaml:"department,omitempty"`
-	ReportsTo    string   `yaml:"reports_to,omitempty"`
-	Name         string   `yaml:"name"`
-	Avatar       string   `yaml:"avatar,omitempty"`
-	Persona      string   `yaml:"persona,omitempty"`
-	Capabilities []string `yaml:"capabilities,omitempty"`
-	Models       []string `yaml:"models,omitempty"`
+	ID           string     `yaml:"id"`
+	Kind         string     `yaml:"kind,omitempty"`
+	Title        string     `yaml:"title,omitempty"`
+	Role         string     `yaml:"role,omitempty"`
+	Department   string     `yaml:"department,omitempty"`
+	ReportsTo    string     `yaml:"reports_to,omitempty"`
+	Name         string     `yaml:"name"`
+	Avatar       string     `yaml:"avatar,omitempty"`
+	Persona      string     `yaml:"persona,omitempty"`
+	Capabilities []string   `yaml:"capabilities,omitempty"`
+	Models       []string   `yaml:"models,omitempty"`
+	Autonomy     []Autonomy `yaml:"autonomy,omitempty"`
+	Budget       Budget     `yaml:"budget,omitempty"`
+	Coder        string     `yaml:"coder,omitempty"`
+	CodeSandbox  bool       `yaml:"code_sandbox,omitempty"`
 }
 
 // Export writes the company as a file.
 func (o Org) Export() ([]byte, error) {
-	f := File{Format: FileFormat, Name: o.Name, Industry: o.Industry, Mission: o.Mission, Zone: o.Zone, Departments: o.Departments, Roles: o.Roles}
+	f := File{Format: FileFormat, Name: o.Name, Industry: o.Industry, Mission: o.Mission, Zone: o.Zone, Hours: o.Hours, Decider: o.Decider, Levels: o.Levels, Budget: o.Budget, Memory: o.Memory, CodeEnv: o.CodeEnv, EarnAfter: o.EarnAfter, EarnOff: o.EarnOff, Departments: o.Departments, Roles: o.Roles, AgentRoutines: o.AgentRoutines}
 	for _, m := range o.Members {
 		f.Members = append(f.Members, FileMember{ID: m.ID, Kind: m.Kind, Title: m.Title, Role: m.Role, Department: m.Department, ReportsTo: m.ReportsTo,
-			Name: m.Name, Avatar: m.Avatar, Persona: m.Persona, Capabilities: m.Capabilities, Models: m.Models})
+			Name: m.Name, Avatar: m.Avatar, Persona: m.Persona, Capabilities: m.Capabilities, Models: m.Models, Autonomy: m.Autonomy, Budget: m.Budget, Coder: m.Coder, CodeSandbox: m.CodeSandbox})
 	}
 	for _, c := range o.Contexts {
 		f.Contexts = append(f.Contexts, FileContext{ID: c.ID, Scope: c.Scope, Of: c.Of, Title: c.Title, Body: c.Body})
@@ -97,8 +110,8 @@ func Import(b []byte, id, person, personName string, now time.Time) (Org, error)
 	case f.Format < 1:
 		return Org{}, errors.New("this is not a company file")
 	}
-	o := Org{Company: Company{ID: id, Person: person, Name: f.Name, Industry: f.Industry, Mission: f.Mission, Zone: f.Zone, Created: now, Updated: now},
-		Departments: f.Departments, Roles: f.Roles}
+	o := Org{Company: Company{ID: id, Person: person, Name: f.Name, Industry: f.Industry, Mission: f.Mission, Zone: f.Zone, Hours: f.Hours, Decider: f.Decider, Levels: f.Levels, Budget: f.Budget, Memory: f.Memory, CodeEnv: f.CodeEnv, EarnAfter: f.EarnAfter, EarnOff: f.EarnOff, Created: now, Updated: now},
+		Departments: f.Departments, Roles: f.Roles, AgentRoutines: f.AgentRoutines}
 	if o.Departments == nil {
 		o.Departments = []Department{}
 	}
@@ -107,7 +120,7 @@ func Import(b []byte, id, person, personName string, now time.Time) (Org, error)
 	}
 	for _, fm := range f.Members {
 		m := Member{ID: fm.ID, Kind: fm.Kind, Title: fm.Title, Role: fm.Role, Department: fm.Department, ReportsTo: fm.ReportsTo,
-			Name: fm.Name, Avatar: fm.Avatar, Persona: fm.Persona, Capabilities: fm.Capabilities, Models: fm.Models, State: Active, Created: now, Updated: now}
+			Name: fm.Name, Avatar: fm.Avatar, Persona: fm.Persona, Capabilities: fm.Capabilities, Models: fm.Models, Autonomy: fm.Autonomy, Budget: fm.Budget, Coder: fm.Coder, CodeSandbox: fm.CodeSandbox, State: Active, Created: now, Updated: now}
 		if m.Kind == "" {
 			m.Kind = Agent
 		}
@@ -126,6 +139,9 @@ func Import(b []byte, id, person, personName string, now time.Time) (Org, error)
 		o.Members[i].Name = "CEO"
 	}
 	o.Contexts, o.Rules = []Context{}, []Rule{}
+	if o.AgentRoutines == nil {
+		o.AgentRoutines = []AgentRoutine{}
+	}
 	for _, c := range f.Contexts {
 		o.putContext(Context{ID: c.ID, Scope: c.Scope, Of: c.Of, Title: c.Title, Body: c.Body}, now)
 	}

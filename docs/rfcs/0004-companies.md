@@ -76,7 +76,7 @@ Members form a tree through **reports to**. The top is a person, the **CEO**. A 
 
 **Decision levels.** The company defines levels, each with a decider; the highest is always a person, the CEO. The suggested levels are operational (the member), tactical (the boss), managerial (the head of the department) and strategic (the CEO). Criteria the company sets place a decision on a level: amount, risk, whether it is public, kind (price, contract, partnership, hiring, budget, legal, architecture...), named entities, impact, and confidence (an unsure decider moves the decision up a level).
 
-- Deterministic criteria (amount, risk, the declared kind, the capability) are checked by the host without a model; only what they leave open goes to a classifier (Jev or a model), and an unsure classifier moves the decision up.
+- Deterministic criteria (amount, risk, the declared kind, the capability) are checked by the host without a model; only what they leave open goes to a classifier (Jev or a model), and an unsure classifier sends the decision up to the CEO: one question too many costs little, a missed one costs the decision.
 - A strategic decision reaches the CEO **directly**, or **with opinions**: it goes up the tree, each boss adds a recommendation and none decides.
 - An agent can never lower a decision's level. Every decision records its level and the criterion that set it. No rule or exception takes a decision away from the CEO.
 
@@ -202,6 +202,8 @@ Built in waves, each usable in Labs before the next. The pilot measures the most
 | 10.15 | Media, YouTube, LinkedIn and assisted publishing | L |
 | 10.16 | Earned autonomy | S |
 | 10.17 | Templates, creating a company by describing it, performance, company widgets and the public showcase | M |
+| 10.18 | Talking with members, and meetings with the CEO | M |
+| 10.19 | Memory per task, per agent and per company, automatic or by decision | M |
 
 ## Decisions (2026-09-30 and 2026-10-01)
 
@@ -217,3 +219,5 @@ Built in waves, each usable in Labs before the next. The pilot measures the most
 - Decision levels send the highest decisions to the CEO, a person.
 - The pilot's cost cap per accepted pull request is configurable, $5 by default; the number of approvals before suggesting autonomy is configurable, 10 by default; the public showcase exists, optional and only with what was approved.
 - A second company of another industry in the launch criteria is on hold.
+- The CEO talks with members and holds meetings with all or chosen agents (10.18).
+- Memory is kept per task, per agent and per company, written automatically or by decision (10.19).

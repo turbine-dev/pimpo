@@ -63,6 +63,22 @@ func (a *App) theBrowser() *browser.Browser {
 	return a.browser
 }
 
+// memberBrowser is a company member's own browser profile.
+func (a *App) memberBrowser(member string) *browser.Browser {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.browsers == nil {
+		a.browsers = map[string]*browser.Browser{}
+	}
+	if b := a.browsers[member]; b != nil {
+		return b
+	}
+	co, id, _ := strings.Cut(member, "/")
+	b := &browser.Browser{Profile: filepath.Join(a.Home, "browser", "members", co, id)}
+	a.browsers[member] = b
+	return b
+}
+
 func (c browserCap) Call(ctx context.Context, name, scope string, args any) (any, error) {
 	if !c.a.chose(ctx, "browser") {
 		return nil, errors.New("the browser is off: the owner can turn it on in Ajustes › Laboratório (it needs Chrome)")
@@ -84,6 +100,11 @@ func (c browserCap) Call(ctx context.Context, name, scope string, args any) (any
 		run = "chat"
 	}
 	b := c.a.theBrowser()
+	if m := host.MemberOf(ctx); m != "" {
+		// A member browses with a profile of its own, never with the
+		// sessions its person signed in to.
+		b = c.a.memberBrowser(m)
+	}
 	allowed := runAllows(run)
 	switch name {
 	case "browser.open":

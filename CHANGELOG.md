@@ -8,6 +8,24 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- Finance for companies: `costs.read` with the month by member and department and what looks wrong, a monthly report asked of the finance member, budgets it proposes and a person applies, a read-only Stripe connector (balance and charges) and `github.sponsors`.
+- Earned autonomy: after a configurable run of approvals of one kind of delivery (10 by default), Pimpo suggests letting a company member do it alone; a person accepts, and a later no takes it back to approval.
+- A product owner's signals, deduplicated, and briefs that cite and quote a source for every claim, scored by the roadmap's formula, flagged by Jev where the quote does not hold, decided on the new **Product** tab and checked against their predictions 30 and 90 days after shipping; standups for project managers and acceptance criteria on GitHub issues.
+- Company members code: `code.workspace` runs the member's coding CLI (Claude Code, Codex or opencode), with its sandbox if chosen, in a git worktree and branch of its own per task, and Pimpo commits and pushes it with the member's GitHub token.
+- GitHub capabilities for repositories, issues, pull requests, reviews, checks, merges and releases, for routines and company members alike.
+- A company's memory per task, per agent and for the whole company: agents keep notes in each, freely, after a decider approves (a person by default for the whole company's) or not at all; Pimpo can keep a note of each piece of work by itself; notes waiting for approval reach you in **Needs**.
+- **Meetings** with the CEO: talk with one agent, several or all of them, discuss a question before answering it, turn what they say into tasks, and end with minutes.
+- Company members' own accounts (mail, GitHub, Slack, Notion and every other connection), the company's shared accounts with read or act grants, kinds of account with warnings about services' terms, and agents kept out of their person's accounts, devices and memory.
+- A company's **Costs**: spending by member and department, a forecast, cost per outcome, salaries and budgets in layers, subscription use shown apart (and counted if you choose), and work that waits when a subscription runs out of turns.
+- On a company's page: autonomy lines for members and roles, a **Decision levels** tab with suggested levels, a simulator and every decision taken.
+- Decision levels for companies: triggers (amount, risk, kind, public, words) put each decision at a level that names who decides, the highest always the CEO, with a classifier for unclear questions and the bosses' opinions on the way up.
+- Autonomy for company members: per member, role or company, who decides what an action asks first (the member, Jev, a model, the boss, a committee, a cascade or a person), with every decision kept.
+- A company's **Memory** tab with its notes and meetings, and **This week** on the **Work** tab.
+- A company's memory (decisions, lessons, minutes) that every member reads, meetings between agents with minutes and decisions, and a summary of the week for the CEO every Monday.
+- A company's **Tasks** tab: the board by state, handing a member a task, each task's dossier, and members' questions answered in place and in **Needs you**.
+- Company members work together: `company.assign` hands a task with its objective, how to know it is done and a dossier of where it came from; `company.report` reports back; `company.ask` stops the work until the boss answers (an agent with `company.answer`, or you from **Needs you** and your channels), and the work goes on from where it was; tasks that stray from their root ask the boss first.
+- On a company's page: who is working now and what waits, a **Work** tab with stop, giving a member work or an agent routine, giving it your own routines, working hours, and pausing the company, a department or a member.
+- Company members at work: live work from a queue with working hours, one piece at a time per member, agent routines on a schedule, compiled routines that wake a member's agent with `company.wake`, and pausing a member, a department or a company.
 - **Context and rules** on a company's page, per company, department, role or member, with exceptions marked, and **What this agent receives** in a member's window.
 - **Companies** in the app (Settings › Labs): create or import a company, its roles, departments and members, and see it as an org chart where dragging a card onto another changes its boss.
 - Context and rules in layers for companies: Markdown contexts and rules for the company, a department, a role or a member; the most specific rule wins and allowing what a broader rule forbids must be saved as an exception; company rules never go past the house's; a member's preview shows what it is told and what each capability would do.
@@ -49,6 +67,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Fixed
 
+- A company task that may have strayed could start before its boss answered, and, once answered, could wait forever.
 - The **liberal** safety level let irreversible actions through without asking (a GitHub comment, clearing a sheet, imported tools). It now asks before anything irreversible except deleting email, which moves it to the trash, and installs that chose it are upgraded.
 - Repairs are told the error of the last failed run.
 - Routines started only by a webhook no longer log a false "invalid schedule" failure.

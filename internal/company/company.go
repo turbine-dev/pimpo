@@ -41,12 +41,37 @@ const (
 const CEO = "ceo"
 
 type Company struct {
-	ID       string    `json:"id"`
-	Person   string    `json:"person,omitempty"`
-	Name     string    `json:"name"`
-	Industry string    `json:"industry,omitempty"`
-	Mission  string    `json:"mission,omitempty"`
-	Zone     string    `json:"zone,omitempty"`
+	ID       string `json:"id"`
+	Person   string `json:"person,omitempty"`
+	Name     string `json:"name"`
+	Industry string `json:"industry,omitempty"`
+	Mission  string `json:"mission,omitempty"`
+	Zone     string `json:"zone,omitempty"`
+	Hours    Hours  `json:"hours"`
+	Paused   bool   `json:"paused,omitempty"`
+	// Decider is who decides, by default, what a member's action asks
+	// first; none means a person.
+	Decider Decider `json:"decider,omitzero"`
+	// Levels say which decisions go up to whom, the highest to the CEO.
+	Levels Levels `json:"levels,omitzero"`
+	// Budget is what the company may spend; past it, members stop or are
+	// only warned, as OnLimit says.
+	Budget Budget `json:"budget,omitzero"`
+	// Accounts are the company's shared accounts and who may use them.
+	Accounts []SharedAccount `json:"accounts,omitempty"`
+	// Memory says how each scope of memory is written.
+	Memory MemoryPolicy `json:"memory,omitzero"`
+	// EarnAfter is how many approvals in a row of one kind of delivery
+	// make Pimpo suggest autonomy for it (10 when unset); EarnOff stops
+	// suggesting.
+	EarnAfter int  `json:"earn_after,omitempty"`
+	EarnOff   bool `json:"earn_off,omitempty"`
+	// CodeEnv are the variables the company's coding CLIs get, such as a
+	// project's settings; secrets do not belong here.
+	CodeEnv map[string]string `json:"code_env,omitempty"`
+	// Lateral lets members hand work to others of their department, not
+	// only to the people below them.
+	Lateral  bool      `json:"lateral,omitempty"`
 	Partners []Partner `json:"partners,omitempty"`
 	Created  time.Time `json:"created"`
 	Updated  time.Time `json:"updated"`
@@ -58,52 +83,68 @@ type Partner struct {
 }
 
 type Department struct {
-	ID    string `json:"id" yaml:"id"`
-	Name  string `json:"name" yaml:"name"`
-	Color string `json:"color,omitempty" yaml:"color,omitempty"`
+	ID     string `json:"id" yaml:"id"`
+	Name   string `json:"name" yaml:"name"`
+	Color  string `json:"color,omitempty" yaml:"color,omitempty"`
+	Paused bool   `json:"paused,omitempty" yaml:"-"`
+	// MonthUSD is what the department may spend a month; 0 is no limit.
+	MonthUSD float64 `json:"month_usd,omitempty" yaml:"month_usd,omitempty"`
 }
 
 // A Role is a function in the company that members hold: what it is for,
 // and what a member holding it starts with.
 type Role struct {
-	ID               string   `json:"id" yaml:"id"`
-	Title            string   `json:"title" yaml:"title"`
-	Function         string   `json:"function,omitempty" yaml:"function,omitempty"`
-	Responsibilities []string `json:"responsibilities,omitempty" yaml:"responsibilities,omitempty"`
-	Deliverables     []string `json:"deliverables,omitempty" yaml:"deliverables,omitempty"`
-	Capabilities     []string `json:"capabilities,omitempty" yaml:"capabilities,omitempty"`
-	Models           []string `json:"models,omitempty" yaml:"models,omitempty"`
-	AccountKinds     []string `json:"account_kinds,omitempty" yaml:"account_kinds,omitempty"`
+	ID               string     `json:"id" yaml:"id"`
+	Title            string     `json:"title" yaml:"title"`
+	Function         string     `json:"function,omitempty" yaml:"function,omitempty"`
+	Responsibilities []string   `json:"responsibilities,omitempty" yaml:"responsibilities,omitempty"`
+	Deliverables     []string   `json:"deliverables,omitempty" yaml:"deliverables,omitempty"`
+	Capabilities     []string   `json:"capabilities,omitempty" yaml:"capabilities,omitempty"`
+	Models           []string   `json:"models,omitempty" yaml:"models,omitempty"`
+	AccountKinds     []string   `json:"account_kinds,omitempty" yaml:"account_kinds,omitempty"`
+	Autonomy         []Autonomy `json:"autonomy,omitempty" yaml:"autonomy,omitempty"`
 }
 
 // A Member is an agent holding a role, or a person holding a seat (the
 // CEO). An agent's empty Capabilities or Models mean its role's.
 type Member struct {
-	ID           string    `json:"id"`
-	Kind         string    `json:"kind"`
-	Person       string    `json:"person,omitempty"`
-	Title        string    `json:"title,omitempty"`
-	Role         string    `json:"role,omitempty"`
-	Department   string    `json:"department,omitempty"`
-	ReportsTo    string    `json:"reports_to,omitempty"`
-	Name         string    `json:"name"`
-	Avatar       string    `json:"avatar,omitempty"`
-	Persona      string    `json:"persona,omitempty"`
-	Capabilities []string  `json:"capabilities,omitempty"`
-	Models       []string  `json:"models,omitempty"`
-	State        string    `json:"state,omitempty"`
-	Created      time.Time `json:"created"`
-	Updated      time.Time `json:"updated"`
+	ID           string   `json:"id"`
+	Kind         string   `json:"kind"`
+	Person       string   `json:"person,omitempty"`
+	Title        string   `json:"title,omitempty"`
+	Role         string   `json:"role,omitempty"`
+	Department   string   `json:"department,omitempty"`
+	ReportsTo    string   `json:"reports_to,omitempty"`
+	Name         string   `json:"name"`
+	Avatar       string   `json:"avatar,omitempty"`
+	Persona      string   `json:"persona,omitempty"`
+	Capabilities []string `json:"capabilities,omitempty"`
+	Models       []string `json:"models,omitempty"`
+	State        string   `json:"state,omitempty"`
+	// Hours, when set, replace the company's for this member.
+	Hours *Hours `json:"hours,omitempty"`
+	// Autonomy is who decides what this member's actions ask first, before
+	// its role's matrix and the company's default.
+	Autonomy []Autonomy `json:"autonomy,omitempty"`
+	// Budget is the member's own limit, its salary.
+	Budget Budget `json:"budget,omitzero"`
+	// Coder is the coding CLI the member codes with, and CodeSandbox runs
+	// it in that CLI's sandbox.
+	Coder       string    `json:"coder,omitempty"`
+	CodeSandbox bool      `json:"code_sandbox,omitempty"`
+	Created     time.Time `json:"created"`
+	Updated     time.Time `json:"updated"`
 }
 
 // An Org is a company with everything in it.
 type Org struct {
 	Company
-	Departments []Department `json:"departments"`
-	Roles       []Role       `json:"roles"`
-	Members     []Member     `json:"members"`
-	Contexts    []Context    `json:"contexts"`
-	Rules       []Rule       `json:"rules"`
+	Departments   []Department   `json:"departments"`
+	Roles         []Role         `json:"roles"`
+	Members       []Member       `json:"members"`
+	Contexts      []Context      `json:"contexts"`
+	Rules         []Rule         `json:"rules"`
+	AgentRoutines []AgentRoutine `json:"agent_routines"`
 }
 
 var (
@@ -267,7 +308,10 @@ func (o Org) Check() error {
 			return fmt.Errorf("%s is in a loop of bosses", m.Name)
 		}
 	}
-	return o.checkLayers()
+	if err := o.checkLayers(); err != nil {
+		return err
+	}
+	return o.checkWork()
 }
 
 func (o Org) has(id string) bool { _, ok := o.Member(id); return ok }

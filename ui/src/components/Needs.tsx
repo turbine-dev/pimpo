@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, CircleDot, GraduationCap, KeyRound, Layers, Lightbulb, MessageCircleQuestion, ShieldQuestion, Sparkles, Unplug } from 'lucide-react'
+import { AlertTriangle, Building2, CircleDot, GraduationCap, KeyRound, Layers, Lightbulb, MessageCircleQuestion, ShieldQuestion, Sparkles, Unplug } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, type Need, type NeedKind, type Needs } from '../lib/api'
 import { cn } from '../lib/cn'
 import { relative } from '../lib/format'
 import { useT, type TKey } from '../lib/i18n'
+import { capabilityLabel } from './RoutineCard'
 import { Button } from './ui'
 
 // One list of what needs the person signed in: approvals, keys asked for
@@ -15,7 +16,7 @@ import { Button } from './ui'
 // until it gets its own buttons here: add its icon, its title and its
 // actions.
 
-export const needKinds: NeedKind[] = ['approval', 'credential_request', 'question', 'failed_routine', 'job_error', 'job_planned', 'exploration_ready', 'suggestion', 'lesson', 'system']
+export const needKinds: NeedKind[] = ['approval', 'credential_request', 'question', 'company_question', 'company_note', 'company_brief', 'company_autonomy', 'company_budget', 'failed_routine', 'job_error', 'job_planned', 'exploration_ready', 'suggestion', 'lesson', 'system']
 
 // useNeeds is the list; the event stream refreshes it as things change.
 export function useNeeds(enabled = true) {
@@ -37,6 +38,16 @@ export function useNeedAction(onGo?: (to: string) => void) {
           return api.answer(need.id, action as 'once' | 'run' | 'routine' | 'always' | 'deny', limit)
         case 'question':
           return api.answerQuestion(need.id, index ?? 0)
+        case 'company_question':
+          return api.answerCompanyQuestion(companyOf(need), need.id, String((index ?? 0) + 1))
+        case 'company_budget': {
+          const [, co, proposal] = need.id.split(':')
+          return api.decideProposal(co, proposal, action === 'accept')
+        }
+        case 'company_autonomy': {
+          const [, co, member, ...cap] = need.id.split(':')
+          return api.earnAutonomy(co, member, cap.join(':'), action === 'accept')
+        }
         case 'failed_routine': {
           const r = await api.routineAction(need.id, action as 'run' | 'repair')
           if (r.exploration) go(`/explorations/${r.exploration}`)
@@ -55,6 +66,9 @@ export function useNeedAction(onGo?: (to: string) => void) {
   })
 }
 
+// companyOf is the company a need belongs to, from its link.
+const companyOf = (n: Need) => (n.link ?? '').replace('/companies/', '')
+
 const kindLabel = (k: string) => `needs.kind.${k}` as TKey
 
 type Tone = 'danger' | 'change' | 'explore' | 'accent' | 'plain'
@@ -65,6 +79,11 @@ function look(n: Need): { icon: ReactNode; tone: Tone } {
     case 'approval': return { icon: <ShieldQuestion size={16} />, tone: (n.risk ?? 0) >= 3 ? 'danger' : 'change' }
     case 'credential_request': return { icon: <KeyRound size={16} />, tone: 'change' }
     case 'question': return { icon: <MessageCircleQuestion size={16} />, tone: 'explore' }
+    case 'company_question': return { icon: <Building2 size={16} />, tone: 'explore' }
+    case 'company_note': return { icon: <Building2 size={16} />, tone: 'plain' }
+    case 'company_brief': return { icon: <Building2 size={16} />, tone: 'explore' }
+    case 'company_autonomy': return { icon: <Building2 size={16} />, tone: 'accent' }
+    case 'company_budget': return { icon: <Building2 size={16} />, tone: 'change' }
     case 'failed_routine': return { icon: <AlertTriangle size={16} />, tone: 'danger' }
     case 'job_error': return { icon: <Layers size={16} />, tone: 'danger' }
     case 'job_planned': return { icon: <Layers size={16} />, tone: 'plain' }
@@ -117,13 +136,14 @@ export function NeedRow({ need: n, compact, busy, onAct }: { need: Need; compact
       buttons = btn('open', t('cred.open'), 'primary')
       break
     case 'question':
-      hint = n.created ? t('inbox.asked', { when: relative(n.created) }) : ''
+    case 'company_question':
+      hint = [n.kind === 'company_question' ? n.detail : '', n.created ? t('inbox.asked', { when: relative(n.created) }) : ''].filter(Boolean).join(' · ')
       buttons = (
         <div role="group" aria-label={n.title} className="flex flex-wrap gap-1.5">
           {(n.options ?? []).map((o, i) => <Button key={o} size="sm" variant={i === 0 ? 'primary' : 'secondary'} disabled={busy} onClick={() => onAct({ need: n, action: 'answer', index: i })}>{o}</Button>)}
         </div>
       )
-      if (!compact && has('type')) extra = <TypedAnswer need={n} busy={busy} />
+      if (!compact && has('type') && (n.kind === 'question' || !n.options?.length)) extra = <TypedAnswer need={n} busy={busy} />
       break
     case 'lesson':
       title = t('lessons.waiting', { count: n.count ?? 1 })
@@ -150,11 +170,19 @@ export function NeedRow({ need: n, compact, busy, onAct }: { need: Need; compact
     case 'suggestion':
       buttons = <>{btn('accept', t('inbox.suggestionYes'), 'primary')}{btn('dismiss', t('inbox.suggestionNo'), 'ghost')}</>
       break
+    case 'company_budget':
+      hint = n.detail ?? ''
+      buttons = <>{btn('accept', t('co.applyBudget'), 'primary')}{btn('dismiss', t('co.declineBudget'), 'ghost')}</>
+      break
+    case 'company_autonomy':
+      hint = `${capabilityLabel(n.detail ?? '')} · ${t('co.earnAsk', { n: n.count ?? 0 })}`
+      buttons = <>{btn('accept', t('co.earnYes'), 'primary')}{btn('dismiss', t('co.earnNo'), 'ghost')}</>
+      break
     default:
       buttons = n.link && <Button size="sm" variant="primary" disabled={busy} onClick={() => onAct({ need: n, action: 'open' })}>{t('needs.open')}</Button>
   }
   const soon = n.urgency >= 4 && n.expires
-  const when = !['question', 'credential_request'].includes(n.kind) && n.created ? relative(n.created) : ''
+  const when = !['question', 'company_question', 'credential_request'].includes(n.kind) && n.created ? relative(n.created) : ''
 
   return (
     <div className={cn('flex items-start gap-3', compact ? 'rounded-xl px-2 py-2.5 hover:bg-sunken/50' : 'p-4')}>
@@ -182,7 +210,7 @@ function TypedAnswer({ need: n, busy }: { need: Need; busy?: boolean }) {
   const qc = useQueryClient()
   const [typed, setTyped] = useState('')
   const write = useMutation({
-    mutationFn: (text: string) => api.answerQuestionText(n.id, text),
+    mutationFn: (text: string) => (n.kind === 'company_question' ? api.answerCompanyQuestion(companyOf(n), n.id, text) : api.answerQuestionText(n.id, text)),
     onSuccess: () => { for (const key of ['needs', 'questions']) qc.invalidateQueries({ queryKey: [key] }) },
   })
   const submit = (e: FormEvent) => {

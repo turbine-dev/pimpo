@@ -180,6 +180,7 @@ export function MemberPreview({ org, member }: { org: Org; member: string }): Re
           <li key={r.capability} className="flex items-center gap-2 text-[12.5px]">
             <span className="min-w-0 flex-1 truncate">{capabilityLabel(r.capability)}</span>
             <span className={cn('rounded-md px-1.5 py-0.5 font-medium', verdictText[r.verdict].cls)} title={r.reason}>{t(verdictText[r.verdict].label)}</span>
+            {r.decider && <span className="text-[11.5px] text-ink-3">{t('co.decidedBy', { who: r.decider })}</span>}
           </li>
         ))}
       </ul>

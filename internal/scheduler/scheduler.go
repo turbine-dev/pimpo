@@ -5,6 +5,7 @@ package scheduler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"strings"
@@ -25,7 +26,11 @@ const (
 	EventRunFinished = "routine.run.finished"
 	EventRunFailed   = "routine.run.failed"
 	EventMissed      = "routine.run.missed"
+	EventRunHeld     = "routine.run.held"
 )
+
+// ErrHeld is a run that did not start because its routine is held.
+var ErrHeld = errors.New("the routine is held")
 
 type Scheduler struct {
 	Env    host.Env
@@ -40,6 +45,9 @@ type Scheduler struct {
 	// Pushed says whether events reach a watching routine as they happen
 	// (Gmail or Slack push); its polls then become an hourly safety net.
 	Pushed func(ctx context.Context, r store.Routine) bool
+	// Hold says why a routine may not run now (its company member is
+	// paused, say), or "" when it may.
+	Hold func(ctx context.Context, r store.Routine) string
 
 	mu      sync.Mutex
 	cron    *cron.Cron
@@ -255,13 +263,19 @@ func (s *Scheduler) run(ctx context.Context, id, trigger string, event any) (sto
 	if err != nil {
 		return store.Run{}, err
 	}
+	if s.Hold != nil {
+		if why := s.Hold(ctx, r); why != "" {
+			s.Env.Events.Append(ctx, EventRunHeld, "routine:"+id, map[string]any{"routine": id, "trigger": trigger, "reason": why, "person": r.Person})
+			return store.Run{}, fmt.Errorf("%w: %s", ErrHeld, why)
+		}
+	}
 	runID, err := s.Store.StartRun(ctx, id, r.Version)
 	if err != nil {
 		return store.Run{}, err
 	}
 	source := fmt.Sprintf("routine:%s#%d", id, runID)
 	s.Env.Events.Append(ctx, EventRunStarted, source, map[string]any{"routine": id, "run": runID, "version": r.Version, "trigger": trigger})
-	h := &host.Host{Env: s.Env, Source: source, Person: r.Person}
+	h := &host.Host{Env: s.Env, Source: source, Person: r.Person, Member: r.Member}
 	prog := RunProgress{Routine: id, Name: r.Body.Name, Person: r.Person, Run: runID, State: store.RunRunning, Started: time.Now().UTC()}
 	s.progress(ctx, prog)
 	var stepMu sync.Mutex
