@@ -1,6 +1,7 @@
 import { Skills } from './pages/Skills'
 import { Phone } from './pages/Phone'
 import { Jobs } from './pages/Jobs'
+import { Companies } from './pages/Companies'
 import { Account } from './pages/Account'
 import { Dashboards } from './pages/Dashboards'
 import { SignIn } from './pages/SignIn'
@@ -108,6 +109,8 @@ export default function App() {
         <Route path="/dashboards" element={<Dashboards />} />
         <Route path="/dashboards/:id" element={<Dashboards />} />
         <Route path="/jobs/:id" element={<Jobs />} />
+        <Route path="/companies" element={<Companies />} />
+        <Route path="/companies/:id" element={<Companies />} />
         <Route path="/help" element={<Help />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/credentials/:id" element={<Credential />} />

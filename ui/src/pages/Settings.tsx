@@ -168,7 +168,7 @@ export function Settings() {
             <Toggles title={t('labs.title')} text={t('labs.text')} items={(['memory_organize', 'meaning_search', 'mcp_registry'] as const).map((k) => ({
               key: k, label: t(`labs.${k}`), hint: t(`labs.${k}Hint`), on: !(s.labs_off ?? []).includes(k),
             }))} onToggle={(k, on) => setS({ ...s, labs_off: on ? (s.labs_off ?? []).filter((x) => x !== k) : [...(s.labs_off ?? []), k] })} />
-            <Toggles title={t('labs.powerTitle')} text={t('labs.powerText')} items={(['code_sandbox', 'browser', 'whatsapp_personal'] as const).map((k) => ({
+            <Toggles title={t('labs.powerTitle')} text={t('labs.powerText')} items={(['code_sandbox', 'browser', 'whatsapp_personal', 'companies'] as const).map((k) => ({
               key: k, label: t(`labs.${k}`), hint: t(`labs.${k}Hint`), on: (s.labs_on ?? []).includes(k),
             }))} onToggle={(k, on) => setS({ ...s, labs_on: on ? [...(s.labs_on ?? []), k] : (s.labs_on ?? []).filter((x) => x !== k) })} />
             {(s.labs_on ?? []).includes('browser') && <BrowserLogin />}

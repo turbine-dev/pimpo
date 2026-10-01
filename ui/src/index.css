@@ -184,3 +184,19 @@
 .pimpo-leaving { transition: transform 1.5s ease-in; transform: translateX(110vw); }
 @keyframes pimpo-wave { from { transform: rotate(-14deg); } to { transform: rotate(18deg); } }
 @keyframes pimpo-trot { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+
+/* The org chart: each level is a row of cards, joined to its boss by
+   lines drawn from the list itself, so it lays itself out. */
+.org ul { position: relative; display: flex; justify-content: center; padding-top: 20px; }
+.org li { position: relative; display: flex; flex-direction: column; align-items: center; padding: 20px 6px 0; }
+.org li::before, .org li::after { content: ''; position: absolute; top: 0; right: 50%; width: 50%; height: 20px; border-top: 1px solid var(--color-line-strong); }
+.org li::after { right: auto; left: 50%; border-left: 1px solid var(--color-line-strong); }
+.org li:only-child { padding-top: 0; }
+.org li:only-child::before, .org li:only-child::after { display: none; }
+.org li:first-child::before, .org li:last-child::after { border: 0 none; }
+.org li:last-child::before { border-right: 1px solid var(--color-line-strong); border-radius: 0 8px 0 0; }
+.org li:first-child::after { border-radius: 8px 0 0 0; }
+.org ul ul::before { content: ''; position: absolute; top: 0; left: 50%; height: 20px; border-left: 1px solid var(--color-line-strong); }
+.org > ul { width: max-content; margin: 0 auto; padding-top: 0; }
+.org > ul > li { padding-top: 0; }
+.org > ul > li::before, .org > ul > li::after { display: none; }

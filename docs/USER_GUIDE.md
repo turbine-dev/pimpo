@@ -77,6 +77,18 @@ For work too big for one answer ("compare these 20 suppliers on price, delivery 
 
 Progress is kept, not just shown: **Home** lists what is running now, and each job and each routine shows its parts or steps, the step it is on (by the part's or the tool's name), the cost so far and when it last moved. A reload, the phone or a restart shows the same thing; a job picked up after a restart says so, and a routine run a restart cut short says it was interrupted. Turn on **Follow on my channels** on a job (before starting it or while it runs) to get one message about it on your channels: on Telegram, Discord and Slack that message is edited in place as the job goes, at most every 10 seconds, and ends with the result; on channels that cannot edit a message (Signal, WhatsApp, iMessage) you get only the start, and the notice at the end. Each person sees only their own progress.
 
+## Companies of agents
+
+With **Settings › Labs › Companies of agents** on, **More › Companies** lets you build a company of any kind (a shop, an agency, a software project, a channel) whose members are agents. You are at the top, as the CEO.
+
+- **Create a company** with a name, its industry and its mission, or **Import** a company file someone shared. **Export** on a company's page saves it as a `.company.yaml` file; it carries the departments, roles and members, never who you are, and whoever imports it becomes its CEO.
+- **Roles** are the functions in the company: a title, what the role is for, its responsibilities and deliverables, the accounts it needs, the tools it may use and the models it may use. Several members can hold the same role. A role in use cannot be deleted.
+- **Hire** puts an agent in a role: a name, an avatar, a personality, a department, who it reports to and, if you want, fewer models than its role. **Working** off pauses it. **Let go** removes it, and whoever reported to it reports to its boss.
+- **Departments** group members on the org chart with a color.
+- The **org chart** draws the company as a tree. Drag a card onto another to change who the boss is, or choose **Reports to** in the member's window; a member can never report to someone below it. On the phone the tree is a list.
+
+A company is yours alone, like your routines: nobody else in the house finds it, the administrator included. Shared with someone as a partner, they see it with what they were given (view, approve or configure); only you delete it or change who it is shared with.
+
 ## Run history
 
 **Routines › Runs** lists every run of every routine, newest first, with its cost, how many calls it made and how long it took. **Failed** shows only what went wrong, with the error. A routine can run as often as every 5 minutes (**Every few minutes** in its schedule).
