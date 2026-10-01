@@ -15,6 +15,9 @@ test('a company: its chart, a boss changed by dragging, in both themes', async (
   await page.request.put(`${base}/members/bia`, { data: { name: 'Bia', role: 'gerente', reports_to: 'ceo' }, headers: auth })
   await page.request.put(`${base}/members/clara`, { data: { name: 'Clara', role: 'atendente', department: 'vendas', reports_to: 'bia' }, headers: auth })
 
+  await page.request.put(`${base}/contexts/voz`, { data: { scope: 'company', title: 'Voz', body: 'Gentil e breve.' }, headers: auth })
+  await page.request.put(`${base}/rules/sem-telegram`, { data: { scope: 'company', text: 'Nada de Telegram', when: { capabilities: ['telegram.send'] }, then: 'block' }, headers: auth })
+  await page.request.put(`${base}/rules/atendentes`, { data: { scope: 'role', of: 'atendente', text: 'Atendentes podem', when: { capabilities: ['telegram.send'] }, then: 'allow', exception: true }, headers: auth })
   await page.goto('/auth?token=e2e-token')
   await page.goto('/companies')
   await page.getByRole('link', { name: /Lume Moda/ }).click()
@@ -32,5 +35,9 @@ test('a company: its chart, a boss changed by dragging, in both themes', async (
       const problems = results.violations.map((v) => `${theme} ${path}: ${v.id} ${v.nodes.map((n) => n.html.slice(0, 160)).join(' | ')}`)
       expect(problems, problems.join('\n')).toEqual([])
     }
+    await page.getByRole('tab', { name: 'Contexto e regras' }).click()
+    await expect(page.getByText('Exceção a: Nada de Telegram')).toBeVisible()
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+    expect(results.violations.map((v) => `${theme} layers: ${v.id} ${v.nodes.map((n) => n.html.slice(0, 160)).join(' | ')}`)).toEqual([])
   }
 })

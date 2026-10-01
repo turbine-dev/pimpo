@@ -7,7 +7,7 @@ import { api, type Rule } from '../lib/api'
 import { cn } from '../lib/cn'
 import { hasKey, tr, useT } from '../lib/i18n'
 
-const verdictText = {
+export const verdictText = {
   allow: { label: 'rules.allow', cls: 'bg-read-soft text-read' },
   reversible: { label: 'rules.reversible', cls: 'bg-change-soft text-change' },
   ask: { label: 'rules.ask', cls: 'bg-change-soft text-change' },

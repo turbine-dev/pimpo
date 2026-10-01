@@ -68,3 +68,50 @@ describe('Companies', () => {
     expect(screen.queryByRole('button', { name: /Apagar/ })).toBeNull()
   })
 })
+
+describe('Company context and rules', () => {
+  const caps = [{ name: 'gmail.send', risk: 'irreversible', signature: '', returns: '' }]
+
+  it('asks before saving a rule that goes against a broader one, then saves it as an exception', async () => {
+    const withRule: Org = { ...org, rules: [{ id: 'no-email', scope: 'company', text: 'Never email customers', when: { capabilities: ['gmail.send'] }, then: 'block' }] }
+    const puts: unknown[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      const json = (v: unknown, status = 200) => new Response(JSON.stringify(v), { status, headers: { 'Content-Type': 'application/json' } })
+      if (method === 'PUT') {
+        const body = JSON.parse(String(init?.body))
+        puts.push(body)
+        return body.exception ? json(withRule) : json({ error: 'this rule allows what a broader rule forbids (no-email); save it as an exception' }, 409)
+      }
+      if (url === '/api/capabilities') return json(caps)
+      if (url === '/api/state') return json({ person: 'owner' })
+      return json(withRule)
+    }))
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Contexto e regras' }))
+    expect(await screen.findByText('Never email customers')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Nova regra/ }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.selectOptions(within(dialog).getByLabelText('Vale para'), 'role:atendente')
+    await userEvent.type(within(dialog).getByLabelText('A regra, em palavras'), 'Clerks may email')
+    await userEvent.selectOptions(within(dialog).getByLabelText('O que acontece'), 'allow')
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: /gmail\.send/ }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Salvar como exceção' }))
+    await waitFor(() => expect(puts).toHaveLength(2))
+    expect(puts[0]).toMatchObject({ scope: 'role', of: 'atendente', text: 'Clerks may email', then: 'allow', exception: false, when: { capabilities: ['gmail.send'] } })
+    expect(puts[1]).toMatchObject({ id: 'clerks-may-email', exception: true })
+  })
+
+  it('writes a context for the whole company', async () => {
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, 'PUT /api/companies/co_1/contexts/trocas': org })
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Contexto e regras' }))
+    await userEvent.click(screen.getByRole('button', { name: /Novo contexto/ }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.type(within(dialog).getByLabelText('Título'), 'Trocas')
+    await userEvent.type(within(dialog).getByLabelText('Texto'), 'Até 30 dias.')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({ id: 'trocas', scope: 'company', title: 'Trocas', body: 'Até 30 dias.' }))
+  })
+})
