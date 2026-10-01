@@ -64,6 +64,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Fixed
 
+- A company task that may have strayed could start before its boss answered, and, once answered, could wait forever.
 - The **liberal** safety level let irreversible actions through without asking (a GitHub comment, clearing a sheet, imported tools). It now asks before anything irreversible except deleting email, which moves it to the trash, and installs that chose it are upgraded.
 - Repairs are told the error of the last failed run.
 - Routines started only by a webhook no longer log a false "invalid schedule" failure.

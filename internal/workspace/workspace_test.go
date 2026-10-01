@@ -96,14 +96,18 @@ func TestAMemberWorksOnItsOwnBranch(t *testing.T) {
 	if _, err := s.Open(ctx, "co1", "bia", "t3", "ana/app", "../../etc", ""); err == nil {
 		t.Error("a base outside branches")
 	}
+	if _, err := s.Open(ctx, "co1", "bia", "t4", "ana/app", "nope", ""); err == nil || !strings.Contains(err.Error(), "no branch") {
+		t.Errorf("a base the repository does not have: %v", err)
+	}
 }
 
 func TestTheTokenTravelsAsAHeaderOnly(t *testing.T) {
-	env := auth("secret")
-	if len(env) != 3 || !strings.HasPrefix(env[2], "GIT_CONFIG_VALUE_0=Authorization: Basic ") || strings.Contains(strings.Join(env, " "), "secret") {
+	sp := Space{remote: "https://github.com/ana/app.git"}
+	env := strings.Join(sp.origin("secret"), " ")
+	if !strings.Contains(env, "GIT_CONFIG_VALUE_1=Authorization: Basic ") || !strings.Contains(env, "GIT_CONFIG_COUNT=2") || strings.Contains(env, "secret") {
 		t.Fatalf("env = %v", env)
 	}
-	if auth("") != nil {
-		t.Fatal("no token, no header")
+	if env := strings.Join(sp.origin(""), " "); strings.Contains(env, "Authorization") || !strings.Contains(env, "GIT_CONFIG_COUNT=1") {
+		t.Fatalf("no token, no header: %v", env)
 	}
 }

@@ -268,10 +268,11 @@ type Episode struct {
 }
 
 // Winding is whether the stretch that asked the last question is still
-// being recorded.
+// being recorded. A question asked before any stretch ran, such as a
+// boss's on a task that may stray, has nothing to record.
 func (w Work) Winding() bool {
 	n := len(w.Episodes)
-	return n > 0 && !w.Episodes[n-1].Kept
+	return n > 0 && w.Episodes[n-1].Exploration != "" && !w.Episodes[n-1].Kept
 }
 
 // Resume is what a piece of work is told when it goes on after a

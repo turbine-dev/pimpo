@@ -188,7 +188,7 @@ func (a *App) assign(ctx context.Context, o company.Org, from string, work compa
 		return company.Task{}, err
 	}
 	a.Events.Append(ctx, "company.task.assigned", actorFor(o, from), map[string]any{"company": o.ID, "task": t.ID, "from": from, "to": t.Assignee, "drift": t.Drift, "person": o.Person})
-	w, err := a.enqueueTask(ctx, o, t)
+	w, err := a.enqueueTask(ctx, o, t, t.Drift)
 	if err != nil {
 		return t, err
 	}
@@ -206,12 +206,15 @@ func (a *App) assign(ctx context.Context, o company.Org, from string, work compa
 	return t, nil
 }
 
-func (a *App) enqueueTask(ctx context.Context, o company.Org, t company.Task) (company.Work, error) {
-	w, err := a.enqueue(ctx, o, t.Assignee, t.Handoff(o), nil, "task:"+t.ID, 0)
-	if err != nil {
-		return w, err
-	}
-	return a.Companies.UpdateWork(ctx, w.ID, func(x *company.Work) { x.Task = t.ID })
+// enqueueTask queues a task's work, already waiting when it must not
+// start before someone says so.
+func (a *App) enqueueTask(ctx context.Context, o company.Org, t company.Task, hold bool) (company.Work, error) {
+	return a.enqueue(ctx, o, t.Assignee, t.Handoff(o), nil, "task:"+t.ID, 0, func(w *company.Work) {
+		w.Task = t.ID
+		if hold {
+			w.State = company.WorkWaiting
+		}
+	})
 }
 
 func actorFor(o company.Org, member string) string { return "member:" + o.ID + "/" + member }

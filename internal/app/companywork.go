@@ -62,7 +62,7 @@ func newWorkID() string {
 }
 
 // enqueue gives a member a piece of work.
-func (a *App) enqueue(ctx context.Context, o company.Org, member, request string, data any, from string, maxUSD float64) (company.Work, error) {
+func (a *App) enqueue(ctx context.Context, o company.Org, member, request string, data any, from string, maxUSD float64, set ...func(*company.Work)) (company.Work, error) {
 	if err := o.CheckWork(member); err != nil {
 		return company.Work{}, err
 	}
@@ -80,6 +80,9 @@ func (a *App) enqueue(ctx context.Context, o company.Org, member, request string
 		return company.Work{}, fmt.Errorf("one piece of work spends at most $%.0f", company.MaxWorkUSD)
 	}
 	w := company.Work{ID: newWorkID(), Company: o.ID, Member: member, Request: request, From: from, MaxUSD: maxUSD, State: company.WorkQueued, Queued: time.Now().UTC()}
+	for _, f := range set {
+		f(&w)
+	}
 	if data != nil {
 		b, err := json.Marshal(data)
 		if err != nil || len(b) > workDataMax {

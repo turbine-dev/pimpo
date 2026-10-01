@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,7 +37,7 @@ type Spaces struct {
 // A Space is one member's worktree for one task.
 type Space struct {
 	Dir, Branch, Repo, Base string
-	bare                    string
+	bare, remote            string
 }
 
 func (s Spaces) remote(repo string) string {
@@ -72,32 +73,39 @@ func (s Spaces) Open(ctx context.Context, company, member, key, repo, base, toke
 	if base != "" && (!ref.MatchString(base) || strings.Contains(base, "..")) {
 		return Space{}, errors.New("base is a branch name")
 	}
-	sp := Space{Dir: s.tree(company, member, key), Branch: Branch(member, key), Repo: repo, bare: s.bare(company, repo)}
+	sp := Space{Dir: s.tree(company, member, key), Branch: Branch(member, key), Repo: repo, bare: s.bare(company, repo), remote: s.remote(repo)}
 	if _, err := os.Stat(sp.bare); errors.Is(err, os.ErrNotExist) {
-		if err := os.MkdirAll(filepath.Dir(sp.bare), 0o700); err != nil {
+		if err := os.MkdirAll(sp.bare, 0o700); err != nil {
 			return sp, err
 		}
-		if _, err := git(ctx, nil, "", "init", "--bare", "-q", sp.bare); err != nil {
-			return sp, err
-		}
-		if _, err := git(ctx, nil, sp.bare, "remote", "add", "origin", s.remote(repo)); err != nil {
+		if _, err := git(ctx, nil, sp.bare, "init", "--bare", "-q"); err != nil {
 			return sp, err
 		}
 	}
-	if _, err := git(ctx, auth(token), sp.bare, "fetch", "-q", "--prune", "origin", "+refs/heads/*:refs/remotes/origin/*"); err != nil {
+	env := sp.origin(token)
+	if _, err := git(ctx, env, sp.bare, "fetch", "-q", "--prune", "origin", "+refs/heads/*:refs/remotes/origin/*"); err != nil {
 		return sp, fmt.Errorf("fetching %s: %w", repo, err)
 	}
 	if base == "" {
-		head, err := git(ctx, auth(token), sp.bare, "ls-remote", "--symref", "origin", "HEAD")
+		head, err := git(ctx, env, sp.bare, "ls-remote", "--symref", "origin", "HEAD")
 		if err != nil {
 			return sp, err
 		}
 		base = defaultBranch(head)
-		if base == "" {
-			return sp, errors.New("the repository has no default branch yet")
+	}
+	// The base is taken from the branches git lists, never as given.
+	branches, err := git(ctx, nil, sp.bare, "for-each-ref", "--format=%(refname:lstrip=3)", "refs/remotes/origin/")
+	if err != nil {
+		return sp, err
+	}
+	for _, b := range lines(branches) {
+		if b == base {
+			sp.Base = b
 		}
 	}
-	sp.Base = base
+	if sp.Base == "" {
+		return sp, fmt.Errorf("the repository has no branch %q", base)
+	}
 	if _, err := os.Stat(sp.Dir); err == nil {
 		return sp, nil
 	}
@@ -105,11 +113,22 @@ func (s Spaces) Open(ctx context.Context, company, member, key, repo, base, toke
 		return sp, err
 	}
 	if _, err := git(ctx, nil, sp.bare, "rev-parse", "--verify", "-q", "refs/heads/"+sp.Branch); err == nil {
-		_, err = git(ctx, nil, sp.bare, "worktree", "add", "-q", sp.Dir, sp.Branch)
+		_, err = git(ctx, nil, sp.bare, "worktree", "add", "-q", "--", sp.Dir, sp.Branch)
 		return sp, err
 	}
-	_, err := git(ctx, nil, sp.bare, "worktree", "add", "-q", "--no-track", "-b", sp.Branch, sp.Dir, "origin/"+base)
+	_, err = git(ctx, nil, sp.bare, "worktree", "add", "-q", "--no-track", "-b", sp.Branch, "--", sp.Dir, "origin/"+sp.Base)
 	return sp, err
+}
+
+// origin is the remote for one command, with the token when there is
+// one: neither is written to the clone's config nor seen on a command line.
+func (sp Space) origin(token string) []string {
+	env := []string{"GIT_CONFIG_KEY_0=remote.origin.url", "GIT_CONFIG_VALUE_0=" + sp.remote}
+	if token == "" {
+		return append(env, "GIT_CONFIG_COUNT=1")
+	}
+	basic := base64.StdEncoding.EncodeToString([]byte("x-access-token:" + token))
+	return append(env, "GIT_CONFIG_KEY_1=http.https://github.com/.extraheader", "GIT_CONFIG_VALUE_1=Authorization: Basic "+basic, "GIT_CONFIG_COUNT=2")
 }
 
 func defaultBranch(lsRemote string) string {
@@ -141,8 +160,8 @@ func (s Spaces) Finish(ctx context.Context, sp Space, name, email, message, toke
 			message = "Work on " + sp.Branch
 		}
 		// Hooks and signing are the person's; the member's commits use neither.
-		if _, err := git(ctx, nil, sp.Dir, "-c", "user.name="+name, "-c", "user.email="+email, "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false",
-			"commit", "-q", "-m", message); err != nil {
+		if _, err := gitIn(ctx, strings.NewReader(message), nil, sp.Dir, "-c", "user.name="+name, "-c", "user.email="+email, "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false",
+			"commit", "-q", "-F", "-"); err != nil {
 			return res, err
 		}
 	}
@@ -159,7 +178,7 @@ func (s Spaces) Finish(ctx context.Context, sp Space, name, email, message, toke
 	if len(res.Commits) == 0 {
 		return res, nil
 	}
-	if _, err := git(ctx, auth(token), sp.Dir, "-c", "core.hooksPath=/dev/null", "push", "-q", "origin", "HEAD:refs/heads/"+sp.Branch); err != nil {
+	if _, err := git(ctx, sp.origin(token), sp.Dir, "-c", "core.hooksPath=/dev/null", "push", "-q", "origin", "HEAD:refs/heads/"+sp.Branch); err != nil {
 		return res, fmt.Errorf("pushing %s: %w", sp.Branch, err)
 	}
 	res.Pushed = true
@@ -200,25 +219,17 @@ func (s Spaces) Drop(company string) error {
 	return os.RemoveAll(filepath.Join(s.Root, company))
 }
 
-// auth hands git the token as a header for this command only: it is never
-// written to the clone's config nor seen on a command line.
-func auth(token string) []string {
-	if token == "" {
-		return nil
-	}
-	basic := base64.StdEncoding.EncodeToString([]byte("x-access-token:" + token))
-	return []string{"GIT_CONFIG_COUNT=1", "GIT_CONFIG_KEY_0=http.https://github.com/.extraheader", "GIT_CONFIG_VALUE_0=Authorization: Basic " + basic}
-}
-
 // git runs without the person's own git config, so neither their
 // credential helpers nor their identity reach a member's work.
 func git(ctx context.Context, env []string, dir string, args ...string) (string, error) {
+	return gitIn(ctx, nil, env, dir, args...)
+}
+
+func gitIn(ctx context.Context, stdin io.Reader, env []string, dir string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, gitTimeout)
 	defer cancel()
-	if dir != "" {
-		args = append([]string{"-C", dir}, args...)
-	}
 	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Dir, cmd.Stdin = dir, stdin
 	cmd.Env = append([]string{"PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME"), "GIT_TERMINAL_PROMPT=0", "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL=/dev/null", "LANG=C"}, env...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
