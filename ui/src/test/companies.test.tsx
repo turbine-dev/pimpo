@@ -255,3 +255,20 @@ describe('Company autonomy and decision levels', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Nível 4 (Estratégica): decide Ana')
   })
 })
+
+describe('Company costs', () => {
+  it('shows spending, subscription use and sets a salary', async () => {
+    const costs = { company: { day: 0.4, month: 3.2 }, members: { clara: { day: 0.4, month: 3.2 } }, departments: {}, by_day: {}, subscription: { company: { day: 0, month: 12 }, members: { clara: { day: 0, month: 12 } }, departments: {}, by_day: {} },
+      forecast_month: 9.5, per_member: { clara: { done: 4, cost_per_done: 0.8, forecast_month: 9.5 } }, per_role: {}, budget: {}, limits: {}, outcomes: {} }
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/costs': costs, 'PUT /api/companies/co_1': org, 'PUT /api/companies/co_1/members/clara': org })
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Custos' }))
+    expect(await screen.findByText('$9.50', { selector: 'p' })).toBeInTheDocument()
+    expect(screen.getByText('$12.00', { selector: 'p' })).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Salário de Clara'), '20')
+    await userEvent.click(screen.getByRole('checkbox', { name: /Contar o trabalho por assinatura/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/members/clara'))?.body).toMatchObject({ budget: { month_usd: 20 } }))
+    expect(calls.find((c) => c.method === 'PUT' && c.url === '/api/companies/co_1')?.body).toMatchObject({ budget: { subscription: true } })
+  })
+})

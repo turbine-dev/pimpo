@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -227,6 +228,11 @@ func (a *App) putCompany(w http.ResponseWriter, r *http.Request, o company.Org) 
 		if _, err := a.People.Get(ctx, p.Person); err != nil && p.Person != people.OwnerID {
 			return nil, server.StatusError{Status: 400, Msg: "partners are people of the house"}
 		}
+	}
+	// A company never gets more than its person may spend; what it spends
+	// is also checked against that limit and the house's at every call.
+	if limit := a.Budget.LimitFor(ctx, o.Person); limit > 0 && (c.Budget.DayUSD > limit || c.Budget.MonthUSD > 31*limit) {
+		return nil, server.StatusError{Status: 400, Msg: fmt.Sprintf("the company may spend at most its person's own limit, $%.2f a day", limit)}
 	}
 	return a.Companies.Update(ctx, c)
 }

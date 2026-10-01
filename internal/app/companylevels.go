@@ -32,7 +32,7 @@ func (a *App) levelOf(ctx context.Context, o company.Org, m company.Matter) (int
 	if err != nil {
 		return top.Level, "no judge answered, so up to the CEO"
 	}
-	a.Budget.Record(people.With(ctx, o.Person), budget.Cost{USD: ans.CostUSD, Source: "judgment", Ref: "company:" + o.ID})
+	a.Budget.Record(people.With(ctx, o.Person), budget.Cost{USD: ans.CostUSD, Source: "judgment", Ref: "company:" + o.ID, Member: o.ID + "/"})
 	switch {
 	case ans.P >= 0.5:
 		return top.Level, fmt.Sprintf("judged the CEO's (%.0f%%)", ans.P*100)

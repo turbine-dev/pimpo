@@ -305,6 +305,9 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 		delete(s.stops, e.ID)
 		s.mu.Unlock()
 	}()
+	if o.Member != "" {
+		ctx = host.WithMember(ctx, o.Member)
+	}
 	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: !o.Live, Person: e.Person, Member: o.Member}
 	role := ""
 	if as := o.Assistant; as != nil && !o.Live {

@@ -170,7 +170,7 @@ func (a *App) holdMeeting(ctx context.Context, o company.Org, m company.Meeting)
 		resp, err := a.generate(withAssistant(ctx, firstNonEmptyList(mem.Models, role.Models)), req)
 		if resp.CostUSD > 0 {
 			m.CostUSD += resp.CostUSD
-			a.Budget.Record(ctx, budget.Cost{USD: resp.CostUSD, Source: "meeting", Ref: "company:" + o.ID + "/meeting:" + m.ID})
+			a.Budget.Record(ctx, budget.Cost{USD: resp.CostUSD, Source: "meeting", Ref: "company:" + o.ID + "/meeting:" + m.ID, Member: o.ID + "/" + member})
 		}
 		return resp, err
 	}
