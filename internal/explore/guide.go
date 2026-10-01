@@ -32,10 +32,15 @@ func searchGuide(guide, query string) string {
 	var hits []hit
 	for i, s := range sections {
 		low := strings.ToLower(s)
+		head, _, _ := strings.Cut(low, "\n")
 		n := 0
 		for _, w := range words {
 			if len(w) > 2 && strings.Contains(low, w) {
 				n++
+				// A word in the section's heading says more about it.
+				if strings.Contains(head, w) {
+					n += 2
+				}
 			}
 		}
 		if n > 0 {

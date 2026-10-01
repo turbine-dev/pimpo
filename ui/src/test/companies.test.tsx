@@ -330,6 +330,27 @@ describe('Company performance', () => {
   })
 })
 
+describe('Company showcase', () => {
+  it('turns the public page on and puts a shipped brief on it', async () => {
+    const product = { briefs: [{ id: 'b_1', company: 'co_1', author: 'bia', title: 'Modo escuro', problem: '', proposal: '', claims: [], scores: { value: 1, differentiation: 1, adoption: 1, build_risk: 1, safety_risk: 1 }, score: 4, predictions: [], state: 'shipped', created: '' }], signals: [], accuracy: {} }
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/product': product, '/api/companies/co_1/media': [],
+      'PUT /api/companies/co_1/showcase': { ...org, showcase: { on: true, slug: 'lume' } }, 'POST /api/companies/co_1/showcase/items': org })
+    wrap(routes(), '/companies/co_1?tab=showcase')
+    await userEvent.type(await screen.findByLabelText('Endereço'), 'lume')
+    await userEvent.click(screen.getByRole('switch', { name: 'Pública' }))
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/showcase'))?.body).toEqual({ on: true, slug: 'lume' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Brief: Modo escuro/ }))
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/showcase/items'))?.body).toEqual({ kind: 'brief', ref: 'b_1' }))
+  })
+
+  it('is not there for a partner', async () => {
+    mockFetch({ '/api/companies/co_1': { ...org, grant: 'configure' }, '/api/state': { person: 'rui' } })
+    wrap(routes(), '/companies/co_1')
+    await screen.findByRole('tab', { name: 'Organograma' })
+    expect(screen.queryByRole('tab', { name: 'Vitrine' })).not.toBeInTheDocument()
+  })
+})
+
 describe('Company media', () => {
   it('shows each video with what its checks found', async () => {
     const maker: Org = { ...org, roles: [...org.roles, { id: 'video', title: 'Vídeo', capabilities: ['media.render'] }] }

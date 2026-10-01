@@ -66,6 +66,8 @@ type Company struct {
 	// suggesting.
 	EarnAfter int  `json:"earn_after,omitempty"`
 	EarnOff   bool `json:"earn_off,omitempty"`
+	// Showcase is the company's optional public page.
+	Showcase Showcase `json:"showcase,omitzero"`
 	// Disclosure is how what members publish says it was made with AI;
 	// it can be worded, not left out.
 	Disclosure string `json:"disclosure,omitempty"`
