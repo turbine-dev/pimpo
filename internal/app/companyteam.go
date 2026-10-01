@@ -389,7 +389,7 @@ func (a *App) answerQuestion(ctx context.Context, q company.Question, choice, re
 			}
 		})
 	}
-	go a.pumpWork(context.WithoutCancel(ctx))
+	a.goWork(ctx, a.pumpWork)
 	return q, nil
 }
 

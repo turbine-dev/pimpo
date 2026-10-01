@@ -461,6 +461,7 @@ func (a *App) Start(ctx context.Context) error {
 	a.background(func() { a.lessonDigestLoop(ctx, time.Hour) })
 	a.background(func() { a.catalogLoop(ctx, time.Hour) })
 	a.resumeJobs(ctx)
+	a.work.life.Store(&ctx)
 	a.resumeWork(ctx)
 	a.background(func() { a.workLoop(ctx, workPumpEvery) })
 	a.background(func() { a.digestLoop(ctx, 30*time.Minute) })
