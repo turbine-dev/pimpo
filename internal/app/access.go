@@ -58,6 +58,8 @@ var memberRoutes = routeSet(
 	"GET /api/companies", "POST /api/companies", "POST /api/companies/import", "GET /api/companies/{id}", "PUT /api/companies/{id}", "DELETE /api/companies/{id}", "GET /api/companies/{id}/export",
 	"PUT /api/companies/{id}/departments/{part}", "DELETE /api/companies/{id}/departments/{part}", "PUT /api/companies/{id}/roles/{part}", "DELETE /api/companies/{id}/roles/{part}",
 	"PUT /api/companies/{id}/members/{part}", "DELETE /api/companies/{id}/members/{part}", "GET /api/companies/{id}/members/{part}/preview",
+	"GET /api/companies/{id}/tasks", "POST /api/companies/{id}/tasks", "POST /api/companies/{id}/tasks/{part}/drop",
+	"GET /api/companies/{id}/questions", "POST /api/companies/{id}/questions/{part}/answer",
 	"GET /api/companies/{id}/work", "POST /api/companies/{id}/members/{part}/work", "POST /api/companies/{id}/work/{part}/stop",
 	"PUT /api/companies/{id}/agent-routines/{part}", "DELETE /api/companies/{id}/agent-routines/{part}", "POST /api/companies/{id}/agent-routines/{part}/run",
 	"PUT /api/companies/{id}/members/{part}/routines/{routine}", "DELETE /api/companies/{id}/members/{part}/routines/{routine}",
