@@ -32,6 +32,6 @@ objc2 = "0.6"
 block2 = "0.6"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.61", features = ["Security_Credentials_UI", "Foundation"] }
+windows = { version = "0.62", features = ["Security_Credentials_UI", "Foundation"] }
 
 # No LTO or stripping: with them the iOS release build shows a blank page.
