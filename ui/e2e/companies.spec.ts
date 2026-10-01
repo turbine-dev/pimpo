@@ -22,6 +22,11 @@ test('a company: its chart, a boss changed by dragging, in both themes', async (
   await page.request.post(`${base}/members/clara/work`, { data: { request: 'Responda as mensagens de hoje' }, headers: auth })
   await page.request.post(`${base}/tasks`, { data: { assignee: 'bia', title: 'Lançar a coleção', objective: 'Vender a coleção nova', acceptance: 'Está no ar' }, headers: auth })
   await page.request.post(`${base}/notes`, { data: { kind: 'decision', title: 'Trocas', body: 'Até 30 dias.' }, headers: auth })
+  const company = await (await page.request.get(base, { headers: auth })).json()
+  await page.request.put(base, { data: { ...company, levels: { unsure: 0.8, list: [
+    { level: 1, name: 'Operacional', decides: 'self', when: {} },
+    { level: 2, name: 'Estratégica', decides: 'ceo', route: 'opinions', when: { over_usd: 100, kinds: ['price'] } },
+  ] } }, headers: auth })
   await page.goto('/auth?token=e2e-token')
   await page.goto('/companies')
   await page.getByRole('link', { name: /Lume Moda/ }).click()
@@ -47,6 +52,10 @@ test('a company: its chart, a boss changed by dragging, in both themes', async (
     await expect(page.getByText('Lançar a coleção')).toBeVisible()
     const board = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
     expect(board.violations.map((v) => `${theme} tasks: ${v.id} ${v.nodes.map((n) => n.html.slice(0, 160)).join(' | ')}`)).toEqual([])
+    await page.getByRole('tab', { name: 'Alçadas' }).click()
+    await expect(page.getByRole('heading', { name: 'Níveis de decisão' })).toBeVisible()
+    const levels = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+    expect(levels.violations.map((v) => `${theme} levels: ${v.id} ${v.nodes.map((n) => n.html.slice(0, 160)).join(' | ')}`)).toEqual([])
     await page.getByRole('tab', { name: 'Memória' }).click()
     await expect(page.getByRole('heading', { name: 'O que a empresa lembra' })).toBeVisible()
     const memory = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()

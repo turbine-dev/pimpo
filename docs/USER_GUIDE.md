@@ -109,6 +109,11 @@ The company remembers, meets and reports:
 - **Meetings** let two to eight agents talk an agenda through, for one to four rounds, with a cost cap of up to $2. They only talk, with no tools. The chair writes the minutes and the decisions, which go to the memory. Start one from **Memory**, or a member calls one with `company.meet`.
 - **This week**, at the top of **Work**, sums up what each member did and what it cost, the tasks closed and the questions waiting. On Mondays the same summary reaches you on your channels.
 
+You choose who decides:
+
+- **Autonomy**, in a member's or a role's window, says who decides when an action would ask first: the agent itself, Jev with a minimum certainty (sure yes goes ahead, sure no is refused, unsure goes on), a model, the boss, a committee of members voting, a cascade of these, or you. A member's lines come first, then its role's, then the company's default, set in **Decision levels**; with none, you decide. What the administrator's own rules ask, and messages to other people, always reach a person. **What this agent receives** shows who decides each tool.
+- **Decision levels** say which decisions go up to whom. **Use the four suggested levels** (operational, tactical, managerial, strategic) or write your own: each level names who decides (the agent, its boss, the head of its department or you) and its triggers (an amount over a limit, a risk, kinds such as price or contract, being public, words). A decision is at the highest level its triggers reach. Questions the triggers leave below the top are checked by Jev, and an unsure one comes to you. Strategic questions can reach you **with the bosses' opinions** on the way. No rule or autonomy takes a decision of your level away from you. The **Simulator** shows where a decision would land, and **Decisions** lists every answer given, by whom.
+
 A company is yours alone, like your routines: nobody else in the house finds it, the administrator included. Shared with someone as a partner, they see it with what they were given (view, approve or configure); only you delete it or change who it is shared with.
 
 ## Run history

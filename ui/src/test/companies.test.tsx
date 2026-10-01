@@ -224,3 +224,34 @@ describe('Company memory and meetings', () => {
     await waitFor(() => expect(calls.find((c) => c.url.endsWith('/meetings') && c.method === 'POST')?.body).toEqual({ title: 'Coleção', agenda: 'Quando lançar?', chair: 'bia', participants: ['bia', 'clara'], rounds: 2, max_usd: 1 }))
   })
 })
+
+describe('Company autonomy and decision levels', () => {
+  it("gives a member Jev to decide what it would ask", async () => {
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, 'PUT /api/companies/co_1/members/clara': org })
+    wrap(routes(), '/companies/co_1')
+    const chart = (await screen.findAllByLabelText('Organograma', { selector: '.org' }))[0]
+    await userEvent.click(within(chart).getByRole('button', { name: 'Abrir Clara' }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: /Mais uma linha/ }))
+    await userEvent.selectOptions(within(dialog).getByLabelText('Quem decide'), 'jev')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect((calls.find((c) => c.method === 'PUT')?.body as { autonomy: unknown }).autonomy).toEqual([{ min_risk: 'irreversible', decider: { kind: 'jev', threshold: 0.9 } }]))
+  })
+
+  it('sets the suggested levels and simulates one', async () => {
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/decisions': [], 'PUT /api/companies/co_1': org,
+      'POST /api/companies/co_1/levels/simulate': { level: 4, name: 'Estratégica', decides: 'ceo', decider: 'Ana', why: 'kind price' } })
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Alçadas' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Usar os quatro níveis sugeridos' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => {
+      const body = calls.find((c) => c.method === 'PUT')?.body as { levels: { list: { decides: string }[] } }
+      expect(body.levels.list.map((l) => l.decides)).toEqual(['self', 'boss', 'head', 'ceo'])
+    })
+    await userEvent.type(screen.getByLabelText('A decisão'), 'Mudar o preço?')
+    await userEvent.type(screen.getByLabelText('Tipo'), 'price')
+    await userEvent.click(screen.getByRole('button', { name: 'Ver o nível' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Nível 4 (Estratégica): decide Ana')
+  })
+})

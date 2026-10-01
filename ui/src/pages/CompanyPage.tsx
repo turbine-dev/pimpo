@@ -16,6 +16,7 @@ import { LayersTab, MemberPreview } from './CompanyLayers'
 import { HoursEditor, MemberWork, WorkLog } from './CompanyWork'
 import { TaskBoard } from './CompanyTasks'
 import { Digest, MemoryTab } from './CompanyMemory'
+import { AutonomyEditor, LevelsTab } from './CompanyDecide'
 
 // Deleting reads in the danger color on a plain button, which keeps its
 // contrast in both themes.
@@ -70,7 +71,7 @@ export function CompanyPage({ id }: { id: string }) {
 
       <Tabs.Root defaultValue="chart">
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('co.sections')}>
-          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['layers', t('co.tab.layers')], ['memory', t('co.tab.memory')], ['work', t('co.tab.work')]].map(([v, l]) => (
+          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['layers', t('co.tab.layers')], ['memory', t('co.tab.memory')], ['levels', t('co.tab.levels')], ['work', t('co.tab.work')]].map(([v, l]) => (
             <Tabs.Trigger key={v} value={v} className="-mb-px border-b-2 border-transparent px-3 py-2.5 text-[13.5px] text-ink-3 hover:text-ink data-[state=active]:border-ink data-[state=active]:font-medium data-[state=active]:text-ink">{l}</Tabs.Trigger>
           ))}
         </Tabs.List>
@@ -118,6 +119,9 @@ export function CompanyPage({ id }: { id: string }) {
         <Tabs.Content value="tasks">
           <TaskBoard org={o} can={can} />
         </Tabs.Content>
+        <Tabs.Content value="levels">
+          <LevelsTab org={o} can={can} onSaved={done} />
+        </Tabs.Content>
         <Tabs.Content value="memory">
           <MemoryTab org={o} can={can} />
         </Tabs.Content>
@@ -144,7 +148,7 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
   const isNew = start.id === ''
   const seat = m.kind === 'person'
   const save = useMutation({
-    mutationFn: () => api.saveMember(org.id, { ...m, id: m.id || unique(slug(m.name, 'membro'), org.members.map((x) => x.id)), models: models ?? undefined }),
+    mutationFn: () => api.saveMember(org.id, { ...m, id: m.id || unique(slug(m.name, 'membro'), org.members.map((x) => x.id)), models: models ?? undefined, autonomy: m.autonomy?.length ? m.autonomy : undefined }),
     onSuccess: (o) => { onSaved(o); onClose() },
   })
   const remove = useMutation({ mutationFn: () => api.deleteMember(org.id, m.id), onSuccess: (o) => { onSaved(o); onClose() } })
@@ -181,6 +185,8 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
             </Field>
             <Field label={t('co.persona')}><textarea className={area} value={m.persona ?? ''} maxLength={2000} placeholder={t('co.personaHint')} onChange={(e) => setM({ ...m, persona: e.target.value })} /></Field>
             <ModelChoice value={models} onChange={setModels} legend={t('co.models')} />
+            <AutonomyEditor org={org} value={m.autonomy ?? []} onChange={(autonomy) => setM({ ...m, autonomy })}
+              capabilities={m.capabilities?.length ? m.capabilities : org.roles.find((r) => r.id === m.role)?.capabilities ?? []} />
             <Switch on={m.state !== 'paused'} onChange={(on) => setM({ ...m, state: on ? 'active' : 'paused' })} label={t('co.working')} />
           </>)}
         </fieldset>
@@ -221,7 +227,7 @@ function RoleDialog({ org, start, onClose, onSaved }: { org: Org; start: Company
   const save = useMutation({
     mutationFn: () => api.saveRole(org.id, {
       ...r, id: r.id || unique(slug(r.title, 'cargo'), org.roles.map((x) => x.id)), responsibilities: lines(duties), deliverables: lines(deliverables),
-      account_kinds: kinds.split(',').map((x) => x.trim()).filter(Boolean), models: models ?? undefined,
+      account_kinds: kinds.split(',').map((x) => x.trim()).filter(Boolean), models: models ?? undefined, autonomy: r.autonomy?.length ? r.autonomy : undefined,
     }),
     onSuccess: (o) => { onSaved(o); onClose() },
   })
@@ -239,6 +245,7 @@ function RoleDialog({ org, start, onClose, onSaved }: { org: Org; start: Company
           <CapabilityPicker value={r.capabilities ?? []} onChange={(capabilities) => setR({ ...r, capabilities })} />
         </fieldset>
         <ModelChoice value={models} onChange={setModels} legend={t('co.models')} />
+        <AutonomyEditor org={org} value={r.autonomy ?? []} onChange={(autonomy) => setR({ ...r, autonomy })} capabilities={r.capabilities ?? []} />
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         {remove.error && <p className="text-[13px] text-danger">{remove.error.message}</p>}
         <div className="flex gap-2">
