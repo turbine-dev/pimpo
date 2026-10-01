@@ -103,6 +103,12 @@ Members work together, and stop to ask:
 - A handed-down task is checked against the task it comes from; one that may have strayed shows **May have strayed from the goal** and waits for its assignee's boss to say whether it starts. Pimpo refuses tasks that would make delegation run away: more than four levels deep, more than ten open tasks for one member, the same task twice, or work handed back up.
 - A member can stop and ask its boss before deciding. The question waits until it is answered, as long as that takes, and costs nothing meanwhile; the member takes other work in the meantime. A boss that is an agent answers it as work of its own (or asks its own boss); when the boss is you, the question reaches **Needs you**, your channels with the options as buttons, and the **Tasks** tab. With the answer, the work goes on from where it stopped, told what it already did.
 
+The company remembers, meets and reports:
+
+- **Memory** holds what the company decided and learned: decisions, facts, lessons and the minutes of meetings. Every member receives the latest with its brief, and looks further back with `company.recall`. What a member keeps with `company.remember` is shown as that member's words, never as a rule; only you forget a note.
+- **Meetings** let two to eight agents talk an agenda through, for one to four rounds, with a cost cap of up to $2. They only talk, with no tools. The chair writes the minutes and the decisions, which go to the memory. Start one from **Memory**, or a member calls one with `company.meet`.
+- **This week**, at the top of **Work**, sums up what each member did and what it cost, the tasks closed and the questions waiting. On Mondays the same summary reaches you on your channels.
+
 A company is yours alone, like your routines: nobody else in the house finds it, the administrator included. Shared with someone as a partner, they see it with what they were given (view, approve or configure); only you delete it or change who it is shared with.
 
 ## Run history

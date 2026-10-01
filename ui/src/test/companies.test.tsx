@@ -203,3 +203,24 @@ describe('Company tasks and questions', () => {
     await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toMatchObject({ assignee: 'clara', title: 'Responder clientes', objective: 'Ninguém sem resposta', acceptance: 'Caixa vazia' }))
   })
 })
+
+describe('Company memory and meetings', () => {
+  it('keeps a decision and calls a meeting', async () => {
+    const notes = [{ id: 'n_1', company: 'co_1', kind: 'minutes', title: 'Planejamento', body: 'Lançar sexta.', by: 'member:co_1/bia', created: new Date().toISOString() }]
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/notes': notes, '/api/companies/co_1/meetings': [],
+      'POST /api/companies/co_1/notes': notes[0], 'POST /api/companies/co_1/meetings': { id: 'm_1' } })
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Memória' }))
+    expect(await screen.findByText(/Ata · Bia/)).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Título'), 'Trocas')
+    await userEvent.type(screen.getByLabelText('Texto'), 'Até 30 dias.')
+    await userEvent.click(screen.getByRole('button', { name: /Guardar/ }))
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/notes') && c.method === 'POST')?.body).toEqual({ kind: 'decision', title: 'Trocas', body: 'Até 30 dias.' }))
+    await userEvent.click(screen.getByRole('button', { name: /Nova reunião/ }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.type(within(dialog).getByLabelText('Assunto'), 'Coleção')
+    await userEvent.type(within(dialog).getByLabelText('Pauta'), 'Quando lançar?')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Começar reunião' }))
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/meetings') && c.method === 'POST')?.body).toEqual({ title: 'Coleção', agenda: 'Quando lançar?', chair: 'bia', participants: ['bia', 'clara'], rounds: 2, max_usd: 1 }))
+  })
+})
