@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/turbine-dev/pimpo/internal/backup"
+	"github.com/turbine-dev/pimpo/internal/company"
 	"github.com/turbine-dev/pimpo/internal/connector/external"
 	"github.com/turbine-dev/pimpo/internal/event"
 	"github.com/turbine-dev/pimpo/internal/memory"
@@ -132,6 +133,11 @@ func TestOlderDataOpens(t *testing.T) {
 			r, err := st.Routine(ctx, "resumo-da-manha")
 			if err != nil || r.Body.Code != fixtureRoutine.Code {
 				t.Fatalf("routine: %+v, %v", r, err)
+			}
+			if cs, err := company.Open(ev.DB()); err != nil {
+				t.Fatalf("company tables on an older database: %v", err)
+			} else if list, err := cs.List(ctx); err != nil || len(list) != 0 {
+				t.Fatalf("companies on an older database: %v, %v", list, err)
 			}
 			mem, err := memory.Open(filepath.Join(out, "memory"))
 			if err != nil {

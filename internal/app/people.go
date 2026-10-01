@@ -120,7 +120,7 @@ func (a *App) removePerson(w http.ResponseWriter, r *http.Request) {
 
 // forgetPerson deletes what a removed person kept: their accounts, memory
 // (and the house facts they shared), chats, explorations, routines, jobs,
-// reminders, places and queued emails. Their id is never given again, so
+// companies, reminders, places and queued emails. Their id is never given again, so
 // anything missed here stays unreachable.
 func (a *App) forgetPerson(ctx context.Context, id string) {
 	prefix := "person." + id + "."
@@ -154,6 +154,7 @@ func (a *App) forgetPerson(ctx context.Context, id string) {
 		a.Scheduler.Changed(ctx, rid)
 	}
 	a.forgetJobsOf(ctx, id)
+	a.forgetCompaniesOf(ctx, id)
 	remindersMu.Lock()
 	kept := []reminder{}
 	for _, r := range a.reminders(ctx) {
