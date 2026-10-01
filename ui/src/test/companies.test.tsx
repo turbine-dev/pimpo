@@ -165,3 +165,41 @@ describe('Company work', () => {
     await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url.endsWith('/w_1/stop'))).toBe(true))
   })
 })
+
+describe('Company tasks and questions', () => {
+  const tasks = [
+    { id: 't_1', company: 'co_1', root: 't_1', depth: 1, requester: 'ceo', assignee: 'bia', title: 'Lançar a coleção', objective: 'Vender', acceptance: 'No ar', state: 'doing', cost_usd: 0, created: '', updated: '' },
+    { id: 't_2', company: 'co_1', parent: 't_1', root: 't_1', depth: 2, requester: 'bia', assignee: 'clara', title: 'Fotos dos produtos', objective: 'Fotos', acceptance: '20 fotos', state: 'waiting', drift: true, dossier: [{ kind: 'task', ref: 't_1', title: 'Lançar a coleção' }], cost_usd: 0, created: '', updated: '' },
+  ]
+  const questions = [{ id: 'q_1', company: 'co_1', from: 'bia', to: 'ceo', kind: 'decide', text: 'Dar 15% de desconto?', options: ['Sim', 'Não'], recommendation: 'Sim, só hoje', asked: new Date().toISOString() }]
+
+  it('shows tasks by state and answers what was asked of the CEO', async () => {
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/tasks': tasks, '/api/companies/co_1/questions': questions,
+      'POST /api/companies/co_1/questions/q_1/answer': { ...questions[0], answer: 'Não' } })
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Tarefas' }))
+    const doing = await screen.findByRole('region', { name: 'Fazendo' })
+    expect(within(doing).getByText('Lançar a coleção')).toBeInTheDocument()
+    const waiting = screen.getByRole('region', { name: 'Esperando ou travada' })
+    expect(within(waiting).getByText('Pode ter fugido do objetivo')).toBeInTheDocument()
+    expect(screen.getByText('Recomenda: Sim, só hoje')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Não' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ choice: 'Não' }))
+  })
+
+  it('hands a member a task with what it needs', async () => {
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/tasks': [], '/api/companies/co_1/questions': [], 'POST /api/companies/co_1/tasks': tasks[0] })
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Tarefas' }))
+    await userEvent.click(screen.getByRole('button', { name: /Nova tarefa/ }))
+    const dialog = await screen.findByRole('dialog')
+    const send = within(dialog).getByRole('button', { name: 'Passar a tarefa' })
+    await userEvent.selectOptions(within(dialog).getByLabelText('Para quem'), 'clara')
+    await userEvent.type(within(dialog).getByLabelText('Título'), 'Responder clientes')
+    await userEvent.type(within(dialog).getByLabelText('Objetivo'), 'Ninguém sem resposta')
+    expect(send).toBeDisabled()
+    await userEvent.type(within(dialog).getByLabelText('Pronta quando'), 'Caixa vazia')
+    await userEvent.click(send)
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toMatchObject({ assignee: 'clara', title: 'Responder clientes', objective: 'Ninguém sem resposta', acceptance: 'Caixa vazia' }))
+  })
+})

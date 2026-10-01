@@ -153,6 +153,9 @@ func (o Org) OnDuty(member string, t time.Time) bool {
 const (
 	WorkQueued  = "queued"
 	WorkRunning = "running"
+	// WorkWaiting is work stopped on a question until it is answered; the
+	// member takes other work meanwhile.
+	WorkWaiting = "waiting"
 	WorkDone    = "done"
 	WorkFailed  = "failed"
 	WorkStopped = "stopped"
@@ -171,12 +174,53 @@ type Work struct {
 	MaxUSD      float64         `json:"max_usd"`
 	State       string          `json:"state"`
 	Exploration string          `json:"exploration,omitempty"`
-	Summary     string          `json:"summary,omitempty"`
-	Error       string          `json:"error,omitempty"`
-	CostUSD     float64         `json:"cost_usd"`
-	Queued      time.Time       `json:"queued"`
-	Started     time.Time       `json:"started,omitzero"`
-	Ended       time.Time       `json:"ended,omitzero"`
+	Task        string          `json:"task,omitempty"`
+	Question    string          `json:"question,omitempty"`
+	// Episodes are the earlier stretches of this work, before each
+	// question, so it picks up where it left off.
+	Episodes []Episode `json:"episodes,omitempty"`
+	Summary  string    `json:"summary,omitempty"`
+	Error    string    `json:"error,omitempty"`
+	CostUSD  float64   `json:"cost_usd"`
+	Queued   time.Time `json:"queued"`
+	Started  time.Time `json:"started,omitzero"`
+	Ended    time.Time `json:"ended,omitzero"`
+}
+
+// An Episode is one stretch of a piece of work: what it did and the
+// question it stopped on, with the answer once there is one.
+type Episode struct {
+	Exploration string   `json:"exploration"`
+	Summary     string   `json:"summary,omitempty"`
+	Actions     []string `json:"actions,omitempty"`
+	Question    string   `json:"question,omitempty"`
+	Answer      string   `json:"answer,omitempty"`
+}
+
+// Resume is what a piece of work is told when it goes on after a
+// question: what it did before, and the answer.
+func (w Work) Resume() string {
+	if len(w.Episodes) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n\nYou already started this work. Where you left off:\n")
+	for _, e := range w.Episodes {
+		if len(e.Actions) > 0 {
+			b.WriteString("- You did: " + strings.Join(e.Actions, "; ") + "\n")
+		}
+		if e.Summary != "" {
+			b.WriteString("- You noted: " + e.Summary + "\n")
+		}
+		if e.Question != "" {
+			b.WriteString("- You asked: " + e.Question + "\n")
+		}
+		if e.Answer != "" {
+			b.WriteString("- The answer: " + e.Answer + "\n")
+		}
+	}
+	b.WriteString("Go on from there; do not redo what is done.")
+	return b.String()
 }
 
 const workSchema = `

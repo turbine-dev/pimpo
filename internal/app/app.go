@@ -377,6 +377,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.jobRoutes()
 	a.companyRoutes()
 	a.companyWorkRoutes()
+	a.companyTeamRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()
@@ -647,6 +648,7 @@ func (a *App) router() *connector.Router {
 		audioCap{a},
 		askCap{a},
 		wakeCap{a},
+		teamCap{a},
 		a.spotify(),
 		&sheets.Sheets{Token: func(ctx context.Context) (string, error) { return a.Google.Token(ctx) }, Granted: func(ctx context.Context) bool { return a.Google.Granted(ctx, oauth.SheetsScope) }, API: a.SheetsAPI},
 	)
@@ -1296,6 +1298,8 @@ func (h handler) Button(ctx context.Context, action, id string) (string, error) 
 			return "", err
 		}
 		return h.a.answer(ctx, qid, i)
+	case "coq":
+		return h.a.answerCompanyButton(ctx, id)
 	case "approve", "always", "deny", "batch", "grant":
 		ans := map[string]approval.Answer{"approve": approval.Once, "always": approval.Always, "deny": approval.Deny, "batch": approval.Run, "grant": approval.Routine}[action]
 		if ans == approval.Always && people.From(ctx) != people.OwnerID {
@@ -1340,8 +1344,8 @@ func (h handler) allowed(ctx context.Context, action, id string) error {
 		return nil
 	}
 	switch action {
-	case "answer":
-		// answer checks that the question is theirs.
+	case "answer", "coq":
+		// Both check that the question is theirs to answer.
 		return nil
 	}
 	return errors.New(i18n.T(ctx, "msg.ownerOnly"))

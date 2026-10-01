@@ -41,14 +41,17 @@ const (
 const CEO = "ceo"
 
 type Company struct {
-	ID       string    `json:"id"`
-	Person   string    `json:"person,omitempty"`
-	Name     string    `json:"name"`
-	Industry string    `json:"industry,omitempty"`
-	Mission  string    `json:"mission,omitempty"`
-	Zone     string    `json:"zone,omitempty"`
-	Hours    Hours     `json:"hours"`
-	Paused   bool      `json:"paused,omitempty"`
+	ID       string `json:"id"`
+	Person   string `json:"person,omitempty"`
+	Name     string `json:"name"`
+	Industry string `json:"industry,omitempty"`
+	Mission  string `json:"mission,omitempty"`
+	Zone     string `json:"zone,omitempty"`
+	Hours    Hours  `json:"hours"`
+	Paused   bool   `json:"paused,omitempty"`
+	// Lateral lets members hand work to others of their department, not
+	// only to the people below them.
+	Lateral  bool      `json:"lateral,omitempty"`
 	Partners []Partner `json:"partners,omitempty"`
 	Created  time.Time `json:"created"`
 	Updated  time.Time `json:"updated"`
