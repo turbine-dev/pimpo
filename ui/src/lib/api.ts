@@ -210,7 +210,7 @@ export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: s
 // A kind the server adds later shows with its title and an open link
 // until the UI learns its buttons. amount is what a grantable approval
 // moves; count is how many a summary item (lessons) stands for.
-export type NeedKind = 'approval' | 'credential_request' | 'question' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
+export type NeedKind = 'approval' | 'credential_request' | 'question' | 'company_question' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
 export type Need = { kind: NeedKind; id: string; title: string; detail?: string; created?: string; urgency: number; expires?: string; link?: string; actions: string[]; options?: string[]; proposal?: string; risk?: number; amount?: number; count?: number }
 export type Needs = { items: Need[]; counts: Partial<Record<NeedKind, number>>; total: number }
 export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string; grantable?: boolean }
@@ -231,6 +231,9 @@ export type CompanyContext = { id: string; scope: Scope; of?: string; title: str
 export type CompanyRule = { id: string; scope: Scope; of?: string; text: string; when: Rule['when'] & { except?: string[] }; then: Rule['then']; off?: boolean; exception?: boolean; overrides?: string[] }
 export type AgentRoutine = { id: string; member: string; name: string; instructions: string; schedule?: string; max_usd?: number; off?: boolean }
 export type MemberActivity = { state: 'working' | 'queued'; work?: string; task?: string; since?: string; queue?: number }
+export type Link = { kind: string; ref: string; title?: string }
+export type CompanyTask = { id: string; company: string; parent?: string; root: string; depth: number; requester: string; assignee: string; title: string; objective: string; acceptance: string; constraints?: string; out_of_scope?: string; due?: string; priority?: number; state: 'todo' | 'doing' | 'waiting' | 'review' | 'blocked' | 'done' | 'dropped'; dossier?: Link[]; low_trust?: boolean; drift?: boolean; report?: string; cost_usd: number; created: string; updated: string }
+export type CompanyQuestion = { id: string; company: string; from: string; to: string; kind: 'decide' | 'clarify'; work?: string; task?: string; text: string; options?: string[]; recommendation?: string; context?: string; drift?: boolean; answer?: string; reason?: string; answered_by?: string; asked: string; answered?: string }
 export type Work = { id: string; company: string; member: string; request: string; from: string; max_usd: number; state: 'queued' | 'running' | 'done' | 'failed' | 'stopped'; exploration?: string; summary?: string; error?: string; cost_usd: number; queued: string; started?: string; ended?: string }
 export type Org = Company & { departments: Department[]; roles: CompanyRole[]; members: Member[]; contexts: CompanyContext[]; rules: CompanyRule[]; agent_routines: AgentRoutine[]; activity?: Record<string, MemberActivity>; routines?: { id: string; name: string; member: string; state: string }[] }
 export type MemberPreview = { brief: string; rules: { capability: string; risk: CapRisk; verdict: Rule['then']; reason?: string; rule?: string }[] }
@@ -360,6 +363,11 @@ export const api = {
   saveCompanyRule: (id: string, r: CompanyRule) => request<Org>('PUT', `/api/companies/${id}/rules/${r.id}`, r),
   deleteCompanyRule: (id: string, part: string) => request<Org>('DELETE', `/api/companies/${id}/rules/${part}`),
   companyWork: (id: string) => request<Work[]>('GET', `/api/companies/${id}/work`),
+  companyTasks: (id: string) => request<CompanyTask[]>('GET', `/api/companies/${id}/tasks`),
+  assignTask: (id: string, t: Partial<CompanyTask>) => request<CompanyTask>('POST', `/api/companies/${id}/tasks`, t),
+  dropTask: (id: string, task: string) => request<CompanyTask>('POST', `/api/companies/${id}/tasks/${task}/drop`),
+  companyQuestions: (id: string) => request<CompanyQuestion[]>('GET', `/api/companies/${id}/questions`),
+  answerCompanyQuestion: (id: string, q: string, choice: string, reason?: string) => request<CompanyQuestion>('POST', `/api/companies/${id}/questions/${q}/answer`, { choice, reason }),
   giveWork: (id: string, member: string, task: string, max_usd?: number) => request<Work>('POST', `/api/companies/${id}/members/${member}/work`, { request: task, max_usd }),
   stopWork: (id: string, work: string) => request<Work>('POST', `/api/companies/${id}/work/${work}/stop`),
   saveAgentRoutine: (id: string, r: AgentRoutine) => request<Org>('PUT', `/api/companies/${id}/agent-routines/${r.id}`, r),

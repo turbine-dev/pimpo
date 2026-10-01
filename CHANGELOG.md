@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- A company's **Tasks** tab: the board by state, handing a member a task, each task's dossier, and members' questions answered in place and in **Needs you**.
 - Company members work together: `company.assign` hands a task with its objective, how to know it is done and a dossier of where it came from; `company.report` reports back; `company.ask` stops the work until the boss answers (an agent with `company.answer`, or you from **Needs you** and your channels), and the work goes on from where it was; tasks that stray from their root ask the boss first.
 - On a company's page: who is working now and what waits, a **Work** tab with stop, giving a member work or an agent routine, giving it your own routines, working hours, and pausing the company, a department or a member.
 - Company members at work: live work from a queue with working hours, one piece at a time per member, agent routines on a schedule, compiled routines that wake a member's agent with `company.wake`, and pausing a member, a department or a company.

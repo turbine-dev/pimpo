@@ -97,6 +97,12 @@ Members work on their own:
 - On the org chart a member that is working shows a blinking dot (hover it for the task), and a number shows how much waits. The **Work** tab lists what members did, are doing and will do, with what each cost; **Stop** ends a piece of work.
 - **Pause company** stops every member, and a department or a member can be paused on its own: what they were doing stops and waits, and their routines do not run until you resume.
 
+Members work together, and stop to ask:
+
+- **Tasks** shows the work handed between members, by state. **New task** hands one to a member with its objective and how to know it is done (both required), its constraints and what is out of scope. Members hand tasks to the people below them the same way (and to their department when **Edit company** allows it); Pimpo keeps each task's dossier, the links to where it came from, so whoever does it reads the original and not a summary of a summary. When a task is done or blocked, whoever gave it is told.
+- A handed-down task is checked against the task it comes from; one that may have strayed shows **May have strayed from the goal** and waits for its assignee's boss to say whether it starts. Pimpo refuses tasks that would make delegation run away: more than four levels deep, more than ten open tasks for one member, the same task twice, or work handed back up.
+- A member can stop and ask its boss before deciding. The question waits until it is answered, as long as that takes, and costs nothing meanwhile; the member takes other work in the meantime. A boss that is an agent answers it as work of its own (or asks its own boss); when the boss is you, the question reaches **Needs you**, your channels with the options as buttons, and the **Tasks** tab. With the answer, the work goes on from where it stopped, told what it already did.
+
 A company is yours alone, like your routines: nobody else in the house finds it, the administrator included. Shared with someone as a partner, they see it with what they were given (view, approve or configure); only you delete it or change who it is shared with.
 
 ## Run history

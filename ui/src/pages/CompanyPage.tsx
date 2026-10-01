@@ -14,6 +14,7 @@ import { below, deptColor, slug, unique } from '../lib/org'
 import { area, field } from './Companies'
 import { LayersTab, MemberPreview } from './CompanyLayers'
 import { HoursEditor, MemberWork, WorkLog } from './CompanyWork'
+import { TaskBoard } from './CompanyTasks'
 
 // Deleting reads in the danger color on a plain button, which keeps its
 // contrast in both themes.
@@ -68,7 +69,7 @@ export function CompanyPage({ id }: { id: string }) {
 
       <Tabs.Root defaultValue="chart">
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('co.sections')}>
-          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['layers', t('co.tab.layers')], ['work', t('co.tab.work')]].map(([v, l]) => (
+          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['layers', t('co.tab.layers')], ['work', t('co.tab.work')]].map(([v, l]) => (
             <Tabs.Trigger key={v} value={v} className="-mb-px border-b-2 border-transparent px-3 py-2.5 text-[13.5px] text-ink-3 hover:text-ink data-[state=active]:border-ink data-[state=active]:font-medium data-[state=active]:text-ink">{l}</Tabs.Trigger>
           ))}
         </Tabs.List>
@@ -112,6 +113,9 @@ export function CompanyPage({ id }: { id: string }) {
         </Tabs.Content>
         <Tabs.Content value="layers">
           <LayersTab org={o} can={can} onSaved={done} />
+        </Tabs.Content>
+        <Tabs.Content value="tasks">
+          <TaskBoard org={o} can={can} />
         </Tabs.Content>
         <Tabs.Content value="work">
           <WorkLog org={o} can={can} />
