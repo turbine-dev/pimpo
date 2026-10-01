@@ -254,6 +254,8 @@ export type CompanyBrief = { id: string; company: string; author: string; title:
   state: 'proposed' | 'accepted' | 'rejected' | 'shipped'; ref?: string; reason?: string; shipped?: string; reviews?: { day: number; results: { metric: string; actual: string; met: boolean }[]; by: string; at: string }[]; created: string }
 export type BudgetProposal = { id: string; company: string; by: string; scope: 'company' | 'department' | 'member'; of?: string; month_usd: number; was: number; reason: string; state: 'proposed' | 'accepted' | 'declined'; created: string }
 export type MonthCosts = { month: string; total: number; members: Record<string, number>; departments: Record<string, number>; previous_total: number; subscription: number; anomalies: string[] }
+export type CompanyMedia = { id: string; company: string; member: string; kind: 'audio' | 'image' | 'video'; file: string; title?: string; format?: 'tutorial' | 'short'; seconds?: number;
+  check?: { seconds: number; width: number; height: number; lufs?: number; captions: boolean; problems: string[] }; created: string }
 export type MemoryScope = 'company' | 'member' | 'task'
 export type ScopePolicy = { write?: 'free' | 'decide' | 'off'; decider?: Decider; auto?: boolean }
 export type MemoryPolicy = Partial<Record<MemoryScope, ScopePolicy>>
@@ -413,6 +415,8 @@ export const api = {
   companyProposals: (id: string) => request<BudgetProposal[]>('GET', `/api/companies/${id}/proposals`),
   decideProposal: (id: string, proposal: string, accept: boolean) => request<BudgetProposal>('POST', `/api/companies/${id}/proposals/${proposal}`, { accept }),
   companyMonth: (id: string, month?: string) => request<MonthCosts>('GET', `/api/companies/${id}/month${month ? `?month=${month}` : ''}`),
+  companyMedia: (id: string) => request<CompanyMedia[]>('GET', `/api/companies/${id}/media`),
+  mediaURL: (id: string, media: string) => `/api/companies/${id}/media/${media}`,
   companyCoders: (id: string) => request<{ id: string; name: string; sandbox: boolean; installed: boolean }[]>('GET', `/api/companies/${id}/coders`),
   companyTasks: (id: string) => request<CompanyTask[]>('GET', `/api/companies/${id}/tasks`),
   assignTask: (id: string, t: Partial<CompanyTask>) => request<CompanyTask>('POST', `/api/companies/${id}/tasks`, t),

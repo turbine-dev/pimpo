@@ -328,6 +328,24 @@ func (b *Browser) Open(ctx context.Context, run, address string, allowed Allowed
 	return b.page(ctx, t, allowed)
 }
 
+// Screenshot is a PNG of the page at address, as seen in a window of
+// width by height, for a video's scenes.
+func (b *Browser) Screenshot(ctx context.Context, run, address string, width, height int, allowed Allowed) ([]byte, error) {
+	if width < 320 || width > 3840 || height < 320 || height > 3840 {
+		return nil, errors.New("a screenshot is 320 to 3840 pixels each way")
+	}
+	if _, err := b.Open(ctx, run, address, allowed); err != nil {
+		return nil, err
+	}
+	t, err := b.tabFor(run, allowed)
+	if err != nil {
+		return nil, err
+	}
+	var png []byte
+	err = b.do(ctx, t, chromedp.EmulateViewport(int64(width), int64(height)), chromedp.Sleep(500*time.Millisecond), chromedp.CaptureScreenshot(&png))
+	return png, err
+}
+
 // Read describes the run's current page.
 func (b *Browser) Read(ctx context.Context, run string, allowed Allowed) (Page, error) {
 	t, err := b.tabFor(run, allowed)
