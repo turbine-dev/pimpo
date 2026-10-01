@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- Decision levels for companies: triggers (amount, risk, kind, public, words) put each decision at a level that names who decides, the highest always the CEO, with a classifier for unclear questions and the bosses' opinions on the way up.
 - Autonomy for company members: per member, role or company, who decides what an action asks first (the member, Jev, a model, the boss, a committee, a cascade or a person), with every decision kept.
 - A company's **Memory** tab with its notes and meetings, and **This week** on the **Work** tab.
 - A company's memory (decisions, lessons, minutes) that every member reads, meetings between agents with minutes and decisions, and a summary of the week for the CEO every Monday.

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -33,6 +34,13 @@ func (a *App) companyDecides(ctx context.Context, act policy.Action, house polic
 	final := house
 	if d, ok := o.Decide(member, act); ok && policy.Stricter(house.Verdict, d.Verdict) != house.Verdict {
 		final = d
+	}
+	if !act.Rehearsal && act.Risk >= capability.Reversible && (final.Verdict == policy.Allow || final.Verdict == policy.Reversible) {
+		// No rule takes a decision away from whoever its level names.
+		level, why := o.Levels.Classify(actionMatter(act))
+		if l, ok := o.Levels.At(level); ok && l.Decides != company.LevelSelf {
+			final = policy.Decision{Verdict: policy.Ask, Reason: fmt.Sprintf("a %s decision (%s)", l.Name, why), Rule: fmt.Sprintf("company:level:%d", level)}
+		}
 	}
 	if final.Verdict == policy.Ask && !act.Rehearsal && delegable(act, final) {
 		final = a.decideFor(ctx, o, member, act, final)

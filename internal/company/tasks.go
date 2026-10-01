@@ -179,6 +179,14 @@ const (
 	Clarify = "clarify"
 )
 
+// An Opinion is a boss's recommendation on a question that goes to the
+// CEO; it decides nothing.
+type Opinion struct {
+	Member string `json:"member"`
+	Choice string `json:"choice"`
+	Reason string `json:"reason,omitempty"`
+}
+
 // A Question is a member stopping to ask before it goes on. It waits until
 // it is answered.
 type Question struct {
@@ -195,7 +203,14 @@ type Question struct {
 	Context        string   `json:"context,omitempty"`
 	// Drift is the question Pimpo asks when a task may have strayed from
 	// its root: its second option drops the task.
-	Drift      bool      `json:"drift,omitempty"`
+	Drift bool `json:"drift,omitempty"`
+	// Level is the decision level the question was found at, and Why what
+	// put it there.
+	Level    int       `json:"level,omitempty"`
+	Why      string    `json:"why,omitempty"`
+	Opinions []Opinion `json:"opinions,omitempty"`
+	// Consulted are the bosses asked for an opinion on the way up.
+	Consulted  []string  `json:"consulted,omitempty"`
 	Answer     string    `json:"answer,omitempty"`
 	Reason     string    `json:"reason,omitempty"`
 	AnsweredBy string    `json:"answered_by,omitempty"`
@@ -372,6 +387,21 @@ func (s *Store) Questions(ctx context.Context, company string, pending bool) ([]
 		out = append(out, x)
 	}
 	return out, rows.Err()
+}
+
+// AddOpinion records a consulted boss's recommendation.
+func (s *Store) AddOpinion(ctx context.Context, id string, op Opinion) (Question, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	q, err := s.Question(ctx, id)
+	if err != nil {
+		return Question{}, err
+	}
+	if !slices.Contains(q.Consulted, op.Member) || slices.ContainsFunc(q.Opinions, func(x Opinion) bool { return x.Member == op.Member }) {
+		return Question{}, errors.New("your opinion was not asked, or is already given")
+	}
+	q.Opinions = append(q.Opinions, op)
+	return q, s.SaveQuestion(ctx, q)
 }
 
 // AnswerQuestion records an answer once; a second answer is refused.

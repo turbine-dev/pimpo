@@ -87,6 +87,9 @@ func (o Org) checkWork() error {
 	if err := o.Hours.check(); err != nil {
 		return err
 	}
+	if err := o.Levels.check(); err != nil {
+		return err
+	}
 	if o.Decider.Kind != "" {
 		if err := o.Decider.check(o); err != nil {
 			return fmt.Errorf("the company's decider: %w", err)
