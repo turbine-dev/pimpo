@@ -52,6 +52,8 @@ type Company struct {
 	// Decider is who decides, by default, what a member's action asks
 	// first; none means a person.
 	Decider Decider `json:"decider,omitzero"`
+	// Levels say which decisions go up to whom, the highest to the CEO.
+	Levels Levels `json:"levels,omitzero"`
 	// Lateral lets members hand work to others of their department, not
 	// only to the people below them.
 	Lateral  bool      `json:"lateral,omitempty"`

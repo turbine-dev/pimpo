@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -39,9 +40,9 @@ func init() {
 		{Name: "company.report", Risk: capability.Notify, Signature: "company.report({task, status, summary, links})",
 			Returns: "{ok}; tells whoever gave you a task that it is done or blocked (status done or blocked), with what you did",
 			Schema:  `{"type":"object","properties":{"task":{"type":"string"},"status":{"type":"string","enum":["done","blocked"]},"summary":{"type":"string"},"links":{"type":"array"}},"required":["task","status","summary"]}`},
-		{Name: "company.ask", Risk: capability.Notify, Signature: "company.ask({question, options, recommendation, context, to})",
+		{Name: "company.ask", Risk: capability.Notify, Signature: "company.ask({question, options, recommendation, context, to, kind, amount_usd, public})",
 			Returns: "{asked: id}; stops this work until the answer comes: to your boss to decide (to: boss, the default), or to whoever gave you the task to clarify it (to: requester). End your turn right after, saying where you are; you go on from there with the answer",
-			Schema:  `{"type":"object","properties":{"question":{"type":"string"},"options":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"},"context":{"type":"string"},"to":{"type":"string","enum":["boss","requester"]}},"required":["question"]}`},
+			Schema:  `{"type":"object","properties":{"question":{"type":"string"},"options":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"},"context":{"type":"string"},"to":{"type":"string","enum":["boss","requester"]},"kind":{"type":"string"},"amount_usd":{"type":"number"},"public":{"type":"boolean"}},"required":["question"]}`},
 		{Name: "company.answer", Risk: capability.Notify, Signature: "company.answer({question, choice, reason})",
 			Returns: "{ok}; answers a question one of your reports asked you; the choice is one of its options",
 			Schema:  `{"type":"object","properties":{"question":{"type":"string"},"choice":{"type":"string"},"reason":{"type":"string"}},"required":["question","choice"]}`},
@@ -111,11 +112,15 @@ func (c teamCap) Call(ctx context.Context, name, _ string, args any) (any, error
 		return map[string]bool{"ok": true}, c.a.report(ctx, o, me, in.Task, in.Status, in.Summary, in.Links)
 	case "company.ask":
 		var in struct {
-			Question, Recommendation, Context, To string
-			Options                               []string
+			Question, Recommendation, Context, To, Kind string
+			Options                                     []string
+			Public                                      bool
 		}
 		json.Unmarshal(b, &in)
-		q, err := c.a.ask(ctx, o, me, work, in.Question, in.Options, in.Recommendation, in.Context, in.To)
+		var raw map[string]any
+		json.Unmarshal(b, &raw)
+		amount, _ := raw["amount_usd"].(float64)
+		q, err := c.a.ask(ctx, o, me, work, in.Question, in.Options, in.Recommendation, in.Context, in.To, company.Matter{Kind: in.Kind, AmountUSD: amount, Public: in.Public, Text: in.Question})
 		if err != nil {
 			return nil, err
 		}
@@ -124,6 +129,11 @@ func (c teamCap) Call(ctx context.Context, name, _ string, args any) (any, error
 		var in struct{ Question, Choice, Reason string }
 		json.Unmarshal(b, &in)
 		q, err := c.a.Companies.Question(ctx, in.Question)
+		if err == nil && q.Company == o.ID && q.To != me && slices.Contains(q.Consulted, me) {
+			// A boss on the way up gives an opinion; it decides nothing.
+			_, err = c.a.Companies.AddOpinion(ctx, q.ID, company.Opinion{Member: me, Choice: clip(in.Choice, 200), Reason: clip(in.Reason, 1000)})
+			return map[string]bool{"ok": err == nil}, err
+		}
 		if err != nil || q.Company != o.ID || q.To != me {
 			return nil, errors.New("there is no such question for you")
 		}
@@ -239,7 +249,7 @@ func (a *App) report(ctx context.Context, o company.Org, me, id, status, summary
 }
 
 // ask stops a piece of work on a question until it is answered.
-func (a *App) ask(ctx context.Context, o company.Org, me string, work company.Work, text string, options []string, recommendation, context, to string) (company.Question, error) {
+func (a *App) ask(ctx context.Context, o company.Org, me string, work company.Work, text string, options []string, recommendation, context, to string, matter company.Matter) (company.Question, error) {
 	if work.ID == "" {
 		return company.Question{}, errors.New("a question is asked during a piece of work")
 	}
@@ -255,6 +265,20 @@ func (a *App) ask(ctx context.Context, o company.Org, me string, work company.Wo
 			return company.Question{}, errors.New("you have no boss to ask")
 		}
 		q.To = boss.ID
+		if level, why := a.levelOf(ctx, o, matter); level > 0 {
+			l, _ := o.Levels.At(level)
+			q.Level, q.Why = level, why
+			if decider, ok := o.DeciderAt(me, l); ok && decider.ID != me {
+				q.To = decider.ID
+			}
+			if q.To == company.CEO && l.Route == company.RouteOpinions {
+				for _, up := range o.Chain(me) {
+					if up.Kind == company.Agent {
+						q.Consulted = append(q.Consulted, up.ID)
+					}
+				}
+			}
+		}
 	case "requester":
 		t, err := a.Companies.Task(ctx, work.Task)
 		if err != nil {
@@ -287,6 +311,13 @@ func (a *App) putQuestion(ctx context.Context, o company.Org, q company.Question
 	a.Events.Append(ctx, "company.question.asked", actorFor(o, q.From), map[string]any{"company": o.ID, "question": q.ID, "from": q.From, "to": q.To, "person": o.Person})
 	from, _ := o.Member(q.From)
 	to, _ := o.Member(q.To)
+	for _, id := range q.Consulted {
+		text := fmt.Sprintf("%s asks the CEO (question %s): %s\nGive your recommendation with company.answer; it is an opinion, the CEO decides.", from.Name, q.ID, q.Text)
+		if len(q.Options) > 0 {
+			text += "\nOptions: " + strings.Join(q.Options, "; ")
+		}
+		a.enqueue(ctx, o, id, text, nil, "opinion:"+q.ID, 0)
+	}
 	if to.Kind == company.Agent {
 		text := fmt.Sprintf("%s asks you (question %s): %s", from.Name, q.ID, q.Text)
 		if len(q.Options) > 0 {

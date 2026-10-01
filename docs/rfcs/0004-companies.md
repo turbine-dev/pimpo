@@ -76,7 +76,7 @@ Members form a tree through **reports to**. The top is a person, the **CEO**. A 
 
 **Decision levels.** The company defines levels, each with a decider; the highest is always a person, the CEO. The suggested levels are operational (the member), tactical (the boss), managerial (the head of the department) and strategic (the CEO). Criteria the company sets place a decision on a level: amount, risk, whether it is public, kind (price, contract, partnership, hiring, budget, legal, architecture...), named entities, impact, and confidence (an unsure decider moves the decision up a level).
 
-- Deterministic criteria (amount, risk, the declared kind, the capability) are checked by the host without a model; only what they leave open goes to a classifier (Jev or a model), and an unsure classifier moves the decision up.
+- Deterministic criteria (amount, risk, the declared kind, the capability) are checked by the host without a model; only what they leave open goes to a classifier (Jev or a model), and an unsure classifier sends the decision up to the CEO: one question too many costs little, a missed one costs the decision.
 - A strategic decision reaches the CEO **directly**, or **with opinions**: it goes up the tree, each boss adds a recommendation and none decides.
 - An agent can never lower a decision's level. Every decision records its level and the criterion that set it. No rule or exception takes a decision away from the CEO.
 

@@ -58,6 +58,7 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
           qc.invalidateQueries({ queryKey: ['company-notes'] })
           qc.invalidateQueries({ queryKey: ['company-meetings'] })
           qc.invalidateQueries({ queryKey: ['company-digest'] })
+          qc.invalidateQueries({ queryKey: ['company-decisions'] })
         }
         qc.invalidateQueries({ queryKey: ['events'] })
       }

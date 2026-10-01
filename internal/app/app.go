@@ -380,6 +380,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.companyTeamRoutes()
 	a.companyMemoryRoutes()
 	a.companyDecideRoutes()
+	a.companyLevelRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()

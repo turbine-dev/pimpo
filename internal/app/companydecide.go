@@ -49,10 +49,10 @@ type ruling struct {
 
 // decideFor runs the member's decider on an action that would ask first.
 func (a *App) decideFor(ctx context.Context, o company.Org, member string, act policy.Action, d policy.Decision) policy.Decision {
-	dec := o.DeciderFor(member, act)
+	dec, level, why := companyLevels{o}.raise(member, act, o.DeciderFor(member, act))
 	r := a.rule(ctx, o, member, act, dec)
 	record := company.Decision{ID: newTeamID("d_"), Company: o.ID, Member: member, Question: actionText(act), Decider: dec.Label(),
-		Answer: r.answer, P: r.p, Reason: clip(r.reason, 1000), CostUSD: r.cost, Created: time.Now().UTC()}
+		Answer: r.answer, P: r.p, Reason: clip(r.reason, 1000), CostUSD: r.cost, Level: level, Why: why, Created: time.Now().UTC()}
 	if r.answer != "unsure" {
 		a.Companies.SaveDecision(ctx, record)
 		a.Events.Append(ctx, "company.decided", "member:"+o.ID+"/"+member, map[string]any{"company": o.ID, "member": member, "answer": r.answer, "decider": record.Decider, "person": o.Person})
@@ -101,8 +101,11 @@ func (a *App) rule(ctx context.Context, o company.Org, member string, act policy
 		return r
 	case company.DecideModel:
 		return a.vote(ctx, o, member, member, act, dec.Model)
-	case company.DecideBoss:
+	case company.DecideBoss, "head":
 		boss, ok := o.Boss(member)
+		if dec.Kind == "head" {
+			boss, ok = o.Head(member)
+		}
 		if !ok || boss.Kind != company.Agent {
 			return ruling{answer: "unsure", by: "a person"}
 		}
