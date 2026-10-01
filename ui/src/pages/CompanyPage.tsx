@@ -18,6 +18,7 @@ import { TaskBoard } from './CompanyTasks'
 import { Digest, MemoryTab } from './CompanyMemory'
 import { AutonomyEditor, LevelsTab } from './CompanyDecide'
 import { CostsTab } from './CompanyCosts'
+import { MemberAccounts, SharedAccounts } from './CompanyAccounts'
 
 // Deleting reads in the danger color on a plain button, which keeps its
 // contrast in both themes.
@@ -120,8 +121,9 @@ export function CompanyPage({ id }: { id: string }) {
         <Tabs.Content value="tasks">
           <TaskBoard org={o} can={can} />
         </Tabs.Content>
-        <Tabs.Content value="costs">
+        <Tabs.Content value="costs" className="space-y-8">
           <CostsTab org={o} can={can} onSaved={done} />
+          <SharedAccounts org={o} can={can} onSaved={done} />
         </Tabs.Content>
         <Tabs.Content value="levels">
           <LevelsTab org={o} can={can} onSaved={done} />
@@ -207,6 +209,12 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
         )}
       </form>
       {!isNew && !seat && <div className="mt-4 space-y-3">
+        {!isNew && !seat && can && (
+          <details className="rounded-xl border border-line p-3">
+            <summary className="cursor-pointer text-[13px] font-medium">{t('co.ownAccounts')}</summary>
+            <div className="mt-3"><MemberAccounts org={org} member={m.id} /></div>
+          </details>
+        )}
         {!isNew && !seat && can && (
           <details className="rounded-xl border border-line p-3">
             <summary className="cursor-pointer text-[13px] font-medium">{t('co.workAndRoutines')}</summary>

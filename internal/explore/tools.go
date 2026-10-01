@@ -46,7 +46,7 @@ func tools(h *host.Host, mem *memory.Memory, recall Recall, guide string, origin
 		spec := capability.Catalog[name]
 		name := name
 		desc := fmt.Sprintf("%s -> %s. Risk: %s.", spec.Signature, spec.Returns, spec.Risk)
-		if spec.Risk >= capability.Reversible {
+		if spec.Risk >= capability.Reversible && h.DryRun {
 			desc += " While exploring this is simulated: it is recorded and shown to the owner, not done."
 		}
 		schema := schemas[name]

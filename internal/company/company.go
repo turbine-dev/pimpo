@@ -57,6 +57,8 @@ type Company struct {
 	// Budget is what the company may spend; past it, members stop or are
 	// only warned, as OnLimit says.
 	Budget Budget `json:"budget,omitzero"`
+	// Accounts are the company's shared accounts and who may use them.
+	Accounts []SharedAccount `json:"accounts,omitempty"`
 	// Lateral lets members hand work to others of their department, not
 	// only to the people below them.
 	Lateral  bool      `json:"lateral,omitempty"`

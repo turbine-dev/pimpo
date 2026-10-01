@@ -181,6 +181,7 @@ type App struct {
 	Store     *store.Store
 	Companies *company.Store
 	work      companyWork
+	browsers  map[string]*browser.Browser
 	Budget    *budget.Budget
 	Channel   *owner.Channel
 	Explore   *explore.Service
@@ -382,6 +383,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.companyDecideRoutes()
 	a.companyLevelRoutes()
 	a.companyCostRoutes()
+	a.companyAccountRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()
@@ -451,9 +453,13 @@ func (a *App) Start(ctx context.Context) error {
 		<-ctx.Done()
 		a.mu.Lock()
 		b := a.browser
+		members := a.browsers
 		a.mu.Unlock()
 		if b != nil {
 			b.Close()
+		}
+		for _, mb := range members {
+			mb.Close()
 		}
 	}()
 	a.restartListener(ctx)
@@ -673,9 +679,13 @@ func (a *App) personChat(ctx context.Context) (int64, error) {
 	return p.Chat, nil
 }
 
-// personal names a setting or secret of whoever ctx acts for. The owner's
-// keep the names they had before people existed.
+// personal names a setting or secret of whoever ctx acts for. A company
+// member has its own, never its person's; the owner's keep the names they
+// had before people existed.
 func personal(ctx context.Context, name string) string {
+	if m := host.MemberOf(ctx); m != "" {
+		return memberKey(m, name)
+	}
 	if p := people.From(ctx); p != people.OwnerID {
 		return "person." + p + "." + name
 	}
@@ -691,7 +701,7 @@ type zoned struct {
 func (z zoned) Capabilities() []string { return z.cal.Capabilities() }
 func (z zoned) Call(ctx context.Context, c, s string, args any) (any, error) {
 	zone := loadZone(z.a.Settings(ctx).Zone)
-	if src, _ := z.a.Events.Get(ctx, "calendar.source"); src == "google" && z.a.Google != nil && people.From(ctx) == people.OwnerID {
+	if src, _ := z.a.Events.Get(ctx, "calendar.source"); src == "google" && z.a.Google != nil && people.From(ctx) == people.OwnerID && host.MemberOf(ctx) == "" {
 		return (&calendar.Google{Token: z.a.Google.Token, Zone: zone}).Call(ctx, c, s, args)
 	}
 	z.cal.Zone = zone
@@ -719,7 +729,7 @@ func (m mailConn) Call(ctx context.Context, c, s string, args any) (any, error) 
 		}
 		return v, err
 	}}
-	if auth, _ := m.a.Events.Get(ctx, personal(ctx, "mail.auth")); auth == "oauth" && m.a.Google != nil && people.From(ctx) == people.OwnerID {
+	if auth, _ := m.a.Events.Get(ctx, personal(ctx, "mail.auth")); auth == "oauth" && m.a.Google != nil && people.From(ctx) == people.OwnerID && host.MemberOf(ctx) == "" {
 		acct.Token = m.a.Google.Token
 	}
 	return (&mail.Mail{Account: acct}).Call(ctx, c, s, args)
