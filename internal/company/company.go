@@ -59,6 +59,8 @@ type Company struct {
 	Budget Budget `json:"budget,omitzero"`
 	// Accounts are the company's shared accounts and who may use them.
 	Accounts []SharedAccount `json:"accounts,omitempty"`
+	// Memory says how each scope of memory is written.
+	Memory MemoryPolicy `json:"memory,omitzero"`
 	// Lateral lets members hand work to others of their department, not
 	// only to the people below them.
 	Lateral  bool      `json:"lateral,omitempty"`

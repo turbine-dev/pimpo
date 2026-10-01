@@ -28,6 +28,7 @@ type File struct {
 	Decider       Decider        `yaml:"decider,omitempty"`
 	Levels        Levels         `yaml:"levels,omitempty"`
 	Budget        Budget         `yaml:"budget,omitempty"`
+	Memory        MemoryPolicy   `yaml:"memory,omitempty"`
 	Departments   []Department   `yaml:"departments,omitempty"`
 	Roles         []Role         `yaml:"roles,omitempty"`
 	Members       []FileMember   `yaml:"members"`
@@ -74,7 +75,7 @@ type FileMember struct {
 
 // Export writes the company as a file.
 func (o Org) Export() ([]byte, error) {
-	f := File{Format: FileFormat, Name: o.Name, Industry: o.Industry, Mission: o.Mission, Zone: o.Zone, Hours: o.Hours, Decider: o.Decider, Levels: o.Levels, Budget: o.Budget, Departments: o.Departments, Roles: o.Roles, AgentRoutines: o.AgentRoutines}
+	f := File{Format: FileFormat, Name: o.Name, Industry: o.Industry, Mission: o.Mission, Zone: o.Zone, Hours: o.Hours, Decider: o.Decider, Levels: o.Levels, Budget: o.Budget, Memory: o.Memory, Departments: o.Departments, Roles: o.Roles, AgentRoutines: o.AgentRoutines}
 	for _, m := range o.Members {
 		f.Members = append(f.Members, FileMember{ID: m.ID, Kind: m.Kind, Title: m.Title, Role: m.Role, Department: m.Department, ReportsTo: m.ReportsTo,
 			Name: m.Name, Avatar: m.Avatar, Persona: m.Persona, Capabilities: m.Capabilities, Models: m.Models, Autonomy: m.Autonomy, Budget: m.Budget})
@@ -104,7 +105,7 @@ func Import(b []byte, id, person, personName string, now time.Time) (Org, error)
 	case f.Format < 1:
 		return Org{}, errors.New("this is not a company file")
 	}
-	o := Org{Company: Company{ID: id, Person: person, Name: f.Name, Industry: f.Industry, Mission: f.Mission, Zone: f.Zone, Hours: f.Hours, Decider: f.Decider, Levels: f.Levels, Budget: f.Budget, Created: now, Updated: now},
+	o := Org{Company: Company{ID: id, Person: person, Name: f.Name, Industry: f.Industry, Mission: f.Mission, Zone: f.Zone, Hours: f.Hours, Decider: f.Decider, Levels: f.Levels, Budget: f.Budget, Memory: f.Memory, Created: now, Updated: now},
 		Departments: f.Departments, Roles: f.Roles, AgentRoutines: f.AgentRoutines}
 	if o.Departments == nil {
 		o.Departments = []Department{}

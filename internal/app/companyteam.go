@@ -412,7 +412,7 @@ func (a *App) pauseEpisode(ctx context.Context, id string, e store.Exploration) 
 	a.Companies.UpdateWork(ctx, id, func(w *company.Work) {
 		w.CostUSD += e.CostUSD
 		if n := len(w.Episodes); n > 0 {
-			w.Episodes[n-1].Exploration, w.Episodes[n-1].Summary, w.Episodes[n-1].Actions = e.ID, clip(e.Summary, 1500), actions
+			w.Episodes[n-1].Exploration, w.Episodes[n-1].Summary, w.Episodes[n-1].Actions, w.Episodes[n-1].Kept = e.ID, clip(e.Summary, 1500), actions, true
 		}
 		if w.Question == "" && w.State == company.WorkQueued {
 			return

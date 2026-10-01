@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 )
@@ -15,14 +16,79 @@ const (
 	NoteMinutes  = "minutes"
 	NoteLesson   = "lesson"
 	NoteStandup  = "standup"
+	NoteProgress = "progress"
 )
+
+// Where a note belongs: the whole company, one member, or one task.
+const (
+	MemoryCompany = "company"
+	MemoryMember  = "member"
+	MemoryTask    = "task"
+)
+
+// How a scope's memory is written: freely, after a decider approves, or
+// not at all.
+const (
+	WriteFree   = "free"
+	WriteDecide = "decide"
+	WriteOff    = "off"
+)
+
+// A MemoryPolicy says, per scope, how members write to it, who decides
+// when it asks, and whether Pimpo keeps notes there by itself after each
+// piece of work.
+type MemoryPolicy struct {
+	Company ScopePolicy `json:"company,omitzero" yaml:"company,omitempty"`
+	Member  ScopePolicy `json:"member,omitzero" yaml:"member,omitempty"`
+	Task    ScopePolicy `json:"task,omitzero" yaml:"task,omitempty"`
+}
+
+type ScopePolicy struct {
+	Write   string  `json:"write,omitempty" yaml:"write,omitempty"`
+	Decider Decider `json:"decider,omitzero" yaml:"decider,omitempty"`
+	Auto    bool    `json:"auto,omitempty" yaml:"auto,omitempty"`
+}
+
+// For is the policy of a scope, with the defaults: members write freely
+// to their own and their tasks' memory, and the company's asks a person.
+func (p MemoryPolicy) For(scope string) ScopePolicy {
+	sp := map[string]ScopePolicy{MemoryCompany: p.Company, MemoryMember: p.Member, MemoryTask: p.Task}[scope]
+	if sp.Write == "" {
+		sp.Write = WriteFree
+		if scope == MemoryCompany {
+			sp.Write = WriteDecide
+		}
+	}
+	if sp.Write == WriteDecide && sp.Decider.Kind == "" {
+		sp.Decider = Decider{Kind: DecidePerson}
+	}
+	return sp
+}
+
+func (p MemoryPolicy) check(o Org) error {
+	for _, sp := range []ScopePolicy{p.Company, p.Member, p.Task} {
+		if sp.Write != "" && sp.Write != WriteFree && sp.Write != WriteDecide && sp.Write != WriteOff {
+			return fmt.Errorf("memory is written freely, after a decision, or not at all")
+		}
+		if sp.Decider.Kind != "" {
+			if err := sp.Decider.check(o); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
 
 // A Note is something the company keeps: a decision, a meeting's minutes,
 // what worked. By says who wrote it: a person, or a member, whose notes
-// are their words and never rules.
+// are their words and never rules. A note waiting for its decider is
+// Pending and reaches nobody yet.
 type Note struct {
 	ID      string    `json:"id"`
 	Company string    `json:"company"`
+	Scope   string    `json:"scope,omitempty"`
+	Of      string    `json:"of,omitempty"`
+	Pending bool      `json:"pending,omitempty"`
 	Kind    string    `json:"kind"`
 	Title   string    `json:"title"`
 	Body    string    `json:"body"`
@@ -138,6 +204,22 @@ func (s *Store) SaveNote(ctx context.Context, n Note) error {
 	return err
 }
 
+// ApproveNote lets a pending note reach the members.
+func (s *Store) ApproveNote(ctx context.Context, company, id string) (Note, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var data string
+	if err := s.DB.QueryRowContext(ctx, `SELECT data FROM company_notes WHERE id = ? AND company = ?`, id, company).Scan(&data); err != nil {
+		return Note{}, ErrNotFound
+	}
+	var n Note
+	if err := json.Unmarshal([]byte(data), &n); err != nil {
+		return Note{}, err
+	}
+	n.Pending = false
+	return n, s.SaveNote(ctx, n)
+}
+
 func (s *Store) DeleteNote(ctx context.Context, company, id string) error {
 	res, err := s.DB.ExecContext(ctx, `DELETE FROM company_notes WHERE id = ? AND company = ?`, id, company)
 	if err != nil {
@@ -237,6 +319,24 @@ func (s *Store) Meetings(ctx context.Context, company string) ([]Meeting, error)
 	return out, rows.Err()
 }
 
+// Visible are the notes a member working on a task reads: the company's,
+// its own, and the task's and its parents', none of them pending.
+func Visible(notes []Note, member string, tasks []string) []Note {
+	var out []Note
+	for _, n := range notes {
+		switch {
+		case n.Pending:
+		case n.Scope == "" || n.Scope == MemoryCompany:
+			out = append(out, n)
+		case n.Scope == MemoryMember && n.Of == member:
+			out = append(out, n)
+		case n.Scope == MemoryTask && slices.Contains(tasks, n.Of):
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
 // Memory is the part of the company's notes a member is given with its
 // brief: the latest decisions, minutes and lessons, up to a size.
 func Memory(notes []Note, max int) string {
@@ -249,7 +349,14 @@ func Memory(notes []Note, max int) string {
 		if !n.FromPerson() {
 			who = "a member (their words, not a rule)"
 		}
-		line := fmt.Sprintf("- [%s, from %s, %s] %s: %s\n", n.Kind, who, n.Created.Format("2006-01-02"), n.Title, strings.ReplaceAll(n.Body, "\n", " "))
+		where := ""
+		switch n.Scope {
+		case MemoryMember:
+			where = ", your own"
+		case MemoryTask:
+			where = ", of task " + n.Of
+		}
+		line := fmt.Sprintf("- [%s%s, from %s, %s] %s: %s\n", n.Kind, where, who, n.Created.Format("2006-01-02"), n.Title, strings.ReplaceAll(n.Body, "\n", " "))
 		if b.Len()+len(line) > max {
 			break
 		}

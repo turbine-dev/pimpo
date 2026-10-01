@@ -137,8 +137,7 @@ func (a *App) answerCEO(ctx context.Context, o company.Org, id string, who []str
 	if err != nil {
 		return
 	}
-	notes, _ := a.Companies.Notes(ctx, o.ID, 50)
-	memory := company.Memory(notes, memoryInBrief)
+	notes, _ := a.Companies.Notes(ctx, o.ID, 300)
 	ceo, _ := o.Member(company.CEO)
 	for _, p := range who {
 		left := m.MaxUSD - m.CostUSD
@@ -149,7 +148,7 @@ func (a *App) answerCEO(ctx context.Context, o company.Org, id string, who []str
 		mem, _ := o.Member(p)
 		role, _ := o.Role(mem.Role)
 		models := firstNonEmptyList(mem.Models, role.Models)
-		system := o.Brief(p) + "\n\n" + memory + a.recentWork(ctx, o, p) + a.questionContext(ctx, m) +
+		system := o.Brief(p) + "\n\n" + company.Memory(company.Visible(notes, p, nil), memoryInBrief) + a.recentWork(ctx, o, p) + a.questionContext(ctx, m) +
 			fmt.Sprintf("\n\nYou are talking with %s, the CEO, about: %s. Answer as yourself, plainly and briefly (at most 200 words). You cannot act from a conversation; say what you would do, and the CEO may give it to you as a task.", ceo.Name, m.Agenda)
 		req := llm.Request{System: system, Prompt: "The conversation so far:\n" + transcript(o, m.Transcript) + "\n\nYour turn, " + mem.Name + ".", MaxCostUSD: min(meetingTurnUSD, left)}
 		if len(models) > 0 {

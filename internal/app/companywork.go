@@ -138,7 +138,7 @@ func (a *App) pumpWork(ctx context.Context) {
 	orgs := map[string]company.Org{}
 	spends := map[string]companySpend{}
 	for _, w := range waiting {
-		if w.State != company.WorkQueued || busy[w.Company+"/"+w.Member] || perCompany[w.Company] >= workPerCompany || time.Now().Before(w.NotBefore) {
+		if w.State != company.WorkQueued || w.Winding() || busy[w.Company+"/"+w.Member] || perCompany[w.Company] >= workPerCompany || time.Now().Before(w.NotBefore) {
 			continue
 		}
 		o, ok := orgs[w.Company]
@@ -202,8 +202,8 @@ func (a *App) startWork(ctx context.Context, o company.Org, w company.Work) (str
 	}
 	request += w.Resume()
 	brief := o.Brief(m.ID)
-	if notes, err := a.Companies.Notes(ctx, o.ID, 50); err == nil {
-		if mem := company.Memory(notes, memoryInBrief); mem != "" {
+	if notes, err := a.Companies.Notes(ctx, o.ID, 300); err == nil {
+		if mem := company.Memory(company.Visible(notes, m.ID, a.taskLine(ctx, w.Task)), memoryInBrief); mem != "" {
 			brief += "\n\n" + mem
 		}
 	}
@@ -293,6 +293,9 @@ func (a *App) endWork(ctx context.Context, id, state, why string, e store.Explor
 	if err != nil || requeued {
 		return
 	}
+	if w.State == company.WorkDone {
+		a.autoNotes(ctx, w)
+	}
 	o, _ := a.Companies.Org(ctx, w.Company)
 	a.Events.Append(ctx, eventWorkEnded, "system", map[string]any{"company": w.Company, "member": w.Member, "work": w.ID, "state": w.State, "cost_usd": w.CostUSD, "person": o.Person})
 }
@@ -329,6 +332,11 @@ func (a *App) holdWork(ctx context.Context, o company.Org) {
 func (a *App) resumeWork(ctx context.Context) {
 	waiting, _ := a.Companies.Waiting(ctx)
 	for _, w := range waiting {
+		if w.Winding() {
+			// What the stretch did before the restart is lost; it goes on
+			// with what it has.
+			a.Companies.UpdateWork(ctx, w.ID, func(x *company.Work) { x.Episodes[len(x.Episodes)-1].Kept = true })
+		}
 		if w.State != company.WorkRunning {
 			continue
 		}

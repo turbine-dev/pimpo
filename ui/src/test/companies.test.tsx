@@ -215,7 +215,34 @@ describe('Company memory and meetings', () => {
     await userEvent.type(screen.getByLabelText('Título'), 'Trocas')
     await userEvent.type(screen.getByLabelText('Texto'), 'Até 30 dias.')
     await userEvent.click(screen.getByRole('button', { name: /Guardar/ }))
-    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/notes') && c.method === 'POST')?.body).toEqual({ kind: 'decision', title: 'Trocas', body: 'Até 30 dias.' }))
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/notes') && c.method === 'POST')?.body).toEqual({ scope: 'company', kind: 'decision', title: 'Trocas', body: 'Até 30 dias.' }))
+  })
+
+  it("approves an agent's note and keeps notes after each piece of work", async () => {
+    const now = new Date().toISOString()
+    const notes = [
+      { id: 'n_1', company: 'co_1', scope: 'company', pending: true, kind: 'fact', title: 'Fornecedor é a Acme', body: 'Acme.', by: 'member:co_1/bia', created: now },
+      { id: 'n_2', company: 'co_1', scope: 'member', of: 'clara', kind: 'lesson', title: 'Responder em uma hora', body: 'Clientes esperam pouco.', by: 'member:co_1/clara', created: now },
+      { id: 'n_3', company: 'co_1', scope: 'member', of: 'bia', kind: 'progress', title: 'Fechou o pedido', body: 'Feito.', by: 'system', created: now },
+    ]
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/notes': notes, '/api/companies/co_1/tasks': [],
+      'POST /api/companies/co_1/notes/n_1/approve': notes[0], 'PUT /api/companies/co_1': org })
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Memória' }))
+    expect(await screen.findByRole('heading', { name: 'Aguardando aprovação' })).toBeInTheDocument()
+    await userEvent.click(screen.getAllByRole('button', { name: /Guardar$/ })[0])
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith('/notes/n_1/approve') && c.method === 'POST')).toBe(true))
+    await userEvent.click(within(screen.getByRole('group', { name: 'De quem é a memória' })).getByRole('button', { name: 'Agentes' }))
+    expect(screen.getByText(/Lição · Clara/)).toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByLabelText('Agente'), 'bia')
+    expect(screen.queryByText('Responder em uma hora')).not.toBeInTheDocument()
+    expect(screen.getByText(/Progresso · Pimpo/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('switch', { name: 'Notas automáticas em Agentes' }))
+    await userEvent.selectOptions(screen.getByLabelText('Como os agentes escrevem na memória de Empresa'), 'free')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect((calls.find((c) => c.method === 'PUT')?.body as { memory: unknown }).memory).toEqual({
+      company: { write: 'free' }, member: { write: 'free', auto: true }, task: { write: 'free' },
+    }))
   })
 
   it('opens a meeting with the CEO and talks to one agent in it', async () => {

@@ -96,6 +96,9 @@ func (o Org) checkWork() error {
 	if err := o.checkAccounts(); err != nil {
 		return err
 	}
+	if err := o.Memory.check(o); err != nil {
+		return err
+	}
 	for _, m := range o.Members {
 		if err := m.Budget.check(); err != nil {
 			return fmt.Errorf("%s: %w", m.Name, err)
@@ -228,6 +231,16 @@ type Episode struct {
 	Actions     []string `json:"actions,omitempty"`
 	Question    string   `json:"question,omitempty"`
 	Answer      string   `json:"answer,omitempty"`
+	// Kept is set once what the stretch did is recorded; the work does not
+	// go on before, even when the answer comes first.
+	Kept bool `json:"kept,omitempty"`
+}
+
+// Winding is whether the stretch that asked the last question is still
+// being recorded.
+func (w Work) Winding() bool {
+	n := len(w.Episodes)
+	return n > 0 && !w.Episodes[n-1].Kept
 }
 
 // Resume is what a piece of work is told when it goes on after a
