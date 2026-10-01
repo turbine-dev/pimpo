@@ -239,6 +239,17 @@ func AlwaysAsks(capability string) bool { return alwaysAsk[capability] != "" }
 // strength orders verdicts: when several rules match, the strictest wins.
 var strength = map[Verdict]int{Allow: 0, Reversible: 1, Ask: 2, Block: 3}
 
+// Stricter is the stricter of two verdicts.
+func Stricter(a, b Verdict) Verdict {
+	if strength[b] > strength[a] {
+		return b
+	}
+	return a
+}
+
+// Matches says whether an action meets every condition.
+func (w When) Matches(a Action) bool { return w.matches(a) }
+
 // Engine applies the owner's rules. Rules are kept in the event store so a
 // change is logged and survives restarts.
 type Engine struct {

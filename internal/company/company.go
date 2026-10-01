@@ -102,6 +102,8 @@ type Org struct {
 	Departments []Department `json:"departments"`
 	Roles       []Role       `json:"roles"`
 	Members     []Member     `json:"members"`
+	Contexts    []Context    `json:"contexts"`
+	Rules       []Rule       `json:"rules"`
 }
 
 var (
@@ -265,7 +267,7 @@ func (o Org) Check() error {
 			return fmt.Errorf("%s is in a loop of bosses", m.Name)
 		}
 	}
-	return nil
+	return o.checkLayers()
 }
 
 func (o Org) has(id string) bool { _, ok := o.Member(id); return ok }
