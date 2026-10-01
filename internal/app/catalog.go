@@ -12,6 +12,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/connector"
 	"github.com/turbine-dev/pimpo/internal/connector/external"
 	"github.com/turbine-dev/pimpo/internal/connector/services"
+	"github.com/turbine-dev/pimpo/internal/host"
 	"github.com/turbine-dev/pimpo/internal/server"
 	"github.com/turbine-dev/pimpo/internal/vault"
 )
@@ -29,6 +30,13 @@ func (a *App) catalogConfig(kind string) services.Config {
 	}
 	return func(ctx context.Context, field string) (string, error) {
 		name := personal(ctx, catalogKey(kind, field))
+		if m := host.MemberOf(ctx); m != "" && !a.hasAccount(ctx, m, kind) {
+			// A member without one of its own uses the company's, when it
+			// was given it.
+			if v, ok := a.sharedConfig(ctx, kind, field, secret[field]); ok {
+				return v, nil
+			}
+		}
 		if secret[field] {
 			v, err := a.Vault.Get(ctx, name)
 			if errors.Is(err, vault.ErrNotFound) || err == nil && strings.TrimSpace(v) == "" {

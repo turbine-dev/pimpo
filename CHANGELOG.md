@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- Company members' own accounts (mail, GitHub, Slack, Notion and every other connection), the company's shared accounts with read or act grants, kinds of account with warnings about services' terms, and agents kept out of their person's accounts, devices and memory.
 - A company's **Costs**: spending by member and department, a forecast, cost per outcome, salaries and budgets in layers, subscription use shown apart (and counted if you choose), and work that waits when a subscription runs out of turns.
 - On a company's page: autonomy lines for members and roles, a **Decision levels** tab with suggested levels, a simulator and every decision taken.
 - Decision levels for companies: triggers (amount, risk, kind, public, words) put each decision at a level that names who decides, the highest always the CEO, with a classifier for unclear questions and the bosses' opinions on the way up.

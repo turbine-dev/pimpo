@@ -31,6 +31,9 @@ func (a *App) companyDecides(ctx context.Context, act policy.Action, house polic
 	if _, ok := o.Member(member); !ok {
 		return policy.Decision{Verdict: policy.Block, Reason: "no longer in the company"}
 	}
+	if d, blocked := personalLife(act); blocked {
+		return d
+	}
 	final := house
 	if d, ok := o.Decide(member, act); ok && policy.Stricter(house.Verdict, d.Verdict) != house.Verdict {
 		final = d

@@ -267,8 +267,31 @@ describe('Company costs', () => {
     expect(screen.getByText('$12.00', { selector: 'p' })).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Salário de Clara'), '20')
     await userEvent.click(screen.getByRole('checkbox', { name: /Contar o trabalho por assinatura/ }))
-    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await userEvent.click(screen.getAllByRole('button', { name: 'Salvar' })[0])
     await waitFor(() => expect(calls.find((c) => c.url.endsWith('/members/clara'))?.body).toMatchObject({ budget: { month_usd: 20 } }))
     expect(calls.find((c) => c.method === 'PUT' && c.url === '/api/companies/co_1')?.body).toMatchObject({ budget: { subscription: true } })
+  })
+})
+
+describe('Member accounts', () => {
+  it("connects a member's own account and warns about its kind", async () => {
+    const accounts = { missing: ['github'], accounts: [
+      { kind: 'mail', name: 'mail', fields: [{ name: 'addr', label: 'IMAP server' }, { name: 'password', label: 'Password', secret: true }], configured: false, values: {} },
+      { kind: 'github', name: 'GitHub', fields: [{ name: 'token', label: 'Token', secret: true }], configured: false, values: {} },
+    ] }
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/members/clara/accounts': accounts,
+      'PUT /api/companies/co_1/members/clara/accounts/github': { kind: 'github', warning: "This service's terms may not allow automation on this kind of account." } })
+    wrap(routes(), '/companies/co_1')
+    const chart = (await screen.findAllByLabelText('Organograma', { selector: '.org' }))[0]
+    await userEvent.click(within(chart).getByRole('button', { name: 'Abrir Clara' }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(within(dialog).getByText('Contas pessoais'))
+    expect(await within(dialog).findByText('Faltam contas: github')).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Conectar' }))
+    await userEvent.type(within(dialog).getByLabelText('Token'), 'ghp_x')
+    await userEvent.selectOptions(within(dialog).getByLabelText('Tipo de conta'), 'brand')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Conectar' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({ token: 'ghp_x', account_kind: 'brand' }))
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('terms')
   })
 })

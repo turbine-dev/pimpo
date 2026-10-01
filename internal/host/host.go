@@ -153,6 +153,19 @@ func WithSource(ctx context.Context, source string) context.Context {
 
 type memberKey struct{}
 
+type capabilityKey struct{}
+
+// WithCapability marks ctx as a call for a capability, as the host does.
+func WithCapability(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, capabilityKey{}, name)
+}
+
+// CapabilityOf is the capability a call is for, as connectors see it.
+func CapabilityOf(ctx context.Context) string {
+	c, _ := ctx.Value(capabilityKey{}).(string)
+	return c
+}
+
 // WithMember marks ctx as work of a company member, "company/member", so
 // what is spent on it is booked for the member.
 func WithMember(ctx context.Context, member string) context.Context {
@@ -192,6 +205,7 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	ctx = context.WithValue(ctx, destinationsKey{}, h.Destinations)
 	ctx = context.WithValue(ctx, sourceKey{}, h.Source)
 	ctx = context.WithValue(ctx, memberKey{}, h.Member)
+	ctx = context.WithValue(ctx, capabilityKey{}, name)
 	rec := ActionRecord{Source: h.Source, Member: h.Member, Capability: name, Scope: scope, Risk: spec.Risk.String(), Args: args}
 	if person != people.OwnerID {
 		rec.Person = person

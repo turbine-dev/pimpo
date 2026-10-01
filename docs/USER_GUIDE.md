@@ -121,6 +121,12 @@ Costs have their owner:
 - Work paid by your subscription (Claude Code with a Claude plan, Codex with ChatGPT) costs no money per call, so dollar limits alone do not hold it back. **On subscription** shows what it would have cost on the API, and **Count subscription work at API prices** makes the limits count it too. When the subscription runs out of turns, the work waits an hour and tries again (up to six times) instead of failing.
 - **Hire** shows what a member in that role costs a month, from the others in it.
 
+Each agent has accounts of its own:
+
+- **Own accounts**, in a member's window, connects accounts for that agent only: its own mailbox, GitHub, Slack, Notion and any other connection Pimpo has. Each one says what kind of account it is: a service's, a machine's (where the service allows automation), the brand's, or a real person's. Pimpo warns when a service's terms may not allow that kind, such as an agent's personal profile on a social network; brand accounts are the safe choice there. A role can list the accounts it needs; its members wait until they have them, and the org chart shows a key when one is missing.
+- **The company's accounts**, on the **Costs** tab, are shared ones (the official channel, the support inbox) with what each agent may do: nothing, read, or act. An agent uses its own account first, and the company's only when it was given it.
+- An agent never uses your accounts, or another agent's. It never reaches your phone, your Mac's apps, your house, your Google account, your music, your notes or your memory, and it browses with a browser profile of its own, never with the sites you signed in to.
+
 A company is yours alone, like your routines: nobody else in the house finds it, the administrator included. Shared with someone as a partner, they see it with what they were given (view, approve or configure); only you delete it or change who it is shared with.
 
 ## Run history

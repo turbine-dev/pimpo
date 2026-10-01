@@ -334,7 +334,13 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	if s.Skills != nil {
 		skills = s.Skills(ctx)
 	}
-	all := append(tools(h, s.Memory, s.Recall, s.Guide, originOf(e, o)), skillTools(h, skills)...)
+	mem, recall := s.Memory, s.Recall
+	if o.Live {
+		// A company member works with its company's memory, never its
+		// person's own.
+		mem, recall = nil, nil
+	}
+	all := append(tools(h, mem, recall, s.Guide, originOf(e, o)), skillTools(h, skills)...)
 	s.sessions[e.ID] = session{key: key, server: &mcp.Server{Name: "pimpo", Tools: all}}
 	s.mu.Unlock()
 	defer func() {

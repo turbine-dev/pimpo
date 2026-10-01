@@ -156,6 +156,10 @@ func (a *App) pumpWork(ctx context.Context) {
 		if ok, _ := o.Working(w.Member); !ok || !o.OnDuty(w.Member, time.Now()) || !a.chose(ctx, companiesLab) {
 			continue
 		}
+		if len(a.missingAccounts(ctx, o, w.Member)) > 0 {
+			// A member starts once the accounts its role needs are there.
+			continue
+		}
 		spend, ok := spends[o.ID]
 		if !ok {
 			spend = a.spendOf(ctx, o)
@@ -458,11 +462,12 @@ func (c wakeCap) Call(ctx context.Context, _, _ string, args any) (any, error) {
 }
 
 type memberActivity struct {
-	State string `json:"state"`
-	Work  string `json:"work,omitempty"`
-	Task  string `json:"task,omitempty"`
-	Since string `json:"since,omitempty"`
-	Queue int    `json:"queue,omitempty"`
+	State   string   `json:"state"`
+	Missing []string `json:"missing,omitempty"`
+	Work    string   `json:"work,omitempty"`
+	Task    string   `json:"task,omitempty"`
+	Since   string   `json:"since,omitempty"`
+	Queue   int      `json:"queue,omitempty"`
 }
 
 // activity is what each member is doing now.
@@ -483,6 +488,19 @@ func (a *App) activity(ctx context.Context, o company.Org) map[string]memberActi
 			}
 		}
 		out[w.Member] = act
+	}
+	for _, m := range o.Members {
+		if m.Kind != company.Agent {
+			continue
+		}
+		if missing := a.missingAccounts(ctx, o, m.ID); len(missing) > 0 {
+			act := out[m.ID]
+			act.Missing = missing
+			if act.State != "working" {
+				act.State = "account_missing"
+			}
+			out[m.ID] = act
+		}
 	}
 	return out
 }

@@ -93,6 +93,9 @@ func (o Org) checkWork() error {
 	if err := o.Budget.check(); err != nil {
 		return err
 	}
+	if err := o.checkAccounts(); err != nil {
+		return err
+	}
 	for _, m := range o.Members {
 		if err := m.Budget.check(); err != nil {
 			return fmt.Errorf("%s: %w", m.Name, err)
