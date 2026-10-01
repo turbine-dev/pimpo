@@ -65,6 +65,15 @@ func (a *App) companyRoutes() {
 	a.Server.Handle("DELETE /api/companies/{id}/members/{part}", a.companyRoute(company.Configure, func(w http.ResponseWriter, r *http.Request, o company.Org) (any, error) {
 		return a.Companies.DeleteMember(r.Context(), o.ID, r.PathValue("part"))
 	}))
+	a.Server.Handle("GET /api/companies/{id}/members/{part}/preview", a.companyRoute(company.View, a.previewMember))
+	a.Server.Handle("PUT /api/companies/{id}/contexts/{part}", a.companyRoute(company.Configure, a.putContext))
+	a.Server.Handle("DELETE /api/companies/{id}/contexts/{part}", a.companyRoute(company.Configure, func(w http.ResponseWriter, r *http.Request, o company.Org) (any, error) {
+		return a.Companies.DeleteContext(r.Context(), o.ID, r.PathValue("part"))
+	}))
+	a.Server.Handle("PUT /api/companies/{id}/rules/{part}", a.companyRoute(company.Configure, a.putCompanyRule))
+	a.Server.Handle("DELETE /api/companies/{id}/rules/{part}", a.companyRoute(company.Configure, func(w http.ResponseWriter, r *http.Request, o company.Org) (any, error) {
+		return a.Companies.DeleteRule(r.Context(), o.ID, r.PathValue("part"))
+	}))
 }
 
 // companiesOn refuses when the lab is off.
@@ -127,6 +136,8 @@ func companyError(err error) error {
 		return err
 	case errors.Is(err, company.ErrNotFound):
 		return server.StatusError{Status: 404, Msg: "no such company"}
+	case errors.Is(err, company.ErrException):
+		return server.StatusError{Status: 409, Msg: err.Error()}
 	}
 	return server.StatusError{Status: 400, Msg: err.Error()}
 }

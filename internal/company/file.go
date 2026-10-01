@@ -1,11 +1,13 @@
 package company
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
 	"time"
 
+	"github.com/turbine-dev/pimpo/internal/policy"
 	"gopkg.in/yaml.v3"
 )
 
@@ -17,14 +19,36 @@ const FileFormat = 1
 // People's seats are written without their person; importing gives every
 // seat to whoever imports.
 type File struct {
-	Format      int          `yaml:"format"`
-	Name        string       `yaml:"name"`
-	Industry    string       `yaml:"industry,omitempty"`
-	Mission     string       `yaml:"mission,omitempty"`
-	Zone        string       `yaml:"zone,omitempty"`
-	Departments []Department `yaml:"departments,omitempty"`
-	Roles       []Role       `yaml:"roles,omitempty"`
-	Members     []FileMember `yaml:"members"`
+	Format      int           `yaml:"format"`
+	Name        string        `yaml:"name"`
+	Industry    string        `yaml:"industry,omitempty"`
+	Mission     string        `yaml:"mission,omitempty"`
+	Zone        string        `yaml:"zone,omitempty"`
+	Departments []Department  `yaml:"departments,omitempty"`
+	Roles       []Role        `yaml:"roles,omitempty"`
+	Members     []FileMember  `yaml:"members"`
+	Contexts    []FileContext `yaml:"contexts,omitempty"`
+	Rules       []FileRule    `yaml:"rules,omitempty"`
+}
+
+type FileContext struct {
+	ID    string `yaml:"id"`
+	Scope string `yaml:"scope"`
+	Of    string `yaml:"of,omitempty"`
+	Title string `yaml:"title"`
+	Body  string `yaml:"body"`
+}
+
+// A FileRule keeps its conditions with the same names as the house's rules
+// in JSON.
+type FileRule struct {
+	ID    string         `yaml:"id"`
+	Scope string         `yaml:"scope"`
+	Of    string         `yaml:"of,omitempty"`
+	Text  string         `yaml:"text"`
+	When  map[string]any `yaml:"when,omitempty"`
+	Then  policy.Verdict `yaml:"then"`
+	Off   bool           `yaml:"off,omitempty"`
 }
 
 type FileMember struct {
@@ -47,6 +71,15 @@ func (o Org) Export() ([]byte, error) {
 	for _, m := range o.Members {
 		f.Members = append(f.Members, FileMember{ID: m.ID, Kind: m.Kind, Title: m.Title, Role: m.Role, Department: m.Department, ReportsTo: m.ReportsTo,
 			Name: m.Name, Avatar: m.Avatar, Persona: m.Persona, Capabilities: m.Capabilities, Models: m.Models})
+	}
+	for _, c := range o.Contexts {
+		f.Contexts = append(f.Contexts, FileContext{ID: c.ID, Scope: c.Scope, Of: c.Of, Title: c.Title, Body: c.Body})
+	}
+	for _, r := range o.Rules {
+		var when map[string]any
+		b, _ := json.Marshal(r.When)
+		json.Unmarshal(b, &when)
+		f.Rules = append(f.Rules, FileRule{ID: r.ID, Scope: r.Scope, Of: r.Of, Text: r.Text, When: when, Then: r.Then, Off: r.Off})
 	}
 	return yaml.Marshal(f)
 }
@@ -92,5 +125,18 @@ func Import(b []byte, id, person, personName string, now time.Time) (Org, error)
 	if i := slices.IndexFunc(o.Members, func(m Member) bool { return m.ID == CEO }); o.Members[i].Name == "" {
 		o.Members[i].Name = "CEO"
 	}
+	o.Contexts, o.Rules = []Context{}, []Rule{}
+	for _, c := range f.Contexts {
+		o.putContext(Context{ID: c.ID, Scope: c.Scope, Of: c.Of, Title: c.Title, Body: c.Body}, now)
+	}
+	for _, fr := range f.Rules {
+		r := Rule{ID: fr.ID, Scope: fr.Scope, Of: fr.Of, Text: fr.Text, Then: fr.Then, Off: fr.Off}
+		b, _ := json.Marshal(fr.When)
+		if err := json.Unmarshal(b, &r.When); err != nil {
+			return Org{}, fmt.Errorf("rule %q: %w", fr.ID, err)
+		}
+		o.Rules = append(o.Rules, r)
+	}
+	o.markExceptions()
 	return o, o.Check()
 }

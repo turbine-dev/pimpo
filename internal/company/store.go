@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 )
@@ -31,6 +32,8 @@ const (
 	partDepartment = "department"
 	partRole       = "role"
 	partMember     = "member"
+	partContext    = "context"
+	partRule       = "rule"
 )
 
 type Store struct {
@@ -85,7 +88,7 @@ func (s *Store) Org(ctx context.Context, id string) (Org, error) {
 	if err != nil {
 		return Org{}, err
 	}
-	o := Org{Departments: []Department{}, Roles: []Role{}, Members: []Member{}}
+	o := Org{Departments: []Department{}, Roles: []Role{}, Members: []Member{}, Contexts: []Context{}, Rules: []Rule{}}
 	if err := json.Unmarshal([]byte(data), &o.Company); err != nil {
 		return Org{}, err
 	}
@@ -112,6 +115,14 @@ func (s *Store) Org(ctx context.Context, id string) (Org, error) {
 			var m Member
 			err = json.Unmarshal([]byte(part), &m)
 			o.Members = append(o.Members, m)
+		case partContext:
+			var c Context
+			err = json.Unmarshal([]byte(part), &c)
+			o.Contexts = append(o.Contexts, c)
+		case partRule:
+			var r Rule
+			err = json.Unmarshal([]byte(part), &r)
+			o.Rules = append(o.Rules, r)
 		}
 		if err != nil {
 			return Org{}, err
@@ -167,6 +178,7 @@ func (s *Store) DeleteDepartment(ctx context.Context, company, id string) (Org, 
 			return ErrNotFound
 		}
 		o.Departments = remove(o.Departments, id, func(x Department) string { return x.ID })
+		o.dropScoped(ScopeDepartment, id)
 		for i := range o.Members {
 			if o.Members[i].Department == id {
 				o.Members[i].Department = ""
@@ -195,6 +207,7 @@ func (s *Store) DeleteRole(ctx context.Context, company, id string) (Org, error)
 			}
 		}
 		o.Roles = remove(o.Roles, id, func(x Role) string { return x.ID })
+		o.dropScoped(ScopeRole, id)
 		return nil
 	})
 }
@@ -235,6 +248,41 @@ func (s *Store) DeleteMember(ctx context.Context, company, id string) (Org, erro
 			}
 		}
 		o.Members = remove(o.Members, id, func(x Member) string { return x.ID })
+		o.dropScoped(ScopeMember, id)
+		return nil
+	})
+}
+
+func (s *Store) SaveContext(ctx context.Context, company string, c Context) (Org, error) {
+	return s.change(ctx, company, func(o *Org) error {
+		o.putContext(c, s.now())
+		return nil
+	})
+}
+
+func (s *Store) DeleteContext(ctx context.Context, company, id string) (Org, error) {
+	return s.change(ctx, company, func(o *Org) error {
+		if _, ok := o.Context(id); !ok {
+			return ErrNotFound
+		}
+		o.Contexts = remove(o.Contexts, id, func(x Context) string { return x.ID })
+		return nil
+	})
+}
+
+// SaveRule writes a rule; one that allows what a broader rule forbids
+// must say it is an exception (ErrException otherwise).
+func (s *Store) SaveRule(ctx context.Context, company string, r Rule) (Org, error) {
+	return s.change(ctx, company, func(o *Org) error { return o.putRule(r) })
+}
+
+func (s *Store) DeleteRule(ctx context.Context, company, id string) (Org, error) {
+	return s.change(ctx, company, func(o *Org) error {
+		if !slices.ContainsFunc(o.Rules, func(r Rule) bool { return r.ID == id }) {
+			return ErrNotFound
+		}
+		o.Rules = remove(o.Rules, id, func(x Rule) string { return x.ID })
+		o.markExceptions()
 		return nil
 	})
 }
@@ -302,6 +350,16 @@ func replace(ctx context.Context, tx *sql.Tx, o Org) error {
 	}
 	for _, m := range o.Members {
 		if err := putPart(ctx, tx, o.ID, partMember, m.ID, m); err != nil {
+			return err
+		}
+	}
+	for _, c := range o.Contexts {
+		if err := putPart(ctx, tx, o.ID, partContext, c.ID, c); err != nil {
+			return err
+		}
+	}
+	for _, r := range o.Rules {
+		if err := putPart(ctx, tx, o.ID, partRule, r.ID, r); err != nil {
 			return err
 		}
 	}

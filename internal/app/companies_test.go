@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/turbine-dev/pimpo/internal/company"
+	"github.com/turbine-dev/pimpo/internal/host"
 	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
@@ -120,5 +122,54 @@ func TestACompanyIsOnlyItsPeoples(t *testing.T) {
 	h.do(t, "DELETE", "/api/people/"+h.anaID, nil)
 	if _, err := h.Companies.Org(context.Background(), ana); err != company.ErrNotFound {
 		t.Fatalf("a removed person's company stayed: %v", err)
+	}
+}
+
+// A company's rules sit on the house's: they may restrict and allow among
+// themselves, never past the house.
+func TestCompanyRulesSitOnTheHouses(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ta.companiesOn(t)
+	ctx := context.Background()
+	_, out := ta.do(t, "POST", "/api/companies", map[string]any{"name": "Lume"})
+	id := out["id"].(string)
+	base := "/api/companies/" + id
+	ta.do(t, "PUT", base+"/roles/atendente", map[string]any{"title": "Atendente", "capabilities": []string{"gmail.send", "telegram.send", "gmail.search"}})
+	ta.do(t, "PUT", base+"/members/clara", map[string]any{"name": "Clara", "role": "atendente", "reports_to": "ceo"})
+	steps := []struct {
+		path string
+		body any
+		want int
+	}{
+		{"/rules/quiet", map[string]any{"scope": "company", "text": "No Telegram", "when": map[string]any{"capabilities": []string{"telegram.send"}}, "then": "block"}, 200},
+		{"/rules/clerks-telegram", map[string]any{"scope": "role", "of": "atendente", "text": "Clerks may", "when": map[string]any{"capabilities": []string{"telegram.send"}}, "then": "allow"}, 409},
+		{"/rules/email", map[string]any{"scope": "company", "text": "Email freely", "when": map[string]any{"capabilities": []string{"gmail.send"}}, "then": "allow"}, 200},
+		{"/contexts/voz", map[string]any{"scope": "company", "title": "Voice", "body": "Kind and brief."}, 200},
+	}
+	for _, s := range steps {
+		if code, out := ta.do(t, "PUT", base+s.path, s.body); code != s.want {
+			t.Fatalf("PUT %s = %d %v", s.path, code, out)
+		}
+	}
+	code, out := ta.do(t, "GET", base+"/members/clara/preview", nil)
+	if code != 200 || !strings.Contains(out["brief"].(string), "Kind and brief.") {
+		t.Fatalf("preview: %d %v", code, out)
+	}
+	verdicts := map[string]string{}
+	for _, v := range out["rules"].([]any) {
+		v := v.(map[string]any)
+		verdicts[v["capability"].(string)] = v["verdict"].(string)
+	}
+	// The house asks before any email is sent; the company cannot let it through.
+	if verdicts["telegram.send"] != "block" || verdicts["gmail.send"] != "ask" || verdicts["gmail.search"] != "allow" {
+		t.Fatalf("verdicts = %v", verdicts)
+	}
+	h := &host.Host{Env: ta.Explore.Env, Source: "routine:t#1", Member: id + "/clara"}
+	if _, err := h.Call(ctx, "telegram.send", "", map[string]any{"text": "oi"}); !errors.Is(err, host.ErrBlocked) {
+		t.Fatalf("a member got past its company's rule: %v", err)
+	}
+	gone := &host.Host{Env: ta.Explore.Env, Source: "routine:t#1", Member: id + "/eve"}
+	if _, err := gone.Call(ctx, "gmail.search", "", map[string]any{}); !errors.Is(err, host.ErrBlocked) {
+		t.Fatalf("someone not in the company acted as a member: %v", err)
 	}
 }

@@ -747,7 +747,11 @@ func (a *App) judge(ctx context.Context, question string, item any) (judge.Answe
 }
 
 func (a *App) decide(ctx context.Context, act policy.Action) policy.Decision {
-	return a.granted(ctx, act, a.Policy.Decide(ctx, act))
+	d := a.granted(ctx, act, a.Policy.Decide(ctx, act))
+	if act.Member != "" {
+		d = a.companyDecides(ctx, act, d)
+	}
+	return d
 }
 
 func (a *App) generate(ctx context.Context, r llm.Request) (llm.Response, error) {

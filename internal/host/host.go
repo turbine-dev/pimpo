@@ -69,6 +69,8 @@ type Host struct {
 	// Person is who the run acts for. Connectors see it in the context and
 	// use that person's accounts; empty means the owner.
 	Person string
+	// Member is the company member the run works as, "company/member".
+	Member string
 	// Destinations are where notify.send delivers for this run; empty
 	// means the person's default channel.
 	Destinations []string
@@ -119,6 +121,7 @@ func (h *Host) Questions() map[string]string {
 type ActionRecord struct {
 	Source     string          `json:"source"`
 	Person     string          `json:"person,omitempty"`
+	Member     string          `json:"member,omitempty"`
 	Capability string          `json:"capability"`
 	Scope      string          `json:"scope,omitempty"`
 	Risk       string          `json:"risk"`
@@ -173,7 +176,7 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	ctx = people.With(ctx, person)
 	ctx = context.WithValue(ctx, destinationsKey{}, h.Destinations)
 	ctx = context.WithValue(ctx, sourceKey{}, h.Source)
-	rec := ActionRecord{Source: h.Source, Capability: name, Scope: scope, Risk: spec.Risk.String(), Args: args}
+	rec := ActionRecord{Source: h.Source, Member: h.Member, Capability: name, Scope: scope, Risk: spec.Risk.String(), Args: args}
 	if person != people.OwnerID {
 		rec.Person = person
 	}
@@ -181,7 +184,7 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	if pol == nil {
 		pol = policy.Open{}
 	}
-	act := policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source, Person: person, Role: string(people.Owner)}
+	act := policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source, Person: person, Role: string(people.Owner), Member: h.Member}
 	if h.RoleOf != nil {
 		act.Role = h.RoleOf(ctx, person)
 	}

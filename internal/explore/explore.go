@@ -136,6 +136,9 @@ type Options struct {
 	// chat request (15 minutes, 40 turns).
 	Timeout  time.Duration
 	MaxTurns int
+	// Member is the company member doing the work, "company/member", whose
+	// company's rules apply to every call.
+	Member string
 	// Origin is where a fact the agent notes came from: the conversation,
 	// email or job that asked. Without it, the exploration itself.
 	Origin *memory.Origin
@@ -277,7 +280,7 @@ func (s *Service) run(ctx context.Context, e store.Exploration, o Options) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: true, Person: e.Person}
+	h := &host.Host{Env: s.Env, Source: "exploration:" + e.ID, DryRun: true, Person: e.Person, Member: o.Member}
 	role := ""
 	if as := o.Assistant; as != nil {
 		if len(as.Capabilities) > 0 {

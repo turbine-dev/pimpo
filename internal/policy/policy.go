@@ -29,6 +29,9 @@ type Action struct {
 	// Person is who the run acts for, and Role their role in the house.
 	Person string `json:"person,omitempty"`
 	Role   string `json:"role,omitempty"`
+	// Member is the company member the run works as, "company/member",
+	// whose company's rules apply on top of the house's.
+	Member string `json:"member,omitempty"`
 	// Paths are the absolute, cleaned files an action touches, when known
 	// (another agent's writes).
 	Paths []string `json:"paths,omitempty"`
