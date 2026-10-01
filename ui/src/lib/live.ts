@@ -49,9 +49,10 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
         // explorations or suggestions becoming ready.
         if (/^(approval|question|routine|job|exploration|suggestion)/.test(e.type)) qc.invalidateQueries({ queryKey: ['needs'] })
         if (e.type === 'dashboard.changed') qc.invalidateQueries({ queryKey: ['dashboards'] })
-        if (e.type === 'company.changed') {
+        if (e.type === 'company.changed' || e.type.startsWith('company.work')) {
           qc.invalidateQueries({ queryKey: ['companies'] })
           qc.invalidateQueries({ queryKey: ['company'] })
+          qc.invalidateQueries({ queryKey: ['company-work'] })
         }
         qc.invalidateQueries({ queryKey: ['events'] })
       }

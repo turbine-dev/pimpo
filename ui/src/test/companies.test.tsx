@@ -16,7 +16,7 @@ const org: Org = {
     { id: 'bia', kind: 'agent', role: 'gerente', reports_to: 'ceo', name: 'Bia', state: 'active' },
     { id: 'clara', kind: 'agent', role: 'atendente', department: 'vendas', reports_to: 'bia', name: 'Clara', state: 'active' },
   ],
-  contexts: [], rules: [],
+  contexts: [], rules: [], agent_routines: [],
 }
 
 const routes = () => <Routes><Route path="/companies" element={<Companies />} /><Route path="/companies/:id" element={<Companies />} /></Routes>
@@ -113,5 +113,55 @@ describe('Company context and rules', () => {
     await userEvent.type(within(dialog).getByLabelText('Texto'), 'Até 30 dias.')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
     await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({ id: 'trocas', scope: 'company', title: 'Trocas', body: 'Até 30 dias.' }))
+  })
+})
+
+describe('Company work', () => {
+  it('shows who is working and what waits', async () => {
+    mockFetch({ '/api/companies/co_1': { ...org, activity: { clara: { state: 'working', task: 'Answer WhatsApp' }, bia: { state: 'queued', queue: 2 } } }, '/api/state': { person: 'owner' } })
+    wrap(routes(), '/companies/co_1')
+    const chart = (await screen.findAllByLabelText('Organograma', { selector: '.org' }))[0]
+    expect(await within(chart).findByLabelText('Trabalhando em: Answer WhatsApp')).toBeInTheDocument()
+    expect(within(chart).getByLabelText('Na fila: 2')).toBeInTheDocument()
+  })
+
+  it('gives a member work and makes it a routine', async () => {
+    const calls = mockFetch({
+      '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/routines': [],
+      'POST /api/companies/co_1/members/clara/work': { id: 'w_1', state: 'queued' },
+      'PUT /api/companies/co_1/agent-routines/manha': org,
+    })
+    wrap(routes(), '/companies/co_1')
+    const chart = (await screen.findAllByLabelText('Organograma', { selector: '.org' }))[0]
+    await userEvent.click(within(chart).getByRole('button', { name: 'Abrir Clara' }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(within(dialog).getByText('Trabalho e rotinas'))
+    await userEvent.type(within(dialog).getByLabelText('Dar uma tarefa agora'), 'Responda o WhatsApp')
+    await userEvent.click(within(dialog).getByRole('button', { name: /Entregar/ }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ request: 'Responda o WhatsApp' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: /Nova rotina/ }))
+    const routine = (await screen.findAllByRole('dialog')).at(-1)!
+    await userEvent.type(within(routine).getByLabelText('Nome da rotina'), 'Manhã')
+    await userEvent.type(within(routine).getByLabelText('O que fazer'), 'Leia os pedidos da noite')
+    await userEvent.selectOptions(within(routine).getByLabelText('Quando'), '0 8 * * *')
+    await userEvent.click(within(routine).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(calls.find((c) => c.url.includes('agent-routines'))?.body).toEqual({ id: 'manha', member: 'clara', name: 'Manhã', instructions: 'Leia os pedidos da noite', schedule: '0 8 * * *', max_usd: 0.5 }))
+  })
+
+  it('lists the work and stops what is running', async () => {
+    const calls = mockFetch({
+      '/api/companies/co_1': org, '/api/state': { person: 'owner' },
+      '/api/companies/co_1/work': [
+        { id: 'w_1', company: 'co_1', member: 'clara', request: 'Answer WhatsApp', from: 'person:owner', max_usd: 0.5, state: 'running', cost_usd: 0.03, queued: '' },
+        { id: 'w_0', company: 'co_1', member: 'bia', request: 'Weekly report', from: 'routine:weekly', max_usd: 1, state: 'done', summary: 'Sent.', cost_usd: 0.2, queued: '' },
+      ],
+      'POST /api/companies/co_1/work/w_1/stop': { id: 'w_1', state: 'stopped' },
+    })
+    wrap(routes(), '/companies/co_1')
+    await userEvent.click(await screen.findByRole('tab', { name: 'Trabalho' }))
+    expect((await screen.findAllByText('Weekly report')).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Parar' })).toHaveLength(1)
+    await userEvent.click(screen.getByRole('button', { name: 'Parar' }))
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url.endsWith('/w_1/stop'))).toBe(true))
   })
 })

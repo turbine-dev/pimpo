@@ -1,6 +1,6 @@
 import * as Tabs from '@radix-ui/react-tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Download, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, CirclePause, Download, Pencil, Play, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CapabilityPicker } from '../components/CapabilityPicker'
@@ -13,6 +13,7 @@ import { useT } from '../lib/i18n'
 import { below, deptColor, slug, unique } from '../lib/org'
 import { area, field } from './Companies'
 import { LayersTab, MemberPreview } from './CompanyLayers'
+import { HoursEditor, MemberWork, WorkLog } from './CompanyWork'
 
 // Deleting reads in the danger color on a plain button, which keeps its
 // contrast in both themes.
@@ -35,6 +36,7 @@ export function CompanyPage({ id }: { id: string }) {
     mutationFn: ({ m, boss }: { m: Member; boss: string }) => api.saveMember(id, { ...m, reports_to: boss }),
     onSuccess: done,
   })
+  const pause = useMutation({ mutationFn: (paused: boolean) => api.saveCompany(id, { ...org.data, paused }), onSuccess: done })
   const remove = useMutation({
     mutationFn: () => api.deleteCompany(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['companies'] }); nav('/companies') },
@@ -52,9 +54,13 @@ export function CompanyPage({ id }: { id: string }) {
           <h1 className="text-[22px] font-semibold tracking-tight">{o.name}</h1>
           {o.industry && <p className="text-sm text-ink-2">{o.industry}</p>}
           {o.mission && <p className="mt-1 max-w-2xl text-[13px] text-ink-3">{o.mission}</p>}
+          {o.paused && <p className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-change-soft px-2 py-1 text-[12.5px] text-change"><CirclePause size={13} /> {t('co.pausedNote')}</p>}
         </div>
         <div className="flex flex-wrap gap-2">
           <a href={`/api/companies/${id}/export`} download className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-line bg-surface px-3 text-[13.5px] hover:border-line-strong"><Download size={15} /> {t('co.export')}</a>
+          {can && (o.paused
+            ? <Button onClick={() => pause.mutate(false)}><Play size={15} /> {t('co.resume')}</Button>
+            : <Button onClick={() => pause.mutate(true)}><CirclePause size={15} /> {t('co.pause')}</Button>)}
           {can && <Button onClick={() => setEditing(true)}><Pencil size={15} /> {t('co.edit')}</Button>}
           {o.person === me.data?.person && <Button variant="ghost" className={danger} onClick={() => window.confirm(t('co.deleteAsk', { name: o.name })) && remove.mutate()}><Trash2 size={15} /> {t('co.delete')}</Button>}
         </div>
@@ -62,7 +68,7 @@ export function CompanyPage({ id }: { id: string }) {
 
       <Tabs.Root defaultValue="chart">
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('co.sections')}>
-          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['layers', t('co.tab.layers')]].map(([v, l]) => (
+          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['layers', t('co.tab.layers')], ['work', t('co.tab.work')]].map(([v, l]) => (
             <Tabs.Trigger key={v} value={v} className="-mb-px border-b-2 border-transparent px-3 py-2.5 text-[13.5px] text-ink-3 hover:text-ink data-[state=active]:border-ink data-[state=active]:font-medium data-[state=active]:text-ink">{l}</Tabs.Trigger>
           ))}
         </Tabs.List>
@@ -106,6 +112,9 @@ export function CompanyPage({ id }: { id: string }) {
         </Tabs.Content>
         <Tabs.Content value="layers">
           <LayersTab org={o} can={can} onSaved={done} />
+        </Tabs.Content>
+        <Tabs.Content value="work">
+          <WorkLog org={o} can={can} />
         </Tabs.Content>
       </Tabs.Root>
 
@@ -166,12 +175,6 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
             <Switch on={m.state !== 'paused'} onChange={(on) => setM({ ...m, state: on ? 'active' : 'paused' })} label={t('co.working')} />
           </>)}
         </fieldset>
-        {!isNew && !seat && (
-          <details className="rounded-xl border border-line p-3">
-            <summary className="cursor-pointer text-[13px] font-medium">{t('co.receives')}</summary>
-            <div className="mt-3"><MemberPreview org={org} member={m.id} /></div>
-          </details>
-        )}
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         {remove.error && <p className="text-[13px] text-danger">{remove.error.message}</p>}
         {can && (
@@ -181,6 +184,20 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
           </div>
         )}
       </form>
+      {!isNew && !seat && <div className="mt-4 space-y-3">
+        {!isNew && !seat && can && (
+          <details className="rounded-xl border border-line p-3">
+            <summary className="cursor-pointer text-[13px] font-medium">{t('co.workAndRoutines')}</summary>
+            <div className="mt-3"><MemberWork org={org} member={m.id} onSaved={onSaved} /></div>
+          </details>
+        )}
+        {!isNew && !seat && (
+          <details className="rounded-xl border border-line p-3">
+            <summary className="cursor-pointer text-[13px] font-medium">{t('co.receives')}</summary>
+            <div className="mt-3"><MemberPreview org={org} member={m.id} /></div>
+          </details>
+        )}
+      </div>}
     </Modal>
   )
 }
@@ -245,6 +262,7 @@ function DepartmentDialog({ org, start, onClose, onSaved }: { org: Org; start: D
             ))}
           </div>
         </fieldset>
+        {start.id && <Switch on={!d.paused} onChange={(on) => setD({ ...d, paused: !on })} label={t('co.departmentWorking')} />}
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         <div className="flex gap-2">
           <Button type="submit" variant="primary" disabled={!d.name.trim() || save.isPending}>{t('common.save')}</Button>
@@ -257,9 +275,9 @@ function DepartmentDialog({ org, start, onClose, onSaved }: { org: Org; start: D
 
 function CompanyDialog({ org, onClose, onSaved }: { org: Org; onClose: () => void; onSaved: (o: Org) => void }) {
   const t = useT()
-  const [c, setC] = useState({ name: org.name, industry: org.industry ?? '', mission: org.mission ?? '' })
+  const [c, setC] = useState({ name: org.name, industry: org.industry ?? '', mission: org.mission ?? '', hours: org.hours ?? {} })
   const save = useMutation({
-    mutationFn: () => api.saveCompany(org.id, { ...c, zone: org.zone, partners: org.partners }),
+    mutationFn: () => api.saveCompany(org.id, { ...c, zone: org.zone, paused: org.paused, partners: org.partners }),
     onSuccess: (o) => { onSaved(o); onClose() },
   })
   return (
@@ -268,6 +286,7 @@ function CompanyDialog({ org, onClose, onSaved }: { org: Org; onClose: () => voi
         <Field label={t('co.name')}><input className={field} value={c.name} maxLength={60} onChange={(e) => setC({ ...c, name: e.target.value })} /></Field>
         <Field label={t('co.industry')}><input className={field} value={c.industry} maxLength={120} onChange={(e) => setC({ ...c, industry: e.target.value })} /></Field>
         <Field label={t('co.mission')}><textarea className={area} value={c.mission} maxLength={2000} onChange={(e) => setC({ ...c, mission: e.target.value })} /></Field>
+        <HoursEditor value={c.hours} onChange={(hours) => setC({ ...c, hours })} />
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         <Button type="submit" variant="primary" disabled={!c.name.trim() || save.isPending}>{t('common.save')}</Button>
       </form>

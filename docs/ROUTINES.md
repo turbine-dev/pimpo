@@ -243,6 +243,17 @@ await notify.send({text: "…"})
 - A failed call, including one blocked by a rule or denied by you, throws `Error("<capability>: <reason>")`. An error the code does not catch fails the run.
 - The calls are synchronous inside the engine, so `await` is optional but harmless.
 
+### Waking a company member
+
+A routine given to a company member (see the user guide's *Companies of agents*) runs as that member: its company's rules apply on top of the house's, and it is held while the member, its department or the company is paused. It can hand the member's agent work with `company.wake` (risk `notify`): the routine watches without a model, and the agent works only when there is something new.
+
+```js
+const orders = await shop.orders({status: "new"})
+if (orders.length) await company.wake({task: "Answer these customers about their delivery", items: orders})
+```
+
+`items` reach the agent as data, never as instructions, up to 16 KB. The call returns `{queued: "<work id>"}` at once; the agent works when the member is free and on duty. Called from a routine that is not a member's, it fails.
+
 ### Widgets
 
 A routine that keeps something to look at calls `widget.show` (risk `notify`). Each call replaces the routine's widget with the same `key` (default `main`), so a routine can keep several.
