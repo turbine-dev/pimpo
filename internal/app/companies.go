@@ -155,7 +155,7 @@ func (a *App) companyChanged(ctx context.Context, o company.Org) {
 	a.Events.Append(ctx, "company.changed", actor(ctx), map[string]string{"id": o.ID, "person": o.Person})
 	a.holdWork(ctx, o)
 	a.scheduleAgents(ctx)
-	go a.pumpWork(context.WithoutCancel(ctx))
+	a.goWork(ctx, a.pumpWork)
 }
 
 func (a *App) listCompanies(w http.ResponseWriter, r *http.Request) {

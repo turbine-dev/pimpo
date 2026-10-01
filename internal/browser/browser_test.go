@@ -28,6 +28,11 @@ func chrome(t *testing.T) {
 	t.Skip("Chrome is not installed")
 }
 
+// CI runs every package at once, and Chrome there can take far longer than
+// a person would wait for one action; the tests check what it does, not
+// how fast.
+func init() { callTimeout = 3 * time.Minute }
+
 func site(t *testing.T, elsewhere string) *httptest.Server {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

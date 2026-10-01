@@ -21,7 +21,8 @@ export function ShowcaseTab({ org, onSaved }: { org: Org; onSaved: (o: Org) => v
   const remove = useMutation({ mutationFn: (id: string) => api.removeShowcaseItem(org.id, id), onSuccess: onSaved })
   const shipped = (product.data?.briefs ?? []).filter((b) => b.state === 'shipped' && !(sc.items ?? []).some((i) => i.ref === b.id))
   const videos = (media.data ?? []).filter((m) => m.kind === 'video' && !(sc.items ?? []).some((i) => i.ref === m.id))
-  const address = `${location.origin}/showcase/${sc.slug ?? slug}`
+  // Only the address the server saved and checked goes in the link.
+  const address = sc.slug ? `${location.origin}/showcase/${encodeURIComponent(sc.slug)}` : ''
   return (
     <div className="max-w-3xl space-y-6">
       <section className="space-y-3">
@@ -31,7 +32,7 @@ export function ShowcaseTab({ org, onSaved }: { org: Org; onSaved: (o: Org) => v
           <div className="min-w-48 flex-1"><Field label={t('co.showcaseSlug')}><input className={field} value={slug} maxLength={40} placeholder="lume-moda" onChange={(e) => setSlug(e.target.value)} /></Field></div>
           <div className="flex items-center gap-2 pb-2 text-[13px]"><span>{t('co.showcaseOn')}</span><Switch on={!!sc.on} disabled={!slug.trim() || toggle.isPending} onChange={(on) => toggle.mutate(on)} label={t('co.showcaseOn')} /></div>
         </div>
-        {sc.on && <a href={address} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[13px] underline-offset-2 hover:underline"><ExternalLink size={13} /> {address}</a>}
+        {sc.on && address && <a href={address} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[13px] underline-offset-2 hover:underline"><ExternalLink size={13} /> {address}</a>}
         {toggle.error && <p className="text-[13px] text-danger">{toggle.error.message}</p>}
       </section>
       <section className="space-y-2" aria-label={t('co.showcaseItems')}>

@@ -124,10 +124,10 @@ func (a *App) say(ctx context.Context, o company.Org, id, text string, to []stri
 	a.Companies.SaveMeeting(ctx, m)
 	a.Events.Append(ctx, "company.meeting.turn", actor(ctx), map[string]string{"company": o.ID, "meeting": m.ID, "person": o.Person})
 	who := named(o, m, text, to)
-	go func() {
+	a.goWork(people.With(ctx, o.Person), func(c context.Context) {
 		defer lock.Unlock()
-		a.answerCEO(context.WithoutCancel(people.With(ctx, o.Person)), o, m.ID, who)
-	}()
+		a.answerCEO(c, o, m.ID, who)
+	})
 	return m, nil
 }
 

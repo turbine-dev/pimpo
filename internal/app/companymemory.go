@@ -241,7 +241,7 @@ func (a *App) meet(ctx context.Context, o company.Org, m company.Meeting) (compa
 		return m, err
 	}
 	a.Events.Append(ctx, "company.meeting.started", m.CalledBy, map[string]string{"company": o.ID, "meeting": m.ID, "person": o.Person})
-	go a.holdMeeting(context.WithoutCancel(people.With(ctx, o.Person)), o, m)
+	a.goWork(people.With(ctx, o.Person), func(c context.Context) { a.holdMeeting(c, o, m) })
 	return m, nil
 }
 

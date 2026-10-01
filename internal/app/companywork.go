@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -53,6 +54,23 @@ type companyWork struct {
 	mu      sync.Mutex
 	cron    *cron.Cron
 	entries map[string]cron.EntryID
+	// life ends when the app stops, and with it the work in flight.
+	life atomic.Pointer[context.Context]
+}
+
+// goWork runs f apart from the request that started it, until the app
+// stops, counted among what Wait waits for.
+func (a *App) goWork(ctx context.Context, f func(context.Context)) {
+	c, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	stop := func() bool { return false }
+	if life := a.work.life.Load(); life != nil {
+		stop = context.AfterFunc(*life, cancel)
+	}
+	a.background(func() {
+		defer cancel()
+		defer stop()
+		f(c)
+	})
 }
 
 func newWorkID() string {
@@ -107,7 +125,7 @@ func (a *App) enqueue(ctx context.Context, o company.Org, member, request string
 		return company.Work{}, err
 	}
 	a.Events.Append(ctx, eventWorkQueued, actor(ctx), map[string]string{"company": o.ID, "member": member, "work": w.ID, "person": o.Person})
-	go a.pumpWork(context.WithoutCancel(ctx))
+	a.goWork(ctx, a.pumpWork)
 	return w, nil
 }
 
@@ -125,6 +143,10 @@ func usageLimit(err string) bool {
 
 // pumpWork starts the queued work that may start now.
 func (a *App) pumpWork(ctx context.Context) {
+	if ctx.Err() != nil {
+		// Pimpo is stopping: nothing new starts.
+		return
+	}
 	a.work.mu.Lock()
 	defer a.work.mu.Unlock()
 	waiting, err := a.Companies.Waiting(ctx)
@@ -183,7 +205,7 @@ func (a *App) pumpWork(ctx context.Context) {
 		})
 		busy[w.Company+"/"+w.Member] = true
 		perCompany[w.Company]++
-		go a.awaitWork(context.WithoutCancel(ctx), w.ID, exp)
+		a.goWork(ctx, func(c context.Context) { a.awaitWork(c, w.ID, exp) })
 	}
 }
 
@@ -223,6 +245,10 @@ func (a *App) startWork(ctx context.Context, o company.Org, w company.Work) (str
 
 func (a *App) awaitWork(ctx context.Context, id, exploration string) {
 	e := a.waitWork(ctx, exploration)
+	if ctx.Err() != nil {
+		// Pimpo is stopping: the next start queues this work again.
+		return
+	}
 	if w, err := a.Companies.Work(ctx, id); err == nil && (w.State == company.WorkWaiting || w.Exploration != exploration && w.State != company.WorkStopped) {
 		// It stopped on a question, or already went on after one.
 		if e.State == store.ExplorationRunning {
@@ -350,7 +376,7 @@ func (a *App) resumeWork(ctx context.Context) {
 		a.Companies.UpdateWork(ctx, w.ID, func(x *company.Work) { x.State, x.Exploration = company.WorkQueued, "" })
 	}
 	a.scheduleAgents(ctx)
-	go a.pumpWork(context.WithoutCancel(ctx))
+	a.goWork(ctx, a.pumpWork)
 }
 
 func (a *App) workLoop(ctx context.Context, every time.Duration) {
