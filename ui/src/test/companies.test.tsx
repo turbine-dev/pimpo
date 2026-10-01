@@ -27,6 +27,7 @@ describe('Companies', () => {
     wrap(routes(), '/companies')
     await userEvent.click((await screen.findAllByRole('button', { name: /Nova empresa/ }))[0])
     const dialog = await screen.findByRole('dialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Em branco' }))
     await userEvent.type(within(dialog).getByLabelText('Nome'), 'Lume Moda')
     await userEvent.type(within(dialog).getByLabelText('Ramo'), 'Loja online')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Criar empresa' }))
@@ -277,6 +278,42 @@ describe('Company finance', () => {
     expect(screen.getByText('Clara: $30.00 por mês (hoje $10.00)')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
     await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.url.endsWith('/proposals/p_1'))?.body).toEqual({ accept: true }))
+  })
+})
+
+describe('Starting a company', () => {
+  it('starts from a template with a name of its own', async () => {
+    const calls = mockFetch({ '/api/companies': [], '/api/state': { person: 'owner' }, '/api/companies/co_1': org, 'POST /api/companies/import': org,
+      '/api/companies/templates': [{ id: 'software', name: 'Software company', roles: ['Product owner', 'CTO'], members: 7 }, { id: 'blank', name: 'New company', roles: [], members: 0 }] })
+    wrap(routes(), '/companies')
+    await userEvent.click((await screen.findAllByRole('button', { name: /Nova empresa/ }))[0])
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(await within(dialog).findByText('Software company'))
+    expect(within(dialog).getByText('7 agentes: Product owner, CTO')).toBeInTheDocument()
+    const name = within(dialog).getByLabelText('Nome')
+    await userEvent.clear(name)
+    await userEvent.type(name, 'Pimpo Dev')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Criar empresa' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ template: 'software', name: 'Pimpo Dev' }))
+  })
+
+  it('proposes a company from a description and creates it only when asked', async () => {
+    const draft = { ...org, name: 'Padaria do Zé', industry: 'Padaria', agent_routines: [{ id: 'pedidos', member: 'clara', name: 'Pedidos', instructions: '' }] }
+    const calls = mockFetch({ '/api/companies': [], '/api/state': { person: 'owner' }, '/api/companies/co_1': org, 'POST /api/companies/import': org,
+      '/api/companies/templates': [], 'POST /api/companies/describe': { file: 'format: 1', draft, dropped: ['teleport.now'], cost_usd: 0.02 } })
+    wrap(routes(), '/companies')
+    await userEvent.click((await screen.findAllByRole('button', { name: /Nova empresa/ }))[0])
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Descrevendo' }))
+    await userEvent.type(within(dialog).getByLabelText('O que a empresa faz?'), 'Uma padaria de bairro')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Propor uma empresa' }))
+    const proposal = await within(dialog).findByRole('region', { name: 'A empresa proposta' })
+    expect(within(proposal).getByText('Padaria do Zé')).toBeInTheDocument()
+    expect(within(proposal).getByText(/Clara/)).toBeInTheDocument()
+    expect(within(proposal).getByText(/teleport.now/)).toBeInTheDocument()
+    expect(calls.some((c) => c.url.endsWith('/import'))).toBe(false)
+    await userEvent.click(within(proposal).getByRole('button', { name: 'Criar esta empresa' }))
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/import'))?.body).toEqual({ file: 'format: 1' }))
   })
 })
 

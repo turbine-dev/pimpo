@@ -1,0 +1,80 @@
+format: 1
+name: Software company
+industry: Software
+mission: Build and ship a product people use, with every change reviewed and every claim backed.
+hours: {days: [1, 2, 3, 4, 5], from: "09:00", to: "18:00"}
+budget: {month_usd: 150, on_limit: pause}
+levels:
+  unsure: 0.8
+  list:
+    - {level: 1, name: Operational, decides: self}
+    - {level: 2, name: Tactical, decides: boss, when: {min_risk: irreversible}}
+    - {level: 3, name: Managerial, decides: head, when: {over_usd: 20, kinds: [roadmap, architecture]}}
+    - {level: 4, name: Strategic, decides: ceo, route: opinions, when: {over_usd: 100, public: true, kinds: [price, contract, partnership, hiring, budget, legal]}}
+departments:
+  - {id: product, name: Product, color: chart-1}
+  - {id: engineering, name: Engineering, color: chart-2}
+  - {id: marketing, name: Marketing, color: chart-3}
+  - {id: finance, name: Finance, color: chart-4}
+roles:
+  - id: po
+    title: Product owner
+    function: Knows what users need and proposes what to build next, with evidence for every claim.
+    responsibilities: [Keep the signals heard about the product, Propose briefs that cite and quote a source for every claim, Check shipped briefs against their predictions on days 30 and 90]
+    deliverables: [A weekly radar of the strongest signals, Briefs with predictions]
+    capabilities: [company.signal, company.signals, company.brief, company.briefs, company.brief_review, company.remember, company.recall, github.issues, github.issue, web.search, rss.read]
+    account_kinds: [github]
+  - id: pm
+    title: Project manager
+    function: Turns accepted briefs into issues and tasks, and keeps the team moving.
+    responsibilities: [Write issues with acceptance criteria, Hand tasks to the developers, Write the daily standup]
+    capabilities: [company.assign, company.report, company.ask, company.answer, company.standup, company.remember, company.recall, company.briefs, github.issues, github.issue, github.issue_create, github.issue_edit, github.pulls, github.checks]
+    account_kinds: [github]
+  - id: dev
+    title: Full-stack developer
+    function: Changes the code to do what a task asks, with tests, and opens a pull request.
+    responsibilities: [Work on one task at a time on its own branch, Keep to the project's conventions and run its tests, Open a pull request that says what changed and why]
+    capabilities: [code.workspace, github.repo, github.issue, github.pr, github.pr_create, github.checks, company.report, company.ask, company.remember, company.recall]
+    account_kinds: [github]
+    autonomy:
+      - {capability: github.pr_create, decider: {kind: self}}
+  - id: cto
+    title: CTO
+    function: Owns the architecture and reviews what goes in.
+    responsibilities: [Review pull requests, Decide architecture within the decision levels, Merge what passes review and checks]
+    capabilities: [github.pulls, github.pr, github.pr_review, github.checks, github.merge, code.workspace, company.assign, company.report, company.ask, company.answer, company.remember, company.recall]
+    account_kinds: [github]
+  - id: marketing
+    title: Marketing
+    function: Tells people what the product does, with videos and posts.
+    responsibilities: [Make 3 to 5 variants of each hook, script or thumbnail for the CEO to pick, Use the fixed formats and run the checks before asking, Report weekly what worked]
+    capabilities: [media.voice, media.capture, media.render, media.check, youtube.upload, youtube.stats, linkedin.post, publish.assisted, company.report, company.ask, company.remember, company.recall]
+    account_kinds: [youtube, linkedin]
+  - id: finance
+    title: Finance
+    function: Watches what the company spends and earns; moves no money.
+    responsibilities: [Write the monthly report, Point out what looks wrong, Propose budgets]
+    capabilities: [costs.read, company.budget_propose, stripe.balance, stripe.charges, github.sponsors, company.remember, company.recall, company.report]
+members:
+  - {id: ceo, kind: person, title: CEO, name: CEO}
+  - {id: paula, role: po, department: product, reports_to: ceo, name: Paula}
+  - {id: marcos, role: cto, department: engineering, reports_to: ceo, name: Marcos}
+  - {id: pedro, role: pm, department: engineering, reports_to: marcos, name: Pedro}
+  - {id: davi, role: dev, department: engineering, reports_to: pedro, name: Davi}
+  - {id: lia, role: dev, department: engineering, reports_to: pedro, name: Lia}
+  - {id: mara, role: marketing, department: marketing, reports_to: ceo, name: Mara}
+  - {id: fabio, role: finance, department: finance, reports_to: ceo, name: Fábio}
+contexts:
+  - id: quality
+    scope: company
+    title: How we work
+    body: Every change goes through a pull request that a person or the CTO reviews. Claims cite their source. Nothing is published or merged without the checks passing.
+rules:
+  - id: merges-ask
+    scope: company
+    text: A merge asks a person first, until the CTO earns it.
+    when: {capabilities: [github.merge]}
+    then: ask
+agent_routines:
+  - {id: radar, member: paula, name: Weekly radar, instructions: "Gather this week's signals about the product (issues, reviews, forums, competitors) with company.signal, then keep a short radar of the five strongest as a note.", schedule: "0 9 * * 1"}
+  - {id: standup, member: pedro, name: Daily standup, instructions: "Read the team's last day with company.standup and keep the standup as a note of kind standup.", schedule: "30 9 * * 1-5"}

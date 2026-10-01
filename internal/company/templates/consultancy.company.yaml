@@ -1,0 +1,24 @@
+format: 1
+name: Consultancy
+industry: Consulting
+mission: Give clients answers they can act on, researched and cited.
+hours: {days: [1, 2, 3, 4, 5], from: "09:00", to: "18:00"}
+budget: {month_usd: 80, on_limit: pause}
+departments:
+  - {id: delivery, name: Delivery, color: chart-1}
+roles:
+  - id: partner
+    title: Engagement lead
+    function: Frames each client question and reviews every answer before it goes out.
+    capabilities: [company.assign, company.report, company.ask, company.answer, company.meet, company.remember, company.recall, gmail.search, gmail.draft]
+    account_kinds: [mail]
+  - id: analyst
+    title: Analyst
+    function: Researches and writes, citing a source for every claim.
+    capabilities: [web.search, rss.read, company.report, company.ask, company.remember, company.recall]
+members:
+  - {id: ceo, kind: person, title: CEO, name: CEO}
+  - {id: lena, role: partner, department: delivery, reports_to: ceo, name: Lena}
+  - {id: igor, role: analyst, department: delivery, reports_to: lena, name: Igor}
+contexts:
+  - {id: citing, scope: company, title: Citing, body: "Every claim in what goes to a client cites where it comes from. Drafts go to the client only after the engagement lead reviews them."}

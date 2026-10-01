@@ -342,13 +342,30 @@ func (a *App) importCompany(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	var in struct {
-		File string `json:"file"`
+		File     string `json:"file"`
+		Template string `json:"template"`
+		Name     string `json:"name"`
 	}
 	if err := server.Decode(r, &in); err != nil {
 		server.WriteError(w, err)
 		return
 	}
-	o, err := company.Import([]byte(in.File), newCompanyID(), people.From(ctx), a.nameOf(ctx), time.Now())
+	file := []byte(in.File)
+	if in.Template != "" {
+		var ok bool
+		if file, ok = company.TemplateFile(in.Template); !ok {
+			server.WriteError(w, server.StatusError{Status: 404, Msg: "no such template"})
+			return
+		}
+	}
+	o, err := company.Import(file, newCompanyID(), people.From(ctx), a.nameOf(ctx), time.Now())
+	if err == nil && strings.TrimSpace(in.Name) != "" {
+		o.Name = strings.TrimSpace(in.Name)
+		err = checkCompanyText(&o.Company)
+	}
+	if err == nil && o.Zone == "" {
+		o.Zone = a.Settings(ctx).Zone
+	}
 	if err == nil {
 		for _, role := range o.Roles {
 			if _, err = knownCapabilities(role.Capabilities); err != nil {

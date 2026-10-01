@@ -1,0 +1,5 @@
+format: 1
+name: New company
+mission: ""
+members:
+  - {id: ceo, kind: person, title: CEO, name: CEO}
