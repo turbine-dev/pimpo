@@ -1,6 +1,7 @@
 // Package judge answers the yes/no judgments inside routines ("is this
 // email important?") with a probability. Backends: Jev (calibrated,
-// needs a TypeSafe key), a cheap LLM, or a local model through Ollama.
+// needs a TypeSafe key), Laya (Jev's open model, served on this computer
+// with the same API), a cheap LLM, or a local model through Ollama.
 package judge
 
 import (
@@ -29,28 +30,57 @@ type Judge interface {
 }
 
 // Jev asks TypeSafe's Jev a Noul question: the probability that the
-// statement is true for the item.
+// statement is true for the item. Laya speaks the same API, so the same
+// client asks it: a Name, a Model and a local BaseURL, and a Key only
+// when its server wants one.
 type Jev struct {
 	Key     func(ctx context.Context) (string, error)
 	BaseURL string
 	HTTP    *http.Client
+	// Name is the backend's name in answers and errors; jev by default.
+	Name string
+	// Model is what the request asks for; jev-latest by default.
+	Model string
+}
+
+func (j Jev) name() string {
+	if j.Name == "" {
+		return "jev"
+	}
+	return j.Name
+}
+
+// Laya is Laya's server at base (laya-serve listens on port 8000), with
+// its key when it was started with one.
+func Laya(base string, key func(ctx context.Context) (string, error)) Jev {
+	return Jev{Name: "laya", Model: "laya", BaseURL: strings.TrimSuffix(base, "/") + "/v1/systemone", Key: key,
+		HTTP: &http.Client{Timeout: 10 * time.Second}}
 }
 
 func (j Jev) call(ctx context.Context, state any, questions map[string]any) (map[string]json.RawMessage, error) {
-	key, err := j.Key(ctx)
-	if err != nil {
-		return nil, err
+	var key string
+	if j.Key != nil {
+		var err error
+		if key, err = j.Key(ctx); err != nil && j.name() == "jev" {
+			return nil, err
+		}
 	}
 	base := j.BaseURL
 	if base == "" {
 		base = "https://api.typesafe.ai/v1/systemone"
 	}
-	body, _ := json.Marshal(map[string]any{"model": "jev-latest", "state": state, "questions": questions})
+	model := j.Model
+	if model == "" {
+		model = "jev-latest"
+	}
+	body, _ := json.Marshal(map[string]any{"model": model, "state": state, "questions": questions})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+key)
+	if key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	client := j.HTTP
 	if client == nil {
@@ -58,18 +88,18 @@ func (j Jev) call(ctx context.Context, state any, questions map[string]any) (map
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("jev unreachable")
+		return nil, fmt.Errorf("%s unreachable", j.name())
 	}
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("jev answered %d", resp.StatusCode)
+		return nil, fmt.Errorf("%s answered %d", j.name(), resp.StatusCode)
 	}
 	var out struct {
 		Answers map[string]json.RawMessage `json:"answers"`
 	}
 	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, errors.New("jev returned an unreadable answer")
+		return nil, fmt.Errorf("%s returned an unreadable answer", j.name())
 	}
 	return out.Answers, nil
 }
@@ -87,9 +117,9 @@ func (j Jev) Ask(ctx context.Context, question string, item any) (Answer, error)
 	}
 	raw, ok := answers["q"]
 	if !ok || json.Unmarshal(raw, &a) != nil {
-		return Answer{}, errors.New("jev returned no answer")
+		return Answer{}, fmt.Errorf("%s returned no answer", j.name())
 	}
-	return Answer{P: clamp(a.Noul), Backend: "jev"}, nil
+	return Answer{P: clamp(a.Noul), Backend: j.name()}, nil
 }
 
 // Choose asks which option best fits, returning each option's
@@ -104,7 +134,7 @@ func (j Jev) Choose(ctx context.Context, instructions string, state any, options
 	}
 	raw, ok := answers["q"]
 	if !ok || json.Unmarshal(raw, &a) != nil || a.Probabilities == nil {
-		return nil, errors.New("jev returned no answer")
+		return nil, fmt.Errorf("%s returned no answer", j.name())
 	}
 	return a.Probabilities, nil
 }
@@ -290,4 +320,26 @@ func (c Cascade) Ask(ctx context.Context, question string, item any) (Answer, er
 	}
 	b.CostUSD += a.CostUSD
 	return b, nil
+}
+
+// Healthy says whether Laya's server answers its health probe.
+func (j Jev) Healthy(ctx context.Context) error {
+	u := strings.TrimSuffix(j.BaseURL, "/v1/systemone") + "/health"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return err
+	}
+	client := j.HTTP
+	if client == nil {
+		client = &http.Client{Timeout: 10 * time.Second}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("%s unreachable at %s", j.name(), u)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("%s answered %d at %s", j.name(), resp.StatusCode, u)
+	}
+	return nil
 }

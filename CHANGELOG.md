@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- Laya, Jev's open decision model, as a judge on this computer (by its own or first in the local chain) and as a company decider, with a connection test in **Settings › Models**.
 - An optional public showcase for each company, off until its creator turns it on, with only the shipped briefs, uploaded videos and links they put on it, naming no one.
 - Each company member's performance on the **Work** tab, and company widgets for dashboards (a summary and the month's spending).
 - Company templates (software company, marketing agency, online shop, content channel, consultancy, blank) and creating a company by describing it, proposed for review before anything is created.

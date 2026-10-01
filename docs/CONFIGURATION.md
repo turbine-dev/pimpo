@@ -209,7 +209,8 @@ The thinking level follows the same weighing: `low` for simple requests, `high` 
 
 | Setting | Default | Where | What it does |
 |---|---|---|---|
-| `judge_backend` | `local` | **Settings › Models › Who answers judgments** | `local` (**Local model**), `jev` (**Jev**) or `llm` (**Your model**). |
+| `judge_backend` | `local` | **Settings › Models › Who answers judgments** | `local` (**Local model**), `laya` (**Laya on this computer**), `jev` (**Jev**) or `llm` (**Your model**). |
+| `laya_url` | empty | **Laya's address** | A [Laya](https://github.com/NandhaKishorM/laya) server on this computer (`pip install "laya[serve]" && laya-serve`, port 8000). With it set, the local judge asks Laya first; `laya` needs it (or uses `http://127.0.0.1:8000`). A server started with `LAYA_API_KEY` needs that key in the vault as `laya.key`. |
 | `local_judge_url` | `http://127.0.0.1:11500` | **Local model address** | Pimpo's small judgment model (`tools/judge/serve.py`), or any server speaking the [Judge API](SDK.md#judge-api). |
 | `ollama_model` | `qwen3:1.7b` | not in the app | The Ollama model the local backend tries when the local judge does not answer. |
 

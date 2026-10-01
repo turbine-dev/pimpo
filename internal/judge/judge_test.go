@@ -39,6 +39,49 @@ func TestJevSendsANoulQuestion(t *testing.T) {
 	}
 }
 
+// A stand-in laya-serve: the same API as Jev, a key only when it was
+// started with one, and a health probe.
+func TestLayaAsksTheLocalServer(t *testing.T) {
+	var got map[string]any
+	key := ""
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/health":
+			w.Write([]byte(`{"status":"ok"}`))
+		case "/v1/systemone":
+			if key != "" && r.Header.Get("Authorization") != "Bearer "+key {
+				w.WriteHeader(401)
+				return
+			}
+			json.NewDecoder(r.Body).Decode(&got)
+			w.Write([]byte(`{"model":"laya","answers":{"q":{"type":"noul","noul":0.12}}}`))
+		default:
+			w.WriteHeader(404)
+		}
+	}))
+	defer srv.Close()
+	none := func(context.Context) (string, error) { return "", errors.New("no key set") }
+	l := Laya(srv.URL+"/", none)
+	if err := l.Healthy(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	a, err := l.Ask(context.Background(), "Is this phishing?", "click here")
+	if err != nil || a.P != 0.12 || a.Backend != "laya" || got["model"] != "laya" {
+		t.Fatalf("%+v %v %v", a, err, got)
+	}
+	key = "secret"
+	if _, err := l.Ask(context.Background(), "?", nil); err == nil || !strings.Contains(err.Error(), "laya answered 401") {
+		t.Fatalf("a server that wants a key: %v", err)
+	}
+	withKey := Laya(srv.URL, func(context.Context) (string, error) { return "secret", nil })
+	if a, err := withKey.Ask(context.Background(), "?", nil); err != nil || a.P != 0.12 {
+		t.Fatalf("with its key: %+v %v", a, err)
+	}
+	if err := Laya("http://127.0.0.1:1", none).Healthy(context.Background()); err == nil {
+		t.Fatal("a server that is not there is healthy")
+	}
+}
+
 func TestLLMBackend(t *testing.T) {
 	fake := &llm.Fake{Responses: []llm.Response{{Structured: json.RawMessage(`{"p":1.4}`), CostUSD: 0.001}}}
 	a, err := LLM{Model: fake}.Ask(context.Background(), "Is it spam?", "hello")
