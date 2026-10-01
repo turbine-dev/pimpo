@@ -85,8 +85,22 @@ func (c CodexCLI) run(ctx context.Context, prompt, system, model, effort string,
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	runErr := cmd.Run()
 	// The event stream carries failures the exit code does not explain.
+	failure := codexFailure(stdout.Bytes())
+	text, _ := os.ReadFile(last)
+	if runErr != nil || (failure != "" && len(bytes.TrimSpace(text)) == 0) {
+		why := firstNonEmpty(failure, strings.TrimSpace(stderr.String()))
+		if runErr != nil {
+			return "", fmt.Errorf("codex: %v: %s", runErr, why)
+		}
+		return "", fmt.Errorf("codex: %s", why)
+	}
+	return strings.TrimSpace(string(text)), nil
+}
+
+// codexFailure is the last failure in a run's event stream.
+func codexFailure(out []byte) string {
 	var failure string
-	sc := bufio.NewScanner(&stdout)
+	sc := bufio.NewScanner(bytes.NewReader(out))
 	sc.Buffer(make([]byte, 1<<20), 16<<20)
 	for sc.Scan() {
 		var e struct {
@@ -106,15 +120,7 @@ func (c CodexCLI) run(ctx context.Context, prompt, system, model, effort string,
 			failure = firstNonEmpty(e.Message, e.Error.Message, failure)
 		}
 	}
-	text, _ := os.ReadFile(last)
-	if runErr != nil || (failure != "" && len(bytes.TrimSpace(text)) == 0) {
-		why := firstNonEmpty(failure, strings.TrimSpace(stderr.String()))
-		if runErr != nil {
-			return "", fmt.Errorf("codex: %v: %s", runErr, why)
-		}
-		return "", fmt.Errorf("codex: %s", why)
-	}
-	return strings.TrimSpace(string(text)), nil
+	return failure
 }
 
 // Generate answers one prompt; with a schema, Codex is held to it.

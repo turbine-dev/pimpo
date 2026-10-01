@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -287,4 +288,12 @@ func TestATaskThatStraysWaitsForTheBoss(t *testing.T) {
 	if s.saw("Rewrite the website") != "" && !strings.Contains(s.saw("Rewrite the website"), "Bia asks you") {
 		t.Fatal("Bia started the stray task before her boss said so")
 	}
+	// Once the boss says to start it, it starts.
+	if _, err := ta.answerQuestion(ctx, qs[0], "Start it", "fine", "human:owner"); err != nil {
+		t.Fatal(err)
+	}
+	ta.waitFor(t, "Bia's work on the task", func() bool {
+		works, _ := ta.Companies.Works(ctx, co, 20)
+		return slices.ContainsFunc(works, func(w company.Work) bool { return w.Task == child.ID && w.State == company.WorkDone })
+	})
 }

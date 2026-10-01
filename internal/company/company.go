@@ -61,6 +61,9 @@ type Company struct {
 	Accounts []SharedAccount `json:"accounts,omitempty"`
 	// Memory says how each scope of memory is written.
 	Memory MemoryPolicy `json:"memory,omitzero"`
+	// CodeEnv are the variables the company's coding CLIs get, such as a
+	// project's settings; secrets do not belong here.
+	CodeEnv map[string]string `json:"code_env,omitempty"`
 	// Lateral lets members hand work to others of their department, not
 	// only to the people below them.
 	Lateral  bool      `json:"lateral,omitempty"`
@@ -119,9 +122,13 @@ type Member struct {
 	// its role's matrix and the company's default.
 	Autonomy []Autonomy `json:"autonomy,omitempty"`
 	// Budget is the member's own limit, its salary.
-	Budget  Budget    `json:"budget,omitzero"`
-	Created time.Time `json:"created"`
-	Updated time.Time `json:"updated"`
+	Budget Budget `json:"budget,omitzero"`
+	// Coder is the coding CLI the member codes with, and CodeSandbox runs
+	// it in that CLI's sandbox.
+	Coder       string    `json:"coder,omitempty"`
+	CodeSandbox bool      `json:"code_sandbox,omitempty"`
+	Created     time.Time `json:"created"`
+	Updated     time.Time `json:"updated"`
 }
 
 // An Org is a company with everything in it.

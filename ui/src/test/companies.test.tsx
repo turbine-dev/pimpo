@@ -265,6 +265,30 @@ describe('Company memory and meetings', () => {
   })
 })
 
+describe('Company coding', () => {
+  it('gives a developer a coding CLI, its sandbox and the variables it codes with', async () => {
+    const coding: Org = { ...org, roles: [...org.roles, { id: 'dev', title: 'Dev', capabilities: ['code.workspace'] }], members: [...org.members, { id: 'rui', kind: 'agent', role: 'dev', reports_to: 'ceo', name: 'Rui', state: 'active' }] }
+    const calls = mockFetch({ '/api/companies/co_1': coding, '/api/state': { person: 'owner' }, 'PUT /api/companies/co_1/members/rui': coding, 'PUT /api/companies/co_1': coding,
+      '/api/companies/co_1/coders': [{ id: 'claude', name: 'Claude Code', sandbox: true, installed: true }, { id: 'codex', name: 'Codex', sandbox: true, installed: false }, { id: 'opencode', name: 'opencode', sandbox: false, installed: true }] })
+    wrap(routes(), '/companies/co_1')
+    const chart = (await screen.findAllByLabelText('Organograma', { selector: '.org' }))[0]
+    await userEvent.click(within(chart).getByRole('button', { name: 'Abrir Clara' }))
+    expect(within(await screen.findByRole('dialog')).queryByText('Programação')).not.toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /Fechar/ }))
+    await userEvent.click(within(chart).getByRole('button', { name: 'Abrir Rui' }))
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.selectOptions(await within(dialog).findByLabelText('CLI de código'), 'codex')
+    expect(within(dialog).getByText('Codex não está instalado neste computador.')).toBeInTheDocument()
+    await userEvent.click(within(dialog).getByRole('switch', { name: 'Programar no sandbox do CLI' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'PUT' && c.url.endsWith('/members/rui'))?.body).toMatchObject({ coder: 'codex', code_sandbox: true }))
+    await userEvent.click(await screen.findByRole('button', { name: /Editar empresa/ }))
+    await userEvent.type(within(await screen.findByRole('dialog')).getByLabelText('Variáveis para programar'), 'API_URL=http://localhost:8080')
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect((calls.find((c) => c.method === 'PUT' && c.url.endsWith('/co_1'))?.body as { code_env: unknown }).code_env).toEqual({ API_URL: 'http://localhost:8080' }))
+  })
+})
+
 describe('Company autonomy and decision levels', () => {
   it("gives a member Jev to decide what it would ask", async () => {
     const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, 'PUT /api/companies/co_1/members/clara': org })

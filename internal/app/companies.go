@@ -51,6 +51,7 @@ func (a *App) companyRoutes() {
 		if err := a.Companies.Delete(r.Context(), o.ID); err != nil {
 			return nil, err
 		}
+		a.dropSpaces(o.ID)
 		return map[string]bool{"ok": true}, nil
 	}))
 	a.Server.Handle("GET /api/companies/{id}/export", a.exportCompany)
@@ -380,6 +381,7 @@ func (a *App) forgetCompaniesOf(ctx context.Context, person string) {
 		switch {
 		case c.Person == person:
 			a.Companies.Delete(ctx, c.ID)
+			a.dropSpaces(c.ID)
 		case c.Grant(person) != "":
 			o, err := a.Companies.Org(ctx, c.ID)
 			if err != nil {
