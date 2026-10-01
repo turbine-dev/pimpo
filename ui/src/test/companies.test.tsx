@@ -317,6 +317,19 @@ describe('Starting a company', () => {
   })
 })
 
+describe('Company performance', () => {
+  it('shows how each agent did', async () => {
+    mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/performance': [
+      { member: 'bia', name: 'Bia', done: 12, failed: 1, minutes: 6.4, cost_usd: 2.4, cost_each: 0.2, tasks_done: 5, tasks_blocked: 1, questions: 3, earned: 1, briefs_met: 3, briefs_checked: 4 },
+      { member: 'clara', name: 'Clara', done: 0, failed: 0, minutes: 0, cost_usd: 0, cost_each: 0, tasks_done: 0, tasks_blocked: 0, questions: 0, earned: 0 },
+    ] })
+    wrap(routes(), '/companies/co_1?tab=work')
+    const table = (await screen.findByRole('heading', { name: 'Desempenho' })).closest('div') as HTMLElement
+    const bia = within(table).getByRole('row', { name: /Bia/ })
+    expect(within(bia).getAllByRole('cell').map((c) => c.textContent)).toEqual(['Bia', '12', '1', '6', '$0.20', '5 · 1 travadas', '3', '1', '3/4'])
+  })
+})
+
 describe('Company media', () => {
   it('shows each video with what its checks found', async () => {
     const maker: Org = { ...org, roles: [...org.roles, { id: 'video', title: 'Vídeo', capabilities: ['media.render'] }] }

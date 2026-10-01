@@ -249,5 +249,11 @@
   "svc.linkedin.help": "在 linkedin.com/developers 创建一个带 Community Management API 产品的应用，生成带 w_organization_social 的令牌，并以 urn:li:organization:编号 的形式填写主页。",
   "svc.linkedin.field.token.label": "Token",
   "svc.linkedin.field.author.label": "主页",
-  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456",
+  "widget.company.working": "正在工作",
+  "widget.company.questions": "给你的问题",
+  "widget.company.today": "今天花费",
+  "widget.company.month": "本月",
+  "widget.company.of": "共 {limit}",
+  "widget.company.spent": "{name} · 本月花费"
 }

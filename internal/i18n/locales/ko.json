@@ -249,5 +249,11 @@
   "svc.linkedin.help": "linkedin.com/developers에서 Community Management API 제품이 있는 앱을 만들고 w_organization_social 토큰을 생성한 뒤 페이지를 urn:li:organization:번호 형식으로 입력하세요.",
   "svc.linkedin.field.token.label": "Token",
   "svc.linkedin.field.author.label": "페이지",
-  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456",
+  "widget.company.working": "작업 중",
+  "widget.company.questions": "당신에게 온 질문",
+  "widget.company.today": "오늘 지출",
+  "widget.company.month": "이번 달",
+  "widget.company.of": "{limit} 중",
+  "widget.company.spent": "{name} · 이번 달 지출"
 }

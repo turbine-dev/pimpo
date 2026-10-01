@@ -249,5 +249,11 @@
   "svc.linkedin.help": "Create an app at linkedin.com/developers with the Community Management API product, generate a token with w_organization_social, and give the page as urn:li:organization:NUMBER.",
   "svc.linkedin.field.token.label": "Token",
   "svc.linkedin.field.author.label": "Page",
-  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456",
+  "widget.company.working": "Working now",
+  "widget.company.questions": "Questions for you",
+  "widget.company.today": "Spent today",
+  "widget.company.month": "This month",
+  "widget.company.of": "of {limit}",
+  "widget.company.spent": "{name} · spent this month"
 }

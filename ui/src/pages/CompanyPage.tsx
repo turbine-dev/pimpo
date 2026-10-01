@@ -22,6 +22,7 @@ import { MemberAccounts, SharedAccounts } from './CompanyAccounts'
 import { MeetingsTab, NewMeeting } from './CompanyMeetings'
 import { hasProduct, ProductTab } from './CompanyProduct'
 import { hasMedia, MediaTab } from './CompanyMedia'
+import { Performance } from './CompanyPerformance'
 import { CodeEnvField, CoderChoice, codes, envOf, envText } from './CompanyCode'
 
 // Deleting reads in the danger color on a plain button, which keeps its
@@ -151,6 +152,7 @@ export function CompanyPage({ id }: { id: string }) {
         </Tabs.Content>
         <Tabs.Content value="work" className="space-y-4">
           <Digest org={o} />
+          <Performance org={o} />
           <WorkLog org={o} can={can} />
         </Tabs.Content>
       </Tabs.Root>

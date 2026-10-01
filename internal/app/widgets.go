@@ -298,7 +298,7 @@ func newWidgetID() string {
 // widgetView is a widget ready to draw.
 type widgetView struct {
 	ID       string        `json:"id"`
-	Source   string        `json:"source"` // routine, builtin, status
+	Source   string        `json:"source"` // routine, builtin, status, company
 	Routine  string        `json:"routine,omitempty"`
 	Kind     string        `json:"kind"`
 	Title    string        `json:"title"`
@@ -516,6 +516,8 @@ func (a *App) anyWidget(ctx context.Context, id string, withHistory bool) (widge
 		return a.builtinWidget(ctx, id)
 	case strings.HasPrefix(id, "status:"):
 		return a.statusWidget(ctx, strings.TrimPrefix(id, "status:"))
+	case strings.HasPrefix(id, "company:"):
+		return a.companyWidget(ctx, id)
 	}
 	w, err := a.myWidget(ctx, id)
 	if err != nil {
@@ -725,6 +727,11 @@ func (a *App) widgetRoutes() {
 				if v, ok := a.statusWidget(ctx, rt.ID); ok {
 					out = append(out, v)
 				}
+			}
+		}
+		for _, id := range a.companyWidgetIDs(ctx) {
+			if v, ok := a.companyWidget(ctx, id); ok {
+				out = append(out, v)
 			}
 		}
 		server.WriteJSON(w, 200, out)
