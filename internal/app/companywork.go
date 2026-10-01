@@ -143,6 +143,10 @@ func usageLimit(err string) bool {
 
 // pumpWork starts the queued work that may start now.
 func (a *App) pumpWork(ctx context.Context) {
+	if ctx.Err() != nil {
+		// Pimpo is stopping: nothing new starts.
+		return
+	}
 	a.work.mu.Lock()
 	defer a.work.mu.Unlock()
 	waiting, err := a.Companies.Waiting(ctx)

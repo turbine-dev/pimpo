@@ -427,10 +427,17 @@ func (a *App) background(f func()) {
 }
 
 // Wait blocks until the loops Start began have returned after its context
-// ended, or until d passes.
+// ended, and the explorations still running have finished, or until d
+// passes.
 func (a *App) Wait(d time.Duration) {
 	done := make(chan struct{})
-	go func() { a.bg.Wait(); close(done) }()
+	go func() {
+		a.bg.Wait()
+		if a.Explore != nil {
+			a.Explore.Wait()
+		}
+		close(done)
+	}()
 	select {
 	case <-done:
 	case <-time.After(d):
