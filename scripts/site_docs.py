@@ -62,6 +62,7 @@ SECTIONS = [
         ("rfc-0001", "docs/rfcs/0001-code-sandbox.md", "RFC 0001: code sandbox", "How the agent runs code in isolation."),
         ("rfc-0002", "docs/rfcs/0002-browser.md", "RFC 0002: browser", "How the agent drives a browser safely."),
         ("rfc-0003", "docs/rfcs/0003-dashboards.md", "RFC 0003: dashboards and widgets", "Dashboards, routines as widgets, and widgets on every system."),
+        ("rfc-0004", "docs/rfcs/0004-companies.md", "RFC 0004: companies of agents", "Companies with roles, members, decision levels and accounts of their own."),
         ("rfc-template", "docs/rfcs/0000-template.md", "RFC template", "How to propose a larger change."),
     ]),
     ("Security", [
