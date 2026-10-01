@@ -32,6 +32,9 @@ type Action struct {
 	// Member is the company member the run works as, "company/member",
 	// whose company's rules apply on top of the house's.
 	Member string `json:"member,omitempty"`
+	// Rehearsal is a call that will be simulated, not made, so nothing
+	// about it needs deciding.
+	Rehearsal bool `json:"rehearsal,omitempty"`
 	// Paths are the absolute, cleaned files an action touches, when known
 	// (another agent's writes).
 	Paths []string `json:"paths,omitempty"`

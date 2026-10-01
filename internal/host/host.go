@@ -194,19 +194,22 @@ func (h *Host) Call(ctx context.Context, name, scope string, args any) (any, err
 	if pol == nil {
 		pol = policy.Open{}
 	}
-	act := policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source, Person: person, Role: string(people.Owner), Member: h.Member}
+	simulated := h.DryRun && spec.Risk >= capability.Reversible
+	act := policy.Action{Capability: name, Scope: scope, Args: args, Risk: spec.Risk, Source: h.Source, Person: person, Role: string(people.Owner), Member: h.Member, Rehearsal: simulated}
 	if h.RoleOf != nil {
 		act.Role = h.RoleOf(ctx, person)
 	}
-	d := pol.Decide(ctx, act)
-	if h.Allowed != nil && !h.Allowed[name] {
+	var d policy.Decision
+	if ok, why := h.stillAllowed(name); h.Allowed != nil && !h.Allowed[name] {
 		d = policy.Decision{Verdict: policy.Block, Reason: "this assistant may not use " + name}
-	}
-	if ok, why := h.stillAllowed(name); !ok {
+	} else if !ok {
 		d = policy.Decision{Verdict: policy.Block, Reason: why}
+	} else {
+		// A call that is refused anyway is not decided, so nobody is
+		// asked about it and no decider spends anything on it.
+		d = pol.Decide(ctx, act)
 	}
 	rec.Verdict, rec.Reason, rec.Rule = d.Verdict, d.Reason, d.Rule
-	simulated := h.DryRun && spec.Risk >= capability.Reversible
 
 	if d.Verdict == policy.Block {
 		rec.Error = d.Reason
