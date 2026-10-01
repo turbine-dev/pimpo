@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- Autonomy for company members: per member, role or company, who decides what an action asks first (the member, Jev, a model, the boss, a committee, a cascade or a person), with every decision kept.
 - A company's **Memory** tab with its notes and meetings, and **This week** on the **Work** tab.
 - A company's memory (decisions, lessons, minutes) that every member reads, meetings between agents with minutes and decisions, and a summary of the week for the CEO every Monday.
 - A company's **Tasks** tab: the board by state, handing a member a task, each task's dossier, and members' questions answered in place and in **Needs you**.

@@ -49,6 +49,9 @@ type Company struct {
 	Zone     string `json:"zone,omitempty"`
 	Hours    Hours  `json:"hours"`
 	Paused   bool   `json:"paused,omitempty"`
+	// Decider is who decides, by default, what a member's action asks
+	// first; none means a person.
+	Decider Decider `json:"decider,omitzero"`
 	// Lateral lets members hand work to others of their department, not
 	// only to the people below them.
 	Lateral  bool      `json:"lateral,omitempty"`
@@ -72,14 +75,15 @@ type Department struct {
 // A Role is a function in the company that members hold: what it is for,
 // and what a member holding it starts with.
 type Role struct {
-	ID               string   `json:"id" yaml:"id"`
-	Title            string   `json:"title" yaml:"title"`
-	Function         string   `json:"function,omitempty" yaml:"function,omitempty"`
-	Responsibilities []string `json:"responsibilities,omitempty" yaml:"responsibilities,omitempty"`
-	Deliverables     []string `json:"deliverables,omitempty" yaml:"deliverables,omitempty"`
-	Capabilities     []string `json:"capabilities,omitempty" yaml:"capabilities,omitempty"`
-	Models           []string `json:"models,omitempty" yaml:"models,omitempty"`
-	AccountKinds     []string `json:"account_kinds,omitempty" yaml:"account_kinds,omitempty"`
+	ID               string     `json:"id" yaml:"id"`
+	Title            string     `json:"title" yaml:"title"`
+	Function         string     `json:"function,omitempty" yaml:"function,omitempty"`
+	Responsibilities []string   `json:"responsibilities,omitempty" yaml:"responsibilities,omitempty"`
+	Deliverables     []string   `json:"deliverables,omitempty" yaml:"deliverables,omitempty"`
+	Capabilities     []string   `json:"capabilities,omitempty" yaml:"capabilities,omitempty"`
+	Models           []string   `json:"models,omitempty" yaml:"models,omitempty"`
+	AccountKinds     []string   `json:"account_kinds,omitempty" yaml:"account_kinds,omitempty"`
+	Autonomy         []Autonomy `json:"autonomy,omitempty" yaml:"autonomy,omitempty"`
 }
 
 // A Member is an agent holding a role, or a person holding a seat (the
@@ -99,9 +103,12 @@ type Member struct {
 	Models       []string `json:"models,omitempty"`
 	State        string   `json:"state,omitempty"`
 	// Hours, when set, replace the company's for this member.
-	Hours   *Hours    `json:"hours,omitempty"`
-	Created time.Time `json:"created"`
-	Updated time.Time `json:"updated"`
+	Hours *Hours `json:"hours,omitempty"`
+	// Autonomy is who decides what this member's actions ask first, before
+	// its role's matrix and the company's default.
+	Autonomy []Autonomy `json:"autonomy,omitempty"`
+	Created  time.Time  `json:"created"`
+	Updated  time.Time  `json:"updated"`
 }
 
 // An Org is a company with everything in it.

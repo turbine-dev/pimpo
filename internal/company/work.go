@@ -87,6 +87,21 @@ func (o Org) checkWork() error {
 	if err := o.Hours.check(); err != nil {
 		return err
 	}
+	if o.Decider.Kind != "" {
+		if err := o.Decider.check(o); err != nil {
+			return fmt.Errorf("the company's decider: %w", err)
+		}
+	}
+	for _, r := range o.Roles {
+		if err := checkAutonomy(o, r.Autonomy); err != nil {
+			return fmt.Errorf("role %s: %w", r.Title, err)
+		}
+	}
+	for _, m := range o.Members {
+		if err := checkAutonomy(o, m.Autonomy); err != nil {
+			return fmt.Errorf("%s: %w", m.Name, err)
+		}
+	}
 	seen := map[string]bool{}
 	for _, r := range o.AgentRoutines {
 		m, ok := o.Member(r.Member)

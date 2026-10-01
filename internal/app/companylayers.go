@@ -30,10 +30,14 @@ func (a *App) companyDecides(ctx context.Context, act policy.Action, house polic
 	if _, ok := o.Member(member); !ok {
 		return policy.Decision{Verdict: policy.Block, Reason: "no longer in the company"}
 	}
+	final := house
 	if d, ok := o.Decide(member, act); ok && policy.Stricter(house.Verdict, d.Verdict) != house.Verdict {
-		return d
+		final = d
 	}
-	return house
+	if final.Verdict == policy.Ask && !act.Rehearsal && delegable(act, final) {
+		final = a.decideFor(ctx, o, member, act, final)
+	}
+	return final
 }
 
 type ruleView struct {
@@ -42,6 +46,8 @@ type ruleView struct {
 	Verdict    policy.Verdict `json:"verdict"`
 	Reason     string         `json:"reason,omitempty"`
 	Rule       string         `json:"rule,omitempty"`
+	// Decider is who answers when it asks first.
+	Decider string `json:"decider,omitempty"`
 }
 
 // previewMember is what a member receives: its brief, and the verdict on
@@ -59,9 +65,16 @@ func (a *App) previewMember(w http.ResponseWriter, r *http.Request, o company.Or
 	views := []ruleView{}
 	for _, c := range caps {
 		spec := capability.Catalog[c]
-		act := policy.Action{Capability: c, Risk: spec.Risk, Source: "member:" + o.ID, Person: o.Person, Role: string(a.roleOf(ctx)), Member: o.ID + "/" + m.ID}
+		act := policy.Action{Capability: c, Risk: spec.Risk, Source: "member:" + o.ID, Person: o.Person, Role: string(a.roleOf(ctx)), Member: o.ID + "/" + m.ID, Rehearsal: true}
 		d := a.decide(ctx, act)
-		views = append(views, ruleView{c, spec.Risk.String(), d.Verdict, d.Reason, d.Rule})
+		v := ruleView{c, spec.Risk.String(), d.Verdict, d.Reason, d.Rule, ""}
+		if d.Verdict == policy.Ask {
+			v.Decider = company.Decider{Kind: company.DecidePerson}.Label()
+			if delegable(act, d) {
+				v.Decider = o.DeciderFor(m.ID, act).Label()
+			}
+		}
+		views = append(views, v)
 	}
 	return map[string]any{"brief": o.Brief(m.ID), "rules": views}, nil
 }
