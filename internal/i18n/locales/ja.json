@@ -232,5 +232,10 @@
   "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
   "svc.wapersonal.field.session.label": "セッション",
   "svc.wapersonal.field.session.placeholder": "default",
-  "svc.wapersonal.field.api_key.label": "WAHA の API キー"
+  "svc.wapersonal.field.api_key.label": "WAHA の API キー",
+  "svc.stripe.description": "アカウントの残高と請求（読み取り専用）。",
+  "svc.stripe.help": "Stripe › 開発者 › API キーで、Balance と Charges の読み取りだけを許可した制限付きキーを作成してください。ここから請求や送金は一切行いません。",
+  "svc.stripe.field.key.label": "制限付きキー",
+  "svc.stripe.field.key.placeholder": "rk_live_…",
+  "svc.stripe.title": "Stripe"
 }

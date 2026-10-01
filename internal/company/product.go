@@ -30,7 +30,13 @@ CREATE TABLE IF NOT EXISTS company_briefs (
   data       TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS company_briefs_company ON company_briefs (company, created_at);`
+CREATE INDEX IF NOT EXISTS company_briefs_company ON company_briefs (company, created_at);
+CREATE TABLE IF NOT EXISTS company_proposals (
+  id         TEXT PRIMARY KEY,
+  company    TEXT NOT NULL,
+  data       TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);`
 
 // A Signal is one thing heard about the product. The same thing heard
 // again counts on the first one.

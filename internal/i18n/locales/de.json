@@ -232,5 +232,10 @@
   "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
   "svc.wapersonal.field.session.label": "Sitzung",
   "svc.wapersonal.field.session.placeholder": "default",
-  "svc.wapersonal.field.api_key.label": "WAHA-API-Schlüssel"
+  "svc.wapersonal.field.api_key.label": "WAHA-API-Schlüssel",
+  "svc.stripe.description": "Kontostand und Zahlungen deines Kontos, nur lesend.",
+  "svc.stripe.help": "Erstelle in Stripe › Entwickler › API-Schlüssel einen eingeschränkten Schlüssel nur mit Lesezugriff auf Balance und Charges. Von hier wird nichts abgebucht oder bewegt.",
+  "svc.stripe.field.key.label": "Eingeschränkter Schlüssel",
+  "svc.stripe.field.key.placeholder": "rk_live_…",
+  "svc.stripe.title": "Stripe"
 }

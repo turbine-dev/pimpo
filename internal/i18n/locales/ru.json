@@ -236,5 +236,10 @@
   "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
   "svc.wapersonal.field.session.label": "Сессия",
   "svc.wapersonal.field.session.placeholder": "default",
-  "svc.wapersonal.field.api_key.label": "Ключ API WAHA"
+  "svc.wapersonal.field.api_key.label": "Ключ API WAHA",
+  "svc.stripe.description": "Баланс и платежи вашего аккаунта, только чтение.",
+  "svc.stripe.help": "В Stripe › Разработчики › API-ключи создайте ограниченный ключ только с чтением Balance и Charges. Отсюда ничего не списывается и не переводится.",
+  "svc.stripe.field.key.label": "Ограниченный ключ",
+  "svc.stripe.field.key.placeholder": "rk_live_…",
+  "svc.stripe.title": "Stripe"
 }

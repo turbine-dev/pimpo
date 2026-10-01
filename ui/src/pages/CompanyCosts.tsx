@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Field } from '../components/Modal'
 import { Button, Card } from '../components/ui'
-import { api, type Budget, type Org } from '../lib/api'
+import { api, type Budget, type BudgetProposal, type Org } from '../lib/api'
 import { useT } from '../lib/i18n'
 import { field } from './Companies'
 
@@ -34,8 +34,16 @@ export function CostsTab({ org, can, onSaved }: { org: Org; can: boolean; onSave
     },
     onSuccess: (o) => { onSaved(o); qc.invalidateQueries({ queryKey: ['company-costs', org.id] }) },
   })
+  const month = useQuery({ queryKey: ['company-month', org.id], queryFn: () => api.companyMonth(org.id) })
+  const proposals = useQuery({ queryKey: ['company-proposals', org.id], queryFn: () => api.companyProposals(org.id) })
+  const decide = useMutation({
+    mutationFn: ({ p, accept }: { p: BudgetProposal; accept: boolean }) => api.decideProposal(org.id, p.id, accept),
+    onSuccess: () => { for (const k of ['company-proposals', 'company', 'company-costs', 'needs']) qc.invalidateQueries({ queryKey: k === 'needs' ? [k] : [k, org.id] }) },
+  })
   const c = costs.data
   if (!c) return null
+  const waiting = (proposals.data ?? []).filter((p) => p.state === 'proposed')
+  const whose = (p: BudgetProposal) => p.scope === 'company' ? org.name : p.scope === 'department' ? org.departments.find((d) => d.id === p.of)?.name ?? p.of : org.members.find((m) => m.id === p.of)?.name ?? p.of
   const sub = c.subscription
   const agents = org.members.filter((m) => m.kind === 'agent')
   return (
@@ -46,6 +54,28 @@ export function CostsTab({ org, can, onSaved }: { org: Org; can: boolean; onSave
         <Stat label={t('co.forecast')} value={usd(c.forecast_month)} hint={t('co.forecastHint')} />
         <Stat label={t('co.subscription')} value={usd(sub?.company.month)} hint={t('co.subscriptionHint')} />
       </div>
+      {(month.data?.anomalies.length ?? 0) > 0 && (
+        <Card className="space-y-1 border-change/40 p-4">
+          <h3 className="text-[13.5px] font-semibold text-change">{t('co.anomalies')}</h3>
+          <ul className="list-disc pl-5 text-[12.5px] text-ink-2">{month.data!.anomalies.map((a) => <li key={a}>{a}</li>)}</ul>
+        </Card>
+      )}
+      {waiting.length > 0 && (
+        <section className="space-y-2" aria-label={t('co.proposals')}>
+          <h3 className="text-[13.5px] font-semibold">{t('co.proposals')}</h3>
+          {waiting.map((p) => (
+            <Card key={p.id} className="flex flex-wrap items-center gap-3 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[13.5px] font-medium">{t('co.proposalLine', { who: whose(p) ?? '', usd: usd(p.month_usd), was: usd(p.was) })}</p>
+                <p className="text-[12.5px] text-ink-3">{p.reason}</p>
+              </div>
+              {can && <Button size="sm" variant="primary" disabled={decide.isPending} onClick={() => decide.mutate({ p, accept: true })}>{t('co.applyBudget')}</Button>}
+              {can && <Button size="sm" variant="ghost" disabled={decide.isPending} onClick={() => decide.mutate({ p, accept: false })}>{t('co.declineBudget')}</Button>}
+            </Card>
+          ))}
+          {decide.error && <p className="text-[13px] text-danger">{decide.error.message}</p>}
+        </section>
+      )}
       {c.outcomes.task && <p className="text-[13px] text-ink-2">{t('co.perTask', { count: c.outcomes.task.count, each: usd(c.outcomes.task.cost_each) })}</p>}
       <Card className="overflow-x-auto">
         <table className="w-full text-[13px]">

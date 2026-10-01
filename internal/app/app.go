@@ -394,6 +394,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.companyCodeRoutes()
 	a.companyProductRoutes()
 	a.companyEarnRoutes()
+	a.companyFinanceRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()
@@ -671,6 +672,7 @@ func (a *App) router() *connector.Router {
 		wakeCap{a},
 		codeWorkspace{a},
 		productCap{a},
+		financeCap{a},
 		teamCap{a},
 		memoryCap{a},
 		a.spotify(),

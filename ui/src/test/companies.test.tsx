@@ -265,6 +265,21 @@ describe('Company memory and meetings', () => {
   })
 })
 
+describe('Company finance', () => {
+  it('shows what looks wrong and applies a proposed budget', async () => {
+    const costs = { company: { day: 1, month: 9 }, members: {}, departments: {}, by_day: {}, forecast_month: 20, per_member: {}, per_role: {}, budget: {}, limits: {}, outcomes: {} }
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/costs': costs,
+      '/api/companies/co_1/month': { month: '2026-10', total: 9, members: {}, departments: {}, previous_total: 8, subscription: 0, anomalies: ['2026-10-01: $9.00 spent, against a usual $0.50 a day'] },
+      '/api/companies/co_1/proposals': [{ id: 'p_1', company: 'co_1', by: 'bia', scope: 'member', of: 'clara', month_usd: 30, was: 10, reason: 'Clara atende o dobro', state: 'proposed', created: '' }],
+      'POST /api/companies/co_1/proposals/p_1': {} })
+    wrap(routes(), '/companies/co_1?tab=costs')
+    expect(await screen.findByText(/\$9.00 spent, against a usual/)).toBeInTheDocument()
+    expect(screen.getByText('Clara: $30.00 por mês (hoje $10.00)')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST' && c.url.endsWith('/proposals/p_1'))?.body).toEqual({ accept: true }))
+  })
+})
+
 describe('Company product', () => {
   it('accepts a brief, shows its flagged claims and marks it shipped', async () => {
     const po: Org = { ...org, roles: [...org.roles, { id: 'po', title: 'PO', capabilities: ['company.brief', 'company.signal'] }] }
