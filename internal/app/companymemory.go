@@ -301,12 +301,13 @@ func (a *App) holdMeeting(ctx context.Context, o company.Org, m company.Meeting)
 	}
 	json.Unmarshal(resp.Structured, &out)
 	m.Minutes, m.Decisions, m.State, m.Ended = clip(out.Minutes, 4000), out.Decisions, company.MeetingDone, time.Now().UTC()
-	a.Companies.SaveMeeting(ctx, m)
 	body := m.Minutes
 	if len(m.Decisions) > 0 {
 		body += "\n\nDecisions:\n- " + strings.Join(m.Decisions, "\n- ")
 	}
+	// The minutes are in the memory before the meeting shows as ended.
 	a.keepNote(ctx, o, company.Note{Kind: company.NoteMinutes, Title: m.Title, Body: body, By: actorFor(o, m.Chair), Source: "meeting:" + m.ID})
+	a.Companies.SaveMeeting(ctx, m)
 	a.Events.Append(ctx, "company.meeting.ended", "system", map[string]any{"company": o.ID, "meeting": m.ID, "state": m.State, "cost_usd": m.CostUSD, "person": o.Person})
 }
 
