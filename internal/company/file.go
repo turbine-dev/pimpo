@@ -19,16 +19,18 @@ const FileFormat = 1
 // People's seats are written without their person; importing gives every
 // seat to whoever imports.
 type File struct {
-	Format      int           `yaml:"format"`
-	Name        string        `yaml:"name"`
-	Industry    string        `yaml:"industry,omitempty"`
-	Mission     string        `yaml:"mission,omitempty"`
-	Zone        string        `yaml:"zone,omitempty"`
-	Departments []Department  `yaml:"departments,omitempty"`
-	Roles       []Role        `yaml:"roles,omitempty"`
-	Members     []FileMember  `yaml:"members"`
-	Contexts    []FileContext `yaml:"contexts,omitempty"`
-	Rules       []FileRule    `yaml:"rules,omitempty"`
+	Format        int            `yaml:"format"`
+	Name          string         `yaml:"name"`
+	Industry      string         `yaml:"industry,omitempty"`
+	Mission       string         `yaml:"mission,omitempty"`
+	Zone          string         `yaml:"zone,omitempty"`
+	Hours         Hours          `yaml:"hours,omitempty"`
+	Departments   []Department   `yaml:"departments,omitempty"`
+	Roles         []Role         `yaml:"roles,omitempty"`
+	Members       []FileMember   `yaml:"members"`
+	Contexts      []FileContext  `yaml:"contexts,omitempty"`
+	Rules         []FileRule     `yaml:"rules,omitempty"`
+	AgentRoutines []AgentRoutine `yaml:"agent_routines,omitempty"`
 }
 
 type FileContext struct {
@@ -67,7 +69,7 @@ type FileMember struct {
 
 // Export writes the company as a file.
 func (o Org) Export() ([]byte, error) {
-	f := File{Format: FileFormat, Name: o.Name, Industry: o.Industry, Mission: o.Mission, Zone: o.Zone, Departments: o.Departments, Roles: o.Roles}
+	f := File{Format: FileFormat, Name: o.Name, Industry: o.Industry, Mission: o.Mission, Zone: o.Zone, Hours: o.Hours, Departments: o.Departments, Roles: o.Roles, AgentRoutines: o.AgentRoutines}
 	for _, m := range o.Members {
 		f.Members = append(f.Members, FileMember{ID: m.ID, Kind: m.Kind, Title: m.Title, Role: m.Role, Department: m.Department, ReportsTo: m.ReportsTo,
 			Name: m.Name, Avatar: m.Avatar, Persona: m.Persona, Capabilities: m.Capabilities, Models: m.Models})
@@ -97,8 +99,8 @@ func Import(b []byte, id, person, personName string, now time.Time) (Org, error)
 	case f.Format < 1:
 		return Org{}, errors.New("this is not a company file")
 	}
-	o := Org{Company: Company{ID: id, Person: person, Name: f.Name, Industry: f.Industry, Mission: f.Mission, Zone: f.Zone, Created: now, Updated: now},
-		Departments: f.Departments, Roles: f.Roles}
+	o := Org{Company: Company{ID: id, Person: person, Name: f.Name, Industry: f.Industry, Mission: f.Mission, Zone: f.Zone, Hours: f.Hours, Created: now, Updated: now},
+		Departments: f.Departments, Roles: f.Roles, AgentRoutines: f.AgentRoutines}
 	if o.Departments == nil {
 		o.Departments = []Department{}
 	}
@@ -126,6 +128,9 @@ func Import(b []byte, id, person, personName string, now time.Time) (Org, error)
 		o.Members[i].Name = "CEO"
 	}
 	o.Contexts, o.Rules = []Context{}, []Rule{}
+	if o.AgentRoutines == nil {
+		o.AgentRoutines = []AgentRoutine{}
+	}
 	for _, c := range f.Contexts {
 		o.putContext(Context{ID: c.ID, Scope: c.Scope, Of: c.Of, Title: c.Title, Body: c.Body}, now)
 	}

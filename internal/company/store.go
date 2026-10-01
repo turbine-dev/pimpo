@@ -34,6 +34,7 @@ const (
 	partMember     = "member"
 	partContext    = "context"
 	partRule       = "rule"
+	partAgent      = "agent_routine"
 )
 
 type Store struct {
@@ -46,8 +47,10 @@ type Store struct {
 
 // Open makes the company tables in Pimpo's database, if they are not there.
 func Open(db *sql.DB) (*Store, error) {
-	if _, err := db.Exec(schema); err != nil {
-		return nil, fmt.Errorf("company tables: %w", err)
+	for _, ddl := range []string{schema, workSchema} {
+		if _, err := db.Exec(ddl); err != nil {
+			return nil, fmt.Errorf("company tables: %w", err)
+		}
 	}
 	return &Store{DB: db}, nil
 }
@@ -88,7 +91,7 @@ func (s *Store) Org(ctx context.Context, id string) (Org, error) {
 	if err != nil {
 		return Org{}, err
 	}
-	o := Org{Departments: []Department{}, Roles: []Role{}, Members: []Member{}, Contexts: []Context{}, Rules: []Rule{}}
+	o := Org{Departments: []Department{}, Roles: []Role{}, Members: []Member{}, Contexts: []Context{}, Rules: []Rule{}, AgentRoutines: []AgentRoutine{}}
 	if err := json.Unmarshal([]byte(data), &o.Company); err != nil {
 		return Org{}, err
 	}
@@ -123,6 +126,10 @@ func (s *Store) Org(ctx context.Context, id string) (Org, error) {
 			var r Rule
 			err = json.Unmarshal([]byte(part), &r)
 			o.Rules = append(o.Rules, r)
+		case partAgent:
+			var r AgentRoutine
+			err = json.Unmarshal([]byte(part), &r)
+			o.AgentRoutines = append(o.AgentRoutines, r)
 		}
 		if err != nil {
 			return Org{}, err
@@ -249,6 +256,7 @@ func (s *Store) DeleteMember(ctx context.Context, company, id string) (Org, erro
 		}
 		o.Members = remove(o.Members, id, func(x Member) string { return x.ID })
 		o.dropScoped(ScopeMember, id)
+		o.AgentRoutines = slices.DeleteFunc(o.AgentRoutines, func(r AgentRoutine) bool { return r.Member == id })
 		return nil
 	})
 }
@@ -287,12 +295,31 @@ func (s *Store) DeleteRule(ctx context.Context, company, id string) (Org, error)
 	})
 }
 
+func (s *Store) SaveAgentRoutine(ctx context.Context, company string, r AgentRoutine) (Org, error) {
+	return s.change(ctx, company, func(o *Org) error {
+		o.AgentRoutines = upsert(o.AgentRoutines, r, func(x AgentRoutine) string { return x.ID })
+		return nil
+	})
+}
+
+func (s *Store) DeleteAgentRoutine(ctx context.Context, company, id string) (Org, error) {
+	return s.change(ctx, company, func(o *Org) error {
+		if !slices.ContainsFunc(o.AgentRoutines, func(r AgentRoutine) bool { return r.ID == id }) {
+			return ErrNotFound
+		}
+		o.AgentRoutines = remove(o.AgentRoutines, id, func(x AgentRoutine) string { return x.ID })
+		return nil
+	})
+}
+
 func (s *Store) Delete(ctx context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.write(ctx, func(tx *sql.Tx) error {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM company_parts WHERE company = ?`, id); err != nil {
-			return err
+		for _, q := range []string{`DELETE FROM company_parts WHERE company = ?`, `DELETE FROM company_work WHERE company = ?`} {
+			if _, err := tx.ExecContext(ctx, q, id); err != nil {
+				return err
+			}
 		}
 		_, err := tx.ExecContext(ctx, `DELETE FROM companies WHERE id = ?`, id)
 		return err
@@ -360,6 +387,11 @@ func replace(ctx context.Context, tx *sql.Tx, o Org) error {
 	}
 	for _, r := range o.Rules {
 		if err := putPart(ctx, tx, o.ID, partRule, r.ID, r); err != nil {
+			return err
+		}
+	}
+	for _, r := range o.AgentRoutines {
+		if err := putPart(ctx, tx, o.ID, partAgent, r.ID, r); err != nil {
 			return err
 		}
 	}

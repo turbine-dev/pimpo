@@ -22,10 +22,17 @@ import (
 
 const companiesLab = "companies"
 
-// orgView is a company as the person asking sees it, with what they may do.
+// orgView is a company as the person asking sees it: what they may do,
+// what each member is doing now and the routines members have.
 type orgView struct {
 	company.Org
-	Grant string `json:"grant"`
+	Grant    string                    `json:"grant"`
+	Activity map[string]memberActivity `json:"activity"`
+	Routines []map[string]string       `json:"routines"`
+}
+
+func (a *App) view(ctx context.Context, o company.Org) orgView {
+	return orgView{o, o.Grant(people.From(ctx)), a.activity(ctx, o), a.memberRoutines(ctx, o)}
 }
 
 func (a *App) companyRoutes() {
@@ -119,7 +126,7 @@ func (a *App) companyRoute(need string, f func(http.ResponseWriter, *http.Reques
 					if r.Method != "GET" {
 						a.companyChanged(ctx, changed)
 					}
-					out = orgView{changed, changed.Grant(people.From(ctx))}
+					out = a.view(ctx, changed)
 				}
 				server.WriteJSON(w, 200, out)
 				return
@@ -144,6 +151,9 @@ func companyError(err error) error {
 
 func (a *App) companyChanged(ctx context.Context, o company.Org) {
 	a.Events.Append(ctx, "company.changed", actor(ctx), map[string]string{"id": o.ID, "person": o.Person})
+	a.holdWork(ctx, o)
+	a.scheduleAgents(ctx)
+	go a.pumpWork(context.WithoutCancel(ctx))
 }
 
 func (a *App) listCompanies(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +206,7 @@ func (a *App) createCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.companyChanged(ctx, o)
-	server.WriteJSON(w, 201, orgView{o, company.Configure})
+	server.WriteJSON(w, 201, a.view(ctx, o))
 }
 
 func (a *App) putCompany(w http.ResponseWriter, r *http.Request, o company.Org) (any, error) {
@@ -347,7 +357,7 @@ func (a *App) importCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.companyChanged(ctx, o)
-	server.WriteJSON(w, 201, orgView{o, company.Configure})
+	server.WriteJSON(w, 201, a.view(ctx, o))
 }
 
 func newCompanyID() string {

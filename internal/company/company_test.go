@@ -3,6 +3,7 @@ package company
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -215,5 +216,54 @@ func TestSlug(t *testing.T) {
 		if got := Slug(in); got != want {
 			t.Errorf("Slug(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestHours(t *testing.T) {
+	utc := time.UTC
+	at := func(day time.Weekday, hm string) time.Time {
+		var h, m int
+		fmt.Sscanf(hm, "%d:%d", &h, &m)
+		// 2026-01-04 is a Sunday.
+		return time.Date(2026, 1, 4+int(day), h, m, 0, 0, utc)
+	}
+	office := Hours{Days: []int{1, 2, 3, 4, 5}, From: "09:00", To: "18:00"}
+	night := Hours{Days: []int{5}, From: "22:00", To: "06:00"}
+	for _, c := range []struct {
+		h    Hours
+		t    time.Time
+		want bool
+	}{
+		{office, at(time.Monday, "09:00"), true}, {office, at(time.Monday, "18:00"), false}, {office, at(time.Saturday, "10:00"), false},
+		{night, at(time.Friday, "23:00"), true}, {night, at(time.Saturday, "05:59"), true}, {night, at(time.Saturday, "23:00"), false},
+		{Hours{}, at(time.Sunday, "03:00"), true},
+	} {
+		if got := c.h.Open(c.t, utc); got != c.want {
+			t.Errorf("%+v at %v = %v", c.h, c.t, got)
+		}
+	}
+	for _, bad := range []Hours{{Days: []int{7}, From: "09:00", To: "18:00"}, {Days: []int{1}, From: "9h", To: "18:00"}, {Days: []int{1}, From: "09:00", To: "09:00"}} {
+		if bad.check() == nil {
+			t.Errorf("%+v passed", bad)
+		}
+	}
+}
+
+func TestWhoMayWork(t *testing.T) {
+	s := newStore(t)
+	o := shop(t, s)
+	if ok, _ := o.Working("clara"); !ok {
+		t.Fatal("Clara may not work")
+	}
+	o.Departments[0].Paused = true
+	if ok, why := o.Working("clara"); ok || !strings.Contains(why, "Vendas") {
+		t.Fatalf("a paused department: %v %q", ok, why)
+	}
+	o.Departments[0].Paused, o.Paused = false, true
+	if ok, why := o.Working("bia"); ok || !strings.Contains(why, "company") {
+		t.Fatalf("a paused company: %v %q", ok, why)
+	}
+	if err := o.CheckWork(CEO); err == nil {
+		t.Fatal("the CEO seat was given work")
 	}
 }
