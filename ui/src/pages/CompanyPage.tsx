@@ -20,6 +20,7 @@ import { AutonomyEditor, LevelsTab } from './CompanyDecide'
 import { CostsTab } from './CompanyCosts'
 import { MemberAccounts, SharedAccounts } from './CompanyAccounts'
 import { MeetingsTab, NewMeeting } from './CompanyMeetings'
+import { CodeEnvField, CoderChoice, codes, envOf, envText } from './CompanyCode'
 
 // Deleting reads in the danger color on a plain button, which keeps its
 // contrast in both themes.
@@ -204,6 +205,7 @@ function MemberDialog({ org, start, can, onClose, onSaved, onTalk }: { org: Org;
             </Field>
             <Field label={t('co.persona')}><textarea className={area} value={m.persona ?? ''} maxLength={2000} placeholder={t('co.personaHint')} onChange={(e) => setM({ ...m, persona: e.target.value })} /></Field>
             <ModelChoice value={models} onChange={setModels} legend={t('co.models')} />
+            {codes(org, m) && <CoderChoice org={org} m={m} onChange={setM} />}
             <AutonomyEditor org={org} value={m.autonomy ?? []} onChange={(autonomy) => setM({ ...m, autonomy })}
               capabilities={m.capabilities?.length ? m.capabilities : org.roles.find((r) => r.id === m.role)?.capabilities ?? []} />
             <Switch on={m.state !== 'paused'} onChange={(on) => setM({ ...m, state: on ? 'active' : 'paused' })} label={t('co.working')} />
@@ -319,8 +321,9 @@ function DepartmentDialog({ org, start, onClose, onSaved }: { org: Org; start: D
 function CompanyDialog({ org, onClose, onSaved }: { org: Org; onClose: () => void; onSaved: (o: Org) => void }) {
   const t = useT()
   const [c, setC] = useState({ name: org.name, industry: org.industry ?? '', mission: org.mission ?? '', hours: org.hours ?? {} })
+  const [env, setEnv] = useState(envText(org.code_env))
   const save = useMutation({
-    mutationFn: () => api.saveCompany(org.id, { ...org, ...c }),
+    mutationFn: () => api.saveCompany(org.id, { ...org, ...c, code_env: envOf(env) }),
     onSuccess: (o) => { onSaved(o); onClose() },
   })
   return (
@@ -330,6 +333,7 @@ function CompanyDialog({ org, onClose, onSaved }: { org: Org; onClose: () => voi
         <Field label={t('co.industry')}><input className={field} value={c.industry} maxLength={120} onChange={(e) => setC({ ...c, industry: e.target.value })} /></Field>
         <Field label={t('co.mission')}><textarea className={area} value={c.mission} maxLength={2000} onChange={(e) => setC({ ...c, mission: e.target.value })} /></Field>
         <HoursEditor value={c.hours} onChange={(hours) => setC({ ...c, hours })} />
+        <CodeEnvField value={env} onChange={setEnv} />
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         <Button type="submit" variant="primary" disabled={!c.name.trim() || save.isPending}>{t('common.save')}</Button>
       </form>

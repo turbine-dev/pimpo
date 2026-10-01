@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -83,6 +84,30 @@ var cronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month 
 // ParseSchedule reads a five-field cron schedule.
 func ParseSchedule(s string) (cron.Schedule, error) { return cronParser.Parse(s) }
 
+var (
+	coder   = regexp.MustCompile(`^$|^(claude|codex)(:[A-Za-z0-9._-]+)?$|^opencode:[A-Za-z0-9._-]+/[A-Za-z0-9._:/-]+$`)
+	envName = regexp.MustCompile(`^[A-Z][A-Z0-9_]{0,63}$`)
+)
+
+// codeEnvKept are names a company cannot set: they say where things are
+// and how the CLIs and git sign in.
+var codeEnvKept = []string{"PATH", "HOME", "USER", "LOGNAME", "SHELL", "TMPDIR", "TERM"}
+
+func checkCodeEnv(env map[string]string) error {
+	if len(env) > 30 {
+		return errors.New("at most 30 variables for coding")
+	}
+	for k, v := range env {
+		if !envName.MatchString(k) || slices.Contains(codeEnvKept, k) || strings.HasPrefix(k, "GIT_") || strings.HasPrefix(k, "ANTHROPIC_") || strings.HasPrefix(k, "OPENAI_") || strings.HasPrefix(k, "CLAUDE_") || strings.HasPrefix(k, "CODEX_") || strings.HasPrefix(k, "OPENCODE_") {
+			return fmt.Errorf("%q cannot be a variable for coding", k)
+		}
+		if len(v) > 2000 || strings.ContainsRune(v, 0) {
+			return fmt.Errorf("%s is too long", k)
+		}
+	}
+	return nil
+}
+
 func (o Org) checkWork() error {
 	if err := o.Hours.check(); err != nil {
 		return err
@@ -99,9 +124,15 @@ func (o Org) checkWork() error {
 	if err := o.Memory.check(o); err != nil {
 		return err
 	}
+	if err := checkCodeEnv(o.CodeEnv); err != nil {
+		return err
+	}
 	for _, m := range o.Members {
 		if err := m.Budget.check(); err != nil {
 			return fmt.Errorf("%s: %w", m.Name, err)
+		}
+		if !coder.MatchString(m.Coder) {
+			return fmt.Errorf("%s: the coding CLI is claude, codex or opencode, with a model after a colon", m.Name)
 		}
 	}
 	if o.Decider.Kind != "" {

@@ -60,6 +60,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/undo"
 	"github.com/turbine-dev/pimpo/internal/vault"
 	"github.com/turbine-dev/pimpo/internal/voice"
+	"github.com/turbine-dev/pimpo/internal/workspace"
 )
 
 type Settings struct {
@@ -216,6 +217,10 @@ type App struct {
 	// LLM and Agent default to Claude Code; tests replace them.
 	LLM   llm.Model
 	Agent llm.Agent
+	// Coder runs company members' coding CLIs, and Workspaces keeps their
+	// worktrees; tests replace both.
+	Coder      llm.Coder
+	Workspaces workspace.Spaces
 	// TelegramAPI points at a self-hosted Bot API server; empty means Telegram's.
 	TelegramAPI string
 	// VoiceAPI replaces a cloud voice provider's address (openai,
@@ -282,6 +287,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.Policy = a.Rules
 	a.LLM = claude{a}
 	a.Agent = claude{a}
+	a.Coder = llm.CodeCLI{}
 	set := a.Settings(ctx)
 	zone := loadZone(set.Zone)
 	a.Budget = &budget.Budget{Events: events, Zone: zone}
@@ -385,6 +391,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.companyCostRoutes()
 	a.companyAccountRoutes()
 	a.companyMeetRoutes()
+	a.companyCodeRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()
@@ -660,6 +667,7 @@ func (a *App) router() *connector.Router {
 		audioCap{a},
 		askCap{a},
 		wakeCap{a},
+		codeWorkspace{a},
 		teamCap{a},
 		memoryCap{a},
 		a.spotify(),
