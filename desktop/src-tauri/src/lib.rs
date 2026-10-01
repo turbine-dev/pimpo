@@ -56,11 +56,11 @@ mod device_auth {
         use windows::Security::Credentials::UI::{UserConsentVerificationResult, UserConsentVerifier, UserConsentVerifierAvailability};
 
         pub fn available() -> bool {
-            UserConsentVerifier::CheckAvailabilityAsync().and_then(|op| op.get()).map(|a| a == UserConsentVerifierAvailability::Available).unwrap_or(false)
+            UserConsentVerifier::CheckAvailabilityAsync().and_then(|op| op.join()).map(|a| a == UserConsentVerifierAvailability::Available).unwrap_or(false)
         }
 
         pub fn verify(reason: &str) -> bool {
-            UserConsentVerifier::RequestVerificationAsync(&HSTRING::from(reason)).and_then(|op| op.get()).map(|r| r == UserConsentVerificationResult::Verified).unwrap_or(false)
+            UserConsentVerifier::RequestVerificationAsync(&HSTRING::from(reason)).and_then(|op| op.join()).map(|r| r == UserConsentVerificationResult::Verified).unwrap_or(false)
         }
     }
 
