@@ -181,6 +181,7 @@ func TestGrants(t *testing.T) {
 func TestACompanyFileTravelsWithoutItsPeople(t *testing.T) {
 	s := newStore(t)
 	o := shop(t, s)
+	o.Memory.Task.Auto = true
 	b, err := o.Export()
 	if err != nil {
 		t.Fatal(err)
@@ -194,6 +195,9 @@ func TestACompanyFileTravelsWithoutItsPeople(t *testing.T) {
 	}
 	if got.Person != "rui" || got.Name != "Lume Moda" || len(got.Roles) != 2 || len(got.Departments) != 1 || len(got.Members) != 3 {
 		t.Fatalf("imported = %+v", got)
+	}
+	if !got.Memory.Task.Auto {
+		t.Fatalf("the memory's rules were lost: %+v", got.Memory)
 	}
 	if ceo, _ := got.Member(CEO); ceo.Person != "rui" || ceo.Name != "Rui" {
 		t.Fatalf("CEO = %+v", ceo)

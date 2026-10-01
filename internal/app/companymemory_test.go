@@ -3,12 +3,14 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/turbine-dev/pimpo/internal/company"
 	"github.com/turbine-dev/pimpo/internal/llm"
+	"github.com/turbine-dev/pimpo/internal/people"
 )
 
 func (ta *testApp) waitMeeting(t *testing.T, id string) company.Meeting {
@@ -84,6 +86,8 @@ func TestMembersRememberAndTheCompanyRemembersForThem(t *testing.T) {
 	ta.do(t, "PUT", "/api/companies/"+co+"/roles/dev", map[string]any{"title": "Developer", "capabilities": []string{"company.remember", "company.recall"}})
 	ctx := context.Background()
 	o, _ := ta.Companies.Org(ctx, co)
+	o.Memory.Company.Write = company.WriteFree
+	o, _ = ta.Companies.Update(ctx, o.Company)
 	first, _ := ta.enqueue(ctx, o, "bia", "Note the returns policy", nil, "test", 0)
 	ta.waitWorkState(t, first.ID, company.WorkDone)
 	second, _ := ta.enqueue(ctx, o, "rui", "What did we decide about returns?", nil, "test", 0)
@@ -93,6 +97,92 @@ func TestMembersRememberAndTheCompanyRemembersForThem(t *testing.T) {
 	if found, _ := ta.Companies.Recall(ctx, co, "returns DAYS", 5); len(found) != 1 || found[0].By != "member:"+co+"/bia" {
 		t.Fatalf("recall = %+v", found)
 	}
+}
+
+func TestEachMemoryIsWrittenAsTheCompanySays(t *testing.T) {
+	s := &script{}
+	remember := func(r llm.AgentRequest, scope, title string) string {
+		if err := rpc(r.MCPURL, 1, "company_remember", map[string]any{"scope": scope, "kind": "fact", "title": title, "text": title + "."}); err != nil {
+			return err.Error()
+		}
+		return "Noted."
+	}
+	s.rules = []scriptRule{
+		{"Note your habit", func(r llm.AgentRequest) string { return remember(r, "me", "Small pull requests") }},
+		{"Note the supplier", func(r llm.AgentRequest) string { return remember(r, "company", "Supplier is Acme") }},
+		{"Note the task", func(r llm.AgentRequest) string { return remember(r, "task", "Started on the cart") }},
+		{"What do you know", func(r llm.AgentRequest) string { return r.System }},
+	}
+	ta, co := team(t, s)
+	ta.do(t, "PUT", "/api/companies/"+co+"/roles/dev", map[string]any{"title": "Developer", "capabilities": []string{"company.remember"}})
+	ta.do(t, "PUT", "/api/companies/"+co+"/roles/pm", map[string]any{"title": "Project manager", "capabilities": []string{"company.remember"}})
+	ctx := context.Background()
+	o, _ := ta.Companies.Org(ctx, co)
+	run := func(member, request string) company.Work {
+		t.Helper()
+		w, err := ta.enqueue(ctx, o, member, request, nil, "test", 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return ta.waitWorkState(t, w.ID, company.WorkDone, company.WorkFailed)
+	}
+
+	run("bia", "Note your habit")
+	run("bia", "Note the supplier")
+	if w := run("rui", "What do you know?"); strings.Contains(w.Summary, "Small pull requests") || strings.Contains(w.Summary, "Supplier is Acme") {
+		t.Fatalf("Rui got Bia's own note or one not approved yet: %q", w.Summary)
+	}
+	if w := run("bia", "What do you know?"); !strings.Contains(w.Summary, "Small pull requests") {
+		t.Fatalf("Bia lost her own note: %q", w.Summary)
+	}
+	notes, _ := ta.Companies.Notes(ctx, co, 10)
+	var pending company.Note
+	for _, n := range notes {
+		if n.Pending {
+			pending = n
+		}
+	}
+	if pending.Title != "Supplier is Acme" || pending.Scope != company.MemoryCompany {
+		t.Fatalf("the company's note should wait for the CEO: %+v", notes)
+	}
+	if needs, _ := ta.needs(people.With(ctx, people.OwnerID)); !slices.ContainsFunc(needs, func(n need) bool { return n.Kind == "company_note" }) {
+		t.Fatalf("the CEO was not asked: %+v", needs)
+	}
+	if code, out := ta.do(t, "POST", "/api/companies/"+co+"/notes/"+pending.ID+"/approve", nil); code != 200 {
+		t.Fatalf("approve: %d %v", code, out)
+	}
+	if w := run("rui", "What do you know?"); !strings.Contains(w.Summary, "Supplier is Acme") {
+		t.Fatalf("Rui did not get the approved note: %q", w.Summary)
+	}
+
+	if w := run("bia", "Note the task"); !strings.Contains(w.Summary, "only work on a task") {
+		t.Fatalf("a task's memory without a task: %q", w.Summary)
+	}
+	o.Memory.Member = company.ScopePolicy{Write: company.WriteOff}
+	o.Memory.Task = company.ScopePolicy{Auto: true}
+	o.Memory.Company = company.ScopePolicy{Write: company.WriteDecide, Decider: company.Decider{Kind: company.DecideSelf}}
+	if o, _ = ta.Companies.Update(ctx, o.Company); o.Memory.Member.Write != company.WriteOff {
+		t.Fatalf("policy not kept: %+v", o.Memory)
+	}
+	if w := run("bia", "Note your habit"); !strings.Contains(w.Summary, "keeps no notes there") {
+		t.Fatalf("wrote to a memory that is off: %q", w.Summary)
+	}
+	run("rui", "Note the supplier")
+	notes, _ = ta.Companies.Notes(ctx, co, 10)
+	if notes[0].By != "member:"+co+"/rui" || notes[0].Pending {
+		t.Fatalf("a member who decides for itself keeps its note: %+v", notes[0])
+	}
+
+	task, err := ta.assign(people.With(ctx, people.OwnerID), o, company.CEO, company.Work{}, company.Task{Assignee: "bia", Title: "Cart", Objective: "Fix the cart", Acceptance: "It works"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ta.waitFor(t, "the task's progress note", func() bool {
+		notes, _ = ta.Companies.Notes(ctx, co, 20)
+		return slices.ContainsFunc(notes, func(n company.Note) bool {
+			return n.Scope == company.MemoryTask && n.Of == task.ID && n.Kind == company.NoteProgress
+		})
+	})
 }
 
 func TestTheCEOHearsOfTheWeekOnMondays(t *testing.T) {

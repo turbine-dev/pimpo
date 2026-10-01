@@ -69,6 +69,7 @@ test('a company: its chart, a boss changed by dragging, in both themes', async (
     expect(levels.violations.map((v) => `${theme} levels: ${v.id} ${v.nodes.map((n) => n.html.slice(0, 160)).join(' | ')}`)).toEqual([])
     await page.getByRole('tab', { name: 'Memória' }).click()
     await expect(page.getByRole('heading', { name: 'O que a empresa lembra' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Como a memória é escrita' })).toBeVisible()
     const memory = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
     expect(memory.violations.map((v) => `${theme} memory: ${v.id} ${v.nodes.map((n) => n.html.slice(0, 160)).join(' | ')}`)).toEqual([])
     await page.getByRole('tab', { name: 'Trabalho' }).click()

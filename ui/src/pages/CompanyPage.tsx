@@ -2,7 +2,7 @@ import * as Tabs from '@radix-ui/react-tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CirclePause, Download, Pencil, Play, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { CapabilityPicker } from '../components/CapabilityPicker'
 import { Field, Modal } from '../components/Modal'
 import { ModelChoice } from '../components/ModelChoice'
@@ -37,7 +37,8 @@ export function CompanyPage({ id }: { id: string }) {
   const [role, setRole] = useState<CompanyRole | null>(null)
   const [dept, setDept] = useState<Department | null>(null)
   const [editing, setEditing] = useState(false)
-  const [tab, setTab] = useState('chart')
+  const [params] = useSearchParams()
+  const [tab, setTab] = useState(params.get('tab') ?? 'chart')
   const [room, setRoom] = useState<string | null>(null)
   const [talk, setTalk] = useState<{ with?: string[]; question?: string; title: string } | null>(null)
   const openRoom = (id: string | null) => { setRoom(id); if (id) setTab('meetings') }
@@ -137,7 +138,7 @@ export function CompanyPage({ id }: { id: string }) {
           <LevelsTab org={o} can={can} onSaved={done} />
         </Tabs.Content>
         <Tabs.Content value="memory">
-          <MemoryTab org={o} can={can} />
+          <MemoryTab org={o} can={can} onSaved={done} />
         </Tabs.Content>
         <Tabs.Content value="work" className="space-y-4">
           <Digest org={o} />
@@ -319,7 +320,7 @@ function CompanyDialog({ org, onClose, onSaved }: { org: Org; onClose: () => voi
   const t = useT()
   const [c, setC] = useState({ name: org.name, industry: org.industry ?? '', mission: org.mission ?? '', hours: org.hours ?? {} })
   const save = useMutation({
-    mutationFn: () => api.saveCompany(org.id, { ...c, zone: org.zone, paused: org.paused, partners: org.partners }),
+    mutationFn: () => api.saveCompany(org.id, { ...org, ...c }),
     onSuccess: (o) => { onSaved(o); onClose() },
   })
   return (

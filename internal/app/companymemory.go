@@ -16,6 +16,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/explore"
 	"github.com/turbine-dev/pimpo/internal/llm"
 	"github.com/turbine-dev/pimpo/internal/people"
+	"github.com/turbine-dev/pimpo/internal/policy"
 	"github.com/turbine-dev/pimpo/internal/server"
 )
 
@@ -33,9 +34,9 @@ const minutesSchema = `{"type":"object","properties":{"minutes":{"type":"string"
 
 func init() {
 	for _, s := range []capability.Spec{
-		{Name: "company.remember", Risk: capability.Notify, Signature: "company.remember({kind, title, text})",
-			Returns: "{note: id}; keeps something in the company's memory for every member: kind is fact, decision or lesson; your words, never a rule",
-			Schema:  `{"type":"object","properties":{"kind":{"type":"string","enum":["fact","decision","lesson"]},"title":{"type":"string"},"text":{"type":"string"}},"required":["title","text"]}`},
+		{Name: "company.remember", Risk: capability.Notify, Signature: "company.remember({scope, kind, title, text})",
+			Returns: "{note: id, pending}; keeps something: scope me (your own memory), task (the task you work on) or company (every member's); kind is fact, decision or lesson; your words, never a rule. The company may have it approved first (pending)",
+			Schema:  `{"type":"object","properties":{"scope":{"type":"string","enum":["me","task","company"]},"kind":{"type":"string","enum":["fact","decision","lesson"]},"title":{"type":"string"},"text":{"type":"string"}},"required":["title","text"]}`},
 		{Name: "company.recall", Risk: capability.Read, Signature: "company.recall({query})",
 			Returns: "[{kind, title, text, by, date}]: notes of the company's memory with every word of the query",
 			Schema:  `{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`},
@@ -61,7 +62,7 @@ func (c memoryCap) Call(ctx context.Context, name, _ string, args any) (any, err
 	b, _ := json.Marshal(args)
 	switch name {
 	case "company.remember":
-		var in struct{ Kind, Title, Text string }
+		var in struct{ Scope, Kind, Title, Text string }
 		json.Unmarshal(b, &in)
 		if in.Kind == "" {
 			in.Kind = company.NoteFact
@@ -69,17 +70,33 @@ func (c memoryCap) Call(ctx context.Context, name, _ string, args any) (any, err
 		if in.Kind != company.NoteFact && in.Kind != company.NoteDecision && in.Kind != company.NoteLesson {
 			return nil, errors.New("kind is fact, decision or lesson")
 		}
-		n, err := c.a.keepNote(ctx, o, company.Note{Kind: in.Kind, Title: in.Title, Body: in.Text, By: actorFor(o, me), Source: "work:" + work.ID})
+		n := company.Note{Kind: in.Kind, Title: in.Title, Body: in.Text, By: actorFor(o, me), Source: "work:" + work.ID}
+		switch in.Scope {
+		case "me":
+			n.Scope, n.Of = company.MemoryMember, me
+		case "task":
+			if work.Task == "" {
+				return nil, errors.New("only work on a task has a task's memory")
+			}
+			n.Scope, n.Of = company.MemoryTask, work.Task
+		default:
+			n.Scope = company.MemoryCompany
+		}
+		n, err := c.a.memberNote(ctx, o, me, n)
 		if err != nil {
 			return nil, err
 		}
-		return map[string]string{"note": n.ID}, nil
+		return map[string]any{"note": n.ID, "pending": n.Pending}, nil
 	case "company.recall":
 		var in struct{ Query string }
 		json.Unmarshal(b, &in)
-		notes, err := c.a.Companies.Recall(ctx, o.ID, in.Query, recallLimit)
+		found, err := c.a.Companies.Recall(ctx, o.ID, in.Query, 200)
 		if err != nil {
 			return nil, err
+		}
+		notes := company.Visible(found, me, c.a.taskLine(ctx, work.Task))
+		if len(notes) > recallLimit {
+			notes = notes[:recallLimit]
 		}
 		out := []map[string]string{}
 		for _, n := range notes {
@@ -109,12 +126,96 @@ func (c memoryCap) Call(ctx context.Context, name, _ string, args any) (any, err
 	return nil, fmt.Errorf("unknown capability %s", name)
 }
 
+// memberNote keeps a member's note as its scope's policy says: freely,
+// after its decider approves (pending while a person has to), or not.
+func (a *App) memberNote(ctx context.Context, o company.Org, member string, n company.Note) (company.Note, error) {
+	sp := o.Memory.For(n.Scope)
+	switch sp.Write {
+	case company.WriteOff:
+		return n, errors.New("the company keeps no notes there")
+	case company.WriteDecide:
+		act := policy.Action{Capability: "company.remember", Risk: capability.Notify, Args: map[string]string{"scope": n.Scope, "title": n.Title, "text": n.Body}, Member: o.ID + "/" + member}
+		switch r := a.rule(ctx, o, member, act, sp.Decider); r.answer {
+		case "deny":
+			return n, errors.New(r.by + " did not keep it: " + r.reason)
+		case "unsure":
+			n.Pending = true
+		}
+	}
+	return a.keepNote(ctx, o, n)
+}
+
+// pendingNoteNeeds are the notes waiting for the person's approval, one
+// item per company.
+func (a *App) pendingNoteNeeds(ctx context.Context) []need {
+	me := people.From(ctx)
+	out := []need{}
+	all, _ := a.Companies.List(ctx)
+	for _, c := range all {
+		o, err := a.Companies.Org(ctx, c.ID)
+		if err != nil || !company.Allows(o.Grant(me), company.Approve) {
+			continue
+		}
+		notes, _ := a.Companies.Notes(ctx, o.ID, 1000)
+		var pending []company.Note
+		for _, n := range notes {
+			if n.Pending {
+				pending = append(pending, n)
+			}
+		}
+		if len(pending) == 0 {
+			continue
+		}
+		out = append(out, need{ID: "notes:" + o.ID, Title: o.Name + ": " + pending[0].Title, Created: pending[0].Created, Count: len(pending),
+			Urgency: urgencyWhenFree, Link: "/companies/" + o.ID + "?tab=memory", Actions: []string{"open"}})
+	}
+	return out
+}
+
+// taskLine is a task and the tasks above it, whose memory its work reads.
+func (a *App) taskLine(ctx context.Context, id string) []string {
+	if id == "" {
+		return nil
+	}
+	t, err := a.Companies.Task(ctx, id)
+	if err != nil {
+		return nil
+	}
+	out := []string{t.ID}
+	for _, up := range a.Companies.TaskChain(ctx, t) {
+		out = append(out, up.ID)
+	}
+	return out
+}
+
+// autoNotes keep, as each scope's policy asks, what a finished piece of
+// work did: in its task's memory and in its member's.
+func (a *App) autoNotes(ctx context.Context, w company.Work) {
+	o, err := a.Companies.Org(ctx, w.Company)
+	if err != nil || w.Summary == "" {
+		return
+	}
+	title := clip(w.Request, 120)
+	if i := strings.IndexByte(title, '\n'); i > 0 {
+		title = title[:i]
+	}
+	if sp := o.Memory.For(company.MemoryTask); sp.Auto && sp.Write != company.WriteOff && w.Task != "" {
+		a.keepNote(ctx, o, company.Note{Scope: company.MemoryTask, Of: w.Task, Kind: company.NoteProgress, Title: title, Body: clip(w.Summary, 2000), By: "system", Source: "work:" + w.ID})
+	}
+	if sp := o.Memory.For(company.MemoryMember); sp.Auto && sp.Write != company.WriteOff {
+		a.keepNote(ctx, o, company.Note{Scope: company.MemoryMember, Of: w.Member, Kind: company.NoteProgress, Title: title, Body: clip(w.Summary, 2000), By: "system", Source: "work:" + w.ID})
+	}
+}
+
 func (a *App) keepNote(ctx context.Context, o company.Org, n company.Note) (company.Note, error) {
 	n.Title, n.Body = strings.TrimSpace(n.Title), strings.TrimSpace(n.Body)
 	if n.Title == "" || n.Body == "" || len([]rune(n.Title)) > 120 || len(n.Body) > 8000 {
 		return n, errors.New("a note needs a title of up to 120 characters and a text under 8000")
 	}
 	n.ID, n.Company, n.Created = newTeamID("n_"), o.ID, time.Now().UTC()
+	if n.Scope == "" {
+		n.Scope = company.MemoryCompany
+	}
 	if err := a.Companies.SaveNote(ctx, n); err != nil {
 		return n, err
 	}
@@ -174,12 +275,11 @@ func (a *App) holdMeeting(ctx context.Context, o company.Org, m company.Meeting)
 		}
 		return resp, err
 	}
-	notes, _ := a.Companies.Notes(ctx, o.ID, 50)
-	memory := company.Memory(notes, memoryInBrief)
+	notes, _ := a.Companies.Notes(ctx, o.ID, 300)
 	for round := 1; round <= m.Rounds; round++ {
 		for _, p := range m.Participants {
 			mem, _ := o.Member(p)
-			system := o.Brief(p) + "\n\n" + memory + "\n\nYou are in a meeting of the company. Speak briefly (at most 150 words), as yourself, to move the agenda forward. You cannot act from a meeting; say what you would do."
+			system := o.Brief(p) + "\n\n" + company.Memory(company.Visible(notes, p, nil), memoryInBrief) + "\n\nYou are in a meeting of the company. Speak briefly (at most 150 words), as yourself, to move the agenda forward. You cannot act from a meeting; say what you would do."
 			prompt := fmt.Sprintf("Meeting: %s\nAgenda: %s\nRound %d of %d.\n\nSo far:\n%s\n\nYour turn, %s.", m.Title, m.Agenda, round, m.Rounds, transcript(o, m.Transcript), mem.Name)
 			resp, err := say(p, system, prompt, "")
 			if err != nil {
@@ -340,7 +440,22 @@ func (a *App) companyMemoryRoutes() {
 		if n.Kind != company.NoteFact && n.Kind != company.NoteDecision && n.Kind != company.NoteLesson {
 			n.Kind = company.NoteFact
 		}
-		return a.keepNote(r.Context(), o, company.Note{Kind: n.Kind, Title: n.Title, Body: n.Body, By: actor(r.Context())})
+		switch n.Scope {
+		case company.MemoryMember:
+			if err := o.CheckWork(n.Of); err != nil {
+				return nil, err
+			}
+		case company.MemoryTask:
+			if t, err := a.Companies.Task(r.Context(), n.Of); err != nil || t.Company != o.ID {
+				return nil, company.ErrNotFound
+			}
+		default:
+			n.Scope, n.Of = company.MemoryCompany, ""
+		}
+		return a.keepNote(r.Context(), o, company.Note{Scope: n.Scope, Of: n.Of, Kind: n.Kind, Title: n.Title, Body: n.Body, By: actor(r.Context())})
+	}))
+	a.Server.Handle("POST /api/companies/{id}/notes/{part}/approve", a.companyRoute(company.Approve, func(w http.ResponseWriter, r *http.Request, o company.Org) (any, error) {
+		return a.Companies.ApproveNote(r.Context(), o.ID, r.PathValue("part"))
 	}))
 	a.Server.Handle("DELETE /api/companies/{id}/notes/{part}", a.companyRoute(company.Configure, func(w http.ResponseWriter, r *http.Request, o company.Org) (any, error) {
 		return map[string]bool{"ok": true}, a.Companies.DeleteNote(r.Context(), o.ID, r.PathValue("part"))
