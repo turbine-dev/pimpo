@@ -232,5 +232,10 @@
   "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
   "svc.wapersonal.field.session.label": "Sessione",
   "svc.wapersonal.field.session.placeholder": "default",
-  "svc.wapersonal.field.api_key.label": "Chiave API di WAHA"
+  "svc.wapersonal.field.api_key.label": "Chiave API di WAHA",
+  "svc.stripe.description": "Saldo e addebiti del tuo account, in sola lettura.",
+  "svc.stripe.help": "In Stripe › Sviluppatori › Chiavi API, crea una chiave limitata con sola lettura di Balance e Charges. Da qui non si addebita né si sposta nulla.",
+  "svc.stripe.field.key.label": "Chiave limitata",
+  "svc.stripe.field.key.placeholder": "rk_live_…",
+  "svc.stripe.title": "Stripe"
 }

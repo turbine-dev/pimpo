@@ -232,5 +232,10 @@
   "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
   "svc.wapersonal.field.session.label": "会话",
   "svc.wapersonal.field.session.placeholder": "default",
-  "svc.wapersonal.field.api_key.label": "WAHA API 密钥"
+  "svc.wapersonal.field.api_key.label": "WAHA API 密钥",
+  "svc.stripe.description": "你账户的余额和收款，只读。",
+  "svc.stripe.help": "在 Stripe › 开发者 › API 密钥中，创建一个只能读取 Balance 和 Charges 的受限密钥。这里不会扣款或转移任何资金。",
+  "svc.stripe.field.key.label": "受限密钥",
+  "svc.stripe.field.key.placeholder": "rk_live_…",
+  "svc.stripe.title": "Stripe"
 }

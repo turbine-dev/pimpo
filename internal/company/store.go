@@ -316,7 +316,7 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.write(ctx, func(tx *sql.Tx) error {
-		for _, q := range []string{`DELETE FROM company_parts WHERE company = ?`, `DELETE FROM company_work WHERE company = ?`, `DELETE FROM company_tasks WHERE company = ?`, `DELETE FROM company_questions WHERE company = ?`, `DELETE FROM company_notes WHERE company = ?`, `DELETE FROM company_meetings WHERE company = ?`, `DELETE FROM company_decisions WHERE company = ?`, `DELETE FROM company_signals WHERE company = ?`, `DELETE FROM company_briefs WHERE company = ?`, `DELETE FROM company_streaks WHERE company = ?`} {
+		for _, q := range []string{`DELETE FROM company_parts WHERE company = ?`, `DELETE FROM company_work WHERE company = ?`, `DELETE FROM company_tasks WHERE company = ?`, `DELETE FROM company_questions WHERE company = ?`, `DELETE FROM company_notes WHERE company = ?`, `DELETE FROM company_meetings WHERE company = ?`, `DELETE FROM company_decisions WHERE company = ?`, `DELETE FROM company_signals WHERE company = ?`, `DELETE FROM company_briefs WHERE company = ?`, `DELETE FROM company_streaks WHERE company = ?`, `DELETE FROM company_proposals WHERE company = ?`} {
 			if _, err := tx.ExecContext(ctx, q, id); err != nil {
 				return err
 			}

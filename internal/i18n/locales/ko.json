@@ -232,5 +232,10 @@
   "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
   "svc.wapersonal.field.session.label": "세션",
   "svc.wapersonal.field.session.placeholder": "default",
-  "svc.wapersonal.field.api_key.label": "WAHA API 키"
+  "svc.wapersonal.field.api_key.label": "WAHA API 키",
+  "svc.stripe.description": "계정의 잔액과 결제 내역, 읽기 전용.",
+  "svc.stripe.help": "Stripe › 개발자 › API 키에서 Balance와 Charges 읽기만 허용한 제한 키를 만드세요. 여기서는 아무것도 청구하거나 옮기지 않습니다.",
+  "svc.stripe.field.key.label": "제한 키",
+  "svc.stripe.field.key.placeholder": "rk_live_…",
+  "svc.stripe.title": "Stripe"
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -68,9 +69,9 @@ func TestEveryCapabilityIsDocumented(t *testing.T) {
 			}
 		}
 	}
-	want := 13
+	want := 14
 	if runtime.GOOS == "darwin" {
-		want = 15 // Apple's apps and iMessage
+		want = 16 // Apple's apps and iMessage
 	}
 	if len(All()) != want {
 		t.Fatalf("catalog has %d kinds", len(All()))
@@ -361,5 +362,55 @@ func TestMissingAndRefusedKeys(t *testing.T) {
 	_, err = k.Connector(func(string) Config { return cfg(map[string]string{"token": "old"}) }).Call(context.Background(), "github.issues", "", map[string]any{"repo": "a/b"})
 	if !errors.As(err, &mc) || mc.Field != "token" || !mc.Invalid {
 		t.Fatalf("refused: %v", err)
+	}
+}
+
+func TestStripeIsReadOnly(t *testing.T) {
+	srv, hits := fake(t, map[string]string{
+		"GET /v1/balance": `{"available":[{"amount":12345,"currency":"usd"},{"amount":500,"currency":"jpy"}],"pending":[{"amount":100,"currency":"usd"}]}`,
+		"GET /v1/charges": `{"data":[{"amount":2000,"amount_refunded":500,"currency":"usd","status":"succeeded","created":1767225600},{"amount":900,"currency":"usd","status":"failed","created":1767225600}]}`,
+	})
+	BaseURL["stripe"] = srv.URL
+	defer delete(BaseURL, "stripe")
+	c := cfg(map[string]string{"key": "rk_test"})
+	out, err := call(t, "stripe", c, "stripe.balance", map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := out.(map[string][]map[string]any)
+	if b["available"][0]["amount"] != 123.45 || b["available"][1]["amount"] != 500.0 || (*hits)[0].Auth != "Bearer rk_test" {
+		t.Fatalf("balance = %v", b)
+	}
+	out, err = call(t, "stripe", c, "stripe.charges", map[string]any{"days": 7})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := out.(map[string]any); got["total"].(map[string]float64)["usd"] != 15.0 || len(got["charges"].([]map[string]any)) != 2 {
+		t.Fatalf("charges = %v", got)
+	}
+	for _, s := range []string{"stripe.balance", "stripe.charges"} {
+		if capability.Catalog[s].Risk != capability.Read {
+			t.Errorf("%s moves something", s)
+		}
+	}
+	for _, h := range *hits {
+		if h.Method != "GET" {
+			t.Errorf("Stripe was sent a %s", h.Method)
+		}
+	}
+}
+
+func TestGitHubSponsors(t *testing.T) {
+	srv, hits := fake(t, map[string]string{
+		"POST /graphql": `{"data":{"viewer":{"sponsorshipsAsMaintainer":{"totalCount":2,"nodes":[{"createdAt":"2026-01-01","sponsorEntity":{"login":"ana"},"tier":{"monthlyPriceInDollars":5}},{"createdAt":"2026-02-01","sponsorEntity":{"login":"acme"},"tier":{"monthlyPriceInDollars":100,"isOneTime":true}}]}}}}`,
+	})
+	BaseURL["github"] = srv.URL
+	defer delete(BaseURL, "github")
+	out, err := call(t, "github", cfg(map[string]string{"token": "gh"}), "github.sponsors", map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := out.(map[string]any); got["count"] != 2 || got["monthly_usd"] != 5 || !strings.Contains(fmt.Sprint((*hits)[0].Body["query"]), "sponsorshipsAsMaintainer") {
+		t.Fatalf("sponsors = %v", got)
 	}
 }

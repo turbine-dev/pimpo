@@ -17,6 +17,7 @@ const (
 	NoteLesson   = "lesson"
 	NoteStandup  = "standup"
 	NoteProgress = "progress"
+	NoteReport   = "report"
 )
 
 // Where a note belongs: the whole company, one member, or one task.

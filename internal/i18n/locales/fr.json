@@ -232,5 +232,10 @@
   "svc.wapersonal.field.url.placeholder": "http://127.0.0.1:3000",
   "svc.wapersonal.field.session.label": "Session",
   "svc.wapersonal.field.session.placeholder": "default",
-  "svc.wapersonal.field.api_key.label": "Clé d’API de WAHA"
+  "svc.wapersonal.field.api_key.label": "Clé d’API de WAHA",
+  "svc.stripe.description": "Le solde et les paiements de votre compte, en lecture seule.",
+  "svc.stripe.help": "Dans Stripe › Développeurs › Clés API, créez une clé restreinte avec un accès en lecture à Balance et Charges seulement. Rien n'est facturé ni déplacé d'ici.",
+  "svc.stripe.field.key.label": "Clé restreinte",
+  "svc.stripe.field.key.placeholder": "rk_live_…",
+  "svc.stripe.title": "Stripe"
 }

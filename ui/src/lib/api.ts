@@ -210,7 +210,7 @@ export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: s
 // A kind the server adds later shows with its title and an open link
 // until the UI learns its buttons. amount is what a grantable approval
 // moves; count is how many a summary item (lessons) stands for.
-export type NeedKind = 'approval' | 'credential_request' | 'question' | 'company_question' | 'company_note' | 'company_brief' | 'company_autonomy' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
+export type NeedKind = 'approval' | 'credential_request' | 'question' | 'company_question' | 'company_note' | 'company_brief' | 'company_autonomy' | 'company_budget' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
 export type Need = { kind: NeedKind; id: string; title: string; detail?: string; created?: string; urgency: number; expires?: string; link?: string; actions: string[]; options?: string[]; proposal?: string; risk?: number; amount?: number; count?: number }
 export type Needs = { items: Need[]; counts: Partial<Record<NeedKind, number>>; total: number }
 export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string; grantable?: boolean }
@@ -252,6 +252,8 @@ export type CompanySignal = { id: string; company: string; source: string; title
 export type CompanyBrief = { id: string; company: string; author: string; title: string; problem: string; proposal: string; claims: { text: string; source: string; quote?: string; flag?: string }[];
   scores: { value: number; differentiation: number; adoption: number; build_risk: number; safety_risk: number }; score: number; predictions: { metric: string; expected: string }[];
   state: 'proposed' | 'accepted' | 'rejected' | 'shipped'; ref?: string; reason?: string; shipped?: string; reviews?: { day: number; results: { metric: string; actual: string; met: boolean }[]; by: string; at: string }[]; created: string }
+export type BudgetProposal = { id: string; company: string; by: string; scope: 'company' | 'department' | 'member'; of?: string; month_usd: number; was: number; reason: string; state: 'proposed' | 'accepted' | 'declined'; created: string }
+export type MonthCosts = { month: string; total: number; members: Record<string, number>; departments: Record<string, number>; previous_total: number; subscription: number; anomalies: string[] }
 export type MemoryScope = 'company' | 'member' | 'task'
 export type ScopePolicy = { write?: 'free' | 'decide' | 'off'; decider?: Decider; auto?: boolean }
 export type MemoryPolicy = Partial<Record<MemoryScope, ScopePolicy>>
@@ -408,6 +410,9 @@ export const api = {
   companyProduct: (id: string) => request<{ briefs: CompanyBrief[]; signals: CompanySignal[]; accuracy: Record<string, [number, number]> }>('GET', `/api/companies/${id}/product`),
   briefState: (id: string, brief: string, body: { state: string; reason?: string; ref?: string }) => request<CompanyBrief>('POST', `/api/companies/${id}/briefs/${brief}/state`, body),
   earnAutonomy: (id: string, member: string, capability: string, accept: boolean) => request<Org>('POST', `/api/companies/${id}/members/${member}/earn`, { capability, accept }),
+  companyProposals: (id: string) => request<BudgetProposal[]>('GET', `/api/companies/${id}/proposals`),
+  decideProposal: (id: string, proposal: string, accept: boolean) => request<BudgetProposal>('POST', `/api/companies/${id}/proposals/${proposal}`, { accept }),
+  companyMonth: (id: string, month?: string) => request<MonthCosts>('GET', `/api/companies/${id}/month${month ? `?month=${month}` : ''}`),
   companyCoders: (id: string) => request<{ id: string; name: string; sandbox: boolean; installed: boolean }[]>('GET', `/api/companies/${id}/coders`),
   companyTasks: (id: string) => request<CompanyTask[]>('GET', `/api/companies/${id}/tasks`),
   assignTask: (id: string, t: Partial<CompanyTask>) => request<CompanyTask>('POST', `/api/companies/${id}/tasks`, t),

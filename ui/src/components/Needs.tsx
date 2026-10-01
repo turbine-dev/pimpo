@@ -16,7 +16,7 @@ import { Button } from './ui'
 // until it gets its own buttons here: add its icon, its title and its
 // actions.
 
-export const needKinds: NeedKind[] = ['approval', 'credential_request', 'question', 'company_question', 'company_note', 'company_brief', 'company_autonomy', 'failed_routine', 'job_error', 'job_planned', 'exploration_ready', 'suggestion', 'lesson', 'system']
+export const needKinds: NeedKind[] = ['approval', 'credential_request', 'question', 'company_question', 'company_note', 'company_brief', 'company_autonomy', 'company_budget', 'failed_routine', 'job_error', 'job_planned', 'exploration_ready', 'suggestion', 'lesson', 'system']
 
 // useNeeds is the list; the event stream refreshes it as things change.
 export function useNeeds(enabled = true) {
@@ -40,6 +40,10 @@ export function useNeedAction(onGo?: (to: string) => void) {
           return api.answerQuestion(need.id, index ?? 0)
         case 'company_question':
           return api.answerCompanyQuestion(companyOf(need), need.id, String((index ?? 0) + 1))
+        case 'company_budget': {
+          const [, co, proposal] = need.id.split(':')
+          return api.decideProposal(co, proposal, action === 'accept')
+        }
         case 'company_autonomy': {
           const [, co, member, ...cap] = need.id.split(':')
           return api.earnAutonomy(co, member, cap.join(':'), action === 'accept')
@@ -79,6 +83,7 @@ function look(n: Need): { icon: ReactNode; tone: Tone } {
     case 'company_note': return { icon: <Building2 size={16} />, tone: 'plain' }
     case 'company_brief': return { icon: <Building2 size={16} />, tone: 'explore' }
     case 'company_autonomy': return { icon: <Building2 size={16} />, tone: 'accent' }
+    case 'company_budget': return { icon: <Building2 size={16} />, tone: 'change' }
     case 'failed_routine': return { icon: <AlertTriangle size={16} />, tone: 'danger' }
     case 'job_error': return { icon: <Layers size={16} />, tone: 'danger' }
     case 'job_planned': return { icon: <Layers size={16} />, tone: 'plain' }
@@ -164,6 +169,10 @@ export function NeedRow({ need: n, compact, busy, onAct }: { need: Need; compact
       break
     case 'suggestion':
       buttons = <>{btn('accept', t('inbox.suggestionYes'), 'primary')}{btn('dismiss', t('inbox.suggestionNo'), 'ghost')}</>
+      break
+    case 'company_budget':
+      hint = n.detail ?? ''
+      buttons = <>{btn('accept', t('co.applyBudget'), 'primary')}{btn('dismiss', t('co.declineBudget'), 'ghost')}</>
       break
     case 'company_autonomy':
       hint = `${capabilityLabel(n.detail ?? '')} · ${t('co.earnAsk', { n: n.count ?? 0 })}`

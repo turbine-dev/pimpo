@@ -44,6 +44,8 @@ func init() {
 				Schema: obj(repo+`,"ref":{"type":"string"}`, "repo", "ref")},
 			{Name: "github.merge", Risk: capability.Irreversible, Signature: "github.merge({repo, number, method})", Returns: "{merged, sha}; method is squash (the default), merge or rebase",
 				Schema: obj(repo+`,"number":{"type":"integer"},"method":{"type":"string","enum":["squash","merge","rebase"]}`, "repo", "number")},
+			{Name: "github.sponsors", Risk: capability.Read, Signature: "github.sponsors()", Returns: "{count, monthly_usd, sponsors: [{login, monthly_usd, since}]} of the token's account; needs the read:user scope",
+				Schema: obj(``)},
 			{Name: "github.release", Risk: capability.Irreversible, Signature: "github.release({repo, tag, name, body, target, draft, prerelease})", Returns: "{id, url}; publishes a release for everyone watching the repository unless draft",
 				Schema: obj(repo+`,"tag":{"type":"string"},"name":{"type":"string"},"body":{"type":"string"},"target":{"type":"string"},"draft":{"type":"boolean"},"prerelease":{"type":"boolean"}`, "repo", "tag")},
 		},
@@ -117,6 +119,9 @@ func callGitHub(ctx context.Context, cfg Config, name, _ string, args any) (any,
 	var a ghArgs
 	if err := connector.Args(args, &a); err != nil {
 		return nil, err
+	}
+	if name == "github.sponsors" {
+		return gh.sponsors(ctx)
 	}
 	if !repoName.MatchString(a.Repo) {
 		return nil, errors.New("repo must look like owner/name")
@@ -455,4 +460,45 @@ func (g github) created(ctx context.Context, method, u string, body any) (any, e
 		return nil, err
 	}
 	return map[string]any{"number": res.Number, "url": res.HTMLURL}, nil
+}
+
+// sponsors are who sponsors the token's account, by GitHub's GraphQL API.
+func (g github) sponsors(ctx context.Context) (any, error) {
+	query := `query { viewer { sponsorshipsAsMaintainer(first: 100, activeOnly: true) { totalCount nodes { createdAt sponsorEntity { ... on User { login } ... on Organization { login } } tier { monthlyPriceInDollars isOneTime } } } } }`
+	var raw struct {
+		Data struct {
+			Viewer struct {
+				Sponsorships struct {
+					TotalCount int `json:"totalCount"`
+					Nodes      []struct {
+						CreatedAt string `json:"createdAt"`
+						Sponsor   struct {
+							Login string `json:"login"`
+						} `json:"sponsorEntity"`
+						Tier struct {
+							Monthly int  `json:"monthlyPriceInDollars"`
+							OneTime bool `json:"isOneTime"`
+						} `json:"tier"`
+					} `json:"nodes"`
+				} `json:"sponsorshipsAsMaintainer"`
+			} `json:"viewer"`
+		} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+	if err := doJSON(ctx, "POST", g.api+"/graphql", g.h, map[string]string{"query": query}, &raw); err != nil {
+		return nil, err
+	}
+	if len(raw.Errors) > 0 {
+		return nil, errors.New(raw.Errors[0].Message)
+	}
+	monthly, list := 0, []map[string]any{}
+	for _, n := range raw.Data.Viewer.Sponsorships.Nodes {
+		if !n.Tier.OneTime {
+			monthly += n.Tier.Monthly
+		}
+		list = append(list, map[string]any{"login": n.Sponsor.Login, "monthly_usd": n.Tier.Monthly, "one_time": n.Tier.OneTime, "since": n.CreatedAt})
+	}
+	return map[string]any{"count": raw.Data.Viewer.Sponsorships.TotalCount, "monthly_usd": monthly, "sponsors": list}, nil
 }

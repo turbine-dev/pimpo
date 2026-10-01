@@ -62,7 +62,7 @@ var memberRoutes = routeSet(
 	"PUT /api/companies/{id}/accounts/{kind}", "DELETE /api/companies/{id}/accounts/{kind}",
 	"GET /api/companies/{id}/costs", "GET /api/companies/{id}/decisions", "POST /api/companies/{id}/levels/simulate",
 	"GET /api/companies/{id}/notes", "POST /api/companies/{id}/notes", "DELETE /api/companies/{id}/notes/{part}", "POST /api/companies/{id}/notes/{part}/approve",
-	"GET /api/companies/{id}/meetings", "POST /api/companies/{id}/meetings", "GET /api/companies/{id}/meetings/{part}", "GET /api/companies/{id}/coders", "GET /api/companies/{id}/product", "GET /api/companies/{id}/streaks", "POST /api/companies/{id}/members/{part}/earn", "POST /api/companies/{id}/briefs/{part}/state",
+	"GET /api/companies/{id}/meetings", "POST /api/companies/{id}/meetings", "GET /api/companies/{id}/meetings/{part}", "GET /api/companies/{id}/coders", "GET /api/companies/{id}/product", "GET /api/companies/{id}/streaks", "GET /api/companies/{id}/proposals", "POST /api/companies/{id}/proposals/{part}", "GET /api/companies/{id}/month", "POST /api/companies/{id}/members/{part}/earn", "POST /api/companies/{id}/briefs/{part}/state",
 	"POST /api/companies/{id}/meetings/{part}/say", "POST /api/companies/{id}/meetings/{part}/end", "POST /api/companies/{id}/meetings/{part}/task", "GET /api/companies/{id}/digest",
 	"GET /api/companies/{id}/tasks", "POST /api/companies/{id}/tasks", "POST /api/companies/{id}/tasks/{part}/drop",
 	"GET /api/companies/{id}/questions", "POST /api/companies/{id}/questions/{part}/answer",
