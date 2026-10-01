@@ -22,6 +22,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/approval"
 	"github.com/turbine-dev/pimpo/internal/browser"
 	"github.com/turbine-dev/pimpo/internal/budget"
+	"github.com/turbine-dev/pimpo/internal/company"
 	"github.com/turbine-dev/pimpo/internal/compiler"
 	"github.com/turbine-dev/pimpo/internal/connector"
 	"github.com/turbine-dev/pimpo/internal/connector/calendar"
@@ -86,7 +87,7 @@ type Settings struct {
 	// mcp_registry.
 	LabsOff []string `json:"labs_off,omitempty"`
 	// LabsOn turns on features that stay off until the owner chooses them:
-	// code_sandbox, browser, whatsapp_personal.
+	// code_sandbox, browser, whatsapp_personal, companies.
 	LabsOn []string `json:"labs_on,omitempty"`
 	// Models are API models the owner set up, with their price; the model
 	// settings above may name one as provider:model.
@@ -156,7 +157,7 @@ type ModelOption struct {
 var (
 	mutable = map[string]bool{"task": true, "failure": true, "backup": true}
 	labs    = map[string]bool{"memory_organize": true, "meaning_search": true, "mcp_registry": true}
-	optIn   = map[string]bool{"code_sandbox": true, "browser": true, "whatsapp_personal": true}
+	optIn   = map[string]bool{"code_sandbox": true, "browser": true, "whatsapp_personal": true, companiesLab: true}
 )
 
 // lab reports whether a newer feature is on.
@@ -178,6 +179,7 @@ type App struct {
 	Events    *event.Store
 	Vault     *vault.Vault
 	Store     *store.Store
+	Companies *company.Store
 	Budget    *budget.Budget
 	Channel   *owner.Channel
 	Explore   *explore.Service
@@ -268,7 +270,11 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	if err != nil {
 		return nil, err
 	}
-	a := &App{Events: events, Vault: v, Store: st, startedAt: time.Now().UTC(), jobPoll: 2 * time.Second}
+	companies, err := company.Open(events.DB())
+	if err != nil {
+		return nil, err
+	}
+	a := &App{Events: events, Vault: v, Store: st, Companies: companies, startedAt: time.Now().UTC(), jobPoll: 2 * time.Second}
 	a.Rules = &policy.Engine{Events: events}
 	a.initProtection(ctx)
 	a.Policy = a.Rules
@@ -368,6 +374,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.lessonRoutes()
 	a.phoneRoutes()
 	a.jobRoutes()
+	a.companyRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()

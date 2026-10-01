@@ -71,6 +71,7 @@ func newHouse(t *testing.T) *house {
 	ta.Home = t.TempDir()
 	ctx := context.Background()
 	h := &house{testApp: ta, owner: map[string]string{}, anas: map[string]string{}, ownerMark: "OWNERSECRET", anaMark: "ANASECRET"}
+	ta.companiesOn(t)
 	_, out := ta.do(t, "POST", "/api/people", map[string]string{"name": "Ana", "role": "member"})
 	h.anaID = out["id"].(string)
 	// Ana opens her invite on her phone; the session it gives is hers.
@@ -105,6 +106,8 @@ func newHouse(t *testing.T) *house {
 		j := Job{ID: "job" + who, Request: mark + " trabalho", Person: people.Norm(person), State: JobPlanned, BudgetUSD: 1, Created: time.Now()}
 		ta.saveJob(ctx, &j)
 		ids["job"] = j.ID
+		_, body = ta.raw(t, token, "POST", "/api/companies", js(map[string]string{"name": mark + " empresa"}))
+		ids["company"] = field(body, "id")
 		ta.raw(t, token, "POST", "/api/phone/places", js(map[string]any{"name": mark + "Casa"}))
 		// A receipt, a failed run, an event and a cost of theirs.
 		recPerson := person
@@ -158,6 +161,8 @@ func fill(pattern string, ids map[string]string) (string, string, bool) {
 			id = ids["widget"]
 		case strings.HasPrefix(path, "/api/dashboards/"):
 			id = ids["dashboard"]
+		case strings.HasPrefix(path, "/api/companies/"):
+			id = ids["company"]
 		default:
 			return "", "", false
 		}
@@ -212,6 +217,7 @@ func TestNobodySeesAnotherPersonsThings(t *testing.T) {
 		{h.ana, "/api/events", h.anaMark}, {h.ana, "/api/chats", h.anaMark}, {h.ana, "/api/jobs", h.anaMark},
 		{h.ana, "/api/phone", h.anaMark},
 		{h.ana, "/api/widgets", h.anaMark}, {h.ana, "/api/dashboards", h.anaMark}, {"tok", "/api/widgets", h.ownerMark},
+		{h.ana, "/api/companies", h.anaMark}, {"tok", "/api/companies", h.ownerMark},
 	} {
 		if code, body := h.raw(t, c.token, "GET", c.path, nil); code != 200 || !strings.Contains(body, c.want) {
 			t.Errorf("%s does not show its own %q: %d %.200s", c.path, c.want, code, body)
