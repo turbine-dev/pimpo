@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { capabilityLabel } from '../components/RoutineCard'
 import { Field } from '../components/Modal'
-import { Button, Card } from '../components/ui'
+import { Button, Card, Switch } from '../components/ui'
 import { api, type Autonomy, type Decider, type DeciderKind, type Level, type Levels, type Org } from '../lib/api'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
@@ -85,6 +85,7 @@ export function AutonomyEditor({ org, value, onChange, capabilities }: { org: Or
             </select>
             <Button type="button" size="sm" variant="ghost" aria-label={t('co.removeLine')} onClick={() => onChange(value.filter((_, j) => j !== i))}><Trash2 size={13} /></Button>
           </div>
+          {a.earned && <p className="text-[12px] text-read">{t('co.earned')}</p>}
           <DeciderEditor org={org} value={a.decider} onChange={(decider) => put(i, { ...a, decider })} />
         </div>
       ))}
@@ -111,9 +112,10 @@ export function LevelsTab({ org, can, onSaved }: { org: Org; can: boolean; onSav
   const qc = useQueryClient()
   const [levels, setLevels] = useState<Levels>(org.levels ?? {})
   const [decider, setDecider] = useState<Decider>(org.decider?.kind ? org.decider : { kind: 'person' })
+  const [earn, setEarn] = useState({ after: org.earn_after ?? 10, off: !!org.earn_off })
   const decisions = useQuery({ queryKey: ['company-decisions', org.id], queryFn: () => api.companyDecisions(org.id) })
   const save = useMutation({
-    mutationFn: () => api.saveCompany(org.id, { ...org, levels, decider: decider.kind === 'person' ? undefined : decider }),
+    mutationFn: () => api.saveCompany(org.id, { ...org, levels, decider: decider.kind === 'person' ? undefined : decider, earn_after: earn.after === 10 ? undefined : earn.after, earn_off: earn.off || undefined }),
     onSuccess: (o) => { onSaved(o); qc.invalidateQueries({ queryKey: ['company', org.id] }) },
   })
   const put = (i: number, l: Level) => setLevels({ ...levels, list: (levels.list ?? []).map((x, j) => (j === i ? l : x)) })
@@ -165,6 +167,14 @@ export function LevelsTab({ org, can, onSaved }: { org: Org; can: boolean; onSav
           <div className="space-y-2">
             <span className="text-[13px] font-medium">{t('co.defaultDecider')}</span>
             <DeciderEditor org={org} value={decider} onChange={setDecider} />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3 text-[13px] font-medium">
+              <span>{t('co.earn')}</span>
+              <Switch on={!earn.off} onChange={(on) => setEarn({ ...earn, off: !on })} label={t('co.earn')} />
+            </div>
+            {!earn.off && <Field label={t('co.earnAfter')}><input type="number" min={1} max={100} className={field + ' w-24'} value={earn.after} onChange={(e) => setEarn({ ...earn, after: Math.max(1, Math.min(100, Number(e.target.value) || 1)) })} /></Field>}
+            <p className="text-[12px] text-ink-3">{t('co.earnHint')}</p>
           </div>
           {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
           {can && <Button variant="primary" onClick={() => save.mutate()} disabled={save.isPending}>{t('common.save')}</Button>}

@@ -210,7 +210,7 @@ export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: s
 // A kind the server adds later shows with its title and an open link
 // until the UI learns its buttons. amount is what a grantable approval
 // moves; count is how many a summary item (lessons) stands for.
-export type NeedKind = 'approval' | 'credential_request' | 'question' | 'company_question' | 'company_note' | 'company_brief' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
+export type NeedKind = 'approval' | 'credential_request' | 'question' | 'company_question' | 'company_note' | 'company_brief' | 'company_autonomy' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
 export type Need = { kind: NeedKind; id: string; title: string; detail?: string; created?: string; urgency: number; expires?: string; link?: string; actions: string[]; options?: string[]; proposal?: string; risk?: number; amount?: number; count?: number }
 export type Needs = { items: Need[]; counts: Partial<Record<NeedKind, number>>; total: number }
 export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string; grantable?: boolean }
@@ -224,7 +224,7 @@ export type CompanyGrant = 'view' | 'approve' | 'configure'
 export type Hours = { days?: number[]; from?: string; to?: string }
 export type DeciderKind = 'self' | 'jev' | 'model' | 'boss' | 'person' | 'committee' | 'cascade'
 export type Decider = { kind: DeciderKind; threshold?: number; model?: string; members?: string[]; unanimous?: boolean; steps?: Decider[] }
-export type Autonomy = { capability?: string; min_risk?: string; decider: Decider }
+export type Autonomy = { capability?: string; min_risk?: string; decider: Decider; earned?: boolean }
 export type Triggers = { over_usd?: number; min_risk?: string; kinds?: string[]; public?: boolean; words?: string[] }
 export type Level = { level: number; name: string; decides: 'self' | 'boss' | 'head' | 'ceo'; route?: 'direct' | 'opinions'; when: Triggers }
 export type Levels = { list?: Level[]; unsure?: number }
@@ -236,7 +236,7 @@ export type Spend = { day: number; month: number }
 export type CompanySpend = { company: Spend; members: Record<string, Spend>; departments: Record<string, Spend>; by_day: Record<string, number>; subscription?: CompanySpend }
 export type CompanyCosts = CompanySpend & { forecast_month: number; per_member: Record<string, { done: number; cost_per_done: number; forecast_month: number }>; per_role: Record<string, number>; budget: Budget; limits: Record<string, Budget>; outcomes: Record<string, { count: number; cost_each: number }> }
 export type CompanyDecision = { id: string; company: string; member: string; question: string; decider: string; answer: string; p?: number; reason?: string; cost_usd?: number; level?: number; why?: string; created: string }
-export type Company = { id: string; person?: string; name: string; industry?: string; mission?: string; zone?: string; hours?: Hours; paused?: boolean; decider?: Decider; levels?: Levels; lateral?: boolean; budget?: Budget; accounts?: SharedAccount[]; memory?: MemoryPolicy; code_env?: Record<string, string>; partners?: { person: string; grant: CompanyGrant }[]; created: string; updated: string; grant: CompanyGrant }
+export type Company = { id: string; person?: string; name: string; industry?: string; mission?: string; zone?: string; hours?: Hours; paused?: boolean; decider?: Decider; levels?: Levels; lateral?: boolean; budget?: Budget; accounts?: SharedAccount[]; memory?: MemoryPolicy; code_env?: Record<string, string>; earn_after?: number; earn_off?: boolean; partners?: { person: string; grant: CompanyGrant }[]; created: string; updated: string; grant: CompanyGrant }
 export type Department = { id: string; name: string; color?: string; paused?: boolean; month_usd?: number }
 export type CompanyRole = { id: string; title: string; function?: string; responsibilities?: string[]; deliverables?: string[]; capabilities?: string[]; models?: string[]; account_kinds?: string[]; autonomy?: Autonomy[] }
 export type Member = { id: string; kind: 'agent' | 'person'; person?: string; title?: string; role?: string; department?: string; reports_to?: string; name: string; avatar?: string; persona?: string; capabilities?: string[]; models?: string[]; state?: 'active' | 'paused'; autonomy?: Autonomy[]; budget?: Budget; coder?: string; code_sandbox?: boolean; created?: string; updated?: string }
@@ -407,6 +407,7 @@ export const api = {
   simulateLevel: (id: string, m: { member?: string; text: string; kind?: string; amount_usd?: number; public?: boolean }) => request<{ level: number; why: string; name?: string; decides?: string; decider?: string }>('POST', `/api/companies/${id}/levels/simulate`, m),
   companyProduct: (id: string) => request<{ briefs: CompanyBrief[]; signals: CompanySignal[]; accuracy: Record<string, [number, number]> }>('GET', `/api/companies/${id}/product`),
   briefState: (id: string, brief: string, body: { state: string; reason?: string; ref?: string }) => request<CompanyBrief>('POST', `/api/companies/${id}/briefs/${brief}/state`, body),
+  earnAutonomy: (id: string, member: string, capability: string, accept: boolean) => request<Org>('POST', `/api/companies/${id}/members/${member}/earn`, { capability, accept }),
   companyCoders: (id: string) => request<{ id: string; name: string; sandbox: boolean; installed: boolean }[]>('GET', `/api/companies/${id}/coders`),
   companyTasks: (id: string) => request<CompanyTask[]>('GET', `/api/companies/${id}/tasks`),
   assignTask: (id: string, t: Partial<CompanyTask>) => request<CompanyTask>('POST', `/api/companies/${id}/tasks`, t),

@@ -332,7 +332,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 		return a.Router.Call(ctx, name, "", args)
 	}}
 	env := host.Env{Router: router, Judge: judgeFunc(a.judge), Budget: a.Budget, Events: events, Policy: policyFunc(a.decide),
-		Approver: approver{a.Approvals}, Remember: a.remember, Write: a.write,
+		Approver: approver{a.Approvals, a.deliveryAnswered}, Remember: a.remember, Write: a.write,
 		RoleOf:  func(ctx context.Context, person string) string { return string(a.People.Role(ctx, person)) },
 		Missing: a.missingCredential}
 	a.Scheduler = &scheduler.Scheduler{Env: env, Store: st, Notify: a.Channel, Zone: zone, Progress: a.runProgress, Pushed: a.pushLive, Hold: a.holdRoutine}
@@ -393,6 +393,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.companyMeetRoutes()
 	a.companyCodeRoutes()
 	a.companyProductRoutes()
+	a.companyEarnRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()

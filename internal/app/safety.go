@@ -25,10 +25,17 @@ import (
 )
 
 // approver adapts the approval manager to the host.
-type approver struct{ m *approval.Manager }
+type approver struct {
+	m *approval.Manager
+	// answered hears every answer, for company members' earned autonomy.
+	answered func(context.Context, policy.Action, approval.Answer, error)
+}
 
 func (a approver) Ask(ctx context.Context, act policy.Action, reason string) (bool, error) {
 	ans, err := a.m.Ask(ctx, act, reason)
+	if a.answered != nil {
+		a.answered(ctx, act, ans, err)
+	}
 	return ans == approval.Always, err
 }
 

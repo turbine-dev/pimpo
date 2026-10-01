@@ -61,6 +61,11 @@ type Company struct {
 	Accounts []SharedAccount `json:"accounts,omitempty"`
 	// Memory says how each scope of memory is written.
 	Memory MemoryPolicy `json:"memory,omitzero"`
+	// EarnAfter is how many approvals in a row of one kind of delivery
+	// make Pimpo suggest autonomy for it (10 when unset); EarnOff stops
+	// suggesting.
+	EarnAfter int  `json:"earn_after,omitempty"`
+	EarnOff   bool `json:"earn_off,omitempty"`
 	// CodeEnv are the variables the company's coding CLIs get, such as a
 	// project's settings; secrets do not belong here.
 	CodeEnv map[string]string `json:"code_env,omitempty"`
