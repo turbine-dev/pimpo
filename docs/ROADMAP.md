@@ -26,6 +26,7 @@ The order comes from scoring each item with Jev (TypeSafe) on user value, differ
 | **M7** | v1.2 | At a glance | dashboards · routines as widgets · floating desktop widgets · Android and iOS home-screen widgets |
 | **M8** | v1.3 | Less friction | replies answer their notice · conversation search · approvals bound to the operation · questions as cards · settings history · database integrity · private credential prompts · lasting progress |
 | **M9** | v1.4 | Where the family already is | a Telegram dashboard · push triggers · who owns a memory · lessons to review · models and spending per person · live model catalog · outside password managers · one list of what needs you |
+| **M10** | v1.5 | A company of agents | companies, roles and members · context and rules in layers · the org chart · members' routines and tasks · asking the boss · deciders, autonomy and decision levels · costs in layers · members' own accounts · coding in a worktree · product, finance and marketing · templates |
 
 Sizes: **S** is days, **M** one to two weeks, **L** several weeks. Items marked **owner** need something only the project owner can do (an account, a certificate, a decision).
 
@@ -343,6 +344,32 @@ Each would need an [RFC](rfcs/) first:
 - **A house conversation.** Several people in one conversation (planning a trip), opt-in, with named participants, and without anyone's private memory reaching it.
 - **Site tools (WebMCP).** Using the tools a site declares instead of clicking through it, under the same host scope and risks as the browser.
 - **Computer history as memory.** Only on the person's own computer, off by default, and probably not at all.
+
+## M10 · A company of agents (v1.5)
+
+Goal: a person creates a company of any kind, hires agents into roles of their own with their own accounts, routines and budget, and sees it work: who does what, who waits for whom, what it costs. The highest decisions always reach the CEO, who is a person. The design is [RFC 0004](rfcs/0004-companies.md).
+
+It is built in waves, each usable in Labs before the next: the engine and the engineering path, then product, project and finance, then marketing. The pilot (10.12) measures the most expensive bet, agents delivering code that is accepted at a reasonable cost, as soon as the first wave exists.
+
+- **10.1 Companies, departments, roles and members · M.** The data, the API, privacy as in M6, and `company.yaml` export and import.
+- **10.2 Context and rules in layers · M.** Company, department, role and member; the most specific rule wins, allowing is an explicit exception; a preview of what a member receives.
+- **10.3 Companies in the app · M.** The list, creating one, the org chart drawn by the app (drag to change the boss), roles and context editors, the member page.
+- **10.4 Members' routines and agent tasks · L.** Compiled, agent and hybrid routines per member, company triggers, working hours, concurrency, a queue, and pausing a company, department or member.
+- **10.5 Working together · L.** Tasks and the board, delegation with a structured handoff and a dossier, drift checks, side questions, asking the boss and waiting until the answer without spending, loop guards.
+- **10.6 Meetings, reports and the company's memory · M.**
+- **10.7 Deciders, autonomy and invariants · M.** Jev, a model, the boss, a person, a committee or a cascade; an autonomy matrix per member; the invariants enforced by the host.
+- **10.8 Decision levels · M.** Levels and criteria per company, the host first and a classifier only for what it leaves open, unsure means up, the CEO directly or with opinions, a simulator.
+- **10.9 Costs in layers · M.** Attribution to company, department, member and task; budgets in layers; a forecast before hiring; cost per outcome.
+- **10.10 Members' own accounts · M.** Any connector per member, kinds of account (brand, machine, service, a real person's), grants on company accounts, each service's terms, revoking pauses what depends on an account.
+- **10.11 GitHub and coding in a worktree · L.** GitHub capabilities for issues, pull requests, reviews, checks and merges; Claude Code, Codex or opencode in a worktree per task, with the sandbox as an option.
+- **10.12 The pilot · owner.** A project manager and two developers on Pimpo's own repository for two weeks: at least 60% of pull requests accepted without rewriting, a cost per accepted pull request under a configurable cap ($5 by default), no action outside the matrix.
+- **10.13 Product owner and project manager · M.** Briefs with a source for every claim, deduplicated signals, the roadmap's scoring, accuracy checked after 30 and 90 days; issues with acceptance criteria and standups.
+- **10.14 Finance · M.** Costs and revenue (Stripe, GitHub Sponsors, read only), the monthly report, anomalies and budget proposals; no money moves.
+- **10.15 Media and publishing · L.** Video built locally with ffmpeg and the local voices, checks before asking, YouTube (private upload, then publish), LinkedIn, assisted publishing, AI disclosure.
+- **10.16 Earned autonomy · S.** After a configurable number of approvals without edits in a row (10 by default), Pimpo suggests autonomy for that kind of delivery; a person accepts.
+- **10.17 Templates and the showcase · M.** Software company, marketing agency, online shop, content channel, consultancy and blank; creating a company by describing it; performance; company widgets; an optional public showcase with only what was approved.
+
+**Done when** the "Pimpo Dev" company runs for 30 days with every department: at least 20 issues born from the product owner's briefs closed by accepted pull requests, 2 tutorials and 12 shorts published, a monthly finance report that matches the invoices, within budget every day, no action outside a member's matrix, no strategic decision taken by anyone but the CEO, and no silent failure.
 
 ---
 
