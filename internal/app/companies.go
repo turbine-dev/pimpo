@@ -225,6 +225,8 @@ func (a *App) putCompany(w http.ResponseWriter, r *http.Request, o company.Org) 
 		// Partners never change who else the company is shared with.
 		c.Partners = o.Partners
 	}
+	// The showcase changes only through its own routes, by the person.
+	c.Showcase = o.Showcase
 	for _, p := range c.Partners {
 		if _, err := a.People.Get(ctx, p.Person); err != nil && p.Person != people.OwnerID {
 			return nil, server.StatusError{Status: 400, Msg: "partners are people of the house"}
