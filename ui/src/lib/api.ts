@@ -182,7 +182,7 @@ export type PushStatus = {
 export type GmailPushSetup = { topic: string; account: string; audience?: string; endpoint: string; ready: boolean }
 export type GitHubHook = { on: boolean; urls?: { local?: string; public?: string }; secret?: string }
 export type Connection = { kind: 'telegram' | 'mail' | 'calendar' | 'whatsapp' | 'jev' | 'claude'; configured: boolean; detail?: string; paired?: boolean; pairing_code?: string; bot?: string; webhook?: string; verify_token?: string }
-export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; lesson_digest_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string; compact_off?: boolean; compact_at?: number }
+export type Settings = { labs_on?: string[]; suggest_off?: boolean; learn_off?: boolean; lesson_digest_off?: boolean; zone: string; locale: string; judge_backend: 'local' | 'laya' | 'jev' | 'llm'; ollama_model: string; local_judge_url: string; laya_url?: string; explore_model: string; compile_model: string; judge_model: string; gallery_url?: string; email_channel?: boolean; protection_network?: boolean; mute?: string[]; labs_off?: string[]; models?: ModelOption[]; ollama_url?: string; lmstudio_url?: string; custom_url?: string; fallbacks?: Partial<Record<Job, string[]>>; auto_off?: boolean; auto_light?: string; auto_strong?: string; efforts?: Partial<Record<Job, Effort>>; voice?: 'auto' | 'local' | 'system' | 'openai' | 'elevenlabs'; voice_model?: string; voice_name?: string; chat_voice?: string; chat_voice_model?: string; chat_voice_name?: string; compact_off?: boolean; compact_at?: number }
 export type ModelOption = { id: string; price_in: number; price_out: number }
 export type Job = 'explore' | 'compile' | 'judge'
 // A key a connector needs, asked for privately; the value never comes back.
@@ -222,7 +222,7 @@ export type CostView = { today: number; limit: number; month: number; projected_
 // Companies of agents (RFC 0004).
 export type CompanyGrant = 'view' | 'approve' | 'configure'
 export type Hours = { days?: number[]; from?: string; to?: string }
-export type DeciderKind = 'self' | 'jev' | 'model' | 'boss' | 'person' | 'committee' | 'cascade'
+export type DeciderKind = 'self' | 'jev' | 'laya' | 'model' | 'boss' | 'person' | 'committee' | 'cascade'
 export type Decider = { kind: DeciderKind; threshold?: number; model?: string; members?: string[]; unanimous?: boolean; steps?: Decider[] }
 export type Autonomy = { capability?: string; min_risk?: string; decider: Decider; earned?: boolean }
 export type Triggers = { over_usd?: number; min_risk?: string; kinds?: string[]; public?: boolean; words?: string[] }
@@ -424,6 +424,7 @@ export const api = {
   saveShowcase: (id: string, on: boolean, slug: string) => request<Org>('PUT', `/api/companies/${id}/showcase`, { on, slug }),
   addShowcaseItem: (id: string, item: { kind: string; ref?: string; title?: string; url?: string; note?: string }) => request<Org>('POST', `/api/companies/${id}/showcase/items`, item),
   removeShowcaseItem: (id: string, item: string) => request<Org>('DELETE', `/api/companies/${id}/showcase/items/${item}`),
+  testLaya: (url: string) => request<{ ok: boolean; p?: number; ms?: number; error?: string }>('POST', '/api/judge/laya/test', { url }),
   companyCoders: (id: string) => request<{ id: string; name: string; sandbox: boolean; installed: boolean }[]>('GET', `/api/companies/${id}/coders`),
   companyTasks: (id: string) => request<CompanyTask[]>('GET', `/api/companies/${id}/tasks`),
   assignTask: (id: string, t: Partial<CompanyTask>) => request<CompanyTask>('POST', `/api/companies/${id}/tasks`, t),

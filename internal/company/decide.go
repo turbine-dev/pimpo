@@ -14,6 +14,7 @@ import (
 const (
 	DecideSelf      = "self"
 	DecideJev       = "jev"
+	DecideLaya      = "laya"
 	DecideModel     = "model"
 	DecideBoss      = "boss"
 	DecidePerson    = "person"
@@ -21,8 +22,8 @@ const (
 	DecideCascade   = "cascade"
 )
 
-// A Decider is who answers a decision: the member itself, Jev with a
-// threshold, a model, the boss, a person, a committee of members voting,
+// A Decider is who answers a decision: the member itself, Jev or Laya
+// (Jev's open model, on this computer) with a threshold, a model, the boss, a person, a committee of members voting,
 // or a cascade that goes on to the next step while a step is unsure.
 type Decider struct {
 	Kind      string    `json:"kind" yaml:"kind"`
@@ -36,9 +37,9 @@ type Decider struct {
 func (d Decider) check(o Org) error {
 	switch d.Kind {
 	case DecideSelf, DecideBoss, DecidePerson:
-	case DecideJev:
+	case DecideJev, DecideLaya:
 		if d.Threshold < 0.5 || d.Threshold >= 1 {
-			return fmt.Errorf("Jev decides with a threshold from 0.5 to 0.99")
+			return fmt.Errorf("%s decides with a threshold from 0.5 to 0.99", map[string]string{DecideJev: "Jev", DecideLaya: "Laya"}[d.Kind])
 		}
 	case DecideModel:
 	case DecideCommittee:
@@ -187,8 +188,8 @@ func (s *Store) Decisions(ctx context.Context, company string, limit int) ([]Dec
 // Label says a decider in a few words, for the log.
 func (d Decider) Label() string {
 	switch d.Kind {
-	case DecideJev:
-		return fmt.Sprintf("jev ≥ %.2f", d.Threshold)
+	case DecideJev, DecideLaya:
+		return fmt.Sprintf("%s ≥ %.2f", d.Kind, d.Threshold)
 	case DecideModel:
 		if d.Model != "" {
 			return "model " + d.Model

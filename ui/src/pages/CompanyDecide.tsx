@@ -9,8 +9,8 @@ import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
 import { field } from './Companies'
 
-const kinds: DeciderKind[] = ['person', 'self', 'jev', 'model', 'boss', 'committee', 'cascade']
-const stepKinds: DeciderKind[] = ['jev', 'model', 'boss', 'committee', 'self', 'person']
+const kinds: DeciderKind[] = ['person', 'self', 'jev', 'laya', 'model', 'boss', 'committee', 'cascade']
+const stepKinds: DeciderKind[] = ['jev', 'laya', 'model', 'boss', 'committee', 'self', 'person']
 const risks = ['reversible', 'irreversible', 'notify', 'read']
 
 // DeciderEditor chooses who decides; a cascade's steps are chosen the
@@ -20,7 +20,7 @@ export function DeciderEditor({ org, value, onChange, step }: { org: Org; value:
   const agents = org.members.filter((m) => m.kind === 'agent')
   const set = (kind: DeciderKind) => {
     const d: Decider = { kind }
-    if (kind === 'jev') d.threshold = 0.9
+    if (kind === 'jev' || kind === 'laya') d.threshold = 0.9
     if (kind === 'committee') d.members = agents.slice(0, 2).map((a) => a.id)
     if (kind === 'cascade') d.steps = [{ kind: 'jev', threshold: 0.9 }, { kind: 'person' }]
     onChange(d)
@@ -30,7 +30,7 @@ export function DeciderEditor({ org, value, onChange, step }: { org: Org; value:
       <select className={field} aria-label={t('co.decider')} value={value.kind} onChange={(e) => set(e.target.value as DeciderKind)}>
         {(step ? stepKinds : kinds).map((k) => <option key={k} value={k}>{t(`co.decider.${k}` as 'co.decider.self')}</option>)}
       </select>
-      {value.kind === 'jev' && (
+      {(value.kind === 'jev' || value.kind === 'laya') && (
         <label className="flex items-center gap-2 text-[12.5px] text-ink-2">{t('co.threshold')}
           <input type="number" min={0.5} max={0.99} step={0.01} className={field + ' h-8 w-24'} value={value.threshold ?? 0.9} onChange={(e) => onChange({ ...value, threshold: Number(e.target.value) })} />
         </label>

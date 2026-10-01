@@ -19,6 +19,7 @@ import { fill, useT, type TKey, LANGUAGES } from '../lib/i18n'
 
 const judges = [
   { value: 'local', title: 'settings.judge.local', text: 'settings.judge.localText' },
+  { value: 'laya', title: 'settings.judge.laya', text: 'settings.judge.layaText' },
   { value: 'jev', title: 'settings.judge.jev', text: 'settings.judge.jevText' },
   { value: 'llm', title: 'settings.judge.llm', text: 'settings.judge.llmText' },
 ] as const
@@ -122,7 +123,7 @@ export function Settings() {
             <Card className="p-5">
               <div className="text-[15px] font-medium">{t('settings.judges')}</div>
               <p className="mb-3 text-[13px] text-ink-3">{t('set.judgesText')}</p>
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {judges.map((j) => (
                   <button key={j.value} type="button" onClick={() => setS({ ...s, judge_backend: j.value })} aria-pressed={s.judge_backend === j.value}
                     className={cn('rounded-xl border p-3 text-left transition-colors', s.judge_backend === j.value ? 'border-accent bg-accent/8' : 'border-line hover:border-line-strong')}>
@@ -138,6 +139,7 @@ export function Settings() {
                   <span className="mt-1 block text-[12px] text-ink-3">{fill(t('settings.localHint'), { cmd: <code className="rounded bg-sunken px-1">tools/judge/serve.py</code> })}</span>
                 </label>
               )}
+              {(s.judge_backend === 'local' || s.judge_backend === 'laya') && <LayaSetup value={s.laya_url ?? ''} required={s.judge_backend === 'laya'} onChange={(laya_url) => setS({ ...s, laya_url: laya_url || undefined })} />}
             </Card>
           </>}
 
@@ -266,3 +268,24 @@ function BrowserLogin() {
   )
 }
 
+// LayaSetup points Pimpo at Laya on this computer and checks it answers.
+function LayaSetup({ value, required, onChange }: { value: string; required: boolean; onChange: (v: string) => void }) {
+  const t = useT()
+  const [check, setCheck] = useState<{ ok: boolean; p?: number; ms?: number; error?: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const test = async () => {
+    setBusy(true)
+    try { setCheck(await api.testLaya(value || 'http://127.0.0.1:8000')) } catch (e) { setCheck({ ok: false, error: (e as Error).message }) } finally { setBusy(false) }
+  }
+  return (
+    <div className="mt-4 space-y-2">
+      <label className="block">
+        <span className="mb-1 block text-[12.5px] font-medium text-ink-2">{t('settings.layaUrl')}</span>
+        <input value={value} placeholder={required ? 'http://127.0.0.1:8000' : t('settings.layaOff')} onChange={(e) => onChange(e.target.value.trim())} className={cn(field, 'w-full font-mono text-[13px]')} />
+      </label>
+      <p className="text-[12px] text-ink-3">{fill(t('settings.layaHint'), { cmd: <code className="rounded bg-sunken px-1">pip install &quot;laya[serve]&quot; &amp;&amp; laya-serve</code> })}</p>
+      <Button size="sm" onClick={test} disabled={busy}>{t('settings.layaTest')}</Button>
+      {check && <p role="status" className={cn('text-[12.5px]', check.ok ? 'text-read' : 'text-danger')}>{check.ok ? t('settings.layaOk', { ms: check.ms ?? 0, p: Math.round((check.p ?? 0) * 100) }) : check.error}</p>}
+    </div>
+  )
+}

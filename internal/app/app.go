@@ -10,6 +10,7 @@ import (
 	"github.com/turbine-dev/pimpo/internal/i18n"
 	"github.com/turbine-dev/pimpo/internal/models"
 	"github.com/turbine-dev/pimpo/internal/runtime"
+	"net/url"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -66,13 +67,16 @@ import (
 type Settings struct {
 	Zone         string `json:"zone"`
 	Locale       string `json:"locale"`
-	JudgeBackend string `json:"judge_backend"` // local, jev, llm
+	JudgeBackend string `json:"judge_backend"` // local, laya, jev, llm
 	OllamaModel  string `json:"ollama_model"`
 	// LocalJudgeURL is Pimpo's own small judgment model (tools/judge/serve.py).
 	LocalJudgeURL string `json:"local_judge_url"`
-	ExploreModel  string `json:"explore_model"`
-	CompileModel  string `json:"compile_model"`
-	JudgeModel    string `json:"judge_model"`
+	// LayaURL is a Laya server on this computer (laya-serve); with it, the
+	// local judge asks Laya first.
+	LayaURL      string `json:"laya_url,omitempty"`
+	ExploreModel string `json:"explore_model"`
+	CompileModel string `json:"compile_model"`
+	JudgeModel   string `json:"judge_model"`
 	// GalleryURL is the routine gallery index; a local path works too.
 	GalleryURL string `json:"gallery_url"`
 	// EmailChannel lets the owner ask by writing to themselves with
@@ -399,6 +403,7 @@ func New(ctx context.Context, events *event.Store, v *vault.Vault, token, baseUR
 	a.companyTemplateRoutes()
 	a.companyPerfRoutes()
 	a.companyShowcaseRoutes()
+	a.layaRoutes()
 	a.progressRoutes()
 	a.needRoutes()
 	a.passkeyRoutes()
@@ -538,9 +543,14 @@ func (a *App) saveSettings(ctx context.Context, s Settings, actor string) error 
 		return server.StatusError{Status: 400, Msg: "unknown time zone " + s.Zone}
 	}
 	switch s.JudgeBackend {
-	case "local", "jev", "llm":
+	case "local", "laya", "jev", "llm":
 	default:
-		return server.StatusError{Status: 400, Msg: "judge backend must be local, jev or llm"}
+		return server.StatusError{Status: 400, Msg: "judge backend must be local, laya, jev or llm"}
+	}
+	if s.LayaURL != "" {
+		if u, err := url.Parse(s.LayaURL); err != nil || u.Scheme != "http" && u.Scheme != "https" || u.Host == "" {
+			return server.StatusError{Status: 400, Msg: "Laya's address is http(s)://host:port"}
+		}
 	}
 	for _, k := range s.Mute {
 		if !mutable[k] {
@@ -768,13 +778,27 @@ func (a *App) judge(ctx context.Context, question string, item any) (judge.Answe
 		return a.DemoJudge.Ask(ctx, question, item)
 	}
 	set := a.Settings(ctx)
+	local := judge.Chain{judge.Local{URL: set.LocalJudgeURL}, judge.Ollama{BaseURL: a.ollamaBase(ctx), Model: set.OllamaModel}}
+	if set.LayaURL != "" {
+		// Laya runs here too, and is calibrated: it goes first.
+		local = append(judge.Chain{a.laya(ctx)}, local...)
+	}
 	backends := map[string]judge.Judge{
-		"local": judge.Chain{judge.Local{URL: set.LocalJudgeURL}, judge.Ollama{BaseURL: a.ollamaBase(ctx), Model: set.OllamaModel}},
+		"local": local,
+		"laya":  a.laya(ctx),
 		"jev":   judge.Jev{Key: func(ctx context.Context) (string, error) { return a.secret(ctx, "typesafe.key") }},
 		"llm":   judge.LLM{Model: a.LLM, Name: firstModel(host.ModelOf(ctx), set.JudgeModel)},
 	}
 	_, noJev := a.Vault.Get(ctx, "typesafe.key")
-	usable := func(n string) bool { return n != "jev" || noJev == nil }
+	usable := func(n string) bool {
+		switch n {
+		case "jev":
+			return noJev == nil
+		case "laya":
+			return set.JudgeBackend == "laya"
+		}
+		return true
+	}
 	if set.JudgeBackend == "local" {
 		// The small local model answers most questions for free; the ones
 		// it is unsure about go to a stronger judge.
@@ -795,6 +819,18 @@ func (a *App) judge(ctx context.Context, question string, item any) (judge.Answe
 		}
 	}
 	return chain.Ask(ctx, question, item)
+}
+
+// layaDefault is where laya-serve listens unless told otherwise.
+const layaDefault = "http://127.0.0.1:8000"
+
+// laya is the Laya server on this computer, with its key when it has one.
+func (a *App) laya(ctx context.Context) judge.Jev {
+	base := a.Settings(ctx).LayaURL
+	if base == "" {
+		base = layaDefault
+	}
+	return judge.Laya(base, func(ctx context.Context) (string, error) { return a.secret(ctx, "laya.key") })
 }
 
 func (a *App) decide(ctx context.Context, act policy.Action) policy.Decision {

@@ -31,4 +31,22 @@ describe('Help and settings', () => {
     await userEvent.click(screen.getAllByRole('button', { name: 'Salvar' }).at(-1)!)
     await waitFor(() => expect(calls.find((c) => c.method === 'PUT' && c.url === '/api/settings')?.body).toMatchObject({ mute: ['task'], labs_off: ['memory_organize'] }))
   })
+  it('judges with Laya on this computer after testing it', async () => {
+    const settings = { zone: 'America/Sao_Paulo', locale: 'pt-BR', judge_backend: 'local', ollama_model: '', local_judge_url: '', explore_model: '', compile_model: '', judge_model: '' }
+    const calls = mockFetch({
+      '/api/settings': settings, 'PUT /api/settings': (b: unknown) => b, 'PUT /api/budget': {},
+      '/api/state': { budget: { limit: 2, spent: 0 }, healthy: true }, '/api/pairing': { base: '', devices: [] }, '/api/remote': { tailscale: { state: 'off' }, lan: { on: false } },
+      '/api/backup/cloud': { config: { kind: '', every: 'daily', keep: 7 }, has_keys: false, has_passphrase: false, google: { connected: false, drive: false } },
+      '/api/models': { keys: {}, claude_code: true, providers: [{ id: 'ollama', name: 'Ollama', needs_key: false, local: true }, { id: 'lmstudio', name: 'LM Studio', needs_key: false, local: true }] },
+      '/api/models/detect': { claude_code: '2.1.0', ollama: [], ollama_url: 'http://127.0.0.1:11434', lmstudio: [], lmstudio_url: 'http://127.0.0.1:1234' },
+      'POST /api/judge/laya/test': { ok: true, p: 0.97, ms: 31 },
+    })
+    wrap(<Settings />, '/settings#modelos')
+    await userEvent.click(await screen.findByRole('button', { name: /Laya neste computador/ }))
+    await userEvent.type(screen.getByLabelText('Endereço do Laya'), 'http://127.0.0.1:8000')
+    await userEvent.click(screen.getByRole('button', { name: 'Testar o Laya' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('O Laya respondeu em 31 ms (97% de certeza')
+    await userEvent.click(screen.getAllByRole('button', { name: 'Salvar' }).at(-1)!)
+    await waitFor(() => expect(calls.find((c) => c.method === 'PUT' && c.url === '/api/settings')?.body).toMatchObject({ judge_backend: 'laya', laya_url: 'http://127.0.0.1:8000' }))
+  })
 })

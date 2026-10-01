@@ -96,7 +96,7 @@ var ownerOnlyRoutes = routeSet(
 	"DELETE /api/spotify", "GET /api/spotify", "POST /api/oauth/spotify/start",
 	"DELETE /api/devices/{id}", "GET /api/pairing", "POST /api/pairing",
 	"DELETE /api/catalog/{kind}", "GET /api/catalog", "POST /api/catalog/{kind}/check", "PUT /api/catalog/{kind}",
-	"DELETE /api/connections/{kind}", "GET /api/connections", "GET /api/report", "GET /api/settings", "PUT /api/budget", "PUT /api/connections/{kind}", "PUT /api/settings",
+	"DELETE /api/connections/{kind}", "GET /api/connections", "GET /api/report", "GET /api/settings", "POST /api/judge/laya/test", "PUT /api/budget", "PUT /api/connections/{kind}", "PUT /api/settings",
 	"POST /api/doctor", "POST /api/setup/model",
 	"POST /api/backup/export", "POST /api/backup/import", "POST /api/connectors/install", "POST /api/connectors/reload",
 	"GET /api/repo", "POST /api/repo/apply/{id}", "POST /api/repo/export", "POST /api/repo/pull", "POST /api/repo/push", "PUT /api/repo",
