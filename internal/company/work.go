@@ -90,6 +90,14 @@ func (o Org) checkWork() error {
 	if err := o.Levels.check(); err != nil {
 		return err
 	}
+	if err := o.Budget.check(); err != nil {
+		return err
+	}
+	for _, m := range o.Members {
+		if err := m.Budget.check(); err != nil {
+			return fmt.Errorf("%s: %w", m.Name, err)
+		}
+	}
 	if o.Decider.Kind != "" {
 		if err := o.Decider.check(o); err != nil {
 			return fmt.Errorf("the company's decider: %w", err)
@@ -201,8 +209,12 @@ type Work struct {
 	Error    string    `json:"error,omitempty"`
 	CostUSD  float64   `json:"cost_usd"`
 	Queued   time.Time `json:"queued"`
-	Started  time.Time `json:"started,omitzero"`
-	Ended    time.Time `json:"ended,omitzero"`
+	// NotBefore keeps work waiting until a subscription's usage window
+	// opens again; Retries counts how often it waited for one.
+	NotBefore time.Time `json:"not_before,omitzero"`
+	Retries   int       `json:"retries,omitempty"`
+	Started   time.Time `json:"started,omitzero"`
+	Ended     time.Time `json:"ended,omitzero"`
 }
 
 // An Episode is one stretch of a piece of work: what it did and the

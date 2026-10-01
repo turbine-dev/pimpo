@@ -58,7 +58,7 @@ var memberRoutes = routeSet(
 	"GET /api/companies", "POST /api/companies", "POST /api/companies/import", "GET /api/companies/{id}", "PUT /api/companies/{id}", "DELETE /api/companies/{id}", "GET /api/companies/{id}/export",
 	"PUT /api/companies/{id}/departments/{part}", "DELETE /api/companies/{id}/departments/{part}", "PUT /api/companies/{id}/roles/{part}", "DELETE /api/companies/{id}/roles/{part}",
 	"PUT /api/companies/{id}/members/{part}", "DELETE /api/companies/{id}/members/{part}", "GET /api/companies/{id}/members/{part}/preview",
-	"GET /api/companies/{id}/decisions", "POST /api/companies/{id}/levels/simulate",
+	"GET /api/companies/{id}/costs", "GET /api/companies/{id}/decisions", "POST /api/companies/{id}/levels/simulate",
 	"GET /api/companies/{id}/notes", "POST /api/companies/{id}/notes", "DELETE /api/companies/{id}/notes/{part}",
 	"GET /api/companies/{id}/meetings", "POST /api/companies/{id}/meetings", "GET /api/companies/{id}/digest",
 	"GET /api/companies/{id}/tasks", "POST /api/companies/{id}/tasks", "POST /api/companies/{id}/tasks/{part}/drop",

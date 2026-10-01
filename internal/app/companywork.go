@@ -29,6 +29,8 @@ import (
 // survives restarts; what a restart cut short is queued again.
 
 const (
+	usageRetries    = 6
+	usageWait       = time.Hour
 	workPerCompany  = 3
 	workQueueMax    = 20
 	workDataMax     = 16 << 10
@@ -106,6 +108,18 @@ func (a *App) enqueue(ctx context.Context, o company.Org, member, request string
 	return w, nil
 }
 
+// usageLimit says whether an error is a subscription or provider saying
+// it is out of turns for now.
+func usageLimit(err string) bool {
+	e := strings.ToLower(err)
+	for _, s := range []string{"usage limit", "rate limit", "too many requests", "429", "limit reached", "quota"} {
+		if strings.Contains(e, s) {
+			return true
+		}
+	}
+	return false
+}
+
 // pumpWork starts the queued work that may start now.
 func (a *App) pumpWork(ctx context.Context) {
 	a.work.mu.Lock()
@@ -122,8 +136,9 @@ func (a *App) pumpWork(ctx context.Context) {
 		}
 	}
 	orgs := map[string]company.Org{}
+	spends := map[string]companySpend{}
 	for _, w := range waiting {
-		if w.State != company.WorkQueued || busy[w.Company+"/"+w.Member] || perCompany[w.Company] >= workPerCompany {
+		if w.State != company.WorkQueued || busy[w.Company+"/"+w.Member] || perCompany[w.Company] >= workPerCompany || time.Now().Before(w.NotBefore) {
 			continue
 		}
 		o, ok := orgs[w.Company]
@@ -141,6 +156,16 @@ func (a *App) pumpWork(ctx context.Context) {
 		if ok, _ := o.Working(w.Member); !ok || !o.OnDuty(w.Member, time.Now()) || !a.chose(ctx, companiesLab) {
 			continue
 		}
+		spend, ok := spends[o.ID]
+		if !ok {
+			spend = a.spendOf(ctx, o)
+			spends[o.ID] = spend
+		}
+		start, cap := a.budgetGate(ctx, o, w, spend)
+		if !start {
+			continue
+		}
+		w.MaxUSD = cap
 		exp, err := a.startWork(ctx, o, w)
 		if err != nil {
 			a.endWork(ctx, w.ID, company.WorkFailed, err.Error(), store.Exploration{})
@@ -199,6 +224,18 @@ func (a *App) awaitWork(ctx context.Context, id, exploration string) {
 		a.pauseEpisode(ctx, id, e)
 		a.pumpWork(ctx)
 		return
+	}
+	if e.State == store.ExplorationFailed && usageLimit(e.Error) {
+		if w, err := a.Companies.Work(ctx, id); err == nil && w.Retries < usageRetries && w.State == company.WorkRunning {
+			// The subscription is out of turns for now: wait for its window
+			// instead of failing.
+			a.Companies.UpdateWork(ctx, id, func(x *company.Work) {
+				x.State, x.Exploration, x.Retries, x.NotBefore = company.WorkQueued, "", x.Retries+1, time.Now().Add(usageWait)
+				x.CostUSD += e.CostUSD
+			})
+			a.pumpWork(ctx)
+			return
+		}
 	}
 	state, why := company.WorkDone, ""
 	switch {

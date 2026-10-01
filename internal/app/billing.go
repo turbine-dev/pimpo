@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbine-dev/pimpo/internal/host"
 	"github.com/turbine-dev/pimpo/internal/llm"
 )
 
@@ -80,7 +81,7 @@ func (a *App) billed(ctx context.Context, job, model string, resp llm.Response) 
 	if resp.CostUSD <= 0 || !onSubscription(model) {
 		return resp
 	}
-	a.Events.Append(ctx, "subscription.used", "system", map[string]any{"job": job, "model": model, "usd": resp.CostUSD})
+	a.Events.Append(ctx, "subscription.used", "system", map[string]any{"job": job, "model": model, "usd": resp.CostUSD, "member": host.MemberOf(ctx)})
 	resp.CostUSD = 0
 	return resp
 }

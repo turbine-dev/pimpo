@@ -40,7 +40,10 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
         if (e.type === 'action.done' || e.type === 'action.undone') qc.invalidateQueries({ queryKey: ['receipts'] })
         if (e.type === 'memory.changed') qc.invalidateQueries({ queryKey: ['memory'] })
         if (e.type === 'rules.changed') qc.invalidateQueries({ queryKey: ['rules'] })
-        if (e.type === 'cost.recorded') qc.invalidateQueries({ queryKey: ['cost'] })
+        if (e.type === 'cost.recorded') {
+          qc.invalidateQueries({ queryKey: ['cost'] })
+          qc.invalidateQueries({ queryKey: ['company-costs'] })
+        }
         if (e.type === 'widget.updated' || e.type.startsWith('routine.run') || e.type.startsWith('approval') || e.type === 'cost.recorded') {
           qc.invalidateQueries({ queryKey: ['dashboard-widgets'] })
           qc.invalidateQueries({ queryKey: ['widgets'] })
@@ -59,6 +62,7 @@ export function useLiveEvents(onEvent?: (e: VEvent) => void) {
           qc.invalidateQueries({ queryKey: ['company-meetings'] })
           qc.invalidateQueries({ queryKey: ['company-digest'] })
           qc.invalidateQueries({ queryKey: ['company-decisions'] })
+          qc.invalidateQueries({ queryKey: ['company-costs'] })
         }
         qc.invalidateQueries({ queryKey: ['events'] })
       }

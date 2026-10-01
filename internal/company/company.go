@@ -54,6 +54,9 @@ type Company struct {
 	Decider Decider `json:"decider,omitzero"`
 	// Levels say which decisions go up to whom, the highest to the CEO.
 	Levels Levels `json:"levels,omitzero"`
+	// Budget is what the company may spend; past it, members stop or are
+	// only warned, as OnLimit says.
+	Budget Budget `json:"budget,omitzero"`
 	// Lateral lets members hand work to others of their department, not
 	// only to the people below them.
 	Lateral  bool      `json:"lateral,omitempty"`
@@ -72,6 +75,8 @@ type Department struct {
 	Name   string `json:"name" yaml:"name"`
 	Color  string `json:"color,omitempty" yaml:"color,omitempty"`
 	Paused bool   `json:"paused,omitempty" yaml:"-"`
+	// MonthUSD is what the department may spend a month; 0 is no limit.
+	MonthUSD float64 `json:"month_usd,omitempty" yaml:"month_usd,omitempty"`
 }
 
 // A Role is a function in the company that members hold: what it is for,
@@ -109,8 +114,10 @@ type Member struct {
 	// Autonomy is who decides what this member's actions ask first, before
 	// its role's matrix and the company's default.
 	Autonomy []Autonomy `json:"autonomy,omitempty"`
-	Created  time.Time  `json:"created"`
-	Updated  time.Time  `json:"updated"`
+	// Budget is the member's own limit, its salary.
+	Budget  Budget    `json:"budget,omitzero"`
+	Created time.Time `json:"created"`
+	Updated time.Time `json:"updated"`
 }
 
 // An Org is a company with everything in it.

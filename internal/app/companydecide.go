@@ -90,7 +90,7 @@ func (a *App) rule(ctx context.Context, o company.Org, member string, act policy
 		if err != nil {
 			return ruling{answer: "unsure", by: "Jev"}
 		}
-		a.Budget.Record(ctx, budget.Cost{USD: ans.CostUSD, Source: "judgment", Ref: "company:" + o.ID})
+		a.Budget.Record(ctx, budget.Cost{USD: ans.CostUSD, Source: "judgment", Ref: "company:" + o.ID, Member: o.ID + "/" + member})
 		r := ruling{answer: "unsure", p: ans.P, cost: ans.CostUSD, by: "Jev", reason: fmt.Sprintf("%.0f%% sure", ans.P*100)}
 		switch {
 		case ans.P >= dec.Threshold:
@@ -161,7 +161,7 @@ func (a *App) vote(ctx context.Context, o company.Org, member, voter string, act
 	resp, err := a.generate(withAssistant(ctx, models), llm.Request{System: system, Prompt: prompt, Schema: json.RawMessage(verdictSchema), Model: model, MaxCostUSD: decideUSD})
 	r := ruling{answer: "unsure", by: who.Name, cost: resp.CostUSD}
 	if resp.CostUSD > 0 {
-		a.Budget.Record(ctx, budget.Cost{USD: resp.CostUSD, Source: "judgment", Ref: "company:" + o.ID})
+		a.Budget.Record(ctx, budget.Cost{USD: resp.CostUSD, Source: "judgment", Ref: "company:" + o.ID, Member: o.ID + "/" + member})
 	}
 	var out struct {
 		Approve bool   `json:"approve"`

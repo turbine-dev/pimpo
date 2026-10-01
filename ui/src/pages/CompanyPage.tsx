@@ -17,6 +17,7 @@ import { HoursEditor, MemberWork, WorkLog } from './CompanyWork'
 import { TaskBoard } from './CompanyTasks'
 import { Digest, MemoryTab } from './CompanyMemory'
 import { AutonomyEditor, LevelsTab } from './CompanyDecide'
+import { CostsTab } from './CompanyCosts'
 
 // Deleting reads in the danger color on a plain button, which keeps its
 // contrast in both themes.
@@ -71,7 +72,7 @@ export function CompanyPage({ id }: { id: string }) {
 
       <Tabs.Root defaultValue="chart">
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('co.sections')}>
-          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['layers', t('co.tab.layers')], ['memory', t('co.tab.memory')], ['levels', t('co.tab.levels')], ['work', t('co.tab.work')]].map(([v, l]) => (
+          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['layers', t('co.tab.layers')], ['memory', t('co.tab.memory')], ['levels', t('co.tab.levels')], ['work', t('co.tab.work')], ['costs', t('co.tab.costs')]].map(([v, l]) => (
             <Tabs.Trigger key={v} value={v} className="-mb-px border-b-2 border-transparent px-3 py-2.5 text-[13.5px] text-ink-3 hover:text-ink data-[state=active]:border-ink data-[state=active]:font-medium data-[state=active]:text-ink">{l}</Tabs.Trigger>
           ))}
         </Tabs.List>
@@ -119,6 +120,9 @@ export function CompanyPage({ id }: { id: string }) {
         <Tabs.Content value="tasks">
           <TaskBoard org={o} can={can} />
         </Tabs.Content>
+        <Tabs.Content value="costs">
+          <CostsTab org={o} can={can} onSaved={done} />
+        </Tabs.Content>
         <Tabs.Content value="levels">
           <LevelsTab org={o} can={can} onSaved={done} />
         </Tabs.Content>
@@ -152,6 +156,8 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
     onSuccess: (o) => { onSaved(o); onClose() },
   })
   const remove = useMutation({ mutationFn: () => api.deleteMember(org.id, m.id), onSuccess: (o) => { onSaved(o); onClose() } })
+  const costs = useQuery({ queryKey: ['company-costs', org.id], queryFn: () => api.companyCosts(org.id), enabled: isNew })
+  const estimate = m.role ? costs.data?.per_role[m.role] : undefined
   const under = below(org, m.id)
   const bosses = org.members.filter((x) => x.id !== m.id && !under.has(x.id))
   return (
@@ -178,6 +184,7 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
                 </select>
               </Field>
             </div>
+            {isNew && estimate !== undefined && estimate > 0 && <p className="text-[12.5px] text-ink-3">{t('co.hireEstimate', { usd: `$${estimate.toFixed(2)}` })}</p>}
             <Field label={t('co.reportsTo')}>
               <select className={field} value={m.reports_to ?? 'ceo'} onChange={(e) => setM({ ...m, reports_to: e.target.value })}>
                 {bosses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -278,6 +285,7 @@ function DepartmentDialog({ org, start, onClose, onSaved }: { org: Org; start: D
             ))}
           </div>
         </fieldset>
+        <Field label={t('co.monthLimit')}><input type="number" min={0} className={field} value={d.month_usd ?? ''} onChange={(e) => setD({ ...d, month_usd: e.target.value ? Number(e.target.value) : undefined })} /></Field>
         {start.id && <Switch on={!d.paused} onChange={(on) => setD({ ...d, paused: !on })} label={t('co.departmentWorking')} />}
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         <div className="flex gap-2">

@@ -179,7 +179,7 @@ func (a *App) assign(ctx context.Context, o company.Org, from string, work compa
 		root, _ := a.Companies.Task(ctx, t.Root)
 		ans, err := a.judge(ctx, "Does this task serve the objective of the root task?", map[string]string{"root_objective": root.Objective, "task": t.Title + ": " + t.Objective})
 		if err == nil {
-			a.Budget.Record(people.With(ctx, o.Person), budget.Cost{USD: ans.CostUSD, Source: "judgment", Ref: "company:" + o.ID})
+			a.Budget.Record(people.With(ctx, o.Person), budget.Cost{USD: ans.CostUSD, Source: "judgment", Ref: "company:" + o.ID, Member: o.ID + "/" + t.Assignee})
 		}
 		// Without a judge to ask, the task starts as it would have before.
 		t.Drift = err == nil && ans.P < driftThreshold

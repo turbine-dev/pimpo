@@ -153,6 +153,12 @@ func WithSource(ctx context.Context, source string) context.Context {
 
 type memberKey struct{}
 
+// WithMember marks ctx as work of a company member, "company/member", so
+// what is spent on it is booked for the member.
+func WithMember(ctx context.Context, member string) context.Context {
+	return context.WithValue(ctx, memberKey{}, member)
+}
+
 // MemberOf is the company member a capability call is made for,
 // "company/member", or "".
 func MemberOf(ctx context.Context) string {
@@ -354,7 +360,7 @@ func (h *Host) addCost(ctx context.Context, usd float64, source string) {
 	h.costUSD += usd
 	h.mu.Unlock()
 	if h.Budget != nil {
-		h.Budget.Record(ctx, budget.Cost{USD: usd, Source: source, Ref: h.Source, Person: people.Norm(h.Person)})
+		h.Budget.Record(ctx, budget.Cost{USD: usd, Source: source, Ref: h.Source, Person: people.Norm(h.Person), Member: h.Member})
 	}
 }
 
