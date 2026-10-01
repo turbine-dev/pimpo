@@ -1,0 +1,24 @@
+format: 1
+name: Content channel
+industry: Media
+mission: Publish useful tutorials and shorts on a steady schedule, each checked before it goes out.
+hours: {days: [1, 2, 3, 4, 5], from: "09:00", to: "18:00"}
+budget: {month_usd: 40, on_limit: pause, subscription: true}
+departments:
+  - {id: content, name: Content, color: chart-3}
+roles:
+  - id: editor
+    title: Editor
+    function: Chooses what to make from what the audience asks, and approves each piece before the CEO sees it.
+    capabilities: [company.assign, company.report, company.ask, company.answer, company.signal, company.signals, youtube.stats, company.remember, company.recall, web.search, rss.read]
+  - id: producer
+    title: Producer
+    function: Writes the script, records the voice, takes the screenshots and makes the video in the fixed formats.
+    capabilities: [media.voice, media.capture, media.render, media.check, youtube.upload, publish.assisted, company.report, company.ask, company.remember, company.recall]
+    account_kinds: [youtube]
+members:
+  - {id: ceo, kind: person, title: CEO, name: CEO}
+  - {id: eva, role: editor, department: content, reports_to: ceo, name: Eva}
+  - {id: tom, role: producer, department: content, reports_to: eva, name: Tom}
+agent_routines:
+  - {id: short, member: tom, name: Weekly short, instructions: "Make this week's short on the topic Eva chose, check it, upload it as private and tell Eva.", schedule: "0 10 * * 3"}

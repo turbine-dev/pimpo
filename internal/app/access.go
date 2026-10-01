@@ -55,7 +55,7 @@ var memberRoutes = routeSet(
 	"GET /api/reminders", "DELETE /api/reminders/{id}",
 	"GET /api/cost",
 	"GET /api/jobs", "GET /api/jobs/{id}", "POST /api/jobs", "POST /api/jobs/{id}/start", "POST /api/jobs/{id}/stop", "POST /api/jobs/{id}/follow",
-	"GET /api/companies", "POST /api/companies", "POST /api/companies/import", "GET /api/companies/{id}", "PUT /api/companies/{id}", "DELETE /api/companies/{id}", "GET /api/companies/{id}/export",
+	"GET /api/companies", "POST /api/companies", "POST /api/companies/import", "GET /api/companies/templates", "POST /api/companies/describe", "GET /api/companies/{id}", "PUT /api/companies/{id}", "DELETE /api/companies/{id}", "GET /api/companies/{id}/export",
 	"PUT /api/companies/{id}/departments/{part}", "DELETE /api/companies/{id}/departments/{part}", "PUT /api/companies/{id}/roles/{part}", "DELETE /api/companies/{id}/roles/{part}",
 	"PUT /api/companies/{id}/members/{part}", "DELETE /api/companies/{id}/members/{part}", "GET /api/companies/{id}/members/{part}/preview",
 	"GET /api/companies/{id}/members/{part}/accounts", "PUT /api/companies/{id}/members/{part}/accounts/{kind}", "DELETE /api/companies/{id}/members/{part}/accounts/{kind}",

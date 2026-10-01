@@ -1,0 +1,39 @@
+format: 1
+name: Online shop
+industry: Retail
+mission: Answer every customer quickly and keep the shop's catalog and orders in order.
+hours: {days: [1, 2, 3, 4, 5, 6], from: "08:00", to: "20:00"}
+budget: {month_usd: 60, on_limit: pause}
+levels:
+  unsure: 0.8
+  list:
+    - {level: 1, name: Operational, decides: self}
+    - {level: 2, name: Tactical, decides: boss, when: {min_risk: irreversible}}
+    - {level: 3, name: Strategic, decides: ceo, route: direct, when: {over_usd: 30, kinds: [price, refund, supplier]}}
+departments:
+  - {id: sales, name: Sales, color: chart-2}
+roles:
+  - id: manager
+    title: Store manager
+    function: Runs the shop day to day and decides what the attendants cannot.
+    capabilities: [company.assign, company.report, company.ask, company.answer, company.remember, company.recall, stripe.charges, stripe.balance]
+  - id: attendant
+    title: Customer attendant
+    function: Answers customers by email and messages, kindly and within the shop's policies.
+    responsibilities: [Answer within an hour during opening hours, Never promise a refund or a discount; ask the manager]
+    capabilities: [gmail.search, gmail.draft, gmail.send, company.report, company.ask, company.remember, company.recall]
+    account_kinds: [mail]
+members:
+  - {id: ceo, kind: person, title: CEO, name: CEO}
+  - {id: bia, role: manager, department: sales, reports_to: ceo, name: Bia}
+  - {id: clara, role: attendant, department: sales, reports_to: bia, name: Clara}
+contexts:
+  - {id: policies, scope: company, title: Policies, body: "Returns within 30 days of delivery. Shipping takes 3 to 7 working days. Discounts and refunds only with the manager's approval."}
+rules:
+  - id: refunds-ask
+    scope: company
+    text: Anything about a refund asks first.
+    when: {args_contain: [refund, reembolso]}
+    then: ask
+agent_routines:
+  - {id: inbox, member: clara, name: Customer inbox, instructions: "Answer the customer emails that arrived since last time, within the policies.", schedule: "0 9-19 * * 1-6"}

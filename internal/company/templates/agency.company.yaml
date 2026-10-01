@@ -1,0 +1,40 @@
+format: 1
+name: Marketing agency
+industry: Marketing
+mission: Make clients known, with work they pick from options and reports of what worked.
+hours: {days: [1, 2, 3, 4, 5], from: "09:00", to: "18:00"}
+budget: {month_usd: 100, on_limit: pause}
+levels:
+  unsure: 0.8
+  list:
+    - {level: 1, name: Operational, decides: self}
+    - {level: 2, name: Tactical, decides: boss, when: {min_risk: irreversible}}
+    - {level: 3, name: Strategic, decides: ceo, route: opinions, when: {over_usd: 50, public: true, kinds: [price, contract, client]}}
+departments:
+  - {id: accounts, name: Accounts, color: chart-1}
+  - {id: creative, name: Creative, color: chart-3}
+roles:
+  - id: account
+    title: Account manager
+    function: Knows each client's goals and turns them into briefs for the team.
+    responsibilities: [Keep each client's goals and references as context, Hand briefs to the creative team, Report to the client every week]
+    capabilities: [company.assign, company.report, company.ask, company.answer, company.remember, company.recall, gmail.search, gmail.draft]
+    account_kinds: [mail]
+  - id: copy
+    title: Copywriter
+    function: Writes hooks, scripts and posts, always 3 to 5 variants to pick from.
+    capabilities: [company.report, company.ask, company.remember, company.recall, web.search, publish.assisted]
+  - id: video
+    title: Video producer
+    function: Makes videos in the fixed formats and checks them before anyone is asked.
+    capabilities: [media.voice, media.capture, media.render, media.check, youtube.upload, company.report, company.ask, company.remember]
+    account_kinds: [youtube]
+members:
+  - {id: ceo, kind: person, title: CEO, name: CEO}
+  - {id: ana, role: account, department: accounts, reports_to: ceo, name: Ana}
+  - {id: rui, role: copy, department: creative, reports_to: ana, name: Rui}
+  - {id: bia, role: video, department: creative, reports_to: ana, name: Bia}
+contexts:
+  - {id: references, scope: company, title: References, body: "Keep a bank of references each client likes and dislikes, and show 3 to 5 variants of every hook, script or thumbnail."}
+agent_routines:
+  - {id: weekly, member: ana, name: Weekly report, instructions: "Report to the CEO what was made for each client this week, what was published and what worked.", schedule: "0 16 * * 5"}
