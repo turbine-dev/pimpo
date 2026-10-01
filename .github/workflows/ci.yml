@@ -29,9 +29,14 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with: { node-version-file: .nvmrc, cache: npm, cache-dependency-path: ui/package-lock.json }
       - run: cd ui && npm ci --no-audit --no-fund && npx vite build
+      - run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg
+        if: runner.os == 'Linux'
       - run: go vet ./...
       - run: go test -race ./...
         if: runner.os != 'Windows'
+        env:
+          # Video is built and checked for real on Linux, where ffmpeg is installed above.
+          PIMPO_MEDIA_REQUIRED: ${{ runner.os == 'Linux' && '1' || '' }}
       - run: go test ./...
         if: runner.os == 'Windows'
 

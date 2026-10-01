@@ -216,3 +216,27 @@ func TestBrowserRefusesPrivateAddresses(t *testing.T) {
 		t.Fatalf("reached a loopback address: %v", err)
 	}
 }
+
+func TestAScreenshotIsOfThePageAndItsSize(t *testing.T) {
+	chrome(t)
+	srv := site(t, "http://localhost:1")
+	b := &Browser{Profile: t.TempDir(), AllowPrivate: true}
+	defer b.Close()
+	only := func(h string) bool { return h == "127.0.0.1" }
+	png, err := b.Screenshot(context.Background(), "shot", srv.URL+"/", 800, 600, only)
+	if errors.Is(err, ErrNoSandbox) || HeadlessHangsHere(err) {
+		t.Skip(err)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(png) < 8 || string(png[1:4]) != "PNG" {
+		t.Fatalf("not a PNG: %d bytes", len(png))
+	}
+	if _, err := b.Screenshot(context.Background(), "shot", "https://example.com/", 800, 600, only); err == nil {
+		t.Fatal("a screenshot of a site it may not reach")
+	}
+	if _, err := b.Screenshot(context.Background(), "shot", srv.URL+"/", 10, 600, only); err == nil {
+		t.Fatal("a screenshot 10 pixels wide")
+	}
+}

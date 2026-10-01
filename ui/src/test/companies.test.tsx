@@ -280,6 +280,23 @@ describe('Company finance', () => {
   })
 })
 
+describe('Company media', () => {
+  it('shows each video with what its checks found', async () => {
+    const maker: Org = { ...org, roles: [...org.roles, { id: 'video', title: 'Vídeo', capabilities: ['media.render'] }] }
+    const now = new Date().toISOString()
+    mockFetch({ '/api/companies/co_1': maker, '/api/state': { person: 'owner' }, '/api/companies/co_1/media': [
+      { id: 'm_000000000001', company: 'co_1', member: 'bia', kind: 'video', file: 'm_000000000001.mp4', title: 'Como rodar uma rotina', format: 'short', seconds: 42, check: { seconds: 42, width: 1080, height: 1920, captions: false, problems: ['it has no captions'] }, created: now },
+      { id: 'm_000000000002', company: 'co_1', member: 'bia', kind: 'video', file: 'm_000000000002.mp4', title: 'Tour', format: 'tutorial', seconds: 300, check: { seconds: 300, width: 1920, height: 1080, captions: true, problems: [] }, created: now },
+      { id: 'm_000000000003', company: 'co_1', member: 'bia', kind: 'image', file: 'm_000000000003.png', title: 'example.com/', created: now },
+    ] })
+    wrap(routes(), '/companies/co_1?tab=media')
+    expect(await screen.findByText('it has no captions')).toBeInTheDocument()
+    expect(screen.getByText('Passa nas verificações')).toBeInTheDocument()
+    expect(screen.getByText(/Curto \(9:16\) · 42 s · Bia/)).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'example.com/' })).toHaveAttribute('src', '/api/companies/co_1/media/m_000000000003')
+  })
+})
+
 describe('Company product', () => {
   it('accepts a brief, shows its flagged claims and marks it shipped', async () => {
     const po: Org = { ...org, roles: [...org.roles, { id: 'po', title: 'PO', capabilities: ['company.brief', 'company.signal'] }] }
