@@ -27,6 +27,8 @@ GUIDE = [
       "Routines in a repository", "Changing a routine without code", "Run history", "Routines that ask you", "Reminders", "Long jobs", "Suggestions"]),
     ("guide-dashboards", "Dashboards", "Tabs of widgets: routines as widgets, ready-made ones, charts and sharing.",
      ["Dashboards"]),
+    ("guide-companies", "Companies of agents", "Companies of any kind whose members are agents, with you as the CEO.",
+     ["Companies of agents"]),
     ("guide-safety", "Approvals and receipts", "What waits for you, and how to see and undo what Pimpo did.",
      ["Approvals and rules", "Receipts and undo"]),
     ("guide-memory", "Memory and people", "What Pimpo remembers, and sharing it with the people of the house.",

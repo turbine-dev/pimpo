@@ -4,8 +4,8 @@ import { Bot, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { ModelChoice } from '../components/ModelChoice'
 import { label } from '../components/ModelSetup'
-import { capabilityLabel } from '../components/RoutineCard'
-import { Button, Card, EmptyState, RiskBadge } from '../components/ui'
+import { CapabilityPicker } from '../components/CapabilityPicker'
+import { Button, Card, EmptyState } from '../components/ui'
 import { api, type Assistant } from '../lib/api'
 import { useT } from '../lib/i18n'
 
@@ -58,7 +58,6 @@ export function Assistants() {
 function Editor({ start, onClose }: { start: Assistant; onClose: () => void }) {
   const t = useT()
   const qc = useQueryClient()
-  const caps = useQuery({ queryKey: ['capabilities'], queryFn: api.capabilities })
   const [as, setAs] = useState(start)
   const [all, setAll] = useState(start.id !== '' && start.capabilities.length === 0)
   const [models, setModels] = useState<string[] | null>(start.models?.length ? start.models : null)
@@ -66,12 +65,6 @@ function Editor({ start, onClose }: { start: Assistant; onClose: () => void }) {
     mutationFn: () => api.saveAssistant({ ...as, id: as.id || slug(as.name), capabilities: all ? [] : as.capabilities, models: models ?? undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['assistants'] }); onClose() },
   })
-  const groups = new Map<string, NonNullable<typeof caps.data>>()
-  for (const c of caps.data ?? []) {
-    const g = c.name.split('.')[0]
-    groups.set(g, [...(groups.get(g) ?? []), c])
-  }
-  const toggle = (name: string) => setAs({ ...as, capabilities: as.capabilities.includes(name) ? as.capabilities.filter((x) => x !== name) : [...as.capabilities, name] })
   const empty = !all && as.capabilities.length === 0
   const noModel = models !== null && models.length === 0
 
@@ -97,22 +90,7 @@ function Editor({ start, onClose }: { start: Assistant; onClose: () => void }) {
             <fieldset className="space-y-2">
               <legend className="mb-1 text-[13px] font-medium text-ink-2">{t('as.tools')}</legend>
               <label className="flex items-center gap-2 text-[13px]"><input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={all} onChange={(e) => setAll(e.target.checked)} /> {t('as.allTools')}</label>
-              {!all && (
-                <div className="max-h-72 space-y-3 overflow-y-auto rounded-xl border border-line p-3">
-                  {[...groups.entries()].map(([g, list]) => (
-                    <div key={g}>
-                      <div className="mb-1 text-[11.5px] font-medium uppercase tracking-wide text-ink-3">{g}</div>
-                      {list.map((c) => (
-                        <label key={c.name} className="flex items-center gap-2 py-0.5 text-[13px]">
-                          <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={as.capabilities.includes(c.name)} onChange={() => toggle(c.name)} />
-                          <span className="flex-1">{capabilityLabel(c.name)} <code className="text-[11.5px] text-ink-3">{c.name}</code></span>
-                          <RiskBadge risk={c.risk} />
-                        </label>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {!all && <CapabilityPicker value={as.capabilities} onChange={(capabilities) => setAs({ ...as, capabilities })} />}
               {empty && <p className="text-[12.5px] text-ink-3">{t('as.none')}</p>}
             </fieldset>
             <ModelChoice value={models} onChange={setModels} legend={t('as.models')} />

@@ -169,7 +169,7 @@ export type ActionRecord = {
   ms: number
 }
 
-export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean; person?: string; role?: 'owner' | 'member' | 'guest'; name?: string; admin_account?: boolean }
+export type AppState = { budget: { spent: number; limit: number }; healthy: boolean; broken: number; awaiting: number; approvals?: number; telegram_paired: boolean; log_intact: boolean; claude: boolean; person?: string; role?: 'owner' | 'member' | 'guest'; name?: string; admin_account?: boolean; labs_on?: string[] | null }
 // PushStatus is how a watching routine hears of new things: by push
 // (Gmail through Google Pub/Sub, Slack over its socket) or by polling.
 export type PushStatus = {
@@ -219,6 +219,17 @@ export type Grant = { id: string; routine: string; routine_name: string; version
 export type Rule = { id: string; text: string; when: { capabilities?: string[]; min_risk?: string; source?: string; args_contain?: string[]; hosts?: string[]; people?: string[]; roles?: string[] }; then: 'allow' | 'reversible' | 'ask' | 'block'; off?: boolean }
 export type CostView = { today: number; limit: number; month: number; projected_month: number; by_day: Record<string, number>; by_source: Record<string, number>; by_model?: Record<string, number>; by_job?: Record<string, number>; calls_by_model?: Record<string, number>; subscription?: { today: number; month: number; by_model: Record<string, number> } }
 
+// Companies of agents (RFC 0004).
+export type CompanyGrant = 'view' | 'approve' | 'configure'
+export type Company = { id: string; person?: string; name: string; industry?: string; mission?: string; zone?: string; partners?: { person: string; grant: CompanyGrant }[]; created: string; updated: string; grant: CompanyGrant }
+export type Department = { id: string; name: string; color?: string }
+export type CompanyRole = { id: string; title: string; function?: string; responsibilities?: string[]; deliverables?: string[]; capabilities?: string[]; models?: string[]; account_kinds?: string[] }
+export type Member = { id: string; kind: 'agent' | 'person'; person?: string; title?: string; role?: string; department?: string; reports_to?: string; name: string; avatar?: string; persona?: string; capabilities?: string[]; models?: string[]; state?: 'active' | 'paused'; created?: string; updated?: string }
+export type Scope = 'company' | 'department' | 'role' | 'member'
+export type CompanyContext = { id: string; scope: Scope; of?: string; title: string; body: string; version?: number; updated?: string; previous?: string[] }
+export type CompanyRule = { id: string; scope: Scope; of?: string; text: string; when: Rule['when'] & { except?: string[] }; then: Rule['then']; off?: boolean; exception?: boolean; overrides?: string[] }
+export type Org = Company & { departments: Department[]; roles: CompanyRole[]; members: Member[]; contexts: CompanyContext[]; rules: CompanyRule[] }
+export type MemberPreview = { brief: string; rules: { capability: string; risk: CapRisk; verdict: Rule['then']; reason?: string; rule?: string }[] }
 export type JobPart = { id: string; title: string; instructions: string; capabilities: string[]; state: 'waiting' | 'running' | 'done' | 'failed'; exploration?: string; summary?: string; error?: string; cost_usd: number; attempts: number }
 export type LongJob = { id: string; request: string; state: 'planned' | 'running' | 'reporting' | 'done' | 'stopped' | 'failed'; budget_usd: number; spent_usd: number; parts: JobPart[]; report?: string; error?: string; created: string; updated: string; follow?: boolean; resumed?: string }
 // Progress is where a job or a routine run is, kept by the server so a reload shows it.
@@ -327,6 +338,23 @@ export const api = {
   assistants: () => request<Assistant[]>('GET', '/api/assistants'),
   browserLogin: (url: string) => request<{ state: string }>('POST', '/api/browser/login', { url }),
   skills: () => request<InstalledSkill[]>('GET', '/api/skills'),
+  companies: () => request<Company[]>('GET', '/api/companies'),
+  company: (id: string) => request<Org>('GET', `/api/companies/${id}`),
+  createCompany: (c: { name: string; industry?: string; mission?: string }) => request<Org>('POST', '/api/companies', c),
+  importCompany: (file: string) => request<Org>('POST', '/api/companies/import', { file }),
+  saveCompany: (id: string, c: Partial<Company>) => request<Org>('PUT', `/api/companies/${id}`, c),
+  deleteCompany: (id: string) => request<{ ok: boolean }>('DELETE', `/api/companies/${id}`),
+  saveDepartment: (id: string, d: Department) => request<Org>('PUT', `/api/companies/${id}/departments/${d.id}`, d),
+  deleteDepartment: (id: string, part: string) => request<Org>('DELETE', `/api/companies/${id}/departments/${part}`),
+  saveRole: (id: string, r: CompanyRole) => request<Org>('PUT', `/api/companies/${id}/roles/${r.id}`, r),
+  deleteRole: (id: string, part: string) => request<Org>('DELETE', `/api/companies/${id}/roles/${part}`),
+  saveMember: (id: string, m: Member) => request<Org>('PUT', `/api/companies/${id}/members/${m.id}`, m),
+  deleteMember: (id: string, part: string) => request<Org>('DELETE', `/api/companies/${id}/members/${part}`),
+  memberPreview: (id: string, part: string) => request<MemberPreview>('GET', `/api/companies/${id}/members/${part}/preview`),
+  saveContext: (id: string, c: CompanyContext) => request<Org>('PUT', `/api/companies/${id}/contexts/${c.id}`, c),
+  deleteContext: (id: string, part: string) => request<Org>('DELETE', `/api/companies/${id}/contexts/${part}`),
+  saveCompanyRule: (id: string, r: CompanyRule) => request<Org>('PUT', `/api/companies/${id}/rules/${r.id}`, r),
+  deleteCompanyRule: (id: string, part: string) => request<Org>('DELETE', `/api/companies/${id}/rules/${part}`),
   jobs: () => request<LongJob[]>('GET', '/api/jobs'),
   job: (id: string) => request<LongJob>('GET', `/api/jobs/${id}`),
   createJob: (req: string, budget_usd: number) => request<LongJob>('POST', '/api/jobs', { request: req, budget_usd }),

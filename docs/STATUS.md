@@ -114,6 +114,7 @@ The app, server messages (channels, approvals, notices), built-in connector text
 | M10 A company of agents | **Planned** (2026-10-01): [RFC 0004](rfcs/0004-companies.md) and the M10 section of the roadmap. |
 | 10.1 Companies, departments, roles and members | **Built** (2026-10-01, Labs, off by default): `internal/company` keeps companies with departments, roles and members in a tree under the CEO seat, checked whole on every change; the API under `/api/companies`, private to the company's person and its partners by grant; `company.yaml` export and import. No screen yet (10.3). |
 | 10.2 Context and rules in layers | **Built** (2026-10-01, Labs): contexts (Markdown, the last 10 texts kept) and rules for the company, a department, a role or a member; the most specific layer with a rule decides, and a rule that allows what a broader one forbids is saved only as an exception, with the rules it overrides; company rules never go past the house's (the stricter verdict wins); a member's preview shows its brief and the verdict on each capability with the rule that gives it. |
+| 10.3 Companies in the app | **Built** (2026-10-01, Labs): **More › Companies** when the lab is on: creating, importing and exporting a company; roles, departments and members; the org chart drawn by the app with no new library (drag a card onto another to change its boss; a list on the phone); in 10 languages, WCAG AA in both themes. Contexts and rules on screen come next. |
 
 ## Pending decisions for the owner
 

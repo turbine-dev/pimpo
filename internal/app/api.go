@@ -197,6 +197,7 @@ func (a *App) state(w http.ResponseWriter, r *http.Request) {
 		"telegram_paired": chat != 0,
 		"log_intact":      intact == 0,
 		"claude":          claudeInstalled(),
+		"labs_on":         a.Settings(ctx).LabsOn,
 	})
 }
 

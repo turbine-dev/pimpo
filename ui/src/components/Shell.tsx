@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { canOpen, useRole } from '../lib/roles'
 import { UpdateBanner } from './Updates'
-import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, KeyRound, LayoutDashboard, Users, Puzzle, GraduationCap } from 'lucide-react'
+import { Activity, Bell, Bot, Brain, ChevronDown, CircleHelp, Coins, House, LibraryBig, Menu, MessageSquare, Moon, Plug, Plus, ReceiptText, Repeat, Search, Settings, ShieldCheck, Smartphone, Sun, Layers, KeyRound, LayoutDashboard, Users, Puzzle, GraduationCap, Building2 } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
@@ -13,7 +13,8 @@ import { SystemPanel } from './SystemPanel'
 import { Logo } from './PimpoArt'
 import { Kbd } from './ui'
 
-export type NavItem = { to: string; label: TKey; icon: ReactNode; badge?: number }
+// lab names a lab that must be on for the page to show.
+export type NavItem = { to: string; label: TKey; icon: ReactNode; badge?: number; lab?: string }
 
 // What people open every day comes first; the rest waits under "More".
 export const primary: NavItem[] = [
@@ -28,6 +29,7 @@ export const primary: NavItem[] = [
 export const secondary: NavItem[] = [
   { to: '/gallery', label: 'nav.gallery', icon: <LibraryBig size={17} /> },
   { to: '/jobs', label: 'nav.jobs', icon: <Layers size={17} /> },
+  { to: '/companies', label: 'nav.companies', icon: <Building2 size={17} />, lab: 'companies' },
   { to: '/skills', label: 'nav.skills', icon: <Puzzle size={17} /> },
   { to: '/phone', label: 'nav.phone', icon: <Smartphone size={17} /> },
   { to: '/connections', label: 'nav.connections', icon: <Plug size={17} /> },
@@ -48,6 +50,14 @@ export const nav: NavItem[] = [
 ]
 
 export { Logo }
+
+// useShown says whether a menu item is for this person and, for a lab,
+// whether the lab is on.
+export function useShown() {
+  const role = useRole()
+  const state = useQuery({ queryKey: ['state'], queryFn: api.state })
+  return (it: NavItem) => canOpen(it.to, role) && (!it.lab || (state.data?.labs_on ?? []).includes(it.lab))
+}
 
 function useTheme() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -184,6 +194,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
   const [moreOpen, setMoreOpen] = useState(() => { try { return localStorage.getItem('pimpo.more') === '1' } catch { return false } })
   const [system, setSystem] = useState(false)
   const lessons = useLessonCount(role !== 'guest')
+  const shown = useShown()
   useEffect(() => { try { localStorage.setItem('pimpo.more', moreOpen ? '1' : '0') } catch { /* not remembered */ } }, [moreOpen])
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -211,7 +222,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
             <ChevronDown size={17} className={cn('text-ink-3 transition', !moreOpen && '-rotate-90')} />
             <span className="flex-1 text-left">{t('nav.more')}</span>
           </button>
-          {moreOpen && secondary.filter((it) => canOpen(it.to, role)).map((it) => (
+          {moreOpen && secondary.filter(shown).map((it) => (
             <NavLink key={it.to} to={it.to} className={({ isActive }) => cn(link(isActive), 'pl-4')}>
               <span className="text-ink-3">{it.icon}</span>
               <span className="flex-1">{t(it.label)}</span>
@@ -262,7 +273,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
       {more && (
         <div className="fixed inset-x-0 bottom-[calc(57px+env(safe-area-inset-bottom))] z-20 border-t border-line bg-surface p-2 shadow-[var(--shadow-pop)] md:hidden">
           <div className="grid grid-cols-3 gap-1">
-            {[...primary.slice(2), { to: '/inbox', label: 'nav.inbox' as TKey, icon: <Bell size={17} /> }, ...secondary, { to: '/settings', label: 'nav.settings' as TKey, icon: <Settings size={17} /> }, { to: '/help', label: 'nav.help' as TKey, icon: <CircleHelp size={17} /> }].filter((it) => canOpen(it.to, role)).map((it) => (
+            {[...primary.slice(2), { to: '/inbox', label: 'nav.inbox' as TKey, icon: <Bell size={17} /> }, ...secondary, { to: '/settings', label: 'nav.settings' as TKey, icon: <Settings size={17} /> }, { to: '/help', label: 'nav.help' as TKey, icon: <CircleHelp size={17} /> }].filter(shown).map((it) => (
               <NavLink key={it.to} to={it.to} onClick={() => setMore(false)} className={({ isActive }) => cn('flex flex-col items-center gap-1 rounded-xl py-3 text-[11.5px]', isActive ? 'bg-sunken text-ink' : 'text-ink-2')}>
                 {it.icon}
                 {t(it.label)}
