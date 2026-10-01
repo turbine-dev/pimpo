@@ -241,5 +241,17 @@
   "svc.stripe.help": "В Stripe › Разработчики › API-ключи создайте ограниченный ключ только с чтением Balance и Charges. Отсюда ничего не списывается и не переводится.",
   "svc.stripe.field.key.label": "Ограниченный ключ",
   "svc.stripe.field.key.placeholder": "rk_live_…",
-  "svc.stripe.title": "Stripe"
+  "svc.stripe.title": "Stripe",
+  "svc.youtube.title": "YouTube",
+  "svc.youtube.description": "Загружает видео как приватные, публикует их и читает статистику канала.",
+  "svc.youtube.help": "Используйте брендовый аккаунт канала. В проекте Google Cloud с включённым YouTube Data API создайте OAuth-клиент и получите refresh token с областями youtube.upload и youtube.readonly (например, в OAuth Playground со своим клиентом).",
+  "svc.youtube.field.client_id.label": "Client ID",
+  "svc.youtube.field.client_secret.label": "Client secret",
+  "svc.youtube.field.refresh_token.label": "Refresh token",
+  "svc.linkedin.title": "LinkedIn",
+  "svc.linkedin.description": "Публикует на странице компании в LinkedIn.",
+  "svc.linkedin.help": "Создайте приложение на linkedin.com/developers с продуктом Community Management API, получите токен с w_organization_social и укажите страницу как urn:li:organization:НОМЕР.",
+  "svc.linkedin.field.token.label": "Token",
+  "svc.linkedin.field.author.label": "Страница",
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
 }

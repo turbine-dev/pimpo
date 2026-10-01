@@ -152,7 +152,17 @@ func doJSON(ctx context.Context, method, url string, headers map[string]string, 
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
-	resp, err := client.Do(req)
+	return doWith(client, req, out)
+}
+
+func jsonBody(v any) io.Reader {
+	b, _ := json.Marshal(v)
+	return strings.NewReader(string(b))
+}
+
+// doWith sends a ready request and decodes a JSON answer into out.
+func doWith(c *http.Client, req *http.Request, out any) error {
+	resp, err := c.Do(req)
 	if err != nil {
 		return err
 	}

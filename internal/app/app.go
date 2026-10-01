@@ -675,6 +675,7 @@ func (a *App) router() *connector.Router {
 		productCap{a},
 		financeCap{a},
 		mediaCap{a},
+		publishCap{a},
 		teamCap{a},
 		memoryCap{a},
 		a.spotify(),

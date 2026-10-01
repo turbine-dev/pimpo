@@ -66,6 +66,9 @@ type Company struct {
 	// suggesting.
 	EarnAfter int  `json:"earn_after,omitempty"`
 	EarnOff   bool `json:"earn_off,omitempty"`
+	// Disclosure is how what members publish says it was made with AI;
+	// it can be worded, not left out.
+	Disclosure string `json:"disclosure,omitempty"`
 	// CodeEnv are the variables the company's coding CLIs get, such as a
 	// project's settings; secrets do not belong here.
 	CodeEnv map[string]string `json:"code_env,omitempty"`

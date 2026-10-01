@@ -237,5 +237,17 @@
   "svc.stripe.help": "Stripe › 개발자 › API 키에서 Balance와 Charges 읽기만 허용한 제한 키를 만드세요. 여기서는 아무것도 청구하거나 옮기지 않습니다.",
   "svc.stripe.field.key.label": "제한 키",
   "svc.stripe.field.key.placeholder": "rk_live_…",
-  "svc.stripe.title": "Stripe"
+  "svc.stripe.title": "Stripe",
+  "svc.youtube.title": "YouTube",
+  "svc.youtube.description": "동영상을 비공개로 올리고, 공개하고, 채널 통계를 읽습니다.",
+  "svc.youtube.help": "채널의 브랜드 계정을 쓰세요. YouTube Data API를 켠 Google Cloud 프로젝트에서 OAuth 클라이언트를 만들고 youtube.upload와 youtube.readonly 범위로 리프레시 토큰을 받으세요 (예: 내 클라이언트로 OAuth Playground 사용).",
+  "svc.youtube.field.client_id.label": "Client ID",
+  "svc.youtube.field.client_secret.label": "Client secret",
+  "svc.youtube.field.refresh_token.label": "Refresh token",
+  "svc.linkedin.title": "LinkedIn",
+  "svc.linkedin.description": "회사 LinkedIn 페이지에 게시합니다.",
+  "svc.linkedin.help": "linkedin.com/developers에서 Community Management API 제품이 있는 앱을 만들고 w_organization_social 토큰을 생성한 뒤 페이지를 urn:li:organization:번호 형식으로 입력하세요.",
+  "svc.linkedin.field.token.label": "Token",
+  "svc.linkedin.field.author.label": "페이지",
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
 }

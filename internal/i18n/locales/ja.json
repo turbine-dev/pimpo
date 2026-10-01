@@ -237,5 +237,17 @@
   "svc.stripe.help": "Stripe › 開発者 › API キーで、Balance と Charges の読み取りだけを許可した制限付きキーを作成してください。ここから請求や送金は一切行いません。",
   "svc.stripe.field.key.label": "制限付きキー",
   "svc.stripe.field.key.placeholder": "rk_live_…",
-  "svc.stripe.title": "Stripe"
+  "svc.stripe.title": "Stripe",
+  "svc.youtube.title": "YouTube",
+  "svc.youtube.description": "動画を非公開でアップロードし、公開し、チャンネルの統計を読みます。",
+  "svc.youtube.help": "チャンネルのブランドアカウントを使います。YouTube Data API を有効にした Google Cloud プロジェクトで OAuth クライアントを作り、youtube.upload と youtube.readonly のスコープでリフレッシュトークンを取得してください（例: 自分のクライアントで OAuth Playground を使う）。",
+  "svc.youtube.field.client_id.label": "Client ID",
+  "svc.youtube.field.client_secret.label": "Client secret",
+  "svc.youtube.field.refresh_token.label": "Refresh token",
+  "svc.linkedin.title": "LinkedIn",
+  "svc.linkedin.description": "会社の LinkedIn ページに投稿します。",
+  "svc.linkedin.help": "linkedin.com/developers で Community Management API 製品を持つアプリを作り、w_organization_social のトークンを生成して、ページを urn:li:organization:番号 の形で指定してください。",
+  "svc.linkedin.field.token.label": "Token",
+  "svc.linkedin.field.author.label": "ページ",
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
 }

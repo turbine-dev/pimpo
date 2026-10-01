@@ -237,5 +237,17 @@
   "svc.stripe.help": "In Stripe › Developers › API keys, create a restricted key with read access to Balance and Charges only. Nothing is charged or moved from here.",
   "svc.stripe.field.key.label": "Restricted key",
   "svc.stripe.field.key.placeholder": "rk_live_…",
-  "svc.stripe.title": "Stripe"
+  "svc.stripe.title": "Stripe",
+  "svc.youtube.title": "YouTube",
+  "svc.youtube.description": "Uploads videos as private, publishes them and reads a channel's stats.",
+  "svc.youtube.help": "Use the channel's brand account. In a Google Cloud project with the YouTube Data API on, create an OAuth client and get a refresh token with the youtube.upload and youtube.readonly scopes (for example in the OAuth Playground, with your client).",
+  "svc.youtube.field.client_id.label": "Client ID",
+  "svc.youtube.field.client_secret.label": "Client secret",
+  "svc.youtube.field.refresh_token.label": "Refresh token",
+  "svc.linkedin.title": "LinkedIn",
+  "svc.linkedin.description": "Posts on the company's LinkedIn page.",
+  "svc.linkedin.help": "Create an app at linkedin.com/developers with the Community Management API product, generate a token with w_organization_social, and give the page as urn:li:organization:NUMBER.",
+  "svc.linkedin.field.token.label": "Token",
+  "svc.linkedin.field.author.label": "Page",
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
 }

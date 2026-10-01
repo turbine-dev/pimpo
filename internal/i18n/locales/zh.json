@@ -237,5 +237,17 @@
   "svc.stripe.help": "在 Stripe › 开发者 › API 密钥中，创建一个只能读取 Balance 和 Charges 的受限密钥。这里不会扣款或转移任何资金。",
   "svc.stripe.field.key.label": "受限密钥",
   "svc.stripe.field.key.placeholder": "rk_live_…",
-  "svc.stripe.title": "Stripe"
+  "svc.stripe.title": "Stripe",
+  "svc.youtube.title": "YouTube",
+  "svc.youtube.description": "以私密方式上传视频、发布视频并读取频道统计。",
+  "svc.youtube.help": "使用频道的品牌账号。在启用了 YouTube Data API 的 Google Cloud 项目中创建 OAuth 客户端，并获取带 youtube.upload 和 youtube.readonly 范围的刷新令牌（例如用你的客户端在 OAuth Playground 中获取）。",
+  "svc.youtube.field.client_id.label": "Client ID",
+  "svc.youtube.field.client_secret.label": "Client secret",
+  "svc.youtube.field.refresh_token.label": "Refresh token",
+  "svc.linkedin.title": "LinkedIn",
+  "svc.linkedin.description": "在公司的 LinkedIn 主页上发帖。",
+  "svc.linkedin.help": "在 linkedin.com/developers 创建一个带 Community Management API 产品的应用，生成带 w_organization_social 的令牌，并以 urn:li:organization:编号 的形式填写主页。",
+  "svc.linkedin.field.token.label": "Token",
+  "svc.linkedin.field.author.label": "主页",
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
 }

@@ -2,7 +2,9 @@ package company
 
 import (
 	"context"
+	"errors"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -21,6 +23,24 @@ const (
 	MediaImage = "image"
 	MediaVideo = "video"
 )
+
+// DefaultDisclosure is said when a company words none.
+const DefaultDisclosure = "Made with the help of AI."
+
+// Disclosing is the company's AI disclosure.
+func (c Company) Disclosing() string {
+	if d := strings.TrimSpace(c.Disclosure); d != "" {
+		return d
+	}
+	return DefaultDisclosure
+}
+
+func (c Company) checkDisclosure() error {
+	if d := strings.TrimSpace(c.Disclosure); d != "" && (len([]rune(d)) < 8 || len([]rune(d)) > 280) {
+		return errors.New("the AI disclosure takes 8 to 280 characters")
+	}
+	return nil
+}
 
 // MediaID is what a media file's id looks like, and only that.
 var MediaID = regexp.MustCompile(`^m_[0-9a-f]{12}$`)

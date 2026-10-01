@@ -29,9 +29,9 @@ func TestCatalogConnectors(t *testing.T) {
 	defer delete(services.BaseURL, "todoist")
 
 	_, out := ta.do(t, "GET", "/api/catalog", nil)
-	want := 14
+	want := 16
 	if runtime.GOOS == "darwin" {
-		want = 16 // Apple's apps and iMessage
+		want = 18 // Apple's apps and iMessage
 	}
 	if len(out["connectors"].([]any)) != want {
 		t.Fatalf("catalog %v", out)
