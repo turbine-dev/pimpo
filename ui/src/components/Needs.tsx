@@ -15,7 +15,7 @@ import { Button } from './ui'
 // until it gets its own buttons here: add its icon, its title and its
 // actions.
 
-export const needKinds: NeedKind[] = ['approval', 'credential_request', 'question', 'company_question', 'company_note', 'failed_routine', 'job_error', 'job_planned', 'exploration_ready', 'suggestion', 'lesson', 'system']
+export const needKinds: NeedKind[] = ['approval', 'credential_request', 'question', 'company_question', 'company_note', 'company_brief', 'failed_routine', 'job_error', 'job_planned', 'exploration_ready', 'suggestion', 'lesson', 'system']
 
 // useNeeds is the list; the event stream refreshes it as things change.
 export function useNeeds(enabled = true) {
@@ -72,6 +72,7 @@ function look(n: Need): { icon: ReactNode; tone: Tone } {
     case 'question': return { icon: <MessageCircleQuestion size={16} />, tone: 'explore' }
     case 'company_question': return { icon: <Building2 size={16} />, tone: 'explore' }
     case 'company_note': return { icon: <Building2 size={16} />, tone: 'plain' }
+    case 'company_brief': return { icon: <Building2 size={16} />, tone: 'explore' }
     case 'failed_routine': return { icon: <AlertTriangle size={16} />, tone: 'danger' }
     case 'job_error': return { icon: <Layers size={16} />, tone: 'danger' }
     case 'job_planned': return { icon: <Layers size={16} />, tone: 'plain' }
