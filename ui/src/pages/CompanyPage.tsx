@@ -330,8 +330,9 @@ function CompanyDialog({ org, onClose, onSaved }: { org: Org; onClose: () => voi
   const t = useT()
   const [c, setC] = useState({ name: org.name, industry: org.industry ?? '', mission: org.mission ?? '', hours: org.hours ?? {} })
   const [env, setEnv] = useState(envText(org.code_env))
+  const [disclosure, setDisclosure] = useState(org.disclosure ?? '')
   const save = useMutation({
-    mutationFn: () => api.saveCompany(org.id, { ...org, ...c, code_env: envOf(env) }),
+    mutationFn: () => api.saveCompany(org.id, { ...org, ...c, code_env: envOf(env), disclosure: disclosure.trim() || undefined }),
     onSuccess: (o) => { onSaved(o); onClose() },
   })
   return (
@@ -341,6 +342,10 @@ function CompanyDialog({ org, onClose, onSaved }: { org: Org; onClose: () => voi
         <Field label={t('co.industry')}><input className={field} value={c.industry} maxLength={120} onChange={(e) => setC({ ...c, industry: e.target.value })} /></Field>
         <Field label={t('co.mission')}><textarea className={area} value={c.mission} maxLength={2000} onChange={(e) => setC({ ...c, mission: e.target.value })} /></Field>
         <HoursEditor value={c.hours} onChange={(hours) => setC({ ...c, hours })} />
+        <div>
+          <Field label={t('co.disclosure')}><input className={field} value={disclosure} maxLength={280} placeholder="Made with the help of AI." onChange={(e) => setDisclosure(e.target.value)} /></Field>
+          <p className="mt-1 text-[12px] text-ink-3">{t('co.disclosureHint')}</p>
+        </div>
         <CodeEnvField value={env} onChange={setEnv} />
         {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
         <Button type="submit" variant="primary" disabled={!c.name.trim() || save.isPending}>{t('common.save')}</Button>

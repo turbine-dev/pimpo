@@ -69,9 +69,9 @@ func TestEveryCapabilityIsDocumented(t *testing.T) {
 			}
 		}
 	}
-	want := 14
+	want := 16
 	if runtime.GOOS == "darwin" {
-		want = 16 // Apple's apps and iMessage
+		want = 18 // Apple's apps and iMessage
 	}
 	if len(All()) != want {
 		t.Fatalf("catalog has %d kinds", len(All()))
@@ -412,5 +412,86 @@ func TestGitHubSponsors(t *testing.T) {
 	}
 	if got := out.(map[string]any); got["count"] != 2 || got["monthly_usd"] != 5 || !strings.Contains(fmt.Sprint((*hits)[0].Body["query"]), "sponsorshipsAsMaintainer") {
 		t.Fatalf("sponsors = %v", got)
+	}
+}
+
+func TestYouTubeUploadsPrivateAndPublishesOnlyWhenAsked(t *testing.T) {
+	var mu sync.Mutex
+	var seen []string
+	var meta map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		seen = append(seen, r.Method+" "+r.URL.Path)
+		switch {
+		case r.URL.Path == "/token":
+			r.ParseForm()
+			if r.Form.Get("refresh_token") != "rt" {
+				w.WriteHeader(400)
+				return
+			}
+			w.Write([]byte(`{"access_token":"at"}`))
+		case r.Method == "POST" && r.URL.Path == "/upload/youtube/v3/videos":
+			json.NewDecoder(r.Body).Decode(&meta)
+			w.Header().Set("Location", "http://"+r.Host+"/session/1")
+		case r.Method == "PUT" && r.URL.Path == "/session/1":
+			if r.Header.Get("Authorization") != "Bearer at" || r.ContentLength != 5 {
+				w.WriteHeader(401)
+				return
+			}
+			w.Write([]byte(`{"id":"abc123XYZ"}`))
+		case r.Method == "GET" && r.URL.Path == "/youtube/v3/videos":
+			w.Write([]byte(`{"items":[{"status":{"privacyStatus":"private","containsSyntheticMedia":true},"statistics":{"viewCount":"7"}}]}`))
+		case r.Method == "PUT" && r.URL.Path == "/youtube/v3/videos":
+			json.NewDecoder(r.Body).Decode(&meta)
+			w.Write([]byte(`{}`))
+		default:
+			w.WriteHeader(404)
+		}
+	}))
+	defer srv.Close()
+	BaseURL["youtube"], BaseURL["google-oauth"] = srv.URL, srv.URL
+	defer delete(BaseURL, "youtube")
+	defer delete(BaseURL, "google-oauth")
+	c := cfg(map[string]string{"client_id": "id", "client_secret": "s", "refresh_token": "rt"})
+	file := filepath.Join(t.TempDir(), "v.mp4")
+	os.WriteFile(file, []byte("video"), 0o600)
+	id, err := YouTubeUpload(context.Background(), c, file, Video{Title: "How to", Description: "d", Synthetic: true})
+	if err != nil || id != "abc123XYZ" {
+		t.Fatalf("upload: %q %v", id, err)
+	}
+	status := meta["status"].(map[string]any)
+	if status["privacyStatus"] != "private" || status["containsSyntheticMedia"] != true {
+		t.Fatalf("uploaded as %v", status)
+	}
+	if out, err := call(t, "youtube", c, "youtube.stats", map[string]any{"video": id}); err != nil || out.(map[string]any)["views"] != "7" {
+		t.Fatalf("stats %v %v", out, err)
+	}
+	if _, err := call(t, "youtube", c, "youtube.publish", map[string]any{"video": id}); err != nil {
+		t.Fatal(err)
+	}
+	if s := meta["status"].(map[string]any); s["privacyStatus"] != "public" || s["containsSyntheticMedia"] != true {
+		t.Fatalf("published as %v", s)
+	}
+	if _, err := call(t, "youtube", c, "youtube.publish", map[string]any{"video": "../x"}); err == nil {
+		t.Fatal("a path as a video id")
+	}
+	if capability.Catalog["youtube.publish"].Risk != capability.Irreversible {
+		t.Fatal("publishing should ask first")
+	}
+}
+
+func TestLinkedInPostsOnThePage(t *testing.T) {
+	srv, hits := fake(t, map[string]string{"POST /rest/posts": ``})
+	BaseURL["linkedin"] = srv.URL
+	defer delete(BaseURL, "linkedin")
+	if _, err := LinkedInPost(context.Background(), cfg(map[string]string{"token": "li", "author": "urn:li:organization:42"}), "Hello"); err != nil {
+		t.Fatal(err)
+	}
+	if h := (*hits)[0]; h.Body["author"] != "urn:li:organization:42" || h.Body["commentary"] != "Hello" || h.Body["visibility"] != "PUBLIC" {
+		t.Fatalf("post = %+v", h)
+	}
+	if _, err := LinkedInPost(context.Background(), cfg(map[string]string{"token": "li", "author": "acme"}), "Hello"); err == nil {
+		t.Fatal("an author that is not a LinkedIn urn")
 	}
 }

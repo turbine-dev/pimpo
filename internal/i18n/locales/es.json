@@ -237,5 +237,17 @@
   "svc.stripe.help": "En Stripe › Desarrolladores › Claves de API, crea una clave restringida solo con lectura de Balance y Charges. Desde aquí no se cobra ni se mueve nada.",
   "svc.stripe.field.key.label": "Clave restringida",
   "svc.stripe.field.key.placeholder": "rk_live_…",
-  "svc.stripe.title": "Stripe"
+  "svc.stripe.title": "Stripe",
+  "svc.youtube.title": "YouTube",
+  "svc.youtube.description": "Sube vídeos como privados, los publica y lee las estadísticas de un canal.",
+  "svc.youtube.help": "Usa la cuenta de marca del canal. En un proyecto de Google Cloud con la YouTube Data API activada, crea un cliente OAuth y obtén un refresh token con los permisos youtube.upload y youtube.readonly (por ejemplo en el OAuth Playground, con tu cliente).",
+  "svc.youtube.field.client_id.label": "Client ID",
+  "svc.youtube.field.client_secret.label": "Client secret",
+  "svc.youtube.field.refresh_token.label": "Refresh token",
+  "svc.linkedin.title": "LinkedIn",
+  "svc.linkedin.description": "Publica en la página de la empresa en LinkedIn.",
+  "svc.linkedin.help": "Crea una app en linkedin.com/developers con el producto Community Management API, genera un token con w_organization_social e indica la página como urn:li:organization:NÚMERO.",
+  "svc.linkedin.field.token.label": "Token",
+  "svc.linkedin.field.author.label": "Página",
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
 }

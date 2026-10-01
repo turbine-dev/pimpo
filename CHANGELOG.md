@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- Publishing for companies: YouTube uploads that are always private and marked as made with AI, publishing only when asked, stats; LinkedIn posts on the company page; ready posts sent to the phone for networks Pimpo does not reach; an AI disclosure on everything members publish.
 - Company members make videos locally: a voice, screenshots in their own browser, scenes put together with ffmpeg as a tutorial or a short with captions and normalized loudness, and checks of length, aspect, loudness and captions before anyone is asked; a **Media** tab.
 - Finance for companies: `costs.read` with the month by member and department and what looks wrong, a monthly report asked of the finance member, budgets it proposes and a person applies, a read-only Stripe connector (balance and charges) and `github.sponsors`.
 - Earned autonomy: after a configurable run of approvals of one kind of delivery (10 by default), Pimpo suggests letting a company member do it alone; a person accepts, and a later no takes it back to approval.
