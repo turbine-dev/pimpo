@@ -158,7 +158,7 @@ The catalog in Connections also has native connectors, written in Go with contra
 |---|---|
 | RSS and Atom | 🟢 `rss.read` (sites declared per routine) |
 | Web search | 🟢 `web.search` (Brave Search API or a SearXNG instance) |
-| GitHub | 🟢 `github.issues` · 🔴 `github.comment` |
+| GitHub | 🟢 `github.repo`, `github.issues`, `github.issue`, `github.pulls`, `github.pr`, `github.checks` · 🟡 `github.issue_create`, `github.issue_edit`, `github.pr_create`, `github.pr_review` · 🔴 `github.comment`, `github.merge`, `github.release` |
 | Todoist | 🟢 `todoist.tasks` · 🟡 `todoist.add`, `todoist.close` |
 | Notion | 🟢 `notion.search` · 🟡 `notion.append` |
 | Obsidian | 🟢 `obsidian.search` · 🟡 `obsidian.append` (keeps the previous version) |

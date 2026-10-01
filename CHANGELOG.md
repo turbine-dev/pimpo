@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- GitHub capabilities for repositories, issues, pull requests, reviews, checks, merges and releases, for routines and company members alike.
 - A company's memory per task, per agent and for the whole company: agents keep notes in each, freely, after a decider approves (a person by default for the whole company's) or not at all; Pimpo can keep a note of each piece of work by itself; notes waiting for approval reach you in **Needs**.
 - **Meetings** with the CEO: talk with one agent, several or all of them, discuss a question before answering it, turn what they say into tasks, and end with minutes.
 - Company members' own accounts (mail, GitHub, Slack, Notion and every other connection), the company's shared accounts with read or act grants, kinds of account with warnings about services' terms, and agents kept out of their person's accounts, devices and memory.
