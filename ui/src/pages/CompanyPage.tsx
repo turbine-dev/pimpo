@@ -20,6 +20,7 @@ import { AutonomyEditor, LevelsTab } from './CompanyDecide'
 import { CostsTab } from './CompanyCosts'
 import { MemberAccounts, SharedAccounts } from './CompanyAccounts'
 import { MeetingsTab, NewMeeting } from './CompanyMeetings'
+import { hasProduct, ProductTab } from './CompanyProduct'
 import { CodeEnvField, CoderChoice, codes, envOf, envText } from './CompanyCode'
 
 // Deleting reads in the danger color on a plain button, which keeps its
@@ -80,7 +81,7 @@ export function CompanyPage({ id }: { id: string }) {
 
       <Tabs.Root value={tab} onValueChange={setTab}>
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('co.sections')}>
-          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['meetings', t('co.tab.meetings')], ['layers', t('co.tab.layers')], ['memory', t('co.tab.memory')], ['levels', t('co.tab.levels')], ['work', t('co.tab.work')], ['costs', t('co.tab.costs')]].map(([v, l]) => (
+          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['meetings', t('co.tab.meetings')], ['layers', t('co.tab.layers')], ['memory', t('co.tab.memory')], ['levels', t('co.tab.levels')], ['work', t('co.tab.work')], ['costs', t('co.tab.costs')], ...(hasProduct(o) ? [['product', t('co.tab.product')]] : [])].map(([v, l]) => (
             <Tabs.Trigger key={v} value={v} className="-mb-px border-b-2 border-transparent px-3 py-2.5 text-[13.5px] text-ink-3 hover:text-ink data-[state=active]:border-ink data-[state=active]:font-medium data-[state=active]:text-ink">{l}</Tabs.Trigger>
           ))}
         </Tabs.List>
@@ -140,6 +141,9 @@ export function CompanyPage({ id }: { id: string }) {
         </Tabs.Content>
         <Tabs.Content value="memory">
           <MemoryTab org={o} can={can} onSaved={done} />
+        </Tabs.Content>
+        <Tabs.Content value="product">
+          <ProductTab org={o} can={o.grant !== 'view'} />
         </Tabs.Content>
         <Tabs.Content value="work" className="space-y-4">
           <Digest org={o} />

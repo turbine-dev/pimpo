@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- A product owner's signals, deduplicated, and briefs that cite and quote a source for every claim, scored by the roadmap's formula, flagged by Jev where the quote does not hold, decided on the new **Product** tab and checked against their predictions 30 and 90 days after shipping; standups for project managers and acceptance criteria on GitHub issues.
 - Company members code: `code.workspace` runs the member's coding CLI (Claude Code, Codex or opencode), with its sandbox if chosen, in a git worktree and branch of its own per task, and Pimpo commits and pushes it with the member's GitHub token.
 - GitHub capabilities for repositories, issues, pull requests, reviews, checks, merges and releases, for routines and company members alike.
 - A company's memory per task, per agent and for the whole company: agents keep notes in each, freely, after a decider approves (a person by default for the whole company's) or not at all; Pimpo can keep a note of each piece of work by itself; notes waiting for approval reach you in **Needs**.

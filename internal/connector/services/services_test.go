@@ -172,7 +172,8 @@ func TestGitHubPullRequestsFromIssueToRelease(t *testing.T) {
 	}
 	last := func() hit { return (*hits)[len(*hits)-1] }
 
-	if out := do("github.issue_create", map[string]any{"title": "Cart", "body": "It breaks"}); out["number"] != 9 || last().Body["labels"] == nil {
+	if out := do("github.issue_create", map[string]any{"title": "Cart", "body": "It breaks", "acceptance": []string{"Items stay after a reload", " "}}); out["number"] != 9 || last().Body["labels"] == nil ||
+		last().Body["body"] != "It breaks\n\n## Acceptance criteria\n\n- [ ] Items stay after a reload" {
 		t.Fatalf("issue_create %v %+v", out, last())
 	}
 	do("github.issue_edit", map[string]any{"number": 9, "state": "closed"})

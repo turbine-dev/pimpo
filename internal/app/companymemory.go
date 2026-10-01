@@ -35,8 +35,8 @@ const minutesSchema = `{"type":"object","properties":{"minutes":{"type":"string"
 func init() {
 	for _, s := range []capability.Spec{
 		{Name: "company.remember", Risk: capability.Notify, Signature: "company.remember({scope, kind, title, text})",
-			Returns: "{note: id, pending}; keeps something: scope me (your own memory), task (the task you work on) or company (every member's); kind is fact, decision or lesson; your words, never a rule. The company may have it approved first (pending)",
-			Schema:  `{"type":"object","properties":{"scope":{"type":"string","enum":["me","task","company"]},"kind":{"type":"string","enum":["fact","decision","lesson"]},"title":{"type":"string"},"text":{"type":"string"}},"required":["title","text"]}`},
+			Returns: "{note: id, pending}; keeps something: scope me (your own memory), task (the task you work on) or company (every member's); kind is fact, decision, lesson or standup; your words, never a rule. The company may have it approved first (pending)",
+			Schema:  `{"type":"object","properties":{"scope":{"type":"string","enum":["me","task","company"]},"kind":{"type":"string","enum":["fact","decision","lesson","standup"]},"title":{"type":"string"},"text":{"type":"string"}},"required":["title","text"]}`},
 		{Name: "company.recall", Risk: capability.Read, Signature: "company.recall({query})",
 			Returns: "[{kind, title, text, by, date}]: notes of the company's memory with every word of the query",
 			Schema:  `{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`},
@@ -67,8 +67,8 @@ func (c memoryCap) Call(ctx context.Context, name, _ string, args any) (any, err
 		if in.Kind == "" {
 			in.Kind = company.NoteFact
 		}
-		if in.Kind != company.NoteFact && in.Kind != company.NoteDecision && in.Kind != company.NoteLesson {
-			return nil, errors.New("kind is fact, decision or lesson")
+		if in.Kind != company.NoteFact && in.Kind != company.NoteDecision && in.Kind != company.NoteLesson && in.Kind != company.NoteStandup {
+			return nil, errors.New("kind is fact, decision, lesson or standup")
 		}
 		n := company.Note{Kind: in.Kind, Title: in.Title, Body: in.Text, By: actorFor(o, me), Source: "work:" + work.ID}
 		switch in.Scope {
@@ -396,6 +396,7 @@ func (a *App) digestLoop(ctx context.Context, every time.Duration) {
 			return
 		case <-t.C:
 			a.sendDigests(ctx, time.Now())
+			a.dueBriefReviews(ctx, time.Now())
 		}
 	}
 }

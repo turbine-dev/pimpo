@@ -265,6 +265,26 @@ describe('Company memory and meetings', () => {
   })
 })
 
+describe('Company product', () => {
+  it('accepts a brief, shows its flagged claims and marks it shipped', async () => {
+    const po: Org = { ...org, roles: [...org.roles, { id: 'po', title: 'PO', capabilities: ['company.brief', 'company.signal'] }] }
+    const brief = { id: 'b_1', company: 'co_1', author: 'bia', title: 'Modo escuro', problem: 'Quem compra à noite sai', proposal: 'Um tema escuro', created: new Date().toISOString(),
+      claims: [{ text: 'Clientes pedem', source: 'https://github.com/ana/shop/issues/4', quote: 'Coloquem modo escuro' }, { text: 'Metade das visitas é à noite', source: 'analytics', quote: 'inventado', flag: 'Jev doubts the quote supports it (10% sure)' }],
+      scores: { value: 4, differentiation: 2, adoption: 4, build_risk: 2, safety_risk: 1 }, score: 15, predictions: [{ metric: 'conversão noturna', expected: '+5%' }], state: 'proposed' }
+    let current = { briefs: [brief], signals: [{ id: 's_1', company: 'co_1', source: 'issue', title: 'Modo escuro', count: 3, seen: ['fórum'], by: 'x', created: '' }], accuracy: {} }
+    const calls = mockFetch({ '/api/companies/co_1': po, '/api/state': { person: 'owner' }, '/api/companies/co_1/product': () => current,
+      'POST /api/companies/co_1/briefs/b_1/state': (body: { state: string }) => { current = { ...current, briefs: [{ ...brief, state: body.state }] }; return current.briefs[0] } })
+    wrap(routes(), '/companies/co_1?tab=product')
+    expect(await screen.findByText('Nota 15')).toBeInTheDocument()
+    expect(screen.getByText(/Jev doubts the quote/)).toBeInTheDocument()
+    expect(screen.getByText(/issue, fórum · ouvido 3×/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Aceitar' }))
+    await userEvent.type(await screen.findByLabelText(/Onde foi entregue/), 'https://github.com/ana/shop/pull/9')
+    await userEvent.click(screen.getByRole('button', { name: 'Marcar como entregue' }))
+    await waitFor(() => expect(calls.filter((c) => c.method === 'POST' && c.url.endsWith('/state')).map((c) => c.body)).toEqual([{ state: 'accepted' }, { state: 'shipped', ref: 'https://github.com/ana/shop/pull/9' }]))
+  })
+})
+
 describe('Company coding', () => {
   it('gives a developer a coding CLI, its sandbox and the variables it codes with', async () => {
     const coding: Org = { ...org, roles: [...org.roles, { id: 'dev', title: 'Dev', capabilities: ['code.workspace'] }], members: [...org.members, { id: 'rui', kind: 'agent', role: 'dev', reports_to: 'ceo', name: 'Rui', state: 'active' }] }

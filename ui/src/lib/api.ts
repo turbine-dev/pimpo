@@ -210,7 +210,7 @@ export type Receipt = VEvent<ActionRecord> & { action: ActionRecord & { done?: s
 // A kind the server adds later shows with its title and an open link
 // until the UI learns its buttons. amount is what a grantable approval
 // moves; count is how many a summary item (lessons) stands for.
-export type NeedKind = 'approval' | 'credential_request' | 'question' | 'company_question' | 'company_note' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
+export type NeedKind = 'approval' | 'credential_request' | 'question' | 'company_question' | 'company_note' | 'company_brief' | 'failed_routine' | 'job_error' | 'job_planned' | 'exploration_ready' | 'suggestion' | 'system' | 'lesson'
 export type Need = { kind: NeedKind; id: string; title: string; detail?: string; created?: string; urgency: number; expires?: string; link?: string; actions: string[]; options?: string[]; proposal?: string; risk?: number; amount?: number; count?: number }
 export type Needs = { items: Need[]; counts: Partial<Record<NeedKind, number>>; total: number }
 export type Approval = { id: string; action: { capability: string; scope?: string; args: unknown; risk: number; source: string }; text: string; reason: string; created: string; grantable?: boolean }
@@ -248,6 +248,10 @@ export type MemberActivity = { state: 'working' | 'queued' | 'account_missing'; 
 export type Link = { kind: string; ref: string; title?: string }
 export type CompanyTask = { id: string; company: string; parent?: string; root: string; depth: number; requester: string; assignee: string; title: string; objective: string; acceptance: string; constraints?: string; out_of_scope?: string; due?: string; priority?: number; state: 'todo' | 'doing' | 'waiting' | 'review' | 'blocked' | 'done' | 'dropped'; dossier?: Link[]; low_trust?: boolean; drift?: boolean; report?: string; cost_usd: number; created: string; updated: string }
 export type CompanyQuestion = { id: string; company: string; from: string; to: string; kind: 'decide' | 'clarify'; work?: string; task?: string; text: string; options?: string[]; recommendation?: string; context?: string; drift?: boolean; answer?: string; reason?: string; answered_by?: string; asked: string; answered?: string }
+export type CompanySignal = { id: string; company: string; source: string; title: string; url?: string; text?: string; by: string; count: number; seen?: string[]; created: string }
+export type CompanyBrief = { id: string; company: string; author: string; title: string; problem: string; proposal: string; claims: { text: string; source: string; quote?: string; flag?: string }[];
+  scores: { value: number; differentiation: number; adoption: number; build_risk: number; safety_risk: number }; score: number; predictions: { metric: string; expected: string }[];
+  state: 'proposed' | 'accepted' | 'rejected' | 'shipped'; ref?: string; reason?: string; shipped?: string; reviews?: { day: number; results: { metric: string; actual: string; met: boolean }[]; by: string; at: string }[]; created: string }
 export type MemoryScope = 'company' | 'member' | 'task'
 export type ScopePolicy = { write?: 'free' | 'decide' | 'off'; decider?: Decider; auto?: boolean }
 export type MemoryPolicy = Partial<Record<MemoryScope, ScopePolicy>>
@@ -401,6 +405,8 @@ export const api = {
   companyCosts: (id: string) => request<CompanyCosts>('GET', `/api/companies/${id}/costs`),
   companyDecisions: (id: string) => request<CompanyDecision[]>('GET', `/api/companies/${id}/decisions`),
   simulateLevel: (id: string, m: { member?: string; text: string; kind?: string; amount_usd?: number; public?: boolean }) => request<{ level: number; why: string; name?: string; decides?: string; decider?: string }>('POST', `/api/companies/${id}/levels/simulate`, m),
+  companyProduct: (id: string) => request<{ briefs: CompanyBrief[]; signals: CompanySignal[]; accuracy: Record<string, [number, number]> }>('GET', `/api/companies/${id}/product`),
+  briefState: (id: string, brief: string, body: { state: string; reason?: string; ref?: string }) => request<CompanyBrief>('POST', `/api/companies/${id}/briefs/${brief}/state`, body),
   companyCoders: (id: string) => request<{ id: string; name: string; sandbox: boolean; installed: boolean }[]>('GET', `/api/companies/${id}/coders`),
   companyTasks: (id: string) => request<CompanyTask[]>('GET', `/api/companies/${id}/tasks`),
   assignTask: (id: string, t: Partial<CompanyTask>) => request<CompanyTask>('POST', `/api/companies/${id}/tasks`, t),

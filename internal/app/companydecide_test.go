@@ -140,7 +140,9 @@ func TestMembersCannotChangeTheirCompany(t *testing.T) {
 		}
 	}
 	want := map[string]bool{"company.wake": true, "company.assign": true, "company.report": true, "company.ask": true, "company.answer": true,
-		"company.remember": true, "company.recall": true, "company.meet": true}
+		"company.remember": true, "company.recall": true, "company.meet": true,
+		// Signals, briefs and their reviews are the product owner's own records.
+		"company.signal": true, "company.signals": true, "company.brief": true, "company.briefs": true, "company.brief_review": true, "company.standup": true}
 	if len(got) != len(want) {
 		t.Fatalf("company capabilities = %v", got)
 	}
