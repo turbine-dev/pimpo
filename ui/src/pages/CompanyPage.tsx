@@ -19,6 +19,7 @@ import { Digest, MemoryTab } from './CompanyMemory'
 import { AutonomyEditor, LevelsTab } from './CompanyDecide'
 import { CostsTab } from './CompanyCosts'
 import { MemberAccounts, SharedAccounts } from './CompanyAccounts'
+import { MeetingsTab, NewMeeting } from './CompanyMeetings'
 
 // Deleting reads in the danger color on a plain button, which keeps its
 // contrast in both themes.
@@ -36,6 +37,10 @@ export function CompanyPage({ id }: { id: string }) {
   const [role, setRole] = useState<CompanyRole | null>(null)
   const [dept, setDept] = useState<Department | null>(null)
   const [editing, setEditing] = useState(false)
+  const [tab, setTab] = useState('chart')
+  const [room, setRoom] = useState<string | null>(null)
+  const [talk, setTalk] = useState<{ with?: string[]; question?: string; title: string } | null>(null)
+  const openRoom = (id: string | null) => { setRoom(id); if (id) setTab('meetings') }
   const done = (o: Org) => qc.setQueryData(['company', id], o)
   const move = useMutation({
     mutationFn: ({ m, boss }: { m: Member; boss: string }) => api.saveMember(id, { ...m, reports_to: boss }),
@@ -71,9 +76,9 @@ export function CompanyPage({ id }: { id: string }) {
         </div>
       </div>
 
-      <Tabs.Root defaultValue="chart">
+      <Tabs.Root value={tab} onValueChange={setTab}>
         <Tabs.List className="mb-5 flex gap-1 border-b border-line" aria-label={t('co.sections')}>
-          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['layers', t('co.tab.layers')], ['memory', t('co.tab.memory')], ['levels', t('co.tab.levels')], ['work', t('co.tab.work')], ['costs', t('co.tab.costs')]].map(([v, l]) => (
+          {[['chart', t('co.tab.chart')], ['roles', t('co.tab.roles', { n: o.roles.length })], ['tasks', t('co.tab.tasks')], ['meetings', t('co.tab.meetings')], ['layers', t('co.tab.layers')], ['memory', t('co.tab.memory')], ['levels', t('co.tab.levels')], ['work', t('co.tab.work')], ['costs', t('co.tab.costs')]].map(([v, l]) => (
             <Tabs.Trigger key={v} value={v} className="-mb-px border-b-2 border-transparent px-3 py-2.5 text-[13.5px] text-ink-3 hover:text-ink data-[state=active]:border-ink data-[state=active]:font-medium data-[state=active]:text-ink">{l}</Tabs.Trigger>
           ))}
         </Tabs.List>
@@ -119,7 +124,10 @@ export function CompanyPage({ id }: { id: string }) {
           <LayersTab org={o} can={can} onSaved={done} />
         </Tabs.Content>
         <Tabs.Content value="tasks">
-          <TaskBoard org={o} can={can} />
+          <TaskBoard org={o} can={can} onDiscuss={(q) => setTalk({ with: [q.from], question: q.id, title: q.text.slice(0, 60) })} />
+        </Tabs.Content>
+        <Tabs.Content value="meetings">
+          <MeetingsTab org={o} can={can} room={room} onRoom={openRoom} />
         </Tabs.Content>
         <Tabs.Content value="costs" className="space-y-8">
           <CostsTab org={o} can={can} onSaved={done} />
@@ -137,7 +145,8 @@ export function CompanyPage({ id }: { id: string }) {
         </Tabs.Content>
       </Tabs.Root>
 
-      {member && <MemberDialog org={o} start={member} can={can} onClose={() => setMember(null)} onSaved={done} />}
+      {member && <MemberDialog org={o} start={member} can={can} onClose={() => setMember(null)} onSaved={done} onTalk={(m) => { setMember(null); setTalk({ with: [m.id], title: m.name }) }} />}
+      {talk && <NewMeeting org={o} with={talk.with} question={talk.question} onClose={() => setTalk(null)} onOpen={openRoom} />}
       {role && <RoleDialog org={o} start={role} onClose={() => setRole(null)} onSaved={done} />}
       {dept && <DepartmentDialog org={o} start={dept} onClose={() => setDept(null)} onSaved={done} />}
       {editing && <CompanyDialog org={o} onClose={() => setEditing(false)} onSaved={done} />}
@@ -147,7 +156,7 @@ export function CompanyPage({ id }: { id: string }) {
 
 const lines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean)
 
-function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: Member; can: boolean; onClose: () => void; onSaved: (o: Org) => void }) {
+function MemberDialog({ org, start, can, onClose, onSaved, onTalk }: { org: Org; start: Member; can: boolean; onClose: () => void; onSaved: (o: Org) => void; onTalk: (m: Member) => void }) {
   const t = useT()
   const [m, setM] = useState(start)
   const [models, setModels] = useState<string[] | null>(start.models?.length ? start.models : null)
@@ -204,6 +213,7 @@ function MemberDialog({ org, start, can, onClose, onSaved }: { org: Org; start: 
         {can && (
           <div className="flex gap-2">
             <Button type="submit" variant="primary" disabled={!m.name.trim() || (!seat && !m.role) || models?.length === 0 || save.isPending}>{t('common.save')}</Button>
+            {!isNew && !seat && <Button type="button" onClick={() => onTalk(m)}>{t('co.talk')}</Button>}
             {!isNew && !seat && <Button type="button" variant="ghost" className={danger} onClick={() => window.confirm(t('co.letGoAsk', { name: m.name })) && remove.mutate()}>{t('co.letGo')}</Button>}
           </div>
         )}

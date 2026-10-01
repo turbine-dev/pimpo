@@ -19,7 +19,7 @@ const columns: { key: string; states: CompanyTask['state'][] }[] = [
 const nameOf = (org: Org, id: string) => org.members.find((m) => m.id === id)?.name ?? id
 
 // Questions lists what members asked the CEO, to answer in place.
-export function Questions({ org }: { org: Org }) {
+export function Questions({ org, onDiscuss }: { org: Org; onDiscuss?: (q: CompanyQuestion) => void }) {
   const t = useT()
   const qc = useQueryClient()
   const list = useQuery({ queryKey: ['company-questions', org.id], queryFn: () => api.companyQuestions(org.id) })
@@ -33,14 +33,14 @@ export function Questions({ org }: { org: Org }) {
   return (
     <section className="space-y-2" aria-label={t('co.questions')}>
       <h2 className="text-[15px] font-semibold">{t('co.questions')}</h2>
-      {mine.map((q) => <QuestionCard key={q.id} org={org} q={q} onAnswer={org.grant !== 'view' ? (choice) => answer.mutate({ q, choice }) : undefined} busy={answer.isPending} />)}
+      {mine.map((q) => <QuestionCard key={q.id} org={org} q={q} onAnswer={org.grant !== 'view' ? (choice) => answer.mutate({ q, choice }) : undefined} onDiscuss={org.grant !== 'view' ? onDiscuss : undefined} busy={answer.isPending} />)}
       {others.map((q) => <QuestionCard key={q.id} org={org} q={q} />)}
       {answer.error && <p className="text-[13px] text-danger">{answer.error.message}</p>}
     </section>
   )
 }
 
-function QuestionCard({ org, q, onAnswer, busy }: { org: Org; q: CompanyQuestion; onAnswer?: (choice: string) => void; busy?: boolean }) {
+function QuestionCard({ org, q, onAnswer, onDiscuss, busy }: { org: Org; q: CompanyQuestion; onAnswer?: (choice: string) => void; onDiscuss?: (q: CompanyQuestion) => void; busy?: boolean }) {
   const t = useT()
   const [typed, setTyped] = useState('')
   return (
@@ -60,11 +60,12 @@ function QuestionCard({ org, q, onAnswer, busy }: { org: Org; q: CompanyQuestion
           </form>
         )
       ) : <p className="text-[12.5px] text-ink-3">{t('co.waitingFor', { name: nameOf(org, q.to) })}</p>}
+      {onDiscuss && <Button size="sm" variant="ghost" onClick={() => onDiscuss(q)}>{t('co.discuss', { name: nameOf(org, q.from) })}</Button>}
     </Card>
   )
 }
 
-export function TaskBoard({ org, can }: { org: Org; can: boolean }) {
+export function TaskBoard({ org, can, onDiscuss }: { org: Org; can: boolean; onDiscuss?: (q: CompanyQuestion) => void }) {
   const t = useT()
   const qc = useQueryClient()
   const tasks = useQuery({ queryKey: ['company-tasks', org.id], queryFn: () => api.companyTasks(org.id) })
@@ -74,7 +75,7 @@ export function TaskBoard({ org, can }: { org: Org; can: boolean }) {
   const list = (tasks.data ?? []).filter((x) => x.state !== 'dropped')
   return (
     <div className="space-y-4">
-      <Questions org={org} />
+      <Questions org={org} onDiscuss={onDiscuss} />
       {can && <Button variant="primary" onClick={() => setCreating(true)}><Plus size={15} /> {t('co.newTask')}</Button>}
       <div className="grid gap-3 md:grid-cols-4">
         {columns.map((c) => {
