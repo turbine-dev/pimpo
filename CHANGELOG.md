@@ -8,6 +8,7 @@ No version has been tagged yet. The first release will include everything built 
 
 ### Added
 
+- On a company's page: who is working now and what waits, a **Work** tab with stop, giving a member work or an agent routine, giving it your own routines, working hours, and pausing the company, a department or a member.
 - Company members at work: live work from a queue with working hours, one piece at a time per member, agent routines on a schedule, compiled routines that wake a member's agent with `company.wake`, and pausing a member, a department or a company.
 - **Context and rules** on a company's page, per company, department, role or member, with exceptions marked, and **What this agent receives** in a member's window.
 - **Companies** in the app (Settings › Labs): create or import a company, its roles, departments and members, and see it as an org chart where dragging a card onto another changes its boss.

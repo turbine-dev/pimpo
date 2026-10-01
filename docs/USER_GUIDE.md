@@ -89,6 +89,14 @@ With **Settings › Labs › Companies of agents** on, **More › Companies** le
 - **What this agent receives**, in a member's window, shows its brief as the agent reads it and what each of its tools would do now (allowed, made reversible, asked first or never), with the rule that decides.
 - The **org chart** draws the company as a tree. Drag a card onto another to change who the boss is, or choose **Reports to** in the member's window; a member can never report to someone below it. On the phone the tree is a list.
 
+Members work on their own:
+
+- **Work and routines**, in a member's window, has **Give a task now** (the agent does it as soon as it is free and on duty), its **Routines with the agent** (instructions on a schedule, every hour, every weekday at 8 or your own cron, each with what one run may spend, up to $5), and the **Automatic routines** you give it: your routines that run without a model as this member and wake its agent with `company.wake` when something new arrives.
+- A member's work is real: what it sends is sent. Every action still passes the house's rules and the company's, and only the tools of its role are within reach. One piece of work runs at a time per member and three per company; the rest waits in line.
+- **Working hours**, in **Edit company**, keep work for the days and hours you choose; what arrives outside them waits. A member can have hours of its own.
+- On the org chart a member that is working shows a blinking dot (hover it for the task), and a number shows how much waits. The **Work** tab lists what members did, are doing and will do, with what each cost; **Stop** ends a piece of work.
+- **Pause company** stops every member, and a department or a member can be paused on its own: what they were doing stops and waits, and their routines do not run until you resume.
+
 A company is yours alone, like your routines: nobody else in the house finds it, the administrator included. Shared with someone as a partner, they see it with what they were given (view, approve or configure); only you delete it or change who it is shared with.
 
 ## Run history
