@@ -249,5 +249,11 @@
   "svc.linkedin.help": "linkedin.com/developers で Community Management API 製品を持つアプリを作り、w_organization_social のトークンを生成して、ページを urn:li:organization:番号 の形で指定してください。",
   "svc.linkedin.field.token.label": "Token",
   "svc.linkedin.field.author.label": "ページ",
-  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456",
+  "widget.company.working": "作業中",
+  "widget.company.questions": "あなたへの質問",
+  "widget.company.today": "今日の支出",
+  "widget.company.month": "今月",
+  "widget.company.of": "{limit} 中",
+  "widget.company.spent": "{name} · 今月の支出"
 }

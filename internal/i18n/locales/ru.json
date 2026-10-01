@@ -253,5 +253,11 @@
   "svc.linkedin.help": "Создайте приложение на linkedin.com/developers с продуктом Community Management API, получите токен с w_organization_social и укажите страницу как urn:li:organization:НОМЕР.",
   "svc.linkedin.field.token.label": "Token",
   "svc.linkedin.field.author.label": "Страница",
-  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456"
+  "svc.linkedin.field.author.placeholder": "urn:li:organization:123456",
+  "widget.company.working": "Работают сейчас",
+  "widget.company.questions": "Вопросы к вам",
+  "widget.company.today": "Потрачено сегодня",
+  "widget.company.month": "В этом месяце",
+  "widget.company.of": "из {limit}",
+  "widget.company.spent": "{name} · расходы за месяц"
 }

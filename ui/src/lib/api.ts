@@ -276,7 +276,7 @@ export type WidgetSnap = {
   columns?: string[]; rows?: string[][]; chart?: 'line' | 'area' | 'bar' | 'donut'
   series?: { name?: string; points: { label?: string; y: number }[] }[]; meta?: Record<string, string>
 }
-export type WidgetView = { id: string; source: 'routine' | 'builtin' | 'status'; routine?: string; kind: WidgetKind; title: string; snapshot: WidgetSnap; history?: { t: string; v: number }[]; updated: string; stale?: boolean; shared?: boolean; mine: boolean }
+export type WidgetView = { id: string; source: 'routine' | 'builtin' | 'status' | 'company'; routine?: string; kind: WidgetKind; title: string; snapshot: WidgetSnap; history?: { t: string; v: number }[]; updated: string; stale?: boolean; shared?: boolean; mine: boolean }
 export type LayoutItem = { id: string; x: number; y: number; w: number; h: number }
 export type Dashboard = { id: string; name: string; emoji: string; position: number; layout: LayoutItem[]; shared: boolean; mine: boolean; updated: string }
 export type PhoneShare = 'location' | 'camera' | 'shortcuts'
@@ -420,6 +420,7 @@ export const api = {
   companyMonth: (id: string, month?: string) => request<MonthCosts>('GET', `/api/companies/${id}/month${month ? `?month=${month}` : ''}`),
   companyMedia: (id: string) => request<CompanyMedia[]>('GET', `/api/companies/${id}/media`),
   mediaURL: (id: string, media: string) => `/api/companies/${id}/media/${media}`,
+  companyPerformance: (id: string) => request<{ member: string; name: string; done: number; failed: number; minutes: number; cost_usd: number; cost_each: number; tasks_done: number; tasks_blocked: number; questions: number; earned: number; briefs_met?: number; briefs_checked?: number; videos_ok?: number; videos?: number }[]>('GET', `/api/companies/${id}/performance`),
   companyCoders: (id: string) => request<{ id: string; name: string; sandbox: boolean; installed: boolean }[]>('GET', `/api/companies/${id}/coders`),
   companyTasks: (id: string) => request<CompanyTask[]>('GET', `/api/companies/${id}/tasks`),
   assignTask: (id: string, t: Partial<CompanyTask>) => request<CompanyTask>('POST', `/api/companies/${id}/tasks`, t),

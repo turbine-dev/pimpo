@@ -285,7 +285,7 @@ function AddWidget({ taken, onPick, onClose }: { taken: string[]; onPick: (w: Wi
   const all = useQuery({ queryKey: ['widgets'], queryFn: api.widgets })
   const [q, setQ] = useState('')
   const groups: { key: WidgetView['source']; label: TKey }[] = [
-    { key: 'routine', label: 'dash.fromRoutines' }, { key: 'builtin', label: 'dash.builtin' }, { key: 'status', label: 'dash.routineStatus' },
+    { key: 'routine', label: 'dash.fromRoutines' }, { key: 'builtin', label: 'dash.builtin' }, { key: 'status', label: 'dash.routineStatus' }, { key: 'company', label: 'dash.companies' },
   ]
   const free = (all.data ?? []).filter((w) => !taken.includes(w.id) && (!q || w.title.toLowerCase().includes(q.toLowerCase())))
   return (
