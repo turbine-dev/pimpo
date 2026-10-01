@@ -83,6 +83,7 @@ func (a *App) needSources() []needSource {
 		{"company_question", people.Member, a.companyQuestionNeeds},
 		{"company_note", people.Member, a.pendingNoteNeeds},
 		{"company_brief", people.Member, a.briefNeeds},
+		{"company_autonomy", people.Member, a.earnNeeds},
 		{"failed_routine", people.Member, a.failedRoutineNeeds},
 		{"job_error", people.Member, a.jobNeeds(true)},
 		{"job_planned", people.Member, a.jobNeeds(false)},

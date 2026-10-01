@@ -75,6 +75,8 @@ type Autonomy struct {
 	Capability string  `json:"capability,omitempty" yaml:"capability,omitempty"`
 	MinRisk    string  `json:"min_risk,omitempty" yaml:"min_risk,omitempty"`
 	Decider    Decider `json:"decider" yaml:"decider"`
+	// Earned says a person gave it after a run of approvals.
+	Earned bool `json:"earned,omitempty" yaml:"earned,omitempty"`
 }
 
 func (a Autonomy) matches(act policy.Action) bool {

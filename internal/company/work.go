@@ -124,6 +124,9 @@ func (o Org) checkWork() error {
 	if err := o.Memory.check(o); err != nil {
 		return err
 	}
+	if err := o.checkEarning(); err != nil {
+		return err
+	}
 	if err := checkCodeEnv(o.CodeEnv); err != nil {
 		return err
 	}
