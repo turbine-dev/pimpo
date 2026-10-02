@@ -20,7 +20,10 @@ export function ProductTab({ org, can }: { org: Org; can: boolean }) {
   const t = useT()
   const product = useQuery({ queryKey: ['company-product', org.id], queryFn: () => api.companyProduct(org.id) })
   if (!product.data) return null
-  const { briefs, signals, accuracy } = product.data
+  // A list the server has nothing for may come as null.
+  const briefs = product.data.briefs ?? []
+  const signals = product.data.signals ?? []
+  const accuracy = product.data.accuracy ?? {}
   return (
     <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
       <section className="space-y-3">
@@ -69,7 +72,7 @@ function BriefCard({ org, b, can }: { org: Org; b: CompanyBrief; can: boolean })
       <p className="text-[12.5px] text-ink-2"><b className="font-medium">{t('co.problem')}</b> {b.problem}</p>
       <p className="text-[12.5px] text-ink-2"><b className="font-medium">{t('co.proposal')}</b> {b.proposal}</p>
       <ul className="space-y-1.5">
-        {b.claims.map((c, i) => (
+        {(b.claims ?? []).map((c, i) => (
           <li key={i} className="text-[12.5px]">
             <span>{c.text}</span>{' '}
             <span className="text-ink-3">({link(c.source) ? <a className="underline-offset-2 hover:underline" href={c.source} target="_blank" rel="noreferrer">{t('co.source')}</a> : c.source})</span>
@@ -81,13 +84,13 @@ function BriefCard({ org, b, can }: { org: Org; b: CompanyBrief; can: boolean })
       <div className="text-[12.5px]">
         <p className="font-medium">{t('co.predictions')}</p>
         <ul className="list-disc pl-5 text-ink-2">
-          {b.predictions.map((p, i) => <li key={i}>{p.metric}: {p.expected}</li>)}
+          {(b.predictions ?? []).map((p, i) => <li key={i}>{p.metric}: {p.expected}</li>)}
         </ul>
       </div>
       {(b.reviews ?? []).map((r) => (
         <div key={r.day} className="rounded-lg bg-sunken/70 p-2 text-[12.5px]">
           <p className="font-medium">{t('co.reviewDay', { n: r.day })}</p>
-          <ul>{r.results.map((x, i) => <li key={i} className="flex items-center gap-1">{x.met ? <Check size={12} className="text-read" /> : <X size={12} className="text-danger" />} {x.metric}: {x.actual}</li>)}</ul>
+          <ul>{(r.results ?? []).map((x, i) => <li key={i} className="flex items-center gap-1">{x.met ? <Check size={12} className="text-read" /> : <X size={12} className="text-danger" />} {x.metric}: {x.actual}</li>)}</ul>
         </div>
       ))}
       {b.ref && <p className="text-[12px] text-ink-3">{t('co.shippedIn')} {link(b.ref) ? <a className="underline" href={b.ref} target="_blank" rel="noreferrer">{b.ref}</a> : b.ref}</p>}

@@ -139,3 +139,13 @@ func TestAStandupHasWhatTheTeamDid(t *testing.T) {
 		t.Fatalf("Bia's standup had people who are not hers: %+v", got)
 	}
 }
+
+// A company with no signals or briefs yet answers with empty lists, never
+// null, so the Product tab can show that there is nothing.
+func TestAnEmptyProductHasEmptyLists(t *testing.T) {
+	ta, co := team(t, &script{})
+	code, body := ta.raw(t, "tok", "GET", "/api/companies/"+co+"/product", nil)
+	if code != 200 || !strings.Contains(body, `"briefs":[]`) || !strings.Contains(body, `"signals":[]`) {
+		t.Fatalf("%d %s", code, body)
+	}
+}
