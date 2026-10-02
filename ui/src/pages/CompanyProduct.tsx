@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, TriangleAlert, X } from 'lucide-react'
+import { Check, Lightbulb, TriangleAlert, X } from 'lucide-react'
 import { useState } from 'react'
-import { Button, Card } from '../components/ui'
+import { Button, Card, EmptyState } from '../components/ui'
 import { api, type CompanyBrief, type Org } from '../lib/api'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
-import { field } from './Companies'
+import { field, SectionHead } from './Companies'
 
 const nameOf = (org: Org, id: string) => org.members.find((m) => m.id === id)?.name ?? id
 const link = (s: string) => /^https?:\/\//.test(s)
@@ -24,11 +24,11 @@ export function ProductTab({ org, can }: { org: Org; can: boolean }) {
   const briefs = product.data.briefs ?? []
   const signals = product.data.signals ?? []
   const accuracy = product.data.accuracy ?? {}
+  if (briefs.length === 0 && signals.length === 0) return <EmptyState icon={<Lightbulb />} title={t('co.empty.product')}>{t('co.empty.productText')}</EmptyState>
   return (
     <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
       <section className="space-y-3">
-        <h2 className="text-[15px] font-semibold">{t('co.briefs')}</h2>
-        <p className="text-[12.5px] text-ink-3">{t('co.briefsHint')}</p>
+        <SectionHead title={t('co.briefs')} hint={t('co.briefsHint')} />
         {Object.entries(accuracy).filter(([, [, checked]]) => checked > 0).map(([who, [met, checked]]) => (
           <p key={who} className="text-[12.5px] text-ink-2">{t('co.accuracy', { name: nameOf(org, who), met, checked })}</p>
         ))}
@@ -36,7 +36,7 @@ export function ProductTab({ org, can }: { org: Org; can: boolean }) {
         {briefs.map((b) => <BriefCard key={b.id} org={org} b={b} can={can} />)}
       </section>
       <section className="space-y-3">
-        <h2 className="text-[15px] font-semibold">{t('co.signals')}</h2>
+        <SectionHead title={t('co.signals')} />
         {signals.length === 0 && <p className="text-[13px] text-ink-3">{t('co.noSignals')}</p>}
         <ul className="space-y-2">
           {signals.map((s) => (

@@ -47,7 +47,7 @@ roles:
   - id: marketing
     title: Marketing
     function: Tells people what the product does, with videos and posts.
-    responsibilities: [Make 3 to 5 variants of each hook, script or thumbnail for the CEO to pick, Use the fixed formats and run the checks before asking, Report weekly what worked]
+    responsibilities: ["Make 3 to 5 variants of each hook, script or thumbnail for the CEO to pick", Use the fixed formats and run the checks before asking, Report weekly what worked]
     capabilities: [media.voice, media.capture, media.render, media.check, youtube.upload, youtube.stats, linkedin.post, publish.assisted, company.report, company.ask, company.remember, company.recall]
     account_kinds: [youtube, linkedin]
   - id: finance

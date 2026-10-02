@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, TriangleAlert } from 'lucide-react'
+import { ListChecks, Plus, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { Field, Modal } from '../components/Modal'
-import { Button, Card } from '../components/ui'
+import { Button, Card, EmptyState } from '../components/ui'
 import { api, type CompanyQuestion, type CompanyTask, type Org } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT } from '../lib/i18n'
@@ -73,11 +73,15 @@ export function TaskBoard({ org, can, onDiscuss }: { org: Org; can: boolean; onD
   const [creating, setCreating] = useState(false)
   const drop = useMutation({ mutationFn: (id: string) => api.dropTask(org.id, id), onSuccess: () => { qc.invalidateQueries({ queryKey: ['company-tasks', org.id] }); setOpen(null) } })
   const list = (tasks.data ?? []).filter((x) => x.state !== 'dropped')
+  const add = can && <Button variant="primary" onClick={() => setCreating(true)}><Plus size={15} /> {t('co.newTask')}</Button>
   return (
     <div className="space-y-4">
       <Questions org={org} onDiscuss={onDiscuss} />
-      {can && <Button variant="primary" onClick={() => setCreating(true)}><Plus size={15} /> {t('co.newTask')}</Button>}
-      <div className="grid gap-3 md:grid-cols-4">
+      {tasks.isSuccess && list.length === 0 ? (
+        <EmptyState icon={<ListChecks />} title={t('co.empty.tasks')} action={add}>{t('co.empty.tasksText')}</EmptyState>
+      ) : (<>
+      {add && <div className="flex justify-end">{add}</div>}
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {columns.map((c) => {
           const items = list.filter((x) => c.states.includes(x.state))
           return (
@@ -85,8 +89,8 @@ export function TaskBoard({ org, can, onDiscuss }: { org: Org; can: boolean; onD
               <h3 className="px-1 text-[12.5px] font-medium text-ink-2">{t(`co.col.${c.key}` as 'co.col.todo')} <span className="tabular-nums text-ink-3">{items.length}</span></h3>
               {items.map((x) => (
                 <button key={x.id} type="button" onClick={() => setOpen(x)} className="block w-full rounded-xl border border-line bg-surface p-3 text-left hover:border-line-strong">
-                  <span className="block text-[13px] font-medium">{x.title}</span>
-                  <span className="mt-0.5 block text-[12px] text-ink-3">{nameOf(org, x.requester)} → {nameOf(org, x.assignee)}</span>
+                  <span className="block break-words text-[13px] font-medium">{x.title}</span>
+                  <span className="mt-0.5 block truncate text-[12px] text-ink-3">{nameOf(org, x.requester)} → {nameOf(org, x.assignee)}</span>
                   {x.drift && <span className="mt-1 inline-flex items-center gap-1 text-[11.5px] text-change"><TriangleAlert size={12} /> {t('co.drift')}</span>}
                 </button>
               ))}
@@ -94,6 +98,7 @@ export function TaskBoard({ org, can, onDiscuss }: { org: Org; can: boolean; onD
           )
         })}
       </div>
+      </>)}
       {open && (
         <Modal title={open.title} onClose={() => setOpen(null)}>
           <dl className="space-y-3 text-[13px]">

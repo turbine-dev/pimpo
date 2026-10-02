@@ -13,6 +13,7 @@ import (
 
 	"github.com/turbine-dev/pimpo/internal/capability"
 	"github.com/turbine-dev/pimpo/internal/company"
+	"github.com/turbine-dev/pimpo/internal/i18n"
 	"github.com/turbine-dev/pimpo/internal/people"
 	"github.com/turbine-dev/pimpo/internal/server"
 )
@@ -189,11 +190,26 @@ func (a *App) createCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	var c company.Company
-	if err := server.Decode(r, &c); err != nil {
+	var in struct {
+		company.Company
+		// A template starts the company from one, as importing it does.
+		Template string `json:"template"`
+		Lang     string `json:"lang"`
+	}
+	if err := server.Decode(r, &in); err != nil {
 		server.WriteError(w, err)
 		return
 	}
+	if in.Template != "" {
+		file, ok := company.TemplateFile(in.Template, a.templateLang(r, in.Lang))
+		if !ok {
+			server.WriteError(w, server.StatusError{Status: 404, Msg: "no such template"})
+			return
+		}
+		a.startCompany(w, r, file, in.Name)
+		return
+	}
+	c := in.Company
 	if err := checkCompanyText(&c); err != nil {
 		server.WriteError(w, err)
 		return
@@ -342,11 +358,11 @@ func (a *App) importCompany(w http.ResponseWriter, r *http.Request) {
 	if !a.companiesOn(w, r) {
 		return
 	}
-	ctx := r.Context()
 	var in struct {
 		File     string `json:"file"`
 		Template string `json:"template"`
 		Name     string `json:"name"`
+		Lang     string `json:"lang"`
 	}
 	if err := server.Decode(r, &in); err != nil {
 		server.WriteError(w, err)
@@ -355,14 +371,33 @@ func (a *App) importCompany(w http.ResponseWriter, r *http.Request) {
 	file := []byte(in.File)
 	if in.Template != "" {
 		var ok bool
-		if file, ok = company.TemplateFile(in.Template); !ok {
+		if file, ok = company.TemplateFile(in.Template, a.templateLang(r, in.Lang)); !ok {
 			server.WriteError(w, server.StatusError{Status: 404, Msg: "no such template"})
 			return
 		}
 	}
+	a.startCompany(w, r, file, in.Name)
+}
+
+// templateLang is the language a template is read in: the one the app
+// asks for, else the house's.
+func (a *App) templateLang(r *http.Request, lang string) string {
+	if lang == "" {
+		lang = r.URL.Query().Get("lang")
+	}
+	if lang == "" {
+		return i18n.Of(r.Context())
+	}
+	return i18n.Lang(lang)
+}
+
+// startCompany makes a new company of whoever asks from a company file,
+// with name if one is given.
+func (a *App) startCompany(w http.ResponseWriter, r *http.Request, file []byte, name string) {
+	ctx := r.Context()
 	o, err := company.Import(file, newCompanyID(), people.From(ctx), a.nameOf(ctx), time.Now())
-	if err == nil && strings.TrimSpace(in.Name) != "" {
-		o.Name = strings.TrimSpace(in.Name)
+	if err == nil && strings.TrimSpace(name) != "" {
+		o.Name = strings.TrimSpace(name)
 		err = checkCompanyText(&o.Company)
 	}
 	if err == nil && o.Zone == "" {

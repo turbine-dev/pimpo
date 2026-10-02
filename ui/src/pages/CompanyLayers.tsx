@@ -8,7 +8,7 @@ import { api, ApiError, type CompanyContext, type CompanyRule, type Org, type Sc
 import { cn } from '../lib/cn'
 import { useT } from '../lib/i18n'
 import { slug, unique } from '../lib/org'
-import { area, field } from './Companies'
+import { area, field, SectionHead } from './Companies'
 import { Field, Modal } from '../components/Modal'
 import { describeRule, verdictText } from './Rules'
 
@@ -38,13 +38,10 @@ export function LayersTab({ org, can, onSaved }: { org: Org; can: boolean; onSav
   const [rule, setRule] = useState<CompanyRule | null>(null)
   const byLayer = <T extends { scope: Scope }>(list: T[]) => [...list].sort((a, b) => order.indexOf(a.scope) - order.indexOf(b.scope))
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[15px] font-semibold">{t('co.contexts')}</h2>
-          {can && <Button size="sm" onClick={() => setContext({ id: '', scope: 'company', title: '', body: '' })}><Plus size={14} /> {t('co.newContext')}</Button>}
-        </div>
-        <p className="text-[12.5px] text-ink-3">{t('co.contextsHint')}</p>
+    <div className="grid gap-8 lg:grid-cols-2">
+      <section className="min-w-0 space-y-3">
+        <SectionHead title={t('co.contexts')} hint={t('co.contextsHint')} action={can && <Button size="sm" onClick={() => setContext({ id: '', scope: 'company', title: '', body: '' })}><Plus size={14} /> {t('co.newContext')}</Button>} />
+        {org.contexts.length === 0 && <p className="rounded-[var(--radius-card)] border border-dashed border-line-strong p-4 text-[13px] text-ink-3">{t('co.noContexts')}</p>}
         {byLayer(org.contexts).map((c) => (
           <Card key={c.id} className="flex items-start gap-3 p-4">
             <div className="min-w-0 flex-1">
@@ -57,12 +54,9 @@ export function LayersTab({ org, can, onSaved }: { org: Org; can: boolean; onSav
           </Card>
         ))}
       </section>
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[15px] font-semibold">{t('co.rules')}</h2>
-          {can && <Button size="sm" onClick={() => setRule({ id: '', scope: 'company', text: '', when: {}, then: 'ask' })}><Plus size={14} /> {t('co.newRule')}</Button>}
-        </div>
-        <p className="text-[12.5px] text-ink-3">{t('co.rulesHint')}</p>
+      <section className="min-w-0 space-y-3">
+        <SectionHead title={t('co.rules')} hint={t('co.rulesHint')} action={can && <Button size="sm" onClick={() => setRule({ id: '', scope: 'company', text: '', when: {}, then: 'ask' })}><Plus size={14} /> {t('co.newRule')}</Button>} />
+        {org.rules.length === 0 && <p className="rounded-[var(--radius-card)] border border-dashed border-line-strong p-4 text-[13px] text-ink-3">{t('co.noCompanyRules')}</p>}
         {byLayer(org.rules).map((r) => (
           <Card key={r.id} className={cn('flex items-start gap-3 p-4', r.off && 'opacity-60')}>
             <div className="min-w-0 flex-1">

@@ -71,8 +71,14 @@ No version has been tagged yet. The first release will include everything built 
 - Releases can be started from Actions with a version.
 - Signed releases: `checksums.txt.sig` is checked against a release key built into Pimpo by `pimpo update` (which refuses a missing or wrong signature) and by `scripts/install.sh` when OpenSSL 3 is available. The gallery's list of authors is signed by a gallery root key built in (`pimpo gallery sign-authors`).
 
+### Changed
+
+- A company's page is grouped into five parts (Team, Work, Knowledge, Governance, Output) with a section picker on the phone; the header shows the company's state and month's spending, with Export and Delete in a menu; a member's window has a header, sections, Save always in view and **Remove from company** set apart; templates and the companies made from them come in the person's language.
+
 ### Fixed
 
+- Creating a company with `POST /api/companies` and a `template` made an empty company instead of the template's.
+- A company's page scrolled sideways on a phone.
 - A company task that may have strayed could start before its boss answered, and, once answered, could wait forever.
 - The **liberal** safety level let irreversible actions through without asking (a GitHub comment, clearing a sheet, imported tools). It now asks before anything irreversible except deleting email, which moves it to the trash, and installs that chose it are upgraded.
 - Repairs are told the error of the last failed run.

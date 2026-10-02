@@ -19,6 +19,12 @@ const org: Org = {
   contexts: [], rules: [], agent_routines: [],
 }
 
+// openPart opens a part of the company's page, then one of its sections.
+async function openPart(part: string, section?: string) {
+  await userEvent.click(await screen.findByRole('tab', { name: part }))
+  if (section) await userEvent.click(await screen.findByRole('tab', { name: section }))
+}
+
 const routes = () => <Routes><Route path="/companies" element={<Companies />} /><Route path="/companies/:id" element={<Companies />} /></Routes>
 
 describe('Companies', () => {
@@ -89,7 +95,7 @@ describe('Company context and rules', () => {
       return json(withRule)
     }))
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Contexto e regras' }))
+    await openPart('Conhecimento', 'Contexto e regras')
     expect(await screen.findByText('Never email customers')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /Nova regra/ }))
     const dialog = await screen.findByRole('dialog')
@@ -107,7 +113,7 @@ describe('Company context and rules', () => {
   it('writes a context for the whole company', async () => {
     const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, 'PUT /api/companies/co_1/contexts/trocas': org })
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Contexto e regras' }))
+    await openPart('Conhecimento', 'Contexto e regras')
     await userEvent.click(screen.getByRole('button', { name: /Novo contexto/ }))
     const dialog = await screen.findByRole('dialog')
     await userEvent.type(within(dialog).getByLabelText('Título'), 'Trocas')
@@ -159,7 +165,7 @@ describe('Company work', () => {
       'POST /api/companies/co_1/work/w_1/stop': { id: 'w_1', state: 'stopped' },
     })
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Trabalho' }))
+    await openPart('Trabalho', 'Atividade')
     expect((await screen.findAllByText('Weekly report')).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('button', { name: 'Parar' })).toHaveLength(1)
     await userEvent.click(screen.getByRole('button', { name: 'Parar' }))
@@ -178,7 +184,7 @@ describe('Company tasks and questions', () => {
     const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/tasks': tasks, '/api/companies/co_1/questions': questions,
       'POST /api/companies/co_1/questions/q_1/answer': { ...questions[0], answer: 'Não' } })
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Tarefas' }))
+    await openPart('Trabalho', 'Tarefas')
     const doing = await screen.findByRole('region', { name: 'Fazendo' })
     expect(within(doing).getByText('Lançar a coleção')).toBeInTheDocument()
     const waiting = screen.getByRole('region', { name: 'Esperando ou travada' })
@@ -191,7 +197,7 @@ describe('Company tasks and questions', () => {
   it('hands a member a task with what it needs', async () => {
     const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/tasks': [], '/api/companies/co_1/questions': [], 'POST /api/companies/co_1/tasks': tasks[0] })
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Tarefas' }))
+    await openPart('Trabalho', 'Tarefas')
     await userEvent.click(screen.getByRole('button', { name: /Nova tarefa/ }))
     const dialog = await screen.findByRole('dialog')
     const send = within(dialog).getByRole('button', { name: 'Passar a tarefa' })
@@ -211,8 +217,9 @@ describe('Company memory and meetings', () => {
     const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/notes': notes, '/api/companies/co_1/meetings': [],
       'POST /api/companies/co_1/notes': notes[0], 'POST /api/companies/co_1/meetings': { id: 'm_1' } })
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Memória' }))
+    await openPart('Conhecimento', 'Memória')
     expect(await screen.findByText(/Ata · Bia/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Nova nota' }))
     await userEvent.type(screen.getByLabelText('Título'), 'Trocas')
     await userEvent.type(screen.getByLabelText('Texto'), 'Até 30 dias.')
     await userEvent.click(screen.getByRole('button', { name: /Guardar/ }))
@@ -229,7 +236,7 @@ describe('Company memory and meetings', () => {
     const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/notes': notes, '/api/companies/co_1/tasks': [],
       'POST /api/companies/co_1/notes/n_1/approve': notes[0], 'PUT /api/companies/co_1': org })
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Memória' }))
+    await openPart('Conhecimento', 'Memória')
     expect(await screen.findByRole('heading', { name: 'Aguardando aprovação' })).toBeInTheDocument()
     await userEvent.click(screen.getAllByRole('button', { name: /Guardar$/ })[0])
     await waitFor(() => expect(calls.some((c) => c.url.endsWith('/notes/n_1/approve') && c.method === 'POST')).toBe(true))
@@ -252,7 +259,7 @@ describe('Company memory and meetings', () => {
     const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/meetings': [], 'POST /api/companies/co_1/meetings': room,
       '/api/companies/co_1/meetings/m_1': room, 'POST /api/companies/co_1/meetings/m_1/say': room })
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Reuniões' }))
+    await openPart('Trabalho', 'Reuniões')
     await userEvent.click(screen.getByRole('button', { name: /Nova reunião/ }))
     const dialog = await screen.findByRole('dialog')
     await userEvent.type(within(dialog).getByLabelText('Assunto'), 'Coleção')
@@ -284,23 +291,24 @@ describe('Company finance', () => {
 describe('Starting a company', () => {
   it('starts from a template with a name of its own', async () => {
     const calls = mockFetch({ '/api/companies': [], '/api/state': { person: 'owner' }, '/api/companies/co_1': org, 'POST /api/companies/import': org,
-      '/api/companies/templates': [{ id: 'software', name: 'Software company', roles: ['Product owner', 'CTO'], members: 7 }, { id: 'blank', name: 'New company', roles: [], members: 0 }] })
+      '/api/companies/templates?lang=pt': [{ id: 'software', name: 'Empresa de software', mission: 'Construir e entregar um produto', roles: ['Product owner', 'CTO'], members: 7 }, { id: 'blank', name: 'Nova empresa', roles: [], members: 0 }] })
     wrap(routes(), '/companies')
     await userEvent.click((await screen.findAllByRole('button', { name: /Nova empresa/ }))[0])
     const dialog = await screen.findByRole('dialog')
-    await userEvent.click(await within(dialog).findByText('Software company'))
+    await userEvent.click(await within(dialog).findByText('Empresa de software'))
+    expect(within(dialog).getByText('Construir e entregar um produto')).toBeInTheDocument()
     expect(within(dialog).getByText('7 agentes: Product owner, CTO')).toBeInTheDocument()
     const name = within(dialog).getByLabelText('Nome')
     await userEvent.clear(name)
     await userEvent.type(name, 'Pimpo Dev')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Criar empresa' }))
-    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ template: 'software', name: 'Pimpo Dev' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ template: 'software', name: 'Pimpo Dev', lang: 'pt' }))
   })
 
   it('proposes a company from a description and creates it only when asked', async () => {
     const draft = { ...org, name: 'Padaria do Zé', industry: 'Padaria', agent_routines: [{ id: 'pedidos', member: 'clara', name: 'Pedidos', instructions: '' }] }
     const calls = mockFetch({ '/api/companies': [], '/api/state': { person: 'owner' }, '/api/companies/co_1': org, 'POST /api/companies/import': org,
-      '/api/companies/templates': [], 'POST /api/companies/describe': { file: 'format: 1', draft, dropped: ['teleport.now'], cost_usd: 0.02 } })
+      '/api/companies/templates?lang=pt': [], 'POST /api/companies/describe': { file: 'format: 1', draft, dropped: ['teleport.now'], cost_usd: 0.02 } })
     wrap(routes(), '/companies')
     await userEvent.click((await screen.findAllByRole('button', { name: /Nova empresa/ }))[0])
     const dialog = await screen.findByRole('dialog')
@@ -429,7 +437,7 @@ describe('Company autonomy and decision levels', () => {
     const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/decisions': [], 'PUT /api/companies/co_1': org,
       'POST /api/companies/co_1/levels/simulate': { level: 4, name: 'Estratégica', decides: 'ceo', decider: 'Ana', why: 'kind price' } })
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Alçadas' }))
+    await openPart('Governança', 'Alçadas')
     await userEvent.click(screen.getByRole('button', { name: 'Usar os quatro níveis sugeridos' }))
     await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
     await waitFor(() => {
@@ -449,7 +457,7 @@ describe('Company costs', () => {
       forecast_month: 9.5, per_member: { clara: { done: 4, cost_per_done: 0.8, forecast_month: 9.5 } }, per_role: {}, budget: {}, limits: {}, outcomes: {} }
     const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/costs': costs, 'PUT /api/companies/co_1': org, 'PUT /api/companies/co_1/members/clara': org })
     wrap(routes(), '/companies/co_1')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Custos' }))
+    await openPart('Governança', 'Custos')
     expect(await screen.findByText('$9.50', { selector: 'p' })).toBeInTheDocument()
     expect(screen.getByText('$12.00', { selector: 'p' })).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Salário de Clara'), '20')
@@ -480,5 +488,116 @@ describe('Member accounts', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Conectar' }))
     await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({ token: 'ghp_x', account_kind: 'brand' }))
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('terms')
+  })
+})
+
+describe('Company page layout', () => {
+  it('shows its state and budget at a glance and keeps export and delete in a menu', async () => {
+    const costs = { company: { day: 0.4, month: 3.2 }, members: {}, departments: {}, by_day: {}, forecast_month: 9, per_member: {}, per_role: {}, budget: {}, limits: {}, outcomes: {} }
+    const calls = mockFetch({ '/api/companies/co_1': { ...org, budget: { month_usd: 150 } }, '/api/state': { person: 'owner' }, '/api/companies/co_1/costs': costs, 'DELETE /api/companies/co_1': { ok: true }, '/api/companies': [] })
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    wrap(routes(), '/companies/co_1')
+    expect(await screen.findByText('Ativa')).toBeInTheDocument()
+    expect(await screen.findByText('$3.20 de $150.00 este mês')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Pausar empresa/ })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Exportar/ })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
+    expect(await screen.findByRole('menuitem', { name: /Exportar/ })).toHaveAttribute('href', '/api/companies/co_1/export')
+    await userEvent.click(screen.getByRole('menuitem', { name: /Apagar/ }))
+    await waitFor(() => expect(calls.some((c) => c.method === 'DELETE' && c.url === '/api/companies/co_1')).toBe(true))
+  })
+
+  it('groups the sections in parts and keeps the old links working', async () => {
+    mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/notes': [], '/api/companies/co_1/tasks': [] })
+    wrap(routes(), '/companies/co_1?tab=memory')
+    expect(await screen.findByRole('tab', { name: 'Conhecimento', selected: true })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Memória', selected: true })).toBeInTheDocument()
+    expect(screen.getAllByRole('tab', { name: /^(Equipe|Trabalho|Conhecimento|Governança|Entregas)$/ }).map((x) => x.textContent)).toEqual(['Equipe', 'Trabalho', 'Conhecimento', 'Governança', 'Entregas'])
+    // On a phone, one select holds every section.
+    const select = screen.getByLabelText('Seção')
+    expect(select).toHaveValue('memory')
+    await userEvent.selectOptions(select, 'levels')
+    expect(await screen.findByRole('tab', { name: 'Alçadas', selected: true })).toBeInTheDocument()
+  })
+
+  it('leaves out the parts a company has nothing for', async () => {
+    mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'rui' } })
+    wrap(routes(), '/companies/co_1?tab=activity')
+    expect(await screen.findByRole('tab', { name: 'Atividade', selected: true })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Entregas' })).toBeNull()
+  })
+
+  it('says why hiring waits next to the way to make a role', async () => {
+    mockFetch({ '/api/companies/co_1': { ...org, roles: [], members: [org.members[0]] }, '/api/state': { person: 'owner' }, '/api/capabilities': [] })
+    wrap(routes(), '/companies/co_1')
+    const hint = await screen.findByText('Crie um cargo antes de contratar.')
+    await userEvent.click(within(hint.parentElement!).getByRole('button', { name: /Novo cargo/ }))
+    expect(within(await screen.findByRole('dialog')).getByLabelText('Título do cargo')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Cargos/, selected: true, hidden: true })).toBeInTheDocument()
+  })
+
+  it('shows an empty board as one line and its main action', async () => {
+    mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, '/api/companies/co_1/tasks': [], '/api/companies/co_1/questions': [] })
+    wrap(routes(), '/companies/co_1?tab=tasks')
+    expect(await screen.findByRole('heading', { name: 'Nenhuma tarefa ainda' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Fazendo' })).toBeNull()
+    expect(screen.getByRole('button', { name: /Nova tarefa/ })).toBeInTheDocument()
+  })
+
+  it('reads each decision level as a sentence and edits it in place', async () => {
+    const levels = { unsure: 0.8, list: [
+      { level: 1, name: 'Operacional', decides: 'self' as const, when: {} },
+      { level: 2, name: 'Gerencial', decides: 'head' as const, when: { over_usd: 20, kinds: ['roadmap'] } },
+      { level: 3, name: 'Estratégica', decides: 'ceo' as const, route: 'opinions' as const, when: { public: true } },
+    ] }
+    const calls = mockFetch({ '/api/companies/co_1': { ...org, levels }, '/api/state': { person: 'owner' }, '/api/companies/co_1/decisions': [], 'PUT /api/companies/co_1': org })
+    wrap(routes(), '/companies/co_1?tab=levels')
+    expect(await screen.findByText('Tudo o que não sobe de nível')).toBeInTheDocument()
+    expect(screen.getByText('Quando: acima de $20 ou sobre roadmap')).toBeInTheDocument()
+    expect(screen.getByText('Decide: O responsável pela área')).toBeInTheDocument()
+    expect(screen.getByText('Decide: O CEO (você) · Com a opinião dos chefes')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Nome do nível')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Editar Gerencial' }))
+    const amount = screen.getByLabelText('Valor acima de (US$)')
+    await userEvent.clear(amount)
+    await userEvent.type(amount, '50')
+    expect(screen.getByText('Quando: acima de $50 ou sobre roadmap')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect((calls.find((c) => c.method === 'PUT')?.body as { levels: typeof levels }).levels.list[1].when.over_usd).toBe(50))
+  })
+})
+
+describe('Member dialog', () => {
+  it('pauses a member with a labelled switch and saves from the footer', async () => {
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, 'PUT /api/companies/co_1/members/clara': org })
+    wrap(routes(), '/companies/co_1')
+    const chart = (await screen.findAllByLabelText('Organograma', { selector: '.org' }))[0]
+    await userEvent.click(within(chart).getByRole('button', { name: 'Abrir Clara' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('Pausado, não começa tarefas novas.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('region', { name: 'Perfil' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('region', { name: 'Modelos e autonomia' })).toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Avatar')).toHaveAttribute('placeholder', 'C')
+    await userEvent.click(within(dialog).getByRole('switch', { name: 'Trabalhando' }))
+    await userEvent.type(within(dialog).getByLabelText('Avatar'), '🦊')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
+    await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toMatchObject({ state: 'paused', avatar: '🦊' }))
+  })
+
+  it('removes a member only from its own place, after asking', async () => {
+    const calls = mockFetch({ '/api/companies/co_1': org, '/api/state': { person: 'owner' }, 'DELETE /api/companies/co_1/members/clara': org })
+    const ask = vi.fn(() => false)
+    vi.stubGlobal('confirm', ask)
+    wrap(routes(), '/companies/co_1')
+    const chart = (await screen.findAllByLabelText('Organograma', { selector: '.org' }))[0]
+    await userEvent.click(within(chart).getByRole('button', { name: 'Abrir Clara' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).queryByRole('button', { name: 'Desligar' })).toBeNull()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remover da empresa' }))
+    expect(ask).toHaveBeenCalledWith('Remover Clara da empresa? Quem respondia a este agente passa a responder ao chefe dele.')
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(false)
+    ask.mockReturnValue(true)
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remover da empresa' }))
+    await waitFor(() => expect(calls.some((c) => c.method === 'DELETE' && c.url.endsWith('/members/clara'))).toBe(true))
   })
 })

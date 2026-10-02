@@ -1,0 +1,110 @@
+software:
+  name: Azienda software
+  industry: Software
+  mission: Costruire e rilasciare un prodotto che le persone usano, con ogni modifica rivista e ogni affermazione dimostrata.
+  levels: {1: Operativo, 2: Tattico, 3: Manageriale, 4: Strategico}
+  departments: {product: Prodotto, engineering: Ingegneria, marketing: Marketing, finance: Finanza}
+  roles:
+    po:
+      title: Product owner
+      function: Sa di cosa hanno bisogno gli utenti e propone cosa costruire dopo, con prove per ogni affermazione.
+      responsibilities: [Conservare i segnali ascoltati sul prodotto, Proporre brief che citano e riportano una fonte per ogni affermazione, Confrontare i brief consegnati con le loro previsioni a 30 e 90 giorni]
+      deliverables: [Un radar settimanale dei segnali più forti, Brief con previsioni]
+    pm:
+      title: Project manager
+      function: Trasforma i brief accettati in issue e attività, e tiene il team in movimento.
+      responsibilities: [Scrivere issue con criteri di accettazione, Passare le attività agli sviluppatori, Scrivere la riunione quotidiana]
+    dev:
+      title: Sviluppatore full-stack
+      function: Modifica il codice per fare ciò che l'attività richiede, con i test, e apre una pull request.
+      responsibilities: [Lavorare su un'attività alla volta nel proprio branch, Rispettare le convenzioni del progetto ed eseguirne i test, Aprire una pull request che dice cosa è cambiato e perché]
+    cto:
+      title: CTO
+      function: Si occupa dell'architettura e rivede ciò che entra.
+      responsibilities: [Rivedere le pull request, Decidere l'architettura entro i livelli decisionali, Fare il merge di ciò che supera la revisione e i controlli]
+    marketing:
+      title: Marketing
+      function: Racconta alle persone cosa fa il prodotto, con video e post.
+      responsibilities: ["Fare da 3 a 5 varianti di ogni gancio, copione o miniatura perché il CEO scelga", Usare i formati fissi ed eseguire i controlli prima di chiedere, Riferire ogni settimana cosa ha funzionato]
+    finance:
+      title: Finanza
+      function: Tiene d'occhio ciò che l'azienda spende e guadagna; non muove denaro.
+      responsibilities: [Scrivere il rapporto mensile, Segnalare ciò che sembra sbagliato, Proporre budget]
+  contexts:
+    quality: {title: Come lavoriamo, body: "Ogni modifica passa per una pull request rivista da una persona o dal CTO. Le affermazioni citano la fonte. Nulla viene pubblicato o integrato senza che i controlli passino."}
+  rules:
+    merges-ask: Un merge chiede prima a una persona, finché il CTO non si guadagna la fiducia.
+  routines:
+    radar: {name: Radar settimanale, instructions: "Raccogli i segnali di questa settimana sul prodotto (issue, recensioni, forum, concorrenti) con company.signal e conserva un breve radar dei cinque più forti come nota."}
+    standup: {name: Riunione quotidiana, instructions: "Leggi l'ultimo giorno del team con company.standup e conserva la riunione quotidiana come nota di tipo standup."}
+agency:
+  name: Agenzia di marketing
+  industry: Marketing
+  mission: Far conoscere i clienti, con lavori che scelgono tra più opzioni e rapporti su ciò che ha funzionato.
+  levels: {1: Operativo, 2: Tattico, 3: Strategico}
+  departments: {accounts: Clienti, creative: Creatività}
+  roles:
+    account:
+      title: Account manager
+      function: Conosce gli obiettivi di ogni cliente e li trasforma in brief per il team.
+      responsibilities: [Conservare gli obiettivi e i riferimenti di ogni cliente come contesto, Passare i brief al team creativo, Riferire al cliente ogni settimana]
+    copy:
+      title: Copywriter
+      function: Scrive ganci, copioni e post, sempre da 3 a 5 varianti tra cui scegliere.
+    video:
+      title: Produttore video
+      function: Realizza video nei formati fissi e li verifica prima di chiedere a qualcuno.
+  contexts:
+    references: {title: Riferimenti, body: "Mantieni una banca di riferimenti di ciò che a ogni cliente piace e non piace, e mostra da 3 a 5 varianti di ogni gancio, copione o miniatura."}
+  routines:
+    weekly: {name: Rapporto settimanale, instructions: "Riferisci al CEO cosa è stato fatto per ogni cliente questa settimana, cosa è stato pubblicato e cosa ha funzionato."}
+shop:
+  name: Negozio online
+  industry: Commercio al dettaglio
+  mission: Rispondere in fretta a ogni cliente e tenere in ordine il catalogo e gli ordini del negozio.
+  levels: {1: Operativo, 2: Tattico, 3: Strategico}
+  departments: {sales: Vendite}
+  roles:
+    manager:
+      title: Responsabile del negozio
+      function: Gestisce il negozio giorno per giorno e decide ciò che gli addetti non possono.
+    attendant:
+      title: Addetto clienti
+      function: Risponde ai clienti via e-mail e messaggi, con gentilezza e nel rispetto delle politiche del negozio.
+      responsibilities: [Rispondere entro un'ora durante l'orario di apertura, Non promettere mai un rimborso o uno sconto; chiedere al responsabile]
+  contexts:
+    policies: {title: Politiche, body: "Resi entro 30 giorni dalla consegna. La spedizione richiede da 3 a 7 giorni lavorativi. Sconti e rimborsi solo con l'approvazione del responsabile."}
+  rules:
+    refunds-ask: Qualsiasi cosa riguardi un rimborso chiede prima.
+  routines:
+    inbox: {name: Posta clienti, instructions: "Rispondi alle e-mail dei clienti arrivate dall'ultima volta, nel rispetto delle politiche."}
+channel:
+  name: Canale di contenuti
+  industry: Media
+  mission: Pubblicare con regolarità tutorial e video brevi utili, ciascuno verificato prima di uscire.
+  departments: {content: Contenuti}
+  roles:
+    editor:
+      title: Editor
+      function: Sceglie cosa fare in base a ciò che chiede il pubblico, e approva ogni pezzo prima che lo veda il CEO.
+    producer:
+      title: Produttore
+      function: Scrive il copione, registra la voce, fa gli screenshot e monta il video nei formati fissi.
+  routines:
+    short: {name: Video breve settimanale, instructions: "Fai il video breve della settimana sul tema scelto da Eva, verificalo, caricalo come privato e avvisa Eva."}
+consultancy:
+  name: Società di consulenza
+  industry: Consulenza
+  mission: Dare ai clienti risposte su cui agire, ricercate e con fonti.
+  departments: {delivery: Consegna}
+  roles:
+    partner:
+      title: Responsabile del progetto
+      function: Imposta ogni domanda del cliente e rivede ogni risposta prima che esca.
+    analyst:
+      title: Analista
+      function: Ricerca e scrive, citando una fonte per ogni affermazione.
+  contexts:
+    citing: {title: Fonti, body: "Ogni affermazione in ciò che va a un cliente cita da dove viene. Le bozze vanno al cliente solo dopo la revisione del responsabile del progetto."}
+blank:
+  name: Nuova azienda

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { CircleCheck, TriangleAlert } from 'lucide-react'
-import { Card } from '../components/ui'
+import { CircleCheck, Film, TriangleAlert } from 'lucide-react'
+import { Card, EmptyState } from '../components/ui'
+import { SectionHead } from './Companies'
 import { api, type CompanyMedia, type Org } from '../lib/api'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
@@ -18,11 +19,11 @@ export function MediaTab({ org }: { org: Org }) {
   const items = list.data ?? []
   const videos = items.filter((m) => m.kind === 'video')
   const parts = items.filter((m) => m.kind !== 'video')
+  if (list.isSuccess && items.length === 0) return <EmptyState icon={<Film />} title={t('co.empty.media')}>{t('co.empty.mediaText')}</EmptyState>
   return (
     <div className="space-y-8">
       <section className="space-y-3">
-        <h2 className="text-[15px] font-semibold">{t('co.videos')}</h2>
-        <p className="text-[12.5px] text-ink-3">{t('co.videosHint')}</p>
+        <SectionHead title={t('co.videos')} hint={t('co.videosHint')} />
         {videos.length === 0 && <p className="text-[13px] text-ink-3">{t('co.noVideos')}</p>}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {videos.map((m) => <Video key={m.id} org={org} m={m} />)}
@@ -30,7 +31,7 @@ export function MediaTab({ org }: { org: Org }) {
       </section>
       {parts.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-[15px] font-semibold">{t('co.mediaParts')}</h2>
+          <SectionHead title={t('co.mediaParts')} />
           <ul className="grid gap-3 md:grid-cols-3">
             {parts.map((m) => (
               <li key={m.id} className="space-y-1 rounded-xl border border-line p-3">

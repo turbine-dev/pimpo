@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Plus, Send } from 'lucide-react'
+import { ArrowLeft, MessagesSquare, Plus, Send } from 'lucide-react'
 import { useState } from 'react'
 import { Field, Modal } from '../components/Modal'
-import { Button, Card } from '../components/ui'
+import { Button, Card, EmptyState } from '../components/ui'
 import { api, type Meeting, type Org } from '../lib/api'
 import { cn } from '../lib/cn'
 import { relative } from '../lib/format'
 import { useT } from '../lib/i18n'
-import { area, field } from './Companies'
+import { area, field, SectionHead } from './Companies'
 
 const nameOf = (org: Org, id: string) => org.members.find((m) => m.id === id)?.name ?? id
 
@@ -18,22 +18,24 @@ export function MeetingsTab({ org, can, room, onRoom }: { org: Org; can: boolean
   const meetings = useQuery({ queryKey: ['company-meetings', org.id], queryFn: () => api.meetings(org.id), refetchInterval: (q) => (q.state.data?.some((m) => m.state === 'running') ? 3000 : false) })
   const [creating, setCreating] = useState(false)
   if (room) return <Room org={org} id={room} can={can} onBack={() => onRoom(null)} />
+  const add = can && <Button variant="primary" onClick={() => setCreating(true)}><Plus size={15} /> {t('co.newMeeting')}</Button>
+  const list = meetings.data ?? []
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[12.5px] text-ink-3">{t('co.meetingsHint')}</p>
-        {can && <Button variant="primary" onClick={() => setCreating(true)}><Plus size={15} /> {t('co.newMeeting')}</Button>}
-      </div>
-      {(meetings.data ?? []).length === 0 && <p className="text-[12.5px] text-ink-3">{t('co.noMeetings')}</p>}
-      {(meetings.data ?? []).map((m) => (
-        <Card key={m.id} className="p-0">
-          <button type="button" onClick={() => onRoom(m.id)} className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-sunken/50">
-            <span className={cn('rounded-md px-1.5 py-0.5 text-[11.5px] font-medium', stateCls[m.state])}>{t(`co.meeting.${m.state}` as 'co.meeting.done')}</span>
-            <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{m.title}</span>
-            <span className="text-[12px] text-ink-3">{m.participants.map((p) => nameOf(org, p)).join(', ')} · {relative(m.created)}</span>
-          </button>
+    <div className="space-y-4">
+      {meetings.isSuccess && list.length === 0 ? (
+        <EmptyState icon={<MessagesSquare />} title={t('co.empty.meetings')} action={add}>{t('co.meetingsHint')}</EmptyState>
+      ) : (<>
+        <SectionHead title={t('co.meetings')} hint={t('co.meetingsHint')} action={add} />
+        <Card className="divide-y divide-line">
+          {list.map((m) => (
+            <button key={m.id} type="button" onClick={() => onRoom(m.id)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left first:rounded-t-[var(--radius-card)] last:rounded-b-[var(--radius-card)] hover:bg-sunken/50">
+              <span className={cn('shrink-0 rounded-md px-1.5 py-0.5 text-[11.5px] font-medium', stateCls[m.state])}>{t(`co.meeting.${m.state}` as 'co.meeting.done')}</span>
+              <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{m.title}</span>
+              <span className="min-w-0 truncate text-[12px] text-ink-3">{m.participants.map((p) => nameOf(org, p)).join(', ')} · {relative(m.created)}</span>
+            </button>
+          ))}
         </Card>
-      ))}
+      </>)}
       {creating && <NewMeeting org={org} onClose={() => setCreating(false)} onOpen={onRoom} />}
     </div>
   )

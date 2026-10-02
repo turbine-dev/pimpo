@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Play, Plus, Square } from 'lucide-react'
+import { Activity, Play, Plus, Square } from 'lucide-react'
 import { useState } from 'react'
 import { Field, Modal } from '../components/Modal'
-import { Button, Card } from '../components/ui'
+import { Button, Card, EmptyState } from '../components/ui'
 import { api, type AgentRoutine, type Hours, type Org, type Work } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useT } from '../lib/i18n'
@@ -56,7 +56,7 @@ export function WorkLog({ org, can }: { org: Org; can: boolean }) {
   const stop = useMutation({ mutationFn: (w: Work) => api.stopWork(org.id, w.id), onSuccess: () => qc.invalidateQueries({ queryKey: ['company-work', org.id] }) })
   const name = (id: string) => org.members.find((m) => m.id === id)?.name ?? id
   const list = work.data ?? []
-  if (work.isSuccess && list.length === 0) return <p className="text-[13px] text-ink-3">{t('co.noWork')}</p>
+  if (work.isSuccess && list.length === 0) return <EmptyState icon={<Activity />} title={t('co.empty.work')}>{t('co.noWork')}</EmptyState>
   return (
     <Card className="divide-y divide-line">
       {list.map((w) => (
@@ -64,7 +64,7 @@ export function WorkLog({ org, can }: { org: Org; can: boolean }) {
           <details className="min-w-0 flex-1">
             <summary className="flex cursor-pointer list-none items-center gap-3">
               <span className={cn('shrink-0 rounded-md px-1.5 py-0.5 text-[11.5px] font-medium', stateCls[w.state])}>{t(`co.work.${w.state}`)}</span>
-              <span className="w-24 shrink-0 truncate text-[13px] font-medium">{name(w.member)}</span>
+              <span className="w-20 shrink-0 truncate text-[13px] font-medium sm:w-24">{name(w.member)}</span>
               <span className="min-w-0 flex-1 truncate text-[13px] text-ink-2">{w.request}</span>
               <span className="text-[12px] tabular-nums text-ink-3">{usd(w.cost_usd)}</span>
             </summary>

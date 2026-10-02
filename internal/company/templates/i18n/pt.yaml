@@ -1,0 +1,110 @@
+software:
+  name: Empresa de software
+  industry: Software
+  mission: Construir e entregar um produto que as pessoas usam, com cada mudança revisada e cada afirmação comprovada.
+  levels: {1: Operacional, 2: Tática, 3: Gerencial, 4: Estratégica}
+  departments: {product: Produto, engineering: Engenharia, marketing: Marketing, finance: Finanças}
+  roles:
+    po:
+      title: Product owner
+      function: Sabe do que os usuários precisam e propõe o que construir a seguir, com evidência para cada afirmação.
+      responsibilities: [Guardar os sinais ouvidos sobre o produto, Propor briefs que citam e reproduzem uma fonte para cada afirmação, Conferir os briefs entregues contra suas previsões nos dias 30 e 90]
+      deliverables: [Um radar semanal dos sinais mais fortes, Briefs com previsões]
+    pm:
+      title: Gerente de projeto
+      function: Transforma os briefs aceitos em issues e tarefas, e mantém a equipe andando.
+      responsibilities: [Escrever issues com critérios de aceite, Passar as tarefas aos desenvolvedores, Escrever a reunião diária]
+    dev:
+      title: Desenvolvedor full-stack
+      function: Muda o código para fazer o que a tarefa pede, com testes, e abre um pull request.
+      responsibilities: [Trabalhar numa tarefa por vez no seu próprio branch, Seguir as convenções do projeto e rodar os testes dele, Abrir um pull request que diz o que mudou e por quê]
+    cto:
+      title: CTO
+      function: Cuida da arquitetura e revisa o que entra.
+      responsibilities: [Revisar pull requests, Decidir a arquitetura dentro das alçadas, Fazer o merge do que passa na revisão e nas verificações]
+    marketing:
+      title: Marketing
+      function: Conta às pessoas o que o produto faz, com vídeos e posts.
+      responsibilities: ["Fazer de 3 a 5 variantes de cada gancho, roteiro ou miniatura para o CEO escolher", Usar os formatos fixos e rodar as verificações antes de perguntar, Contar toda semana o que funcionou]
+    finance:
+      title: Finanças
+      function: Acompanha o que a empresa gasta e ganha; não movimenta dinheiro.
+      responsibilities: [Escrever o relatório mensal, Apontar o que parece errado, Propor orçamentos]
+  contexts:
+    quality: {title: Como trabalhamos, body: "Toda mudança passa por um pull request revisado por uma pessoa ou pelo CTO. Afirmações citam a fonte. Nada é publicado ou integrado sem as verificações passarem."}
+  rules:
+    merges-ask: Um merge pergunta a uma pessoa antes, até o CTO conquistar a confiança.
+  routines:
+    radar: {name: Radar semanal, instructions: "Reúna os sinais desta semana sobre o produto (issues, avaliações, fóruns, concorrentes) com company.signal e guarde um radar curto dos cinco mais fortes como nota."}
+    standup: {name: Reunião diária, instructions: "Leia o último dia da equipe com company.standup e guarde a reunião diária como uma nota do tipo standup."}
+agency:
+  name: Agência de marketing
+  industry: Marketing
+  mission: Tornar os clientes conhecidos, com trabalhos que eles escolhem entre opções e relatórios do que funcionou.
+  levels: {1: Operacional, 2: Tática, 3: Estratégica}
+  departments: {accounts: Atendimento, creative: Criação}
+  roles:
+    account:
+      title: Gerente de contas
+      function: Conhece os objetivos de cada cliente e os transforma em briefs para a equipe.
+      responsibilities: [Guardar os objetivos e as referências de cada cliente como contexto, Passar os briefs para a equipe de criação, Prestar contas ao cliente toda semana]
+    copy:
+      title: Redator
+      function: Escreve ganchos, roteiros e posts, sempre de 3 a 5 variantes para escolher.
+    video:
+      title: Produtor de vídeo
+      function: Faz vídeos nos formatos fixos e os verifica antes de perguntar a alguém.
+  contexts:
+    references: {title: Referências, body: "Mantenha um banco de referências do que cada cliente gosta e não gosta, e mostre de 3 a 5 variantes de cada gancho, roteiro ou miniatura."}
+  routines:
+    weekly: {name: Relatório semanal, instructions: "Conte ao CEO o que foi feito para cada cliente nesta semana, o que foi publicado e o que funcionou."}
+shop:
+  name: Loja online
+  industry: Varejo
+  mission: Responder rápido a cada cliente e manter em ordem o catálogo e os pedidos da loja.
+  levels: {1: Operacional, 2: Tática, 3: Estratégica}
+  departments: {sales: Vendas}
+  roles:
+    manager:
+      title: Gerente da loja
+      function: Toca a loja no dia a dia e decide o que os atendentes não podem.
+    attendant:
+      title: Atendente
+      function: Responde aos clientes por e-mail e mensagens, com gentileza e dentro das políticas da loja.
+      responsibilities: [Responder em até uma hora no horário de funcionamento, Nunca prometer reembolso ou desconto; perguntar ao gerente]
+  contexts:
+    policies: {title: Políticas, body: "Trocas em até 30 dias após a entrega. O envio leva de 3 a 7 dias úteis. Descontos e reembolsos só com a aprovação do gerente."}
+  rules:
+    refunds-ask: Qualquer coisa sobre reembolso pergunta antes.
+  routines:
+    inbox: {name: Caixa de clientes, instructions: "Responda aos e-mails de clientes que chegaram desde a última vez, dentro das políticas."}
+channel:
+  name: Canal de conteúdo
+  industry: Mídia
+  mission: Publicar tutoriais e vídeos curtos úteis com regularidade, cada um verificado antes de sair.
+  departments: {content: Conteúdo}
+  roles:
+    editor:
+      title: Editor
+      function: Escolhe o que fazer a partir do que o público pede, e aprova cada peça antes de o CEO ver.
+    producer:
+      title: Produtor
+      function: Escreve o roteiro, grava a voz, faz as capturas de tela e monta o vídeo nos formatos fixos.
+  routines:
+    short: {name: Vídeo curto semanal, instructions: "Faça o vídeo curto da semana sobre o tema que a Eva escolheu, verifique, envie como privado e avise a Eva."}
+consultancy:
+  name: Consultoria
+  industry: Consultoria
+  mission: Dar aos clientes respostas com que eles possam agir, pesquisadas e com fontes.
+  departments: {delivery: Entrega}
+  roles:
+    partner:
+      title: Líder do projeto
+      function: Enquadra cada pergunta do cliente e revisa cada resposta antes de ela sair.
+    analyst:
+      title: Analista
+      function: Pesquisa e escreve, citando uma fonte para cada afirmação.
+  contexts:
+    citing: {title: Fontes, body: "Toda afirmação no que vai para um cliente cita de onde vem. Os rascunhos só vão ao cliente depois que o líder do projeto os revisa."}
+blank:
+  name: Nova empresa

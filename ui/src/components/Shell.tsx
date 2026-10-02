@@ -245,7 +245,7 @@ export function Shell({ children, attention = 0, budget, healthy = true, onSearc
           <div className="flex items-center gap-2 md:hidden">
             <Logo size={24} />
           </div>
-          <button onClick={onSearch} className="flex h-9 max-w-md flex-1 items-center gap-2 rounded-[10px] border border-line bg-surface px-3 text-left text-[13px] text-ink-3 hover:border-line-strong">
+          <button onClick={onSearch} className="flex h-9 min-w-0 max-w-md flex-1 items-center gap-2 rounded-[10px] border border-line bg-surface px-3 text-left text-[13px] text-ink-3 hover:border-line-strong">
             <Search size={15} />
             <span className="flex-1 truncate">{t('shell.search')}</span>
             <Kbd>⌘K</Kbd>

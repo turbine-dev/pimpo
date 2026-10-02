@@ -60,3 +60,29 @@ func TestACompanyDescribedIsOnlyProposed(t *testing.T) {
 		t.Fatalf("creating the proposal: %d %v", code, out)
 	}
 }
+
+func TestATemplateCompanyIsInThePersonsLanguage(t *testing.T) {
+	ta := newApp(t, weatherAgent, &llm.Fake{})
+	ta.companiesOn(t)
+	_, got := ta.do(t, "GET", "/api/companies/templates?lang=pt-BR", nil)
+	list := got["list"].([]any)
+	if len(list) != 6 || list[0].(map[string]any)["name"] != "Empresa de software" {
+		t.Fatalf("templates in pt = %v", list)
+	}
+	// Creating the company the plain way, with a template, starts it from
+	// the template, as importing does.
+	code, out := ta.do(t, "POST", "/api/companies", map[string]string{"template": "software", "name": "X", "lang": "pt"})
+	if code != 201 || out["name"] != "X" || len(out["roles"].([]any)) != 6 {
+		t.Fatalf("from a template: %d %v", code, out)
+	}
+	role := out["roles"].([]any)[1].(map[string]any)
+	if role["id"] != "pm" || role["title"] != "Gerente de projeto" {
+		t.Fatalf("roles = %v", out["roles"])
+	}
+	if code, out := ta.do(t, "POST", "/api/companies/import", map[string]string{"template": "shop", "lang": "en"}); code != 201 || out["name"] != "Online shop" {
+		t.Fatalf("in English: %d %v", code, out)
+	}
+	if code, _ := ta.do(t, "POST", "/api/companies", map[string]string{"template": "nope"}); code != 404 {
+		t.Fatalf("a template that does not exist: %d", code)
+	}
+}
