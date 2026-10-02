@@ -249,9 +249,10 @@ function Simulator({ org }: { org: Org }) {
     <div className="space-y-3 rounded-[var(--radius-card)] border border-line bg-sunken/60 p-4">
       <SectionHead title={t('co.simulator')} hint={t('co.simulatorHint')} />
       <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); run.mutate() }}>
-        <input className={field} aria-label={t('co.simText')} placeholder={t('co.simTextHint')} value={q.text} onChange={(e) => setQ({ ...q, text: e.target.value })} />
-        <div className="grid gap-2 sm:grid-cols-3">
-          <select className={field} aria-label={t('co.simWho')} value={q.member} onChange={(e) => setQ({ ...q, member: e.target.value })}>{agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+        {/* The panel is narrow beside the levels: the decision gets two lines, and who, kind and amount stack. */}
+        <textarea rows={2} className={field + ' h-auto resize-none py-2'} aria-label={t('co.simText')} placeholder={t('co.simTextHint')} value={q.text} onChange={(e) => setQ({ ...q, text: e.target.value })} />
+        <select className={field} aria-label={t('co.simWho')} value={q.member} onChange={(e) => setQ({ ...q, member: e.target.value })}>{agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+        <div className="grid grid-cols-2 gap-2">
           <input className={field} aria-label={t('co.simKind')} placeholder={t('co.simKind')} value={q.kind} onChange={(e) => setQ({ ...q, kind: e.target.value })} />
           <input type="number" min={0} className={field} aria-label={t('co.simAmount')} placeholder={t('co.simAmount')} value={q.amount_usd || ''} onChange={(e) => setQ({ ...q, amount_usd: Number(e.target.value) })} />
         </div>
