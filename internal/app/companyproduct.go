@@ -179,7 +179,7 @@ func (c productCap) Call(ctx context.Context, name, _ string, args any) (any, er
 // topSignals are the signals most heard first, those matching query when
 // one is given.
 func topSignals(all []company.Signal, query string) []company.Signal {
-	var out []company.Signal
+	out := []company.Signal{}
 	for _, s := range all {
 		if query == "" || strings.Contains(foldName(s.Title+" "+s.Text+" "+s.Source), foldName(query)) {
 			out = append(out, s)
