@@ -9,7 +9,7 @@ import (
 )
 
 func TestEveryTemplateMakesAWholeCompany(t *testing.T) {
-	ts := Templates()
+	ts := Templates("")
 	if len(ts) != 6 || ts[0].ID != "software" || ts[5].ID != "blank" {
 		t.Fatalf("templates = %+v", ts)
 	}
@@ -32,7 +32,7 @@ func TestEveryTemplateMakesAWholeCompany(t *testing.T) {
 	if sw.Members != 7 || len(sw.Roles) != 6 {
 		t.Fatalf("the software company has %d members in %d roles", sw.Members, len(sw.Roles))
 	}
-	if _, ok := TemplateFile("../store"); ok {
+	if _, ok := TemplateFile("../store", ""); ok {
 		t.Fatal("a template outside the templates")
 	}
 }

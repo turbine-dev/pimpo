@@ -1,0 +1,110 @@
+software:
+  name: 软件公司
+  industry: 软件
+  mission: 打造并交付人们真正使用的产品，每一项变更都经过评审，每一个论断都有依据。
+  levels: {1: 执行层, 2: 战术层, 3: 管理层, 4: 战略层}
+  departments: {product: 产品, engineering: 工程, marketing: 市场, finance: 财务}
+  roles:
+    po:
+      title: 产品负责人
+      function: 了解用户需要什么，并带着证据提出接下来要做什么。
+      responsibilities: [留存听到的关于产品的信号, 提出为每个论断引用并摘录来源的简报, 在第30天和第90天对照预测检查已交付的简报]
+      deliverables: [最强信号的每周雷达, 带预测的简报]
+    pm:
+      title: 项目经理
+      function: 把通过的简报转成议题和任务，并让团队持续推进。
+      responsibilities: [撰写带验收标准的议题, 把任务交给开发者, 撰写每日站会纪要]
+    dev:
+      title: 全栈开发者
+      function: 按任务要求修改代码，附带测试，并提交拉取请求。
+      responsibilities: [在各自的分支上一次只做一个任务, 遵循项目约定并运行其测试, 提交说明改了什么以及为什么的拉取请求]
+    cto:
+      title: CTO
+      function: 负责架构，并评审所有合入的内容。
+      responsibilities: [评审拉取请求, 在决策层级范围内决定架构, 合并通过评审和检查的内容]
+    marketing:
+      title: 市场
+      function: 用视频和帖子告诉人们产品能做什么。
+      responsibilities: ["为每个开头、脚本或缩略图制作3到5个版本供CEO挑选", 使用固定格式并在询问前先运行检查, 每周汇报什么有效]
+    finance:
+      title: 财务
+      function: 关注公司的支出和收入；不动用资金。
+      responsibilities: [撰写月度报告, 指出看起来不对的地方, 提出预算建议]
+  contexts:
+    quality: {title: 我们如何工作, body: "每项变更都要经过由人或CTO评审的拉取请求。论断需注明来源。检查未通过，就不发布、不合并。"}
+  rules:
+    merges-ask: 在CTO赢得信任之前，合并须先询问一个人。
+  routines:
+    radar: {name: 每周雷达, instructions: "用 company.signal 收集本周关于产品的信号（议题、评价、论坛、竞品），并把最强的五个整理成简短的雷达，保存为笔记。"}
+    standup: {name: 每日站会, instructions: "用 company.standup 读取团队最近一天的情况，并把站会纪要保存为 standup 类型的笔记。"}
+agency:
+  name: 营销代理公司
+  industry: 营销
+  mission: 通过客户可从多个方案中挑选的作品，以及关于哪些有效的报告，让客户为人所知。
+  levels: {1: 执行层, 2: 战术层, 3: 战略层}
+  departments: {accounts: 客户服务, creative: 创意}
+  roles:
+    account:
+      title: 客户经理
+      function: 了解每位客户的目标，并把它们转成给团队的简报。
+      responsibilities: [把每位客户的目标和参考资料作为上下文留存, 把简报交给创意团队, 每周向客户汇报]
+    copy:
+      title: 文案
+      function: 撰写开头、脚本和帖子，始终提供3到5个版本供挑选。
+    video:
+      title: 视频制作人
+      function: 按固定格式制作视频，并在询问任何人之前先检查。
+  contexts:
+    references: {title: 参考资料, body: "建立一个参考库，记录每位客户喜欢和不喜欢的内容，并为每个开头、脚本或缩略图展示3到5个版本。"}
+  routines:
+    weekly: {name: 每周报告, instructions: "向CEO汇报本周为每位客户做了什么、发布了什么以及什么有效。"}
+shop:
+  name: 网店
+  industry: 零售
+  mission: 快速回复每一位顾客，并让店铺的商品目录和订单井然有序。
+  levels: {1: 执行层, 2: 战术层, 3: 战略层}
+  departments: {sales: 销售}
+  roles:
+    manager:
+      title: 店长
+      function: 负责店铺的日常运营，并决定客服无法决定的事。
+    attendant:
+      title: 客服
+      function: 通过邮件和消息回复顾客，态度友善，并遵守店铺政策。
+      responsibilities: [营业时间内一小时内回复, 绝不承诺退款或折扣；先询问店长]
+  contexts:
+    policies: {title: 政策, body: "签收后30天内可退货。运输需要3到7个工作日。折扣和退款须经店长批准。"}
+  rules:
+    refunds-ask: 凡涉及退款的事，先询问。
+  routines:
+    inbox: {name: 顾客收件箱, instructions: "在政策范围内回复自上次以来收到的顾客邮件。"}
+channel:
+  name: 内容频道
+  industry: 媒体
+  mission: 按稳定节奏发布实用的教程和短视频，每一条在发布前都经过检查。
+  departments: {content: 内容}
+  roles:
+    editor:
+      title: 编辑
+      function: 根据观众的需求选择要做的内容，并在CEO看到之前批准每一件作品。
+    producer:
+      title: 制作人
+      function: 撰写脚本、录制配音、截取屏幕画面，并按固定格式制作视频。
+  routines:
+    short: {name: 每周短视频, instructions: "就Eva选定的主题制作本周的短视频，检查后以私享方式上传，并告知Eva。"}
+consultancy:
+  name: 咨询公司
+  industry: 咨询
+  mission: 给客户可以付诸行动的答案，经过研究并注明来源。
+  departments: {delivery: 交付}
+  roles:
+    partner:
+      title: 项目负责人
+      function: 梳理客户的每个问题，并在每个答复发出前进行评审。
+    analyst:
+      title: 分析师
+      function: 研究并撰写，为每个论断注明来源。
+  contexts:
+    citing: {title: 引用来源, body: "发给客户的内容中，每个论断都要注明出处。草稿只有在项目负责人评审后才发给客户。"}
+blank:
+  name: 新公司

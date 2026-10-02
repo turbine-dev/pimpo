@@ -1,0 +1,110 @@
+software:
+  name: 소프트웨어 회사
+  industry: 소프트웨어
+  mission: 사람들이 실제로 쓰는 제품을 만들어 내놓는다. 모든 변경은 검토하고 모든 주장은 근거를 갖춘다.
+  levels: {1: 실무, 2: 전술, 3: 관리, 4: 전략}
+  departments: {product: 제품, engineering: 엔지니어링, marketing: 마케팅, finance: 재무}
+  roles:
+    po:
+      title: 프로덕트 오너
+      function: 사용자에게 필요한 것을 파악하고, 다음에 만들 것을 근거와 함께 제안한다.
+      responsibilities: [제품에 대해 들은 신호를 보관한다, 모든 주장에 출처를 인용하고 발췌한 브리프를 제안한다, 출시된 브리프를 30일째와 90일째에 예측과 대조한다]
+      deliverables: [가장 강한 신호를 모은 주간 레이더, 예측이 담긴 브리프]
+    pm:
+      title: 프로젝트 매니저
+      function: 승인된 브리프를 이슈와 작업으로 바꾸고 팀이 계속 움직이게 한다.
+      responsibilities: [인수 기준이 있는 이슈를 작성한다, 작업을 개발자에게 넘긴다, 데일리 스탠드업을 작성한다]
+    dev:
+      title: 풀스택 개발자
+      function: 작업이 요구하는 대로 코드를 바꾸고 테스트를 갖춰 풀 리퀘스트를 연다.
+      responsibilities: [자기 브랜치에서 한 번에 하나의 작업을 한다, 프로젝트 규칙을 따르고 테스트를 실행한다, 무엇을 왜 바꿨는지 적은 풀 리퀘스트를 연다]
+    cto:
+      title: CTO
+      function: 아키텍처를 책임지고 들어오는 변경을 검토한다.
+      responsibilities: [풀 리퀘스트를 검토한다, 의사결정 수준 안에서 아키텍처를 결정한다, 검토와 검사를 통과한 것을 머지한다]
+    marketing:
+      title: 마케팅
+      function: 영상과 게시물로 제품이 하는 일을 사람들에게 알린다.
+      responsibilities: ["훅, 스크립트, 썸네일마다 3~5개 안을 만들어 CEO가 고르게 한다", 정해진 형식을 쓰고 묻기 전에 검사를 실행한다, 효과가 있었던 것을 매주 보고한다]
+    finance:
+      title: 재무
+      function: 회사가 쓰고 버는 돈을 지켜본다. 돈은 움직이지 않는다.
+      responsibilities: [월간 보고서를 작성한다, 이상해 보이는 것을 짚어 낸다, 예산을 제안한다]
+  contexts:
+    quality: {title: 일하는 방식, body: "모든 변경은 사람이나 CTO가 검토하는 풀 리퀘스트를 거친다. 주장에는 출처를 밝힌다. 검사를 통과하지 못하면 공개도 머지도 하지 않는다."}
+  rules:
+    merges-ask: CTO가 신뢰를 얻을 때까지 머지는 먼저 사람에게 묻는다.
+  routines:
+    radar: {name: 주간 레이더, instructions: "company.signal로 이번 주 제품에 대한 신호(이슈, 리뷰, 포럼, 경쟁사)를 모으고, 가장 강한 다섯 가지를 짧은 레이더로 만들어 노트로 보관한다."}
+    standup: {name: 데일리 스탠드업, instructions: "company.standup으로 팀의 지난 하루를 읽고, 스탠드업을 standup 종류의 노트로 보관한다."}
+agency:
+  name: 마케팅 에이전시
+  industry: 마케팅
+  mission: 선택지 중에서 고를 수 있는 작업물과 효과가 있었던 것에 대한 보고서로 고객을 알린다.
+  levels: {1: 실무, 2: 전술, 3: 전략}
+  departments: {accounts: 어카운트, creative: 크리에이티브}
+  roles:
+    account:
+      title: 어카운트 매니저
+      function: 각 고객의 목표를 파악해 팀을 위한 브리프로 바꾼다.
+      responsibilities: [각 고객의 목표와 참고 자료를 컨텍스트로 보관한다, 브리프를 크리에이티브 팀에 넘긴다, 매주 고객에게 보고한다]
+    copy:
+      title: 카피라이터
+      function: 훅, 스크립트, 게시물을 쓴다. 고를 수 있도록 항상 3~5개 안을 낸다.
+    video:
+      title: 영상 프로듀서
+      function: 정해진 형식으로 영상을 만들고, 누구에게 묻기 전에 직접 검사한다.
+  contexts:
+    references: {title: 참고 자료, body: "각 고객이 좋아하고 싫어하는 참고 자료를 모아 두고, 훅, 스크립트, 썸네일마다 3~5개 안을 보여 준다."}
+  routines:
+    weekly: {name: 주간 보고서, instructions: "이번 주 고객별로 무엇을 만들었고 무엇을 공개했으며 무엇이 효과가 있었는지 CEO에게 보고한다."}
+shop:
+  name: 온라인 쇼핑몰
+  industry: 소매
+  mission: 모든 고객에게 빠르게 답하고 쇼핑몰의 카탈로그와 주문을 정돈해 둔다.
+  levels: {1: 실무, 2: 전술, 3: 전략}
+  departments: {sales: 영업}
+  roles:
+    manager:
+      title: 매장 매니저
+      function: 쇼핑몰을 매일 운영하고 응대 담당자가 정할 수 없는 일을 결정한다.
+    attendant:
+      title: 고객 응대 담당
+      function: 이메일과 메시지로 고객에게 친절하게, 쇼핑몰 정책 안에서 답한다.
+      responsibilities: [영업 시간에는 1시간 안에 답한다, 환불이나 할인은 절대 약속하지 않고 매니저에게 묻는다]
+  contexts:
+    policies: {title: 정책, body: "반품은 배송 후 30일 이내. 배송은 영업일 기준 3~7일 걸린다. 할인과 환불은 매니저의 승인이 있을 때만 가능하다."}
+  rules:
+    refunds-ask: 환불과 관련된 일은 먼저 묻는다.
+  routines:
+    inbox: {name: 고객 수신함, instructions: "지난번 이후 도착한 고객 이메일에 정책 안에서 답한다."}
+channel:
+  name: 콘텐츠 채널
+  industry: 미디어
+  mission: 유용한 튜토리얼과 쇼츠를 꾸준히 공개하고, 모두 내보내기 전에 검사한다.
+  departments: {content: 콘텐츠}
+  roles:
+    editor:
+      title: 에디터
+      function: 시청자가 요청하는 것을 보고 만들 것을 고르고, CEO가 보기 전에 모든 작업물을 승인한다.
+    producer:
+      title: 프로듀서
+      function: 스크립트를 쓰고, 음성을 녹음하고, 스크린샷을 찍고, 정해진 형식으로 영상을 만든다.
+  routines:
+    short: {name: 주간 쇼츠, instructions: "Eva가 고른 주제로 이번 주 쇼츠를 만들고, 검사하고, 비공개로 업로드한 뒤 Eva에게 알린다."}
+consultancy:
+  name: 컨설팅 회사
+  industry: 컨설팅
+  mission: 고객이 바로 실행에 옮길 수 있는, 조사하고 출처를 밝힌 답을 준다.
+  departments: {delivery: 딜리버리}
+  roles:
+    partner:
+      title: 프로젝트 리드
+      function: 고객의 각 질문을 정리하고, 모든 답변이 나가기 전에 검토한다.
+    analyst:
+      title: 애널리스트
+      function: 조사하고 글을 쓰며 모든 주장에 출처를 밝힌다.
+  contexts:
+    citing: {title: 출처 표기, body: "고객에게 가는 내용의 모든 주장은 어디서 나왔는지 밝힌다. 초안은 프로젝트 리드가 검토한 뒤에만 고객에게 보낸다."}
+blank:
+  name: 새 회사

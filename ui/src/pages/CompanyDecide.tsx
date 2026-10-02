@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { capabilityLabel } from '../components/RoutineCard'
 import { Field } from '../components/Modal'
 import { Button, Card, Switch } from '../components/ui'
 import { api, type Autonomy, type Decider, type DeciderKind, type Level, type Levels, type Org } from '../lib/api'
 import { relative } from '../lib/format'
-import { useT } from '../lib/i18n'
-import { field } from './Companies'
+import { type T, useT } from '../lib/i18n'
+import { field, SectionHead } from './Companies'
 
 const kinds: DeciderKind[] = ['person', 'self', 'jev', 'laya', 'model', 'boss', 'committee', 'cascade']
 const stepKinds: DeciderKind[] = ['jev', 'laya', 'model', 'boss', 'committee', 'self', 'person']
@@ -107,6 +107,74 @@ function suggested(t: (k: 'co.level.operational' | 'co.level.tactical' | 'co.lev
   ] }
 }
 
+// levelWhen says in words what puts a decision at a level; the first
+// level is what no other takes.
+function levelWhen(t: T, l: Level, first: boolean) {
+  if (first) return t('co.levelRest')
+  const w = l.when
+  const out: string[] = []
+  if (w.over_usd) out.push(t('co.levelOver', { usd: `$${w.over_usd}` }))
+  if (w.min_risk) out.push(t('rules.orMore', { what: t(`rules.risk.${w.min_risk}` as 'rules.risk.read') }))
+  if (w.kinds?.length) out.push(t('co.levelKinds', { list: w.kinds.join(', ') }))
+  if (w.words?.length) out.push(t('co.levelWords', { list: w.words.join(', ') }))
+  if (w.public) out.push(t('co.levelPublic'))
+  return out.length ? t('co.levelWhen', { list: out.join(t('co.levelOr')) }) : t('co.levelNever')
+}
+
+function LevelCard({ l, first, last, can, onChange }: { l: Level; first: boolean; last: boolean; can: boolean; onChange: (l: Level) => void }) {
+  const t = useT()
+  const [open, setOpen] = useState(false)
+  const who = t(`co.levelBy.${l.decides}` as 'co.levelBy.ceo') + (l.decides === 'ceo' && l.route === 'opinions' ? ` · ${t('co.route.opinions')}` : '')
+  return (
+    <Card className="p-0">
+      <div className="flex items-start gap-3 p-3.5">
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sunken text-[12.5px] font-semibold" aria-hidden>{l.level}</span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13.5px] font-medium">{l.name || t('co.levelN', { n: l.level })}</p>
+          <p className="text-[12.5px] text-ink-2">{levelWhen(t, l, first)}</p>
+          <p className="text-[12.5px] text-ink-3">{t('co.levelWho', { who })}</p>
+        </div>
+        {can && <Button type="button" size="sm" variant="ghost" aria-expanded={open} aria-label={t('co.editLevel', { name: l.name || t('co.levelN', { n: l.level }) })} onClick={() => setOpen(!open)}><Pencil size={14} /></Button>}
+      </div>
+      {open && (
+        <div className="space-y-3 border-t border-line p-3.5">
+          <Field label={t('co.levelName')}><input className={field} value={l.name} onChange={(e) => onChange({ ...l, name: e.target.value })} /></Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={t('co.levelDecides')}>
+              <select className={field} value={l.decides} disabled={last} onChange={(e) => onChange({ ...l, decides: e.target.value as Level['decides'] })}>
+                {decides.map((d) => <option key={d} value={d}>{t(`co.levelBy.${d}` as 'co.levelBy.ceo')}</option>)}
+              </select>
+            </Field>
+            {l.decides === 'ceo' && (
+              <Field label={t('co.route')}>
+                <select className={field} value={l.route ?? 'direct'} onChange={(e) => onChange({ ...l, route: e.target.value as Level['route'] })}>
+                  <option value="direct">{t('co.route.direct')}</option>
+                  <option value="opinions">{t('co.route.opinions')}</option>
+                </select>
+              </Field>
+            )}
+          </div>
+          {!first && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t('co.overUsd')}><input type="number" min={0} className={field} value={l.when.over_usd ?? ''} onChange={(e) => onChange({ ...l, when: { ...l.when, over_usd: e.target.value ? Number(e.target.value) : undefined } })} /></Field>
+              <Field label={t('co.ruleRisk')}>
+                <select className={field} value={l.when.min_risk ?? ''} onChange={(e) => onChange({ ...l, when: { ...l.when, min_risk: e.target.value || undefined } })}>
+                  <option value="">{t('co.anyRisk')}</option>
+                  {risks.map((r) => <option key={r} value={r}>{t('rules.orMore', { what: t(`rules.risk.${r}` as 'rules.risk.read') })}</option>)}
+                </select>
+              </Field>
+              <Field label={t('co.kinds')}><input className={field} value={(l.when.kinds ?? []).join(', ')} placeholder={t('co.kindsHint')} onChange={(e) => onChange({ ...l, when: { ...l.when, kinds: list(e.target.value) } })} /></Field>
+              <Field label={t('co.words')}><input className={field} value={(l.when.words ?? []).join(', ')} onChange={(e) => onChange({ ...l, when: { ...l.when, words: list(e.target.value) } })} /></Field>
+              <label className="flex items-center gap-2 text-[13px] sm:col-span-2"><input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={!!l.when.public} onChange={(e) => onChange({ ...l, when: { ...l.when, public: e.target.checked } })} /> {t('co.publicTrigger')}</label>
+            </div>
+          )}
+          <Button type="button" size="sm" onClick={() => setOpen(false)}>{t('co.levelDone')}</Button>
+        </div>
+      )}
+    </Card>
+  )
+}
+
 export function LevelsTab({ org, can, onSaved }: { org: Org; can: boolean; onSaved: (o: Org) => void }) {
   const t = useT()
   const qc = useQueryClient()
@@ -118,72 +186,46 @@ export function LevelsTab({ org, can, onSaved }: { org: Org; can: boolean; onSav
     mutationFn: () => api.saveCompany(org.id, { ...org, levels, decider: decider.kind === 'person' ? undefined : decider, earn_after: earn.after === 10 ? undefined : earn.after, earn_off: earn.off || undefined }),
     onSuccess: (o) => { onSaved(o); qc.invalidateQueries({ queryKey: ['company', org.id] }) },
   })
-  const put = (i: number, l: Level) => setLevels({ ...levels, list: (levels.list ?? []).map((x, j) => (j === i ? l : x)) })
+  const all = levels.list ?? []
+  const put = (i: number, l: Level) => setLevels({ ...levels, list: all.map((x, j) => (j === i ? l : x)) })
   const name = (id: string) => org.members.find((m) => m.id === id)?.name ?? id
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-3">
-        <h2 className="text-[15px] font-semibold">{t('co.levels')}</h2>
-        <p className="text-[12.5px] text-ink-3">{t('co.levelsHint')}</p>
-        <fieldset disabled={!can} className="space-y-3">
-          {!(levels.list ?? []).length && <Button type="button" onClick={() => setLevels(suggested(t))}>{t('co.useSuggested')}</Button>}
-          {(levels.list ?? []).map((l, i) => (
-            <Card key={l.level} className="space-y-2 p-3">
-              <div className="flex items-center gap-2">
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sunken text-[12.5px] font-semibold">{l.level}</span>
-                <input className={field} aria-label={t('co.levelName')} value={l.name} onChange={(e) => put(i, { ...l, name: e.target.value })} />
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Field label={t('co.levelDecides')}>
-                  <select className={field} value={l.decides} disabled={i === (levels.list ?? []).length - 1} onChange={(e) => put(i, { ...l, decides: e.target.value as Level['decides'] })}>
-                    {decides.map((d) => <option key={d} value={d}>{t(`co.levelBy.${d}` as 'co.levelBy.ceo')}</option>)}
-                  </select>
-                </Field>
-                {l.decides === 'ceo' && (
-                  <Field label={t('co.route')}>
-                    <select className={field} value={l.route ?? 'direct'} onChange={(e) => put(i, { ...l, route: e.target.value as Level['route'] })}>
-                      <option value="direct">{t('co.route.direct')}</option>
-                      <option value="opinions">{t('co.route.opinions')}</option>
-                    </select>
-                  </Field>
-                )}
-              </div>
-              {i > 0 && (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <Field label={t('co.overUsd')}><input type="number" min={0} className={field} value={l.when.over_usd ?? ''} onChange={(e) => put(i, { ...l, when: { ...l.when, over_usd: e.target.value ? Number(e.target.value) : undefined } })} /></Field>
-                  <Field label={t('co.ruleRisk')}>
-                    <select className={field} value={l.when.min_risk ?? ''} onChange={(e) => put(i, { ...l, when: { ...l.when, min_risk: e.target.value || undefined } })}>
-                      <option value="">{t('co.anyRisk')}</option>
-                      {risks.map((r) => <option key={r} value={r}>{t('rules.orMore', { what: t(`rules.risk.${r}` as 'rules.risk.read') })}</option>)}
-                    </select>
-                  </Field>
-                  <Field label={t('co.kinds')}><input className={field} value={(l.when.kinds ?? []).join(', ')} placeholder={t('co.kindsHint')} onChange={(e) => put(i, { ...l, when: { ...l.when, kinds: list(e.target.value) } })} /></Field>
-                  <Field label={t('co.words')}><input className={field} value={(l.when.words ?? []).join(', ')} onChange={(e) => put(i, { ...l, when: { ...l.when, words: list(e.target.value) } })} /></Field>
-                  <label className="flex items-center gap-2 text-[12.5px]"><input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={!!l.when.public} onChange={(e) => put(i, { ...l, when: { ...l.when, public: e.target.checked } })} /> {t('co.publicTrigger')}</label>
-                </div>
-              )}
-            </Card>
-          ))}
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <fieldset disabled={!can} className="min-w-0 space-y-8">
+        <section className="space-y-3">
+          <SectionHead title={t('co.levels')} hint={t('co.levelsHint')} />
+          {all.length === 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-dashed border-line-strong p-4">
+              <p className="min-w-0 flex-1 basis-56 text-[13px] text-ink-2">{t('co.noLevels')}</p>
+              {can && <Button type="button" onClick={() => setLevels(suggested(t))}>{t('co.useSuggested')}</Button>}
+            </div>
+          )}
+          <ol className="space-y-2">
+            {all.map((l, i) => <li key={l.level}><LevelCard l={l} first={i === 0} last={i === all.length - 1} can={can} onChange={(x) => put(i, x)} /></li>)}
+          </ol>
+        </section>
+        <section className="space-y-4">
+          <SectionHead title={t('co.decideMore')} />
           <div className="space-y-2">
             <span className="text-[13px] font-medium">{t('co.defaultDecider')}</span>
             <DeciderEditor org={org} value={decider} onChange={setDecider} />
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3 text-[13px] font-medium">
-              <span>{t('co.earn')}</span>
+          <div className="space-y-2 rounded-xl bg-sunken/60 p-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[13px] font-medium">{t('co.earn')}</span>
               <Switch on={!earn.off} onChange={(on) => setEarn({ ...earn, off: !on })} label={t('co.earn')} />
             </div>
+            <p className="text-[12.5px] text-ink-3">{t('co.earnHint')}</p>
             {!earn.off && <Field label={t('co.earnAfter')}><input type="number" min={1} max={100} className={field + ' w-24'} value={earn.after} onChange={(e) => setEarn({ ...earn, after: Math.max(1, Math.min(100, Number(e.target.value) || 1)) })} /></Field>}
-            <p className="text-[12px] text-ink-3">{t('co.earnHint')}</p>
           </div>
-          {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
-          {can && <Button variant="primary" onClick={() => save.mutate()} disabled={save.isPending}>{t('common.save')}</Button>}
-        </fieldset>
-      </section>
-      <section className="space-y-4">
+        </section>
+        {save.error && <p className="text-[13px] text-danger">{save.error.message}</p>}
+        {can && <Button variant="primary" onClick={() => save.mutate()} disabled={save.isPending}>{t('common.save')}</Button>}
+      </fieldset>
+      <aside className="min-w-0 space-y-6">
         <Simulator org={org} />
-        <div className="space-y-2">
-          <h2 className="text-[15px] font-semibold">{t('co.decisions')}</h2>
+        <section className="space-y-2">
+          <SectionHead title={t('co.decisions')} />
           {(decisions.data ?? []).length === 0 && <p className="text-[12.5px] text-ink-3">{t('co.noDecisions')}</p>}
           {(decisions.data ?? []).map((d) => (
             <Card key={d.id} className="p-3 text-[12.5px]">
@@ -192,8 +234,8 @@ export function LevelsTab({ org, can, onSaved }: { org: Org; can: boolean; onSav
               <p><b className="font-medium">{t(`co.answer.${d.answer}` as 'co.answer.allow')}</b>{d.reason ? `: ${d.reason}` : ''}</p>
             </Card>
           ))}
-        </div>
-      </section>
+        </section>
+      </aside>
     </div>
   )
 }
@@ -204,8 +246,8 @@ function Simulator({ org }: { org: Org }) {
   const [q, setQ] = useState({ member: agents[0]?.id ?? '', text: '', kind: '', amount_usd: 0, public: false })
   const run = useMutation({ mutationFn: () => api.simulateLevel(org.id, q) })
   return (
-    <Card className="space-y-2 p-4">
-      <h2 className="text-[15px] font-semibold">{t('co.simulator')}</h2>
+    <div className="space-y-3 rounded-[var(--radius-card)] border border-line bg-sunken/60 p-4">
+      <SectionHead title={t('co.simulator')} hint={t('co.simulatorHint')} />
       <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); run.mutate() }}>
         <input className={field} aria-label={t('co.simText')} placeholder={t('co.simTextHint')} value={q.text} onChange={(e) => setQ({ ...q, text: e.target.value })} />
         <div className="grid gap-2 sm:grid-cols-3">
@@ -223,6 +265,6 @@ function Simulator({ org }: { org: Org }) {
         </p>
       )}
       {run.error && <p className="text-[13px] text-danger">{run.error.message}</p>}
-    </Card>
+    </div>
   )
 }

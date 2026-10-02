@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed templates/*.company.yaml
+//go:embed templates/*.company.yaml templates/i18n/*.yaml
 var templateFiles embed.FS
 
 // A Template is a company file to start from.
@@ -25,12 +25,12 @@ type Template struct {
 // templateOrder puts the blank company last.
 var templateOrder = []string{"software", "agency", "shop", "channel", "consultancy", "blank"}
 
-// Templates are the company files Pimpo ships with.
-func Templates() []Template {
+// Templates are the company files Pimpo ships with, in lang ("pt", "en"...).
+func Templates(lang string) []Template {
 	out := []Template{}
 	for _, id := range templateOrder {
-		b, err := templateFiles.ReadFile("templates/" + id + ".company.yaml")
-		if err != nil {
+		b, ok := TemplateFile(id, lang)
+		if !ok {
 			continue
 		}
 		var f File
@@ -47,11 +47,24 @@ func Templates() []Template {
 	return out
 }
 
-// TemplateFile is a template's company file by id.
-func TemplateFile(id string) ([]byte, bool) {
+// TemplateFile is a template's company file by id, with its words in lang;
+// English (or "") is the file as written.
+func TemplateFile(id, lang string) ([]byte, bool) {
 	if !slices.Contains(templateOrder, id) || strings.ContainsAny(id, "./") {
 		return nil, false
 	}
 	b, err := templateFiles.ReadFile("templates/" + id + ".company.yaml")
-	return b, err == nil
+	if err != nil {
+		return nil, false
+	}
+	if lang == "" || lang == "en" || strings.ContainsAny(lang, "./") {
+		return b, true
+	}
+	var f File
+	if err := yaml.Unmarshal(b, &f); err != nil {
+		return nil, false
+	}
+	localize(&f, id, lang)
+	out, err := yaml.Marshal(f)
+	return out, err == nil
 }

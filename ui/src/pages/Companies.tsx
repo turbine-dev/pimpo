@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Building2, Plus, Upload, X } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button, Card, EmptyState } from '../components/ui'
 import { api, type Org } from '../lib/api'
@@ -10,6 +10,20 @@ import { CompanyPage } from './CompanyPage'
 
 export const field = 'h-10 w-full rounded-[10px] border border-line bg-bg px-3 text-sm outline-none focus:border-accent'
 export const area = 'min-h-20 w-full rounded-[10px] border border-line bg-bg p-3 text-sm outline-none focus:border-accent'
+
+// SectionHead starts a part of a company's page: one heading style, a
+// line on what it is for, and its main action at the right.
+export function SectionHead({ title, hint, action }: { title: string; hint?: string; action?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0 flex-1 basis-64">
+        <h2 className="text-[15px] font-semibold">{title}</h2>
+        {hint && <p className="mt-0.5 max-w-2xl text-[12.5px] text-ink-3">{hint}</p>}
+      </div>
+      {action && <div className="flex shrink-0 flex-wrap gap-2">{action}</div>}
+    </div>
+  )
+}
 
 export function Companies() {
   const { id } = useParams()
@@ -53,7 +67,10 @@ function CompanyList() {
           {items.map((c) => (
             <Link key={c.id} to={`/companies/${c.id}`}>
               <Card className="p-4 hover:border-line-strong">
-                <div className="text-[14.5px] font-medium">{c.name}</div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="min-w-0 truncate text-[14.5px] font-medium">{c.name}</span>
+                  {c.paused && <span className="shrink-0 rounded-full bg-change-soft px-2 py-0.5 text-[11.5px] font-medium text-change">{t('co.state.paused')}</span>}
+                </div>
                 {c.industry && <p className="text-[12.5px] text-ink-3">{c.industry}</p>}
                 {c.grant !== 'configure' && <p className="mt-1 text-[12px] text-ink-2">{t(`co.grant.${c.grant}`)}</p>}
               </Card>
@@ -101,20 +118,22 @@ function NewCompany({ onClose }: { onClose: () => void }) {
 
 function FromTemplate({ onCreated }: { onCreated: (o: Org) => void }) {
   const t = useT()
-  const templates = useQuery({ queryKey: ['company-templates'], queryFn: api.companyTemplates })
+  // The templates come in the language the app is in.
+  const templates = useQuery({ queryKey: ['company-templates', t.locale], queryFn: () => api.companyTemplates(t.locale) })
   const [pick, setPick] = useState('')
   const [name, setName] = useState('')
   const chosen = templates.data?.find((x) => x.id === pick)
-  const create = useMutation({ mutationFn: () => api.companyFromTemplate(pick, name.trim() || chosen?.name || ''), onSuccess: onCreated })
+  const create = useMutation({ mutationFn: () => api.companyFromTemplate(pick, name.trim() || chosen?.name || '', t.locale), onSuccess: onCreated })
   return (
     <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); create.mutate() }}>
       <fieldset className="grid gap-2 sm:grid-cols-2">
         <legend className="sr-only">{t('co.way.template')}</legend>
         {(templates.data ?? []).map((x) => (
-          <label key={x.id} className={'cursor-pointer rounded-xl border p-3 ' + (pick === x.id ? 'border-ink' : 'border-line hover:border-line-strong')}>
+          <label key={x.id} className={'flex cursor-pointer flex-col gap-1 rounded-xl border p-3 focus-within:ring-2 focus-within:ring-accent ' + (pick === x.id ? 'border-ink' : 'border-line hover:border-line-strong')}>
             <input type="radio" name="template" value={x.id} className="sr-only" checked={pick === x.id} onChange={() => { setPick(x.id); setName(x.name) }} />
-            <span className="block text-[13.5px] font-medium">{x.name}</span>
-            <span className="block text-[12px] text-ink-3">{x.members ? t('co.templateHas', { n: x.members, roles: x.roles.join(', ') }) : t('co.templateBlank')}</span>
+            <span className="text-[13.5px] font-medium">{x.name}</span>
+            {x.mission && <span className="line-clamp-2 text-[12.5px] text-ink-2">{x.mission}</span>}
+            <span className="text-[12px] text-ink-3">{x.members ? t('co.templateHas', { n: x.members, roles: x.roles.join(', ') }) : t('co.templateBlank')}</span>
           </label>
         ))}
       </fieldset>
