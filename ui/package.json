@@ -24,7 +24,7 @@
     "@types/qrcode": "^1.5.6",
     "clsx": "^2.1.1",
     "lucide-react": "^1.48.0",
-    "motion": "^13.4.4",
+    "motion": "^14.0.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
